@@ -1,0 +1,47 @@
+<wicket:panel>
+    <form wicket:id="deleteForm" class="deleteForm">
+        <p>
+        <fieldset>
+            <legend>Delete Alerting Configuration</legend>
+            <table id="deleteFormTable">
+                <tr>
+                    <td valign="top">
+                        <strong>Alerting Config Name: </strong>
+                        <span wicket:id="alertingConfigName" id="alertingConfigName"/>
+                        <br>
+                        <strong>Notification Repeat Mode: </strong>
+                        <span wicket:id="notifRepeatMode" id="notifRepeatMode"/>
+                        <br>
+                        <strong>Notification Repeat Interval (ms): </strong>
+                        <span wicket:id="notifRepeatIntervalMs" id="notifRepeatIntervalMs"/>
+                        <br>
+                        <strong>Notification On Recovery? </strong>
+                        <span wicket:id="notifOnRecovery" id="notifOnRecovery"/>
+                        <br>
+                        <strong>Enabled: </strong>
+                        <span wicket:id="enabled" id="enabled"/>
+                        <br>
+                        <div wicket:id="notificationGroupList">
+                            <strong>Notification Group: </strong>
+                            <span wicket:id="notificationGroup" id="notificationGroup"/>
+                        </div>
+                        <br>
+                        <div wicket:id="managingKeyList">
+                            <strong>Managing Rule: </strong>
+                            <span wicket:id="managingKey" id="managingKey"/>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="deleteButton" value="Delete"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

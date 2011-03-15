@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+
+<log4j:configuration debug="false" xmlns:log4j='http://jakarta.apache.org/log4j/'>
+	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+		<layout class="org.apache.log4j.PatternLayout">
+			<param name="ConversionPattern" value="%p	%X{trace}   %d{ISO8601}	%t	%c	%m%n"/>
+		</layout>
+	</appender>
+
+    <logger name="com.ning.arecibo">
+        <level value="debug"/>
+    </logger>
+
+    <logger name="httpclient.wire.header">
+        <level value="debug"/>
+    </logger>
+
+    <!--
+    <logger name="org.apache.commons.httpclient">
+         <level value="debug"/>
+    </logger>
+    -->
+
+    <root>
+		<level value="info"/>
+		 <appender-ref ref="CONSOLE"/>
+	</root>
+</log4j:configuration>

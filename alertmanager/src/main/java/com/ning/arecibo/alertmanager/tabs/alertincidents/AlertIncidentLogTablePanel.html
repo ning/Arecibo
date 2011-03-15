@@ -1,0 +1,19 @@
+<html>
+<wicket:panel>
+
+    <div id="feedbackPanel">
+        <span wicket:id="feedback"/>
+    </div>
+
+    <br>
+    <br>
+
+    <form wicket:id="filterForm">
+        <input type="hidden" name="tracker" wicket:id="focus-tracker"/>
+        <table class="dataview" cellspacing="0"  wicket:id="table">[table]</table>
+        <span class="italic">You can sort and filter the table data displayed using the clickable headers and text fields above the columns</span>
+       	<span wicket:id="focus-restore">[call to focus restore script]</span>
+    </form>
+    
+</wicket:panel>
+</html>

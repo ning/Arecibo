@@ -1,0 +1,67 @@
+<wicket:panel>
+    <form wicket:id="inputForm" class="inputForm">
+        <p>
+        <fieldset>
+            <legend>Edit Person or Alias</legend>
+            <table id="inputFormTable">
+                <tr>
+                    <td valign="top">
+                        <input wicket:id="isGroupAlias" id="isGroupAlias" type="checkbox"/>
+                        <span class="italic">Is This a Group Alias?</span>
+                        <br>
+                        <br>
+                        <label for="nickName">Nick Name<span class="required">*</span></label>
+                        <input wicket:id="nickName" id="nickName" type="text" size="40"/>
+
+                        <div wicket:id="firstNameLabel"><label for="firstName">First Name<span class="required">*</span></label></div>
+                        <input wicket:id="firstName" id="firstName" type="text" size="40"/>
+
+                        <div wicket:id="lastNameLabel"><label for="lastName">Last Name<span class="required">*</span></label></div>
+                        <input wicket:id="lastName" id="lastName" type="text" size="40"/>
+
+                        <br>
+                        <br>
+
+                        <div wicket:id="notificationConfigListContainer">
+                            <div wicket:id="notificationConfigList">
+                                <fieldset>
+                                    <table border="0">
+                                        <tr>
+                                            <td>
+                                                <label for="address">Email Address<span class="required">*</span></label>
+                                                <input wicket:id="address" id="address" type="text" size="40">
+                                            </td>
+                                            <td>
+                                                <label for="notifType">Notification Type<span class="required">*</span></label>
+                                                <select wicket:id="notifType" id="notifType">
+                                                    <option>dude</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <br>
+                                                <input wicket:id="removeNotificationConfig" type="button" value="remove" style="font-style:italic;color:Red;"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </fieldset>
+                                <br>
+                            </div>
+                        </div>
+                        <div>
+                            <input wicket:id="addNotificationConfig" type="button" value="Add Another Email Address"/>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="saveButton" value="Save"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

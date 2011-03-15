@@ -1,0 +1,139 @@
+<html>
+<wicket:panel>
+
+    <br>
+
+
+    <div>
+        <h2>
+            Here you can manage Threshold Definitions, which is where you define the rules that will trigger alerting.
+        </h2>
+    </div>
+    <table>
+        <tr>
+            <td valign="top">
+                <a wicket:id="addnewthreshold"><button type="button">Create a New Threshold Definition</button></a>
+            </td>
+            <td width="20"/>
+            <td valign="top">
+                <table>
+                    <tr>
+                        <a href="#" wicket:id="explainLink1" class="explainlink">Threshold Definitions Explained</a>
+                        &nbsp;|&nbsp;
+                        <a href="#" wicket:id="explainLink2" class="explainlink">Qualifying & Context Attributes Explained</a>
+                        &nbsp;|&nbsp;
+                        <a href="#" wicket:id="explainLink3" class="explainlink">Threshold Options Explained</a>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div wicket:id="explanation1">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                A <strong>Threshold Definition</strong> is a specific rule for defining conditions that should trigger
+                an alert.  It is specified by choosing an <span class="italic">Event Type</span> and an associated
+                <span class="italic">Attribute Type</span>.  These must correspond to valid, monitored events and
+                attributes within the <span class="italic">Arecibo</span> system, in order to be triggered.
+                These types are case sensitive, so be sure to spell them correctly, observing case.
+                You can refer to the <span class="italic">Arecibo Dashboard</span> to view currently active
+                monitored events, for spelling.  The specified attribute type must be a
+                <span class="italic">numeric valued</span> field.
+
+            </p>
+            <p>
+                A <strong>Threshold Definition</strong> includes a reference an <strong>Alerting Configuration</strong>,
+                which allows sharing configuration between multiple threshold definitions.  Each
+                <strong>Threshold Definition</strong> requires an existing <strong>Alerting Configuration</strong>, so
+                it may be necessary to set up an <strong>Alerting Configuration</strong> before creating a
+                <strong>Threshold Definition</strong>.
+            </p>
+            <p>
+                <span class="smaller75_italic">
+                    To manage <strong>Alerting Configurations</strong>, visit the
+                    <strong>Alerting Configurations</strong> tab.
+                </span>
+            </p>
+        </fieldset>
+    </div>
+    <div wicket:id="explanation2">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                There are 2 optional types of <span class="italic">attributes</span> that affect how events are
+                selected for alert monitoring, and how they are managed and tracked internally.
+            </p>
+            <p>
+                <strong>Qualifying Attributes</strong> are like event selectors, and are comprised of attribute
+                <span class="italic">name -> value</span> pairs.  These attributes must be part of the same
+                <span class="italic">event</span> that the associated <span class="italic">threshold</span>
+                is defined for.  Any number of <strong>Qualifying Attributes</strong> can be specified for a
+                <strong>Threshold Definition</strong> (including zero).  The most common examples of
+                <strong>Qualifying Attributes</strong> within <span class="italic">Arecibo</span> are for selecting by
+                core type (e.g. '<span class="italic">deployedType->resolver</span>'), and/or for selecting by
+                config sub path (e.g. '<span class="italic">deployedConfigSubPath->aclu5</span>').  Any attribute within an
+                <span class="italic">Arecibo monitored event</span> can be used as a <strong>Qualifying Attribute</strong>.
+            </p>
+            <p>
+                <strong>Context Attributes</strong> provide bookkeeping for alerts once they have been triggered.  They
+                indicate a particular <span class="italic">attributeType</span>, whose value is used to independently
+                track alerts, which are otherwise triggered by the same <strong>Threshold Definition</strong>.
+                Any number of <strong>Context Attributes</strong> can be specified for a
+                <strong>Threshold Definition</strong> (including zero).  Any attribute within an
+                <span class="italic">Arecibo monitored event</span> can be used as a <strong>Context Attribute</strong>.
+                The most
+                common example of a <strong>Context Attribute</strong> is '<span class="italic">hostName</span>'.  This
+                allows specifying a single <strong>Threshold Definition</strong> that can be used to monitor a single
+                metric for any number of individual hosts separately.  Since it is by far the most common use case, the
+                form for creating new <strong>Threshold Definitions</strong> is pre-populated with
+                '<span class="italic">hostName</span>', but this is not a requirement.
+            </p>
+        </fieldset>
+    </div>
+    <div wicket:id="explanation3">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                There are several <strong>Options</strong> that can be specified for a
+                <strong>Threshold Definition</strong>.
+            </p>
+            <p>
+                <strong>Min & Max Threshold</strong>: These are the values that must violated in order to trigger an alert.
+                At least one of (or both) <strong>Min</strong> and <strong>Max Thresholds</strong> must be specified.
+                The thresholds must be numeric.  Thresholds are interpreted as non-inclusive limits.
+            </p>
+            <p>
+                The <strong>Min Samples</strong> option provides for a minimum number of samples required to trigger
+                an alert (the default being 1).  This allows requiring multiple samples that exceed the specified
+                threshold, within the specified <strong>Max Sample Window</strong>.  This can guard against spurious
+                noise in the event data.
+            </p>
+            <p>
+                The <strong>Clearing Interval</strong> is a required field which indicates the minimum amount of time
+                required to pass before a triggered alert will become de-activated, and no longer in an alerting state.
+                The default for this field is <span class="italic">300000 ms</span> (i.e. 5 minutes).
+            </p>
+        </fieldset>
+    </div>
+
+
+    <div id="feedbackPanel">
+        <span wicket:id="feedback"/>
+    </div>
+    <br>
+
+    <form wicket:id="filterForm">
+        <input type="hidden" name="tracker" wicket:id="focus-tracker"/>
+        <table class="dataview" cellspacing="0"  wicket:id="table">[table]</table>
+        <span class="italic">You can sort and filter the table data displayed using the clickable headers and text fields above the columns</span>
+       	<span wicket:id="focus-restore">[call to focus restore script]</span>
+    </form>
+
+    <!-- these are hidden -->
+    <div wicket:id="modalnewthreshold"/>
+    <div wicket:id="modaleditthreshold"/>
+    <div wicket:id="modaldeletethreshold"/>
+</wicket:panel>
+</html>

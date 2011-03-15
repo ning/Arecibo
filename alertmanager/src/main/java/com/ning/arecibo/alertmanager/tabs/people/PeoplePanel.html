@@ -1,0 +1,80 @@
+<html>
+<wicket:panel>
+
+    <br>
+
+    <div>
+        <h2>
+            Here you can manage People & Aliases, and their associated email addresses.
+        </h2>
+    </div>
+    <table>
+        <tr>
+            <td valign="top">
+                <a wicket:id="addnewperson"><button type="button">Create New Person or Alias</button></a>
+            </td>
+            <td width="20"/>
+            <td valign="top">
+                <table>
+                    <tr>
+                        <a href="#" wicket:id="explainLink1" class="explainlink">People & Aliases Explained</a>
+                        &nbsp;|&nbsp;
+                        <a href="#" wicket:id="explainLink2" class="explainlink">Notification Types Explained</a>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div wicket:id="explanation1">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                There are 2 types of contacts that can receive emails, either an individual <strong>Person</strong> or
+                an <strong>Email Group Alias</strong>.  We want to know if a contact is a <strong>Person</strong> or not,
+                since it will be used as part of the <span class="italic">Alert Acknowledgement</span> system.  Only
+                <strong>Persons</strong> will be allowed to acknowledge alerts.
+                A <strong>Person</strong> or <strong>Alias</strong> can be associated with a
+                <strong>Notification Group</strong>.
+            </p>
+            <p>
+                <span class="smaller75_italic">
+                    To associate a <strong>Person</strong> or <strong>alias</strong> with a
+                    <strong>Notification Group</strong>, visit the <strong>Notification Groups</strong> tab.
+                </span> 
+            </p>
+        </fieldset>
+    </div>
+    <div wicket:id="explanation2">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                There are 2 types of <strong>Notification Type</strong>, either by <strong>REGULAR_EMAIL</strong> or
+                else by <strong>SMS_VIA_EMAIL</strong>.
+
+                The difference, is that for the <strong>SMS_VIA_EMAIL</strong>, a reduced version of the notification
+                email will be sent, limited to <span class="italic">140 characters</span>, to conform to the limitation
+                of SMS text messaging systems.
+            </p>
+        </fieldset>
+    </div>
+
+    <div id="feedbackPanel">
+        <span wicket:id="feedback"/>
+    </div>
+    <br>
+
+    <form wicket:id="filterForm">
+        <input type="hidden" name="tracker" wicket:id="focus-tracker"/>
+        <table class="dataview" cellspacing="0"  wicket:id="table">[table]</table>
+        <span class="italic">You can sort and filter the table data displayed using the clickable headers and text fields above the columns</span>
+       	<span wicket:id="focus-restore">[call to focus restore script]</span>
+    </form>
+
+
+    <!-- these are hidden -->
+    <div wicket:id="modalnewperson"/>
+    <div wicket:id="modaleditperson"/>
+    <div wicket:id="modaldeleteperson"/>
+</wicket:panel>
+</html>

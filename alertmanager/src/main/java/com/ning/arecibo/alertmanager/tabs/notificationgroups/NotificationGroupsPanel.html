@@ -1,0 +1,73 @@
+<html>
+<wicket:panel>
+
+    <br>
+    
+    <div>
+        <h2>
+            Here you can manage Notification Groups, for creating groups of recipients for alert emails.
+        </h2>
+    </div>
+    
+    <table>
+        <tr>
+            <td valign="top">
+                <a wicket:id="addnewnotifgroup"><button type="button">Create New Notification Group</button></a>
+            </td>
+            <td width="20"/>
+            <td valign="top">
+                <table>
+                    <tr>
+                        <a href="#" wicket:id="explainLink1" class="explainlink">Notification Groups Explained</a>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div wicket:id="explanation1">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                A <strong>Notification Group</strong> is a way for grouping multiple recipients to receive a the same
+                alert notification.
+                A <strong>Notification Group</strong> can be associated with one or more <strong>Alerting
+                Configurations</strong>.
+                A <strong>Notification Group</strong> must include at least one email contact, which can be for an
+                individual person or an email alias.  It may be necessary
+                to set up a <strong>Person</strong> or <strong>Alias</strong> before creating a
+                <strong>Threshold Definition</strong>.
+            </p>
+            <p>
+                <span class="smaller75_italic">
+                    To associate a <strong>Notification Group</strong> with an <strong>Alerting
+                    Configuration</strong>, visit the <strong>Alerting Configurations</strong> tab.
+                </span>
+                <br>
+                <span class="smaller75_italic">
+                    To manage <strong>Email Contacts</strong>, visit the
+                    <strong>People & Aliases</strong> tab.
+                </span>
+            </p>
+        </fieldset>
+    </div>
+
+    <div id="feedbackPanel">
+        <span wicket:id="feedback"/>
+    </div>
+
+    <form wicket:id="filterForm">
+        <input type="hidden" name="tracker" wicket:id="focus-tracker"/>
+        <table class="dataview" cellspacing="0"  wicket:id="table">[table]</table>
+        <span class="italic">You can sort and filter the table data displayed using the clickable headers and text fields above the columns</span>
+       	<span wicket:id="focus-restore">[call to focus restore script]</span>
+    </form>
+
+
+
+    <!-- these are hidden -->
+    <div wicket:id="modalnewnotifgroup"/>
+    <div wicket:id="modaleditnotifgroup"/>
+    <div wicket:id="modaldeletenotifgroup"/>
+</wicket:panel>
+</html>

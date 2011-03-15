@@ -1,0 +1,40 @@
+<html>
+<wicket:panel>
+
+    <br>
+    <div>
+        <h2>
+            Here you can view historical alerts.  You can narrow your search by time range, and by using the filtering controls.
+        </h2>
+    </div>
+
+
+    <div id="feedbackPanel">
+        <span wicket:id="feedback"/>
+    </div>
+
+    <form wicket:id="searchRangeForm">
+        <table>
+                <tr>
+                    <td>
+                        <label for="searchRangeStart">Search Range Start Date/Time (GMT)</label>
+                        <br>
+                        <span wicket:id="searchRangeStart" id="searchRangeStart"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label for="searchRangeEnd">Search Range End Date/Time (GMT)</label>
+                        <br>
+                        <span wicket:id="searchRangeEnd" id="searchRangeEnd"/>
+                    </td>
+                </tr>
+        </table>
+        <br>
+        <input type="submit" wicket:id="updateSearchButton" value="Update Search Range"/>
+    </form>
+
+    <span wicket:id="alertIncidentLogTablePanel"/>
+
+</wicket:panel>
+</html>

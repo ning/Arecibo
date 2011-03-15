@@ -1,0 +1,103 @@
+<html>
+<wicket:panel>
+
+    <br>
+
+    <div>
+        <h2>
+            Here you can manage rules for suppressing alerts, either by regular schedule, or by manual override.
+        </h2>
+    </div>
+
+    <table>
+        <tr>
+            <td valign="top">
+
+                <a wicket:id="addnewmanagingkey">
+                    <button type="button">Create a New Managing Rule</button>
+                </a>
+            </td>
+            <td width="20"/>
+            <td valign="top">
+                <table>
+                    <tr>
+                        <a href="#" wicket:id="explainLink1" class="explainlink">Managing Rules Explained</a>
+                        &nbsp;|&nbsp;
+                        <a href="#" wicket:id="explainLink2" class="explainlink">What's the difference between action
+                            types: DISABLE and QUIESCE?</a>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <div wicket:id="explanation1">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                A <strong>Managing Rule</strong> represents rules for <span class="italic">disabling</span> or
+                <span class="italic">quiescing</span> alerts.
+                A <strong>Managing Rule</strong> can be associated with one or more <strong>Alerting
+                Configurations</strong>.
+                Each associated <strong>Alerting Configuration</strong> will abide by the managing rule's settings.
+            </p>
+            <p>
+                If an <strong>Alerting Configuration</strong> has multiple Rules specified, alert suppression is invoked
+                if any 1 of its <strong>Managing Rules</strong> is in effect.
+            </p>
+            <p>
+                A <strong>Managing Rule</strong> can have both <span class="italic">scheduled</span> or
+                <span class="italic">manual</span> invocation options, in which case <span class="italic">manual</span>
+                invocation always takes precedence.
+            </p>
+
+            <p>
+                        <span class="smaller75_italic">
+                            To associate a <strong>Managing Rule</strong> with an <strong>Alerting
+                            Configuration</strong>, visit the <strong>Alerting Configurations</strong> tab.
+                        </span>
+            </p>
+        </fieldset>
+    </div>
+    <div wicket:id="explanation2">
+        <fieldset>
+            <legend>Explanation</legend>
+            <p>
+                A Managing Rule with an action type of <strong>DISABLE</strong>, when invoked,
+                will result in the managed alerting configurations to be completely disabled.
+                No notifications will be sent, and no logging or state will be maintained.
+            </p>
+
+            <p>
+                A Managing Rule with an action type of <strong>QUIESCE</strong>, when invoked,
+                will still allow the internal management and tracking of alerting status,
+                with the exception that no notification will be sent. Thus, internal alert state
+                will still be maintained, and currently active alerts will still be visible in the dashboard,
+                etc.
+            </p>
+
+            <p>
+                If multiple Managing Rule's are in effect for a given alerting configuration,
+                <strong>DISABLE</strong> actions take precedence over <strong>QUIESCE</strong> actions.
+            </p>
+        </fieldset>
+    </div>
+
+    <div id="feedbackPanel">
+        <span wicket:id="feedback"/>
+    </div>
+    
+    <form wicket:id="filterForm">
+        <input type="hidden" name="tracker" wicket:id="focus-tracker"/>
+        <table class="dataview" cellspacing="0"  wicket:id="table">[table]</table>
+        <span class="italic">You can sort and filter the table data displayed using the clickable headers and text fields above the columns</span>
+       	<span wicket:id="focus-restore">[call to focus restore script]</span>
+    </form>
+
+    <!-- these are hidden from view -->
+    <div wicket:id="modalnewmanagingkey"/>
+    <div wicket:id="modaleditmanagingkey"/>
+    <div wicket:id="modaldeletemanagingkey"/>
+
+</wicket:panel>
+</html>

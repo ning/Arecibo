@@ -1,0 +1,126 @@
+<wicket:panel>
+    <form wicket:id="inputForm" class="inputForm">
+        <p>
+        <fieldset>
+            <legend>Edit Threshold</legend>
+            <table id="inputFormTable">
+                <tr>
+                    <td valign="top">
+
+                        <table border="0">
+                            <tr>
+                                <td valign="top">
+                                    <label for="thresholdName">Threshold Name<span class="required">*</span></label>
+                                    <input wicket:id="thresholdName" id="thresholdName" type="text" size="20"/>
+                                    <br>
+                                    <label for="monitoredEventType">Event Name<span class="required">*</span></label>
+                                    <input wicket:id="monitoredEventType" id="monitoredEventType" type="text" size="20"/>
+                                    <br>
+                                    <label for="monitoredAttributeType">Attribute Name<span
+                                            class="required">*</span></label>
+                                    <input wicket:id="monitoredAttributeType" id="monitoredAttributeType" type="text"
+                                           size="20"/>
+                                    <br>
+                                    <label for="alertingConfigName">Alerting Configuration<span class="required">*</span></label>
+                                    <select wicket:id="alertingConfigName" id="alertingConfigName">
+                                        <option>dude</option>
+                                    </select>
+                                </td>
+                                <td width="100">
+                                    <!-- space -->
+                                </td>
+                                <td valign="top">
+                                    <label for="minThresholdValue">Min Threshold</label>
+                                    <input wicket:id="minThresholdValue" id="minThresholdValue" type="text" size="20"/>
+                                    <br>
+                                    <label for="maxThresholdValue">Max Threshold</label>
+                                    <input wicket:id="maxThresholdValue" id="maxThresholdValue" type="text" size="20"/>
+                                    <br>
+                                    <label for="minThresholdSamples">Min Samples<span class="required">*</span></label>
+                                    <input wicket:id="minThresholdSamples" id="minThresholdSamples" type="text" size="20"/>
+                                    <br>
+                                    <label for="maxSampleWindowMs">Max Sample Window (ms)</label>
+                                    <input wicket:id="maxSampleWindowMs" id="maxSampleWindowMs" type="text" size="20"/>
+                                    <br>
+                                    <label for="clearingIntervalMs">Clearing Interval (ms)<span class="required">*</span></label>
+                                    <input wicket:id="clearingIntervalMs" id="clearingIntervalMs" type="text" size="20"/>
+                                    <br>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <br>
+
+                        <div wicket:id="qualifyingAttrListContainer">
+                            <div wicket:id="qualifyingAttrList">
+                                <fieldset>
+                                    <table border="0">
+                                        <tr>
+                                            <td>
+                                                <label for="qualifyingAttributeType">Qualifying Attribute Type<span
+                                                        class="required">*</span></label>
+                                                <input wicket:id="qualifyingAttributeType" id="qualifyingAttributeType"
+                                                       type="text" size="20"/>
+                                            </td>
+                                            <td>
+                                                <label for="qualifyingAttributeValue">Qualifying Attribute Value<span
+                                                        class="required">*</span></label>
+                                                <input wicket:id="qualifyingAttributeValue" id="qualifyingAttributeValue"
+                                                       type="text" size="20"/>
+                                            </td>
+                                            <td>
+                                                <br>
+                                                <input wicket:id="removeQualifyingAttribute" type="button" value="remove"
+                                                       style="font-style:italic;color:Red;"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </fieldset>
+                                <br>
+                            </div>
+                        </div>
+                        <input wicket:id="addQualifyingAttribute" type="button" value="Add Qualifying Attribute"/>
+
+                        <br>
+                        <br>
+
+                        <div wicket:id="contextAttrListContainer">
+                            <div wicket:id="contextAttrList">
+                                <fieldset>
+                                    <table border="0">
+                                        <tr>
+                                            <td>
+                                                <label for="contextAttributeType">Context Attribute Type<span
+                                                        class="required">*</span></label>
+                                                <input wicket:id="contextAttributeType" id="contextAttributeType"
+                                                       type="text" size="20"/>
+                                            </td>
+                                            <td>
+                                                <br>
+                                                <input wicket:id="removeContextAttribute" type="button" value="remove"
+                                                       style="font-style:italic;color:Red;"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </fieldset>
+                                <br>
+                            </div>
+                        </div>
+                        <input wicket:id="addContextAttribute" type="button" value="Add Context Attribute"/>
+
+
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="saveButton" value="Save"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

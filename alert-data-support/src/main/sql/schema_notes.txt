@@ -1,0 +1,126 @@
+
+Alert Config
+----------------------
+parent : (for creating composites, which share defaults, etc.)
+status : (published, offline, template)
+level : (info, warn, error, critical)
+type: (threshold, healthcheck, ping, escalation)
+
+
+Theshold alert config
+---------------------
+alert config id
+monitored_event_type
+monitored_attribute_type
+threshold values
+
+
+Threshold qualifying attribute
+------------------------------
+attribute type
+attribute value
+
+
+Threshold context attribute
+---------------------------
+attribute type
+
+
+level description
+-------------------
+color,
+default notification group,
+
+
+notification groups
+-------------------
+enabled
+
+
+alert notification config
+-------------------------
+notification_type : (regular email, sms via email)
+address
+person
+
+
+alert notification mapping
+--------------------------
+group
+notification config
+
+
+person
+------
+first name
+last name
+default email
+
+
+messaging descriptions
+----------------------
+message type: (sms, email, html, external link (e.g. wiki))
+text
+
+alert keys
+----------
+key
+alert config
+
+
+manage_by_key
+--------------
+action : (disable, quiesce)
+key
+manual activate
+manual activate until time
+time of day start activate
+time of day end activate
+day of week start activate
+day of week end activate
+
+
+Alert Options
+-------------
+enabled
+clearing interval
+recovery notification
+min samples
+sample window
+repeat mode : (none, until ack, until cleared, until ack or cleared, until ack and cleared?)
+repeat interval:
+
+
+# keep lots of details, as definition of alert config might change after the fact
+acknowledgement record
+----------------------
+alert incident
+person
+timestamp
+
+
+
+alert incident log
+------------------
+alert config
+start time
+clear time
+monitored_event
+monitored_attribute
+configured_thresholds
+alert event value
+
+
+notification log
+----------------
+alert incident
+notification config
+timestamp
+
+
+management log
+--------------
+manage_by_key config
+managed action (disable, quiesce)
+start time
+stop time

@@ -1,0 +1,105 @@
+<wicket:panel>
+    <form wicket:id="inputForm" class="inputForm">
+        <p>
+        <fieldset>
+            <legend>Edit Alerting Configuration</legend>
+            <table id="inputFormTable">
+                <tr>
+                    <td valign="top">
+                        <label for="alertingConfigName">Alerting Config Name<span class="required">*</span></label>
+                        <input wicket:id="alertingConfigName" id="alertingConfigName" type="text" size="40"/>
+
+                        <br>
+                        <table>
+                            <tr>
+                                <td>
+                                    <label for="notifRepeatMode">Repeat Mode<span class="required">*</span></label>
+                                    <select wicket:id="notifRepeatMode" id="notifRepeatMode">
+                                        <option>dude</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <label for="notifRepeatIntervalMs" wicket:id="notifRepeatIntervalMsLabel">Repeat
+                                        Interval (ms)<span class="required">*</span></label>
+                                    <input wicket:id="notifRepeatIntervalMs" id="notifRepeatIntervalMs">
+                                </td>
+                            </tr>
+                        </table>
+
+                        <br>
+                        <input wicket:id="notifOnRecovery" id="notifOnRecovery" type="checkbox"/>
+                        <span class="italic"> Notifiy on Recovery?</span>
+
+                        <br>
+                        <br>
+                        <br>
+
+                        <div wicket:id="notificationGroupListContainer">
+                            <div wicket:id="notificationGroupList">
+                                <fieldset>
+                                    <table border="0">
+                                        <tr>
+                                            <td>
+                                                <label for="notificationGroup">Notification Group<span class="required">*</span></label>
+                                                <select wicket:id="notificationGroup" id="notificationGroup">
+                                                    <option>dude</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <br>
+                                                <input wicket:id="removeNotificationGroup" type="button" value="remove"
+                                                       style="font-style:italic;color:Red;"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </fieldset>
+                                <br>
+                            </div>
+                        </div>
+                        <input wicket:id="addNotificationGroup" type="button" value="Add Another Notification Group"/>
+                        <br>
+                        <br>
+                        <br>
+                        <div wicket:id="managingKeyListContainer">
+                            <div wicket:id="managingKeyList">
+                                <fieldset>
+                                    <table border="0">
+                                        <tr>
+                                            <td>
+                                                <label for="managingKey">Managing Rule<span class="required">*</span></label>
+                                                <select wicket:id="managingKey" id="managingKey">
+                                                    <option>dude</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <br>
+                                                <input wicket:id="removeManagingKey" type="button" value="remove" style="font-style:italic;color:Red;"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </fieldset>
+                                <br>
+                            </div>
+                        </div>
+                        <input wicket:id="addManagingKey" type="button" value="Add Managing Rule"/>
+                        <br>
+                        <br>
+                        <br>
+                        <input wicket:id="enabled" id="enabled" type="checkbox"/>
+                        <span class="italic"> Enable this Alerting Config?</span>
+                        <br>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="saveButton" value="Save"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

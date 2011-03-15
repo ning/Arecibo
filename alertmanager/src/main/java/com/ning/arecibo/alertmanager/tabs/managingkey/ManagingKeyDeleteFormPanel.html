@@ -1,0 +1,50 @@
+<wicket:panel>
+    <form wicket:id="deleteForm" class="deleteForm">
+        <p>
+        <fieldset>
+            <legend>Delete Managing Rule</legend>
+            <table id="deleteFormTable">
+                <tr>
+                    <td valign="top">
+                        <strong>Managing Rule: </strong>
+                        <span wicket:id="key" id="key"/>
+                        <br>
+                        <strong>Action: </strong>
+                        <span wicket:id="action" id="action"/>
+                        <br>
+                        <strong>Scheduled Invocation Start Time of Day: </strong>
+                        <span wicket:id="autoActivateTODStartHours" id="autoActivateTODStartHours"/>
+                        :
+                        <span wicket:id="autoActivateTODStartMinutes" id="autoActivateTODStartMinutes"/>
+                        <br>
+                        <strong>Scheduled Invocation End Time of Day: </strong>
+                        <span wicket:id="autoActivateTODEndHours" id="autoActivateTODEndHours"/>
+                        :
+                        <span wicket:id="autoActivateTODEndMinutes" id="autoActivateTODEndMinutes"/>
+                        <br>
+                        <strong>Scheduled Invocation Start Day of Week: </strong>
+                        <span wicket:id="autoActivateDOWStart" id="autoActivateDOWStart"/>
+                        <br>
+                        <strong>Scheduled Invocation End Day of Week: </strong>
+                        <span wicket:id="autoActivateDOWEnd" id="autoActivateDOWEnd"/>
+                        <br>
+                        <strong>Invocation Always On? </strong>
+                        <span wicket:id="manualOverrideIndefinitely" id="manualOverrideIndefinitely"/>
+                        <br>
+                        <strong>Temporarily Override Invocation Until Time: </strong>
+                        <span wicket:id="manualOverrideUntilString" id="manualOverrideUntilString"/>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="saveButton" value="Delete"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

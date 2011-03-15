@@ -1,0 +1,36 @@
+<wicket:panel>
+    <form wicket:id="deleteForm" class="deleteForm">
+        <p>
+        <fieldset>
+            <legend>Confirm Delete Notification Group</legend>
+            <table id="deleteFormTable">
+                <tr>
+                    <td valign="top">
+                        <strong>Group Name: </strong>
+                        <span wicket:id="groupName" id="groupName"/>
+
+                        <br>
+                        <strong>Enabled: </strong>
+                        <span wicket:id="enabled" id="enabled"/>
+                        <br>
+
+                        <div wicket:id="notificationConfigList">
+                            <strong>Email Address: </strong>
+                            <span wicket:id="address" id="address"/>
+                            <br>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="deleteButton" value="Delete"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

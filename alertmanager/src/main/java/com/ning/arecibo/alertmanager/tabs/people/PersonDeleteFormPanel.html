@@ -1,0 +1,43 @@
+<wicket:panel>
+    <form wicket:id="deleteForm" class="deleteForm">
+        <p>
+        <fieldset>
+            <legend>Confirm Delete Person or Alias</legend>
+            <table id="deleteFormTable">
+                <tr>
+                    <td valign="top">
+                        <strong>Is a Group Alias: </strong>
+                        <span wicket:id="isGroupAlias" id="isGroupAlias"/>
+
+                        <br>
+                        <strong>Nick Name: </strong>
+                        <span wicket:id="nickName" id="nickName"/>
+
+                        <br>
+                        <span wicket:id="firstNameLabel"><strong>First Name: </strong></span>
+                        <span wicket:id="firstName" id="firstName"/>
+
+                        <br>
+                        <span wicket:id="lastNameLabel"><strong>Last Name: </strong></span>
+                        <span wicket:id="lastName" id="lastName"/>
+
+                        <div wicket:id="notificationConfigList">
+                            <span wicket:id="addressLabel"><strong>Email Address:</strong></span>
+                            <span wicket:id="address" id="address"/>
+                            <br>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <br>
+                        <span wicket:id="submissionWarningMessage" style="font-style:italic;color:Red"/>
+                        <br>
+                        <input type="submit" wicket:id="deleteButton" value="Delete"/>
+                        <input type="submit" wicket:id="cancelButton" value="Cancel"/>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+</wicket:panel>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app id="areciboDashboard">
+	<display-name>arecibo-dashboard</display-name>
+	
+	<listener>
+	   <listener-class>
+	       com.ning.arecibo.dashboard.context.DashboardStartupContextListener
+	   </listener-class>
+	</listener>
+	
+	<servlet>
+	   <servlet-name>DashboardGraphServlet</servlet-name>
+	   <servlet-class>com.ning.arecibo.dashboard.graph.DashboardGraphServlet</servlet-class>
+	</servlet>
+	
+	<servlet>
+	   <servlet-name>DashboardGraphLegendServlet</servlet-name>
+	   <servlet-class>com.ning.arecibo.dashboard.graph.DashboardGraphLegendServlet</servlet-class>
+	</servlet>
+	
+	<servlet>
+	   <servlet-name>DashboardSparklineServlet</servlet-name>
+	   <servlet-class>com.ning.arecibo.dashboard.graph.DashboardSparklineServlet</servlet-class>
+	</servlet>
+	
+	<servlet>
+	   <servlet-name>DashboardDataServlet</servlet-name>
+	   <servlet-class>com.ning.arecibo.dashboard.graph.DashboardDataServlet</servlet-class>
+	</servlet>
+
+    <servlet>
+        <servlet-name>DataHierarchyServlet</servlet-name>
+        <servlet-class>com.ning.arecibo.dashboard.data.DataHierarchyServlet</servlet-class>
+    </servlet>
+	
+	<servlet-mapping>
+	   <servlet-name>DashboardGraphServlet</servlet-name>
+	   <url-pattern>/DashboardGraph</url-pattern>
+	</servlet-mapping>
+	   
+	<servlet-mapping>
+	   <servlet-name>DashboardGraphLegendServlet</servlet-name>
+	   <url-pattern>/DashboardGraphLegend</url-pattern>
+	</servlet-mapping>
+	   
+	<servlet-mapping>
+	   <servlet-name>DashboardSparklineServlet</servlet-name>
+	   <url-pattern>/DashboardSparkline</url-pattern>
+	</servlet-mapping>
+	   
+	<servlet-mapping>
+	   <servlet-name>DashboardDataServlet</servlet-name>
+	   <url-pattern>/DashboardData</url-pattern>
+	</servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>DataHierarchyServlet</servlet-name>
+        <url-pattern>/DataHierarchy/*</url-pattern>
+    </servlet-mapping>
+	   
+</web-app>
