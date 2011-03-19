@@ -1,13 +1,5 @@
 package com.ning.arecibo.collector;
 
-import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.management.MBeanServer;
-
-import org.mortbay.jetty.Server;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -29,6 +21,12 @@ import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
+import org.mortbay.jetty.Server;
+
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EventCollectorServer
 {
@@ -40,7 +38,7 @@ public class EventCollectorServer
 	private final EmbeddedJettyConfig config;
 	private final int udpPort;
 	private final int rmiPort;
-	
+
     public static final String NAME = EventCollectorServer.class.getSimpleName();
 
 	@Inject
@@ -73,8 +71,8 @@ public class EventCollectorServer
 
 		// advertise on beacon
 		serviceLocator.advertiseLocalService(self);
-		
-		
+
+
 		String name = getClass().getSimpleName();
 		final long startTime = System.currentTimeMillis();
 		log.info("Starting up %s on port %d", name, config.getPort());
@@ -100,7 +98,7 @@ public class EventCollectorServer
 		catch(InterruptedException e) {
 			// continue
 		}
-		
+
 		try {
 			log.info("Shutting down %s", name);
 
@@ -109,14 +107,14 @@ public class EventCollectorServer
 
 			log.info("Stopping jetty server");
             server.stop();
-			
+
 			log.info("Shutdown completed");
 		}
 		catch(Exception e) {
 			log.warn(e);
 		}
 	}
-	
+
 	public static void main(String[] args) throws Exception
 	{
 		Injector injector = Guice.createInjector(Stage.PRODUCTION,
@@ -132,9 +130,9 @@ public class EventCollectorServer
                 }
             },
 			new RMIModule(),
-		    new CollectorModule());
+		    new CollectorModule(null));
 
 		EventCollectorServer server = injector.getInstance(EventCollectorServer.class);
 		server.run();
-	}	
+	}
 }

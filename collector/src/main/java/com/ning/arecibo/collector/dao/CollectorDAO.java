@@ -1,5 +1,37 @@
 package com.ning.arecibo.collector.dao;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+import com.ning.arecibo.collector.RemoteCollector;
+import com.ning.arecibo.collector.ResolutionTagGenerator;
+import com.ning.arecibo.collector.ResolutionUtils;
+import com.ning.arecibo.collector.config.CollectorConfig;
+import com.ning.arecibo.collector.contentstore.DbEntryUtil;
+import com.ning.arecibo.collector.guice.CollectorConstants;
+import com.ning.arecibo.event.MapEvent;
+import com.ning.arecibo.event.MonitoringEvent;
+import com.ning.arecibo.eventlogger.Event;
+import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.NamedThreadFactory;
+import com.ning.arecibo.util.esper.MiniEsperEngine;
+import com.ning.arecibo.util.jmx.MonitorableManaged;
+import com.ning.arecibo.util.jmx.MonitoringType;
+import com.ning.arecibo.util.xml.XStreamUtils;
+import com.thoughtworks.xstream.XStream;
+import org.apache.commons.lang.StringUtils;
+import org.skife.jdbi.v2.Folder;
+import org.skife.jdbi.v2.Handle;
+import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.PreparedBatch;
+import org.skife.jdbi.v2.PreparedBatchPart;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.TransactionCallback;
+import org.skife.jdbi.v2.TransactionStatus;
+import org.skife.jdbi.v2.Update;
+import org.skife.jdbi.v2.tweak.HandleCallback;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.skife.jdbi.v2.util.IntegerMapper;
+
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
@@ -17,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringTokenizer;
 import java.util.TimeZone;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -32,58 +65,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.CRC32;
-import org.apache.commons.lang.StringUtils;
-import org.skife.jdbi.v2.Folder;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.IDBI;
-import org.skife.jdbi.v2.PreparedBatch;
-import org.skife.jdbi.v2.PreparedBatchPart;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.TransactionCallback;
-import org.skife.jdbi.v2.TransactionStatus;
-import org.skife.jdbi.v2.Update;
-import org.skife.jdbi.v2.tweak.HandleCallback;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import org.skife.jdbi.v2.util.IntegerMapper;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.ning.arecibo.collector.RemoteCollector;
-import com.ning.arecibo.collector.ResolutionTagGenerator;
-import com.ning.arecibo.collector.ResolutionUtils;
-import com.ning.arecibo.collector.contentstore.DbEntryUtil;
-import com.ning.arecibo.collector.guice.BufferWindowInSeconds;
-import com.ning.arecibo.collector.guice.CollectorConstants;
-import com.ning.arecibo.collector.guice.CollectorReadOnlyMode;
-import com.ning.arecibo.collector.guice.EnableBatchRetryOnIntegrityViolation;
-import com.ning.arecibo.collector.guice.EnableDuplicateEventLogging;
-import com.ning.arecibo.collector.guice.EnablePerTableInserts;
-import com.ning.arecibo.collector.guice.EnablePreparedBatchInserts;
-import com.ning.arecibo.collector.guice.EventTableDescriptors;
-import com.ning.arecibo.collector.guice.HostUpdateInterval;
-import com.ning.arecibo.collector.guice.MaxAsynchInsertQueueSize;
-import com.ning.arecibo.collector.guice.MaxAsynchTriageQueueSize;
-import com.ning.arecibo.collector.guice.MaxBatchInsertSize;
-import com.ning.arecibo.collector.guice.MaxBatchInsertThreads;
-import com.ning.arecibo.collector.guice.MaxPendingEvents;
-import com.ning.arecibo.collector.guice.MaxPendingEventsCheckIntervalMs;
-import com.ning.arecibo.collector.guice.MaxSplitAndSweepInitialDelayMinutes;
-import com.ning.arecibo.collector.guice.MaxTableSpaceMB;
-import com.ning.arecibo.collector.guice.MaxTriageThreads;
-import com.ning.arecibo.collector.guice.MinBatchInsertSize;
-import com.ning.arecibo.collector.guice.ReductionFactors;
-import com.ning.arecibo.collector.guice.TableSpaceName;
-import com.ning.arecibo.collector.guice.TablespaceStatsUpdateIntervalMinutes;
-import com.ning.arecibo.collector.guice.ThrottlePctFreeThreshold;
-import com.ning.arecibo.event.MapEvent;
-import com.ning.arecibo.event.MonitoringEvent;
-import com.ning.arecibo.eventlogger.Event;
-import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.NamedThreadFactory;
-import com.ning.arecibo.util.esper.MiniEsperEngine;
-import com.ning.arecibo.util.jmx.MonitorableManaged;
-import com.ning.arecibo.util.jmx.MonitoringType;
-import com.ning.arecibo.util.xml.XStreamUtils;
-import com.thoughtworks.xstream.XStream;
 
 public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 {
@@ -141,7 +122,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 	private final ConcurrentHashMap<String,Map<String,MapEvent>> lastHostEvents = new ConcurrentHashMap<String,Map<String,MapEvent>>();
 	private final ConcurrentHashMap<String,Map<String,MapEvent>> lastTypeEvents = new ConcurrentHashMap<String,Map<String,MapEvent>>();
 	private final ConcurrentHashMap<String,Map<String,MapEvent>> lastPathEvents = new ConcurrentHashMap<String,Map<String,MapEvent>>();
-    
+
 	// Metadata caches
 	private final ConcurrentHashMap<String,CachedHost> hostMap = new ConcurrentHashMap<String,CachedHost>();
 	private final ConcurrentHashMap<String,Integer> typeMap = new ConcurrentHashMap<String,Integer>();
@@ -165,65 +146,55 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
     // general thread scheduler
     private final ScheduledExecutorService generalThreadScheduler = Executors.newScheduledThreadPool(10);
+    private static final String STATEMENTS_LOCATION = "com/ning/arecibo/collector/dao/sql";
 
 
     @Inject
 	public CollectorDAO(@Named(CollectorConstants.COLLECTOR_DB) IDBI dbi,
-	                    @TableSpaceName String tablespace,
-	                    @ThrottlePctFreeThreshold int throttlePctFree,
-	                    @TablespaceStatsUpdateIntervalMinutes int tablespaceStatsUpdateIntervalMinutes,
-	                    @MaxTableSpaceMB int maxTableSpaceMB,
-	                    @MaxSplitAndSweepInitialDelayMinutes int maxSplitAndSweepInitialDelayMinutes,
-                        @MaxTriageThreads int maxTriageThreads,
-                        @MaxBatchInsertThreads int maxBatchInsertThreads,
-                        @MinBatchInsertSize int minBatchInsertSize,
-                        @MaxBatchInsertSize int maxBatchInsertSize,
-                        @MaxAsynchTriageQueueSize int maxAsynchTriageQueueSize,
-                        @MaxAsynchInsertQueueSize int maxAsynchInsertQueueSize,
-                        @MaxPendingEvents int maxPendingEvents,
-                        @MaxPendingEventsCheckIntervalMs long maxPendingEventsCheckIntervalMs,
-	                    @HostUpdateInterval long hostUpdateInterval,
-	                    @CollectorReadOnlyMode Boolean readOnlyMode,
-                        @EnableBatchRetryOnIntegrityViolation Boolean enableBatchRetryOnIntegrityViolation,
-                        @EnableDuplicateEventLogging Boolean enableDuplicateEventLogging,
-                        @EnablePerTableInserts Boolean enablePerTableInserts,
-                        @EnablePreparedBatchInserts Boolean enablePreparedBatchInserts,
-	                    @BufferWindowInSeconds int bufferWindowInSecs,
-	                    @ReductionFactors int[] reductionFactors,
-	                    @EventTableDescriptors Map<String,EventTableDescriptor> eventTableDescriptors,
+                        CollectorConfig config,
 	                    Registry registry,
 	                    ResolutionUtils resolutionUtils) throws RemoteException, AlreadyBoundException
 	{
         log.info("LocalTimeZone = %s", localTZ);
-       
-        if(readOnlyMode) {
+
+        if(config.isCollectorReadOnlyMode()) {
             log.info("Initializing CollectorDAO in ReadOnlyMode");
         }
 
 		this.dbi = dbi;
-		this.tablespace = tablespace;
-		this.tablespaceStatsUpdateIntervalMinutes = tablespaceStatsUpdateIntervalMinutes;
-		this.maxTableSpaceMB = maxTableSpaceMB;
-		this.maxSplitAndSweepInitialDelayMinutes = maxSplitAndSweepInitialDelayMinutes;
-		this.throttlePctFree = throttlePctFree;
-		this.hostUpdateInterval = hostUpdateInterval;
-		this.readOnlyMode = readOnlyMode;
-        this.enableBatchRetryOnIntegrityViolation = enableBatchRetryOnIntegrityViolation;
-        this.enableDuplicateEventLogging = enableDuplicateEventLogging;
-        this.enablePerTableInserts = enablePerTableInserts;
-        this.enablePreparedBatchInserts = enablePreparedBatchInserts;
-		this.bufferWindowInSecs = bufferWindowInSecs;
-		this.reductionFactors = reductionFactors;
-		this.eventTableDescriptors = eventTableDescriptors;
-		this.resolutionUtils = resolutionUtils;
-        this.maxTriageThreads = maxTriageThreads;
-        this.maxBatchInsertThreads = maxBatchInsertThreads;
-        this.minBatchInsertSize = minBatchInsertSize;
-        this.maxBatchInsertSize = maxBatchInsertSize;
-        this.maxAsynchTriageQueueSize = maxAsynchTriageQueueSize;
-        this.maxAsynchInsertQueueSize = maxAsynchInsertQueueSize;
-        this.maxPendingEvents = maxPendingEvents;
-        this.maxPendingEventsCheckIntervalMs = maxPendingEventsCheckIntervalMs;
+		this.tablespace = config.getTableSpaceName();
+        this.tablespaceStatsUpdateIntervalMinutes = config.getTablespaceStatsUpdateIntervalMinutes();
+		this.maxTableSpaceMB = config.getMaxTableSpaceMB();
+		this.maxSplitAndSweepInitialDelayMinutes = config.getMaxSplitAndSweepInitialDelayMinutes();
+		this.throttlePctFree = config.getThrottlePctFreeThreshold();
+        this.hostUpdateInterval = config.getHostUpdateInterval();
+		this.readOnlyMode = config.isCollectorReadOnlyMode();
+        this.enableBatchRetryOnIntegrityViolation = config.getEnableBatchRetryOnIntegrityViolation();
+        this.enableDuplicateEventLogging = config.getEnableDuplicateEventLogging();
+        this.enablePerTableInserts = config.getEnablePerTableInserts();
+        this.enablePreparedBatchInserts = config.getEnablePreparedBatchInserts();
+		this.bufferWindowInSecs = config.getBufferWindowInSeconds();
+		this.reductionFactors = getReductionFactors(config.getReductionFactorList());
+
+        String numPartitionsToKeepList = config.getNumPartitionsToKeepList();
+        String splitIntervalInMinutesList = config.getSplitIntervalInMinutesList();
+        String numPartitionsToSplitAheadList = config.getNumPartitionsToSplitAheadList();
+
+        this.resolutionUtils = resolutionUtils;
+        this.eventTableDescriptors = getEventTableDescriptors(resolutionUtils,
+            config.getReductionFactorList(),
+            numPartitionsToKeepList,
+            splitIntervalInMinutesList,
+            numPartitionsToSplitAheadList);
+
+        this.maxTriageThreads = config.getMaxTriageThreads();
+        this.maxBatchInsertThreads = config.getMaxBatchInsertThreads();
+        this.minBatchInsertSize = config.getMinBatchInsertSize();
+        this.maxBatchInsertSize = config.getMaxBatchInsertSize();
+        this.maxAsynchTriageQueueSize = config.getMaxAsynchTriageQueueSize();
+        this.maxAsynchInsertQueueSize = config.getMaxAsynchInsertQueueSize();
+        this.maxPendingEvents = config.getMaxPendingEvents();
+        this.maxPendingEventsCheckIntervalMs = config.getMaxPendingEventsCheckIntervalMs();
 
         // set up statistics window engine for transaction/insert time
 		this.transactionTimeStats = new MiniEsperEngine<Long>("TransactionTime", Long.class);
@@ -262,7 +233,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
         // set up maxPendingEvents check schedule
         scheduleMaxPendingEventsChecker();
-        
+
 
         // seed caches with initial values
         try {
@@ -468,7 +439,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(getClass().getPackage().getName()+":getHosts")
+					handle.createQuery(STATEMENTS_LOCATION + ":getHosts")
 							.fold(hostMap, new Folder<ConcurrentHashMap<String, CachedHost>>()
 							{
 								public ConcurrentHashMap<String, CachedHost> fold(ConcurrentHashMap<String, CachedHost> map, ResultSet rs) throws SQLException
@@ -488,7 +459,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(getClass().getPackage().getName()+":getTypes")
+					handle.createQuery(STATEMENTS_LOCATION + ":getTypes")
 							.fold(typeMap, new Folder<ConcurrentHashMap<String, Integer>>()
 							{
 								public ConcurrentHashMap<String, Integer> fold(ConcurrentHashMap<String, Integer> map, ResultSet rs) throws SQLException
@@ -509,7 +480,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(getClass().getPackage().getName()+":getPaths")
+					handle.createQuery(STATEMENTS_LOCATION + ":getPaths")
 							.fold(pathMap, new Folder<ConcurrentHashMap<String, Integer>>()
 							{
 								public ConcurrentHashMap<String, Integer> fold(ConcurrentHashMap<String, Integer> map, ResultSet rs) throws SQLException
@@ -529,7 +500,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(getClass().getPackage().getName()+":getEventTypes")
+					handle.createQuery(STATEMENTS_LOCATION + ":getEventTypes")
 							.fold(eventTypeMap, new Folder<ConcurrentHashMap<String, Integer>>()
 							{
 								public ConcurrentHashMap<String, Integer> fold(ConcurrentHashMap<String, Integer> map, ResultSet rs) throws SQLException
@@ -560,7 +531,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
             log.info("skipping split and sweep table %s (readOnlyMode)", tableName);
 	        return;
         }
-	    
+
 	    try {
     		dbi.withHandle(new HandleCallback<Void>(){
     			public Void withHandle(Handle handle) throws Exception
@@ -568,7 +539,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     setMaxTs(tableDescriptor,0L);
                     final Timestamp ts = new Timestamp(tableDescriptor.getMaxTs() - gmtOffset + TimeUnit.MILLISECONDS.convert(
                     		tableDescriptor.getSplitIntervalInMinutes() * tableDescriptor.getSplitNumPartitionsAhead(), TimeUnit.MINUTES));
-                    
+
     				return handle.inTransaction(new TransactionCallback<Void>()
     				{
     					public Void inTransaction(Handle handle, TransactionStatus transactionStatus) throws Exception
@@ -576,20 +547,20 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     						AggregationType aggType = tableDescriptor.getAggregationType();
 							String baseTableName = aggType.getBaseTableName();
 							String tableName = baseTableName + resolutionUtils.getResolutionTag(tableDescriptor.getReductionFactor());
-							
+
                             log.info("split and sweep table %s at %s", tableName, ts);
-                            handle.createStatement(getClass().getPackage().getName() + ":split_and_sweep")
+                            handle.createStatement(STATEMENTS_LOCATION + ":split_and_sweep")
 								.bind("table_name", tableName)
 								.bind("ts", ts )
 								.bind("keep", tableDescriptor.getNumPartitionsToKeep())
                                 .execute();
-                            
+
                             return null;
     					}
     				});
     			}
     		});
-    		
+
     		log.info("split and sweep completed");
 	    }
 	    catch (RuntimeException e) {
@@ -605,7 +576,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     		{
     			public TablespaceStats withHandle(Handle handle) throws Exception
     			{
-    				return handle.createQuery(getClass().getPackage().getName() + ":table_space_stats")
+				return handle.createQuery(STATEMENTS_LOCATION + ":table_space_stats")
     						.bind("tablespace", tablespace)
     						.map(new ResultSetMapper<TablespaceStats>()
     						{
@@ -617,7 +588,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     						.first();
     			}
     		});
-    		
+
     		tablespaceStats.set(newStats);
 	    }
 	    catch (RuntimeException e) {
@@ -625,9 +596,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     	}
 	}
 
-	
+
 	private boolean checkTablespaceStats() {
-		
+
     	TablespaceStats stats = tablespaceStats.get();
         if ( stats != null && stats.pctFree < throttlePctFree ) {
 			log.warn("tablespace %.1f percent free, discarding events", stats.pctFree);
@@ -645,7 +616,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
         // sort events chronologically, to combat against duplicate events
         Collections.sort(events,new EventTimestampComparator());
-        
+
 		long start = System.currentTimeMillis();
 	    try {
             dbi.inTransaction(new TransactionCallback<Object>()
@@ -727,7 +698,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         log.info("retrying subdivided lists of size %d and %d (%s)",subList1.size(),subList2.size(),subLabel);
                     }
 
-                    
+
                     AsynchInsertRunnable aiRunnable1 = new AsynchInsertRunnable(retryId1,subList1);
                     AsynchInsertRunnable aiRunnable2 = new AsynchInsertRunnable(retryId2,subList2);
 
@@ -804,7 +775,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     if(!readOnlyMode) {
                         preparedBatch = preparedBatches.get(templateName);
                         if(preparedBatch == null) {
-                            preparedBatch = handle.prepareBatch(getClass().getPackage().getName() + templateName);
+                            preparedBatch = handle.prepareBatch(templateName);
                             preparedBatches.put(templateName,preparedBatch);
                         }
                     }
@@ -845,7 +816,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     // insert in the generic table (shouldn't happen currently)
                     PreparedBatch preparedBatch = preparedBatches.get("generic");
                     if(preparedBatch == null) {
-                        preparedBatch = handle.prepareBatch(getClass().getPackage().getName() + AggregationType.GENERIC.getTemplateName());
+                        preparedBatch = handle.prepareBatch(AggregationType.GENERIC.getTemplateName());
                         preparedBatches.put("generic",preparedBatch);
                     }
 
@@ -944,7 +915,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     switch (aggType) {
                         case HOST:
                             if (checkNotEqualLastValue(lastHostEvents, me.getHostName() + resolutionTag, event) && !readOnlyMode) {
-                                updateStmt = handle.createStatement(getClass().getPackage().getName() + templateName)
+                                updateStmt = handle.createStatement(templateName)
                                         .define("host_event_table", tableName)
                                         .bind("ts", ts)
                                         .bind("event_type_id", eventTypeID)
@@ -953,7 +924,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             break;
                         case TYPE:
                             if (checkNotEqualLastValue(lastTypeEvents, me.getDeployedType() + resolutionTag, event) && !readOnlyMode) {
-                                updateStmt = handle.createStatement(getClass().getPackage().getName() + templateName)
+                                updateStmt = handle.createStatement(templateName)
                                         .define("type_event_table", tableName)
                                         .bind("ts", ts)
                                         .bind("event_type_id", eventTypeID)
@@ -962,7 +933,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             break;
                         case PATH:
                             if (checkNotEqualLastValue(lastPathEvents, me.getDeployedType() + ":" + me.getDeployedConfigSubPath() + resolutionTag, event) && !readOnlyMode) {
-                                updateStmt = handle.createStatement(getClass().getPackage().getName() + templateName)
+                                updateStmt = handle.createStatement(templateName)
                                         .define("path_event_table", tableName)
                                         .bind("ts", ts)
                                         .bind("event_type_id", eventTypeID)
@@ -973,7 +944,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     }
                 }
                 else if (!readOnlyMode) {
-                    updateStmt = handle.createStatement(getClass().getPackage().getName() + ":insert_generic_event")
+                    updateStmt = handle.createStatement(STATEMENTS_LOCATION + ":insert_generic_event")
                             .define("generic_event_table", "generic_events")
                             .bind("ts", ts)
                             .bind("event_type_id", eventTypeID);
@@ -1044,20 +1015,20 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			throws CollectorDAOException
 	{
 		try {
-			
+
 			if (!typeMap.containsKey(type)) {
-	
+
 				Integer saved = null;
 				saved = dbi.withHandle(new HandleCallback<Integer>()
 				{
 					public Integer withHandle(Handle handle) throws Exception
 					{
-						return handle.createQuery(getClass().getPackage().getName() + ":getTypeByName")
+						return handle.createQuery(STATEMENTS_LOCATION + ":getTypeByName")
 								.bind("dep_type", type)
 								.map(IntegerMapper.FIRST).first();
 					}
 				});
-	
+
 				if (saved == null) {
                     final Integer next = getNextID();
                     Integer old = typeMap.putIfAbsent(type, next);
@@ -1066,7 +1037,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         {
                             public Object withHandle(Handle handle) throws Exception
                             {
-                                handle.createStatement(getClass().getPackage().getName() + ":insertType")
+                                handle.createStatement(STATEMENTS_LOCATION + ":insertType")
                                     .bind("dep_type", type)
                                     .bind("id", next)
                                     .execute();
@@ -1080,7 +1051,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 				}
 			}
 			return typeMap.get(type);
-		
+
 		}
 		catch(RuntimeException ruEx) {
 			throw new CollectorDAOException("RuntimeException:",ruEx);
@@ -1091,20 +1062,20 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			throws CollectorDAOException
 	{
 		try {
-			
+
 			if (!pathMap.containsKey(path)) {
-	
+
 				Integer saved = null;
 				saved = dbi.withHandle(new HandleCallback<Integer>()
 				{
 					public Integer withHandle(Handle handle) throws Exception
 					{
-						return handle.createQuery(getClass().getPackage().getName() + ":getPathByName")
+						return handle.createQuery(STATEMENTS_LOCATION + ":getPathByName")
 								.bind("dep_path", path)
 								.map(IntegerMapper.FIRST).first();
 					}
 				});
-	
+
 				if (saved == null) {
                     final Integer next = getNextID();
                     Integer old = pathMap.putIfAbsent(path, next);
@@ -1113,7 +1084,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         {
                             public Object withHandle(Handle handle) throws Exception
                             {
-                                handle.createStatement(getClass().getPackage().getName() + ":insertPath")
+                                handle.createStatement(STATEMENTS_LOCATION + ":insertPath")
                                         .bind("dep_path", path)
                                         .bind("id", next)
                                         .execute();
@@ -1127,7 +1098,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 				}
 			}
 			return pathMap.get(path);
-			
+
 		}
 		catch(RuntimeException ruEx) {
 			throw new CollectorDAOException("RuntimeException:",ruEx);
@@ -1138,20 +1109,20 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			throws CollectorDAOException
 	{
 		try {
-			
+
 			if (!eventTypeMap.containsKey(eventType)) {
-	
+
 				Integer saved = null;
 				saved = dbi.withHandle(new HandleCallback<Integer>()
 				{
 					public Integer withHandle(Handle handle) throws Exception
 					{
-						return handle.createQuery(getClass().getPackage().getName() + ":getEventTypeByName")
+						return handle.createQuery(STATEMENTS_LOCATION + ":getEventTypeByName")
 								.bind("event_type", eventType)
 								.map(IntegerMapper.FIRST).first();
 					}
 				});
-	
+
 				if (saved == null) {
                     final Integer next = getNextID();
                     Integer old = eventTypeMap.putIfAbsent(eventType, next);
@@ -1160,7 +1131,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         {
                             public Object withHandle(Handle handle) throws Exception
                             {
-                                handle.createStatement(getClass().getPackage().getName() + ":insertEventType")
+                                handle.createStatement(STATEMENTS_LOCATION + ":insertEventType")
                                         .bind("event_type", eventType)
                                         .bind("event_type_id", next)
                                         .execute();
@@ -1200,13 +1171,13 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         try {
 
 			if (!hostMap.containsKey(hostName)) {
-	
+
 				CachedHost saved = null;
 				saved = dbi.withHandle(new HandleCallback<CachedHost>()
 				{
 					public CachedHost withHandle(Handle handle) throws Exception
 					{
-						return handle.createQuery(getClass().getPackage().getName() + ":getHostByName")
+						return handle.createQuery(STATEMENTS_LOCATION + ":getHostByName")
 								.bind("host", hostName)
 								.map(new ResultSetMapper<CachedHost>()
 								{
@@ -1249,7 +1220,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         try {
             return dbi.withHandle(new HandleCallback<Integer>() {
                 public Integer withHandle(Handle handle) throws Exception {
-                    return handle.createQuery(getClass().getPackage().getName() + ":nextId")
+                    return handle.createQuery(STATEMENTS_LOCATION + ":nextId")
                             .map(IntegerMapper.FIRST)
                             .first();
                 }
@@ -1296,7 +1267,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         lastEventsSince.put(key, mapEvt);
                 }
             }
-            
+
             return lastEventsSince;
         }
     }
@@ -1774,7 +1745,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                 {
                     public Object withHandle(Handle handle) throws Exception
                     {
-                        handle.createStatement(getClass().getPackage().getName() + ":insertHost")
+                        handle.createStatement(STATEMENTS_LOCATION + ":insertHost")
                                 .bind("id", id)
                                 .bind("host", getHost())
                                 .bind("dep_type", getType())
@@ -1805,7 +1776,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         {
                             public Object withHandle(Handle handle) throws Exception
                             {
-                                handle.createStatement(getClass().getPackage().getName() + ":updateHost")
+                                handle.createStatement(STATEMENTS_LOCATION + ":updateHost")
                                         .bind("id", id)
                                         .bind("host", getHost())
                                         .bind("dep_type", getType())
@@ -2073,4 +2044,86 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
             return t1.compareTo(t2);
         }
     }
+
+    private int[] getReductionFactors(String reductionFactorList)
+    {
+        StringTokenizer reductionFactorST = new StringTokenizer(reductionFactorList, ",");
+        int count = reductionFactorST.countTokens();
+
+        int[] reductionFactors = new int[count];
+
+        int i = 0;
+        while (reductionFactorST.hasMoreTokens()) {
+            // note, if this has a number format exception, it will throw a Runtimer out of here (which is ok)
+            reductionFactors[i++] = Integer.parseInt(reductionFactorST.nextToken());
+        }
+
+        return reductionFactors;
+    }
+
+    private Map<String, EventTableDescriptor> getEventTableDescriptors(ResolutionUtils resUtils,
+                                                                       String reductionFactorList,
+                                                                       String numPartitionsToKeepList,
+                                                                       String splitIntervalInMinutesList,
+                                                                       String numPartitionsToSplitAheadList)
+    {
+
+        StringTokenizer reductionFactors = new StringTokenizer(reductionFactorList, ",");
+        StringTokenizer numPartitionsToKeep = new StringTokenizer(numPartitionsToKeepList, ",");
+        StringTokenizer splitIntervalInMinutes = new StringTokenizer(splitIntervalInMinutesList, ",");
+        StringTokenizer numPartitionsToSplitAhead = new StringTokenizer(numPartitionsToSplitAheadList, ",");
+
+        // get the size of the largest list
+        int numDescriptorCombos = Math.max(reductionFactors.countTokens(),
+            Math.max(numPartitionsToKeep.countTokens(),
+                Math.max(splitIntervalInMinutes.countTokens(),
+                    numPartitionsToSplitAhead.countTokens())));
+
+        // parse lists in order, and ones that run out of items will just replicate the last one in the list
+        // TODO: cleanup this config ugliness!
+        HashMap<String, EventTableDescriptor> tableDescriptors = new HashMap<String, EventTableDescriptor>();
+
+        int currReductionFactor = 0;
+        int currNumPartitionsToKeep = 0;
+        int currSplitIntervalInMinutes = 0;
+        int currNumPartitionsToSplitAhead = 0;
+
+        for (int i = 0; i < numDescriptorCombos; i++) {
+
+            // note, if any of these have a number format exception, will throw a Runtimer out of here (which is ok)
+            if (reductionFactors.hasMoreTokens()) {
+                currReductionFactor = Integer.parseInt(reductionFactors.nextToken());
+            }
+            if (numPartitionsToKeep.hasMoreTokens()) {
+                currNumPartitionsToKeep = Integer.parseInt(numPartitionsToKeep.nextToken());
+            }
+            if (splitIntervalInMinutes.hasMoreTokens()) {
+                currSplitIntervalInMinutes = Integer.parseInt(splitIntervalInMinutes.nextToken());
+            }
+            if (numPartitionsToSplitAhead.hasMoreTokens()) {
+                currNumPartitionsToSplitAhead = Integer.parseInt(numPartitionsToSplitAhead.nextToken());
+            }
+
+            for (AggregationType aggType : AggregationType.values()) {
+
+                if (i > 0 && !aggType.getSupportsMultiRes()) {
+                    continue;
+                }
+
+                EventTableDescriptor tableDescriptor = new EventTableDescriptor(aggType,
+                    currReductionFactor,
+                    resUtils.getResolutionTag(currReductionFactor),
+                    currNumPartitionsToKeep,
+                    currSplitIntervalInMinutes,
+                    currNumPartitionsToSplitAhead);
+
+                String hashKey = tableDescriptor.getHashKey();
+                tableDescriptors.put(hashKey, tableDescriptor);
+            }
+        }
+
+        return tableDescriptors;
+
+    }
+
 }
