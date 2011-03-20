@@ -160,6 +160,13 @@ public class CollectorConfig
         return false;
     }
 
+    @Config(value = "arecibo.events.collector.db.type")
+    public String getDBType()
+    {
+        // config-magic doesn't support enums :'(
+        return "MYSQL";
+    }
+
     @Config(value = "arecibo.events.collector.db.url")
     public String getJdbcUrl()
     {

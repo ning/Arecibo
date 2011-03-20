@@ -7,6 +7,8 @@ import com.google.inject.name.Names;
 import com.ning.arecibo.collector.ResolutionUtils;
 import com.ning.arecibo.collector.config.CollectorConfig;
 import com.ning.arecibo.collector.dao.CollectorDAO;
+import com.ning.arecibo.collector.dao.MySQLCollectorDAO;
+import com.ning.arecibo.collector.dao.OracleCollectorDAO;
 import com.ning.arecibo.util.jdbi.DBIProvider;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
@@ -38,7 +40,16 @@ public class CollectorModule extends AbstractModule
             config.getMaxConnectionsPerPartition()
         )).asEagerSingleton();
         bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName));
-        bind(CollectorDAO.class).asEagerSingleton();
+
+        if (config.getDBType().equals("MYSQL")) {
+            bind(CollectorDAO.class).to(MySQLCollectorDAO.class).asEagerSingleton();
+        }
+        else if (config.getDBType().equals("ORACLE")) {
+            bind(CollectorDAO.class).to(OracleCollectorDAO.class).asEagerSingleton();
+        }
+        else {
+            throw new IllegalArgumentException("Support for DB not implemented: " + config.getDBType());
+        }
 
         bind(ResolutionUtils.class).toInstance(new ResolutionUtils());
 

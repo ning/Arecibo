@@ -30,7 +30,6 @@ import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.Update;
 import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import org.skife.jdbi.v2.util.IntegerMapper;
 
 import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
@@ -66,7 +65,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.CRC32;
 
-public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
+public abstract class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 {
 	private final static Logger log = Logger.getLogger(CollectorDAO.class);
 
@@ -75,15 +74,15 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
 	private final XStream xstream = XStreamUtils.getXStreamNoStringCache() ;
 
-	private final IDBI dbi;
+	protected final IDBI dbi;
 	private final String tablespace;
 	private final int tablespaceStatsUpdateIntervalMinutes;
 	private final int maxTableSpaceMB;
 	private final int maxSplitAndSweepInitialDelayMinutes;
 	private final int throttlePctFree;
 	private final long hostUpdateInterval;
-	private final Boolean readOnlyMode;
-	private final int bufferWindowInSecs;
+    protected final Boolean readOnlyMode;
+    private final int bufferWindowInSecs;
 	private final int[] reductionFactors;
 	private final Map<String,EventTableDescriptor> eventTableDescriptors;
 	private final ResolutionUtils resolutionUtils;
@@ -123,13 +122,13 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 	private final ConcurrentHashMap<String,Map<String,MapEvent>> lastTypeEvents = new ConcurrentHashMap<String,Map<String,MapEvent>>();
 	private final ConcurrentHashMap<String,Map<String,MapEvent>> lastPathEvents = new ConcurrentHashMap<String,Map<String,MapEvent>>();
 
-	// Metadata caches
-	private final ConcurrentHashMap<String,CachedHost> hostMap = new ConcurrentHashMap<String,CachedHost>();
-	private final ConcurrentHashMap<String,Integer> typeMap = new ConcurrentHashMap<String,Integer>();
-	private final ConcurrentHashMap<String,Integer> pathMap = new ConcurrentHashMap<String,Integer>();
-	private final ConcurrentHashMap<String,Integer> eventTypeMap = new ConcurrentHashMap<String,Integer>();
+    // Metadata caches
+    protected final ConcurrentHashMap<String, CachedHost> hostMap = new ConcurrentHashMap<String, CachedHost>();
+    protected final ConcurrentHashMap<String, Integer> typeMap = new ConcurrentHashMap<String, Integer>();
+    protected final ConcurrentHashMap<String, Integer> pathMap = new ConcurrentHashMap<String, Integer>();
+    protected final ConcurrentHashMap<String, Integer> eventTypeMap = new ConcurrentHashMap<String, Integer>();
 
-	// Insert Queues
+    // Insert Queues
     private final AtomicInteger bufferIndex = new AtomicInteger(0);
     private final BlockingQueue<Event>[] bufferQueue;
     private final ReentrantReadWriteLock[] bufferQueueLock;
@@ -146,20 +145,22 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
     // general thread scheduler
     private final ScheduledExecutorService generalThreadScheduler = Executors.newScheduledThreadPool(10);
-    private static final String STATEMENTS_LOCATION = "com/ning/arecibo/collector/dao/sql";
-
+    protected final String statementsLocation;
 
     @Inject
 	public CollectorDAO(@Named(CollectorModule.COLLECTOR_DB) IDBI dbi,
                         CollectorConfig config,
 	                    Registry registry,
-	                    ResolutionUtils resolutionUtils) throws RemoteException, AlreadyBoundException
+	                    ResolutionUtils resolutionUtils,
+                        String statementsLocation) throws RemoteException, AlreadyBoundException
 	{
         log.info("LocalTimeZone = %s", localTZ);
 
         if(config.isCollectorReadOnlyMode()) {
             log.info("Initializing CollectorDAO in ReadOnlyMode");
         }
+
+        this.statementsLocation = statementsLocation;
 
 		this.dbi = dbi;
 		this.tablespace = config.getTableSpaceName();
@@ -247,6 +248,14 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         // bind to the rmi registry
         registry.bind(RemoteCollector.class.getSimpleName(), this);
 	}
+
+    abstract protected CachedHost getCachedHost(final CachedHost cachedHost, final String hostName) throws CollectorDAOException;
+
+    abstract protected Integer getCachedTypeID(final String type) throws CollectorDAOException;
+
+    abstract protected Integer getCachedPathID(final String path) throws CollectorDAOException;
+
+    abstract protected Integer getCachedEventTypeID(final String eventType) throws CollectorDAOException;
 
     public void insertBuffered(final List<Event> events) {
         //log.debug("adding %d events to buffer queue", events.size());
@@ -439,7 +448,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(STATEMENTS_LOCATION + ":getHosts")
+					handle.createQuery(statementsLocation + ":getHosts")
 							.fold(hostMap, new Folder<ConcurrentHashMap<String, CachedHost>>()
 							{
 								public ConcurrentHashMap<String, CachedHost> fold(ConcurrentHashMap<String, CachedHost> map, ResultSet rs) throws SQLException
@@ -459,7 +468,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(STATEMENTS_LOCATION + ":getTypes")
+					handle.createQuery(statementsLocation + ":getTypes")
 							.fold(typeMap, new Folder<ConcurrentHashMap<String, Integer>>()
 							{
 								public ConcurrentHashMap<String, Integer> fold(ConcurrentHashMap<String, Integer> map, ResultSet rs) throws SQLException
@@ -480,7 +489,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(STATEMENTS_LOCATION + ":getPaths")
+					handle.createQuery(statementsLocation + ":getPaths")
 							.fold(pathMap, new Folder<ConcurrentHashMap<String, Integer>>()
 							{
 								public ConcurrentHashMap<String, Integer> fold(ConcurrentHashMap<String, Integer> map, ResultSet rs) throws SQLException
@@ -500,7 +509,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 			{
 				public Object withHandle(Handle handle) throws Exception
 				{
-					handle.createQuery(STATEMENTS_LOCATION + ":getEventTypes")
+					handle.createQuery(statementsLocation + ":getEventTypes")
 							.fold(eventTypeMap, new Folder<ConcurrentHashMap<String, Integer>>()
 							{
 								public ConcurrentHashMap<String, Integer> fold(ConcurrentHashMap<String, Integer> map, ResultSet rs) throws SQLException
@@ -549,7 +558,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 							String tableName = baseTableName + resolutionUtils.getResolutionTag(tableDescriptor.getReductionFactor());
 
                             log.info("split and sweep table %s at %s", tableName, ts);
-                            handle.createStatement(STATEMENTS_LOCATION + ":split_and_sweep")
+                            handle.createStatement(statementsLocation + ":split_and_sweep")
 								.bind("table_name", tableName)
 								.bind("ts", ts )
 								.bind("keep", tableDescriptor.getNumPartitionsToKeep())
@@ -576,7 +585,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     		{
     			public TablespaceStats withHandle(Handle handle) throws Exception
     			{
-				return handle.createQuery(STATEMENTS_LOCATION + ":table_space_stats")
+				return handle.createQuery(statementsLocation + ":table_space_stats")
     						.bind("tablespace", tablespace)
     						.map(new ResultSetMapper<TablespaceStats>()
     						{
@@ -944,7 +953,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     }
                 }
                 else if (!readOnlyMode) {
-                    updateStmt = handle.createStatement(STATEMENTS_LOCATION + ":insert_generic_event")
+                    updateStmt = handle.createStatement(statementsLocation + ":insert_generic_event")
                             .define("generic_event_table", "generic_events")
                             .bind("ts", ts)
                             .bind("event_type_id", eventTypeID);
@@ -1011,146 +1020,6 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         }
     }
 
-	private Integer getCachedTypeID(final String type)
-			throws CollectorDAOException
-	{
-		try {
-
-			if (!typeMap.containsKey(type)) {
-
-				Integer saved = null;
-				saved = dbi.withHandle(new HandleCallback<Integer>()
-				{
-					public Integer withHandle(Handle handle) throws Exception
-					{
-						return handle.createQuery(STATEMENTS_LOCATION + ":getTypeByName")
-								.bind("dep_type", type)
-								.map(IntegerMapper.FIRST).first();
-					}
-				});
-
-				if (saved == null) {
-                    final Integer next = getNextID();
-                    Integer old = typeMap.putIfAbsent(type, next);
-                    if (old == null && !readOnlyMode) {
-                        dbi.withHandle(new HandleCallback<Object>()
-                        {
-                            public Object withHandle(Handle handle) throws Exception
-                            {
-                                handle.createStatement(STATEMENTS_LOCATION + ":insertType")
-                                    .bind("dep_type", type)
-                                    .bind("id", next)
-                                    .execute();
-                                return null;
-                            }
-                        });
-                    }
-				}
-				else {
-					typeMap.putIfAbsent(type, saved);
-				}
-			}
-			return typeMap.get(type);
-
-		}
-		catch(RuntimeException ruEx) {
-			throw new CollectorDAOException("RuntimeException:",ruEx);
-		}
-	}
-
-	private Integer getCachedPathID(final String path)
-			throws CollectorDAOException
-	{
-		try {
-
-			if (!pathMap.containsKey(path)) {
-
-				Integer saved = null;
-				saved = dbi.withHandle(new HandleCallback<Integer>()
-				{
-					public Integer withHandle(Handle handle) throws Exception
-					{
-						return handle.createQuery(STATEMENTS_LOCATION + ":getPathByName")
-								.bind("dep_path", path)
-								.map(IntegerMapper.FIRST).first();
-					}
-				});
-
-				if (saved == null) {
-                    final Integer next = getNextID();
-                    Integer old = pathMap.putIfAbsent(path, next);
-                    if (old == null && !readOnlyMode) {
-                        dbi.withHandle(new HandleCallback<Object>()
-                        {
-                            public Object withHandle(Handle handle) throws Exception
-                            {
-                                handle.createStatement(STATEMENTS_LOCATION + ":insertPath")
-                                        .bind("dep_path", path)
-                                        .bind("id", next)
-                                        .execute();
-                                return null;
-                            }
-                        });
-                    }
-				}
-				else {
-					pathMap.putIfAbsent(path, saved);
-				}
-			}
-			return pathMap.get(path);
-
-		}
-		catch(RuntimeException ruEx) {
-			throw new CollectorDAOException("RuntimeException:",ruEx);
-		}
-	}
-
-	private Integer getCachedEventTypeID(final String eventType)
-			throws CollectorDAOException
-	{
-		try {
-
-			if (!eventTypeMap.containsKey(eventType)) {
-
-				Integer saved = null;
-				saved = dbi.withHandle(new HandleCallback<Integer>()
-				{
-					public Integer withHandle(Handle handle) throws Exception
-					{
-						return handle.createQuery(STATEMENTS_LOCATION + ":getEventTypeByName")
-								.bind("event_type", eventType)
-								.map(IntegerMapper.FIRST).first();
-					}
-				});
-
-				if (saved == null) {
-                    final Integer next = getNextID();
-                    Integer old = eventTypeMap.putIfAbsent(eventType, next);
-                    if (old == null && !readOnlyMode) {
-                        dbi.withHandle(new HandleCallback<Object>()
-                        {
-                            public Object withHandle(Handle handle) throws Exception
-                            {
-                                handle.createStatement(STATEMENTS_LOCATION + ":insertEventType")
-                                        .bind("event_type", eventType)
-                                        .bind("event_type_id", next)
-                                        .execute();
-                                return null;
-                            }
-                        });
-                    }
-				}
-				else {
-					eventTypeMap.putIfAbsent(eventType, saved);
-				}
-			}
-			return eventTypeMap.get(eventType);
-		}
-		catch(RuntimeException ruEx) {
-			throw new CollectorDAOException("RuntimeException:",ruEx);
-		}
-	}
-
     private CachedHost getCachedHost(final MapEvent mapEvent)
             throws CollectorDAOException {
 
@@ -1163,72 +1032,6 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
 		CachedHost cachedHost = new CachedHost(me);
         return getCachedHost(cachedHost,me.getHostName());
-    }
-
-    private CachedHost getCachedHost(CachedHost cachedHost,final String hostName)
-            throws CollectorDAOException {
-
-        try {
-
-			if (!hostMap.containsKey(hostName)) {
-
-				CachedHost saved = null;
-				saved = dbi.withHandle(new HandleCallback<CachedHost>()
-				{
-					public CachedHost withHandle(Handle handle) throws Exception
-					{
-						return handle.createQuery(STATEMENTS_LOCATION + ":getHostByName")
-								.bind("host", hostName)
-								.map(new ResultSetMapper<CachedHost>()
-								{
-									public CachedHost map(int i, ResultSet rs, StatementContext statementContext) throws SQLException
-									{
-										return new CachedHost(rs);
-									}
-								}).first();
-					}
-				});
-
-				if (saved == null) {
-                    CachedHost old = hostMap.putIfAbsent(hostName, cachedHost);
-                    if (old == null) {
-                        cachedHost.insert();
-                        return cachedHost;
-                    }
-                    else {
-                        return old ;
-                    }
-				}
-				else {
-					hostMap.putIfAbsent(hostName, saved);
-					return saved ;
-				}
-			}
-			else {
-				CachedHost cached = hostMap.get(hostName);
-				cached.update(cachedHost);
-				return cached ;
-			}
-		}
-		catch(RuntimeException ruEx) {
-			throw new CollectorDAOException("RuntimeException:",ruEx);
-		}
-	}
-
-    private Integer getNextID()
-            throws CollectorDAOException {
-        try {
-            return dbi.withHandle(new HandleCallback<Integer>() {
-                public Integer withHandle(Handle handle) throws Exception {
-                    return handle.createQuery(STATEMENTS_LOCATION + ":nextId")
-                            .map(IntegerMapper.FIRST)
-                            .first();
-                }
-            });
-        }
-        catch (RuntimeException ruEx) {
-            throw new CollectorDAOException("RuntimeException:", ruEx);
-        }
     }
 
 	private void setMaxTs(EventTableDescriptor tableDescriptor,long ts)
@@ -1699,7 +1502,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         }
     }
 
-    private class CachedHost
+    protected class CachedHost
     {
         private final String host;
         private volatile String path, type, env, ver;
@@ -1733,33 +1536,6 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
             this.id = rs.getInt("id");
         }
 
-        public void insert()
-                throws CollectorDAOException
-        {
-            try {
-                if(readOnlyMode)
-                    return;
-
-                id = getNextID();
-                dbi.withHandle(new HandleCallback<Object>()
-                {
-                    public Object withHandle(Handle handle) throws Exception
-                    {
-                        handle.createStatement(STATEMENTS_LOCATION + ":insertHost")
-                                .bind("id", id)
-                                .bind("host", getHost())
-                                .bind("dep_type", getType())
-                                .bind("dep_path", getPath())
-                                .execute();
-                        return null;
-                    }
-                });
-            }
-            catch(RuntimeException ruEx) {
-                throw new CollectorDAOException("RuntimeException:",ruEx);
-            }
-        }
-
         public void update(CachedHost other)
                 throws CollectorDAOException
         {
@@ -1776,7 +1552,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         {
                             public Object withHandle(Handle handle) throws Exception
                             {
-                                handle.createStatement(STATEMENTS_LOCATION + ":updateHost")
+                                handle.createStatement(statementsLocation + ":updateHost")
                                         .bind("id", id)
                                         .bind("host", getHost())
                                         .bind("dep_type", getType())
@@ -1813,6 +1589,11 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
         public Integer getId() {
             return id;
+        }
+
+        public void setId(Integer id)
+        {
+            this.id = id;
         }
 
         public String getVer() {
