@@ -7,7 +7,7 @@ import com.ning.arecibo.collector.ResolutionTagGenerator;
 import com.ning.arecibo.collector.ResolutionUtils;
 import com.ning.arecibo.collector.config.CollectorConfig;
 import com.ning.arecibo.collector.contentstore.DbEntryUtil;
-import com.ning.arecibo.collector.guice.CollectorConstants;
+import com.ning.arecibo.collector.guice.CollectorModule;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.eventlogger.Event;
@@ -150,7 +150,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
 
     @Inject
-	public CollectorDAO(@Named(CollectorConstants.COLLECTOR_DB) IDBI dbi,
+	public CollectorDAO(@Named(CollectorModule.COLLECTOR_DB) IDBI dbi,
                         CollectorConfig config,
 	                    Registry registry,
 	                    ResolutionUtils resolutionUtils) throws RemoteException, AlreadyBoundException

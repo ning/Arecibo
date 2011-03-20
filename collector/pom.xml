@@ -12,6 +12,7 @@
   <artifactId>arecibo-collector</artifactId>
   <name>arecibo-collector</name>
   <version>1.0.0-SNAPSHOT</version>
+  <packaging>war</packaging>
   <dependencies>
     <dependency>
         <groupId>com.google.guava</groupId>
@@ -81,6 +82,10 @@
     <dependency>
       <groupId>com.espertech</groupId>
       <artifactId>esper</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-jaxrs</artifactId>
     </dependency>
     <dependency>
       <groupId>org.skife.config</groupId>

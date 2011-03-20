@@ -16,17 +16,21 @@
 
 package com.ning.arecibo.collector.guice;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.google.inject.servlet.ServletModule;
 import com.ning.arecibo.collector.config.CollectorConfig;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
+import com.ning.arecibo.collector.servlet.CollectorContainer;
 import com.ning.arecibo.event.receiver.RESTEventReceiverModule;
 import com.ning.arecibo.event.receiver.UDPEventReceiverModule;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIRegistryProvider;
-import org.apache.log4j.Logger;
+import com.sun.jersey.api.core.PackagesResourceConfig;
+import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.skife.config.ConfigurationObjectFactory;
 
 import javax.management.MBeanServer;
@@ -35,8 +39,6 @@ import java.rmi.registry.Registry;
 
 public class CollectorServerModule extends ServletModule
 {
-    private static final Logger log = Logger.getLogger(CollectorServerModule.class);
-
     @Override
     protected void configureServlets()
     {
@@ -45,11 +47,12 @@ public class CollectorServerModule extends ServletModule
             @Override
             public void configure(Binder binder)
             {
-
                 CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
                 binder.bind(CollectorConfig.class).toInstance(config);
 
                 install(new LifecycleModule());
+
+                bind(JacksonJsonProvider.class).asEagerSingleton();
 
                 // TODO: need to bind an implementation of ServiceLocator
 
@@ -62,11 +65,13 @@ public class CollectorServerModule extends ServletModule
                 binder.bindConstant().annotatedWith(Names.named("RMIRegistryPort")).to(config.getRmiPort());
 
                 install(new CollectorModule(config));
+
+                bind(GuiceContainer.class).to(CollectorContainer.class).asEagerSingleton();
             }
         });
 
-//        filter("/*").through(GuiceContainer.class, ImmutableMap.of(
-//            PackagesResourceConfig.PROPERTY_PACKAGES, "com.ning.arecibo.collector.endpoint"
-//        ));
+        filter("/*").through(CollectorContainer.class, ImmutableMap.of(
+            PackagesResourceConfig.PROPERTY_PACKAGES, "com.ning.arecibo.event.receiver"
+        ));
     }
 }

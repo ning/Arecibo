@@ -78,7 +78,7 @@ begin
     'alter table ' || p_table_name || ' split partition '|| p_partition_name ||' at ( timestamp '''|| l_split_ts || ''' ) '
     || ' into ( partition p_'|| l_partition_id ||' , partition PART_CURR )' ;
 end;
-/
+
 
 show errors for procedure split_and_sweep ;
 

@@ -9,7 +9,7 @@ public interface EventService
 	public String JETTY_PORT = "jetty.port" ;
 	public String UDP_PORT = "udp.port" ;
     public String RMI_PORT = "rmi.port" ;
-	public String API_PATH = "/xn/rest/1.0/event";
+	public String API_PATH = "/rest/1.0/event";
 
 	public String HEADER_EVENT_TYPE = "x-event-type";
 	public String HEADER_EVENT_KEY = "x-event-key";

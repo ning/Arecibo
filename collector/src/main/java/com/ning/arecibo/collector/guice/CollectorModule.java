@@ -7,7 +7,6 @@ import com.google.inject.name.Names;
 import com.ning.arecibo.collector.ResolutionUtils;
 import com.ning.arecibo.collector.config.CollectorConfig;
 import com.ning.arecibo.collector.dao.CollectorDAO;
-import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
@@ -16,8 +15,8 @@ import org.weakref.jmx.guice.MBeanModule;
 
 public class CollectorModule extends AbstractModule
 {
+    public final static String COLLECTOR_DB = "collector_db";
 
-    final static Logger log = Logger.getLogger(CollectorModule.class);
     private final CollectorConfig config;
 
     public CollectorModule(CollectorConfig config)
@@ -29,7 +28,7 @@ public class CollectorModule extends AbstractModule
     public void configure()
     {
         // set up db connection, with named statistics
-        final Named moduleName = Names.named(CollectorConstants.COLLECTOR_DB);
+        final Named moduleName = Names.named(COLLECTOR_DB);
 
         bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(
             config.getJdbcUrl(),
