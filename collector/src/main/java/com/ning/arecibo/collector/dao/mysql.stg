@@ -105,21 +105,21 @@ select
    (df.totalspace - fs.freespace)              "usedMB"
 from
    (select
-      tablespace_name,
-      round(sum(bytes) / 1048576) TotalSpace
+      table_schema,
+      round(sum(data_free) / 1048576) TotalSpace
    from
-      dba_data_files
+      information_schema.tables
    group by
-      tablespace_name
+      table_schema
    ) df,
    (select
-      tablespace_name,
-      round(sum(bytes) / 1048576) FreeSpace
+      table_schema,
+      round(sum(max_data_length) / 1048576) FreeSpace
    from
-      dba_free_space
+      information_schema.tables
    group by
-      tablespace_name
+      table_schema
    ) fs
-where df.tablespace_name = fs.tablespace_name
-  and fs.tablespace_name = :tablespace
+where df.table_schema = fs.table_schema
+  and fs.table_schema = :tablespace
 >>

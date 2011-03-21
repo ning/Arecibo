@@ -58,12 +58,6 @@ public class CollectorConfig
         return 10;
     }
 
-    @Config(value = "arecibo.events.collector.tablespace")
-    public String getTableSpaceName()
-    {
-        return "ARECIBO_SYSM_NOLOGGING";
-    }
-
     @Config(value = "arecibo.events.collector.service_name")
     public String getCollectorServiceName()
     {
@@ -182,6 +176,13 @@ public class CollectorConfig
     @Config(value = "arecibo.events.collector.db.password")
     public String getDBPassword()
     {
+        return "arecibo";
+    }
+
+    @Config(value = "arecibo.events.collector.tablespace")
+    public String getTableSpaceName()
+    {
+        // This is the schema for MySQL
         return "arecibo";
     }
 
