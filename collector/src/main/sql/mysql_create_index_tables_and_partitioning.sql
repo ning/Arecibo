@@ -48,37 +48,57 @@ CREATE TABLE GENERIC_EVENTS (
 )
 ;
 
+drop procedure split_and_sweep;
+DELIMITER //
 create procedure split_and_sweep
 (
-   p_table_name varchar2,
-   p_partition_name varchar2 DEFAULT 'PART_CURR',
+   p_table_name varchar(100),
+   p_partition_name varchar(100),
    p_ts timestamp,
-   p_keep integer DEFAULT 8
+   p_keep int
 )
-as
-   l_split_ts varchar(128);
-   l_partition_id varchar2(256) ;
-   cursor c (tablename varchar2, partitionname varchar2, to_keep integer) is
-      select * from (
+begin
+   declare tmp_table_name varchar(100);
+   declare tmp_partition_name varchar(100);
+   declare tmp_keep int;
+
+   declare l_split_ts varchar(128);
+   declare l_partition_id varchar(256);
+
+   declare v_notfound BOOL default FALSE;
+   declare c cursor for
+      select tablename, partitionname, to_keep from (
         select rownum rn, t.* from  (
           select table_name, partition_name from user_tab_partitions
-          where partition_name != partitionname
-            and table_name = tablename
+          where partition_name != partitionname and table_name = tablename
           order by table_name, substr(partition_name, 3) desc
         ) t
-      )
-      where rn > to_keep ;
-begin
-   select to_char(trunc(p_ts, 'MI'), 'YYYY-MM-DD hh24:mi:ss' ) into l_split_ts from dual ;
-   select to_char(trunc(p_ts, 'MI'), 'YYMMDDhh24mi' ) into l_partition_id from dual ;
-   for r in c (p_table_name, p_partition_name, p_keep) loop
-      execute immediate 'alter table ' || r.table_name || ' drop partition ' || r.partition_name ;
-   end loop ;
-   execute immediate
-    'alter table ' || p_table_name || ' split partition '|| p_partition_name ||' at ( timestamp '''|| l_split_ts || ''' ) '
-    || ' into ( partition p_'|| l_partition_id ||' , partition PART_CURR )' ;
-end;
+      ) x
+      where rn > to_keep;
+   declare continue handler for not found set v_notfound := TRUE;
 
+   select to_char(trunc(p_ts, 'MI'), 'YYYY-MM-DD hh24:mi:ss') into l_split_ts from dual;
+   select to_char(trunc(p_ts, 'MI'), 'YYMMDDhh24mi') into l_partition_id from dual;
+
+
+   open c;
+   cursor_loop: loop
+      fetch c into tmp_table_name, tmp_partition_name, tmp_keep;
+      if v_not_found then leave cursor_loop; end if;
+      set @alter_stmt = concat('alter table ', tmp_table_name, ' drop partition ', tmp_partition_name);
+      prepare alter_stmt from @alter_stmt;
+      execute alter_stmt;
+      deallocate prepare alter_stmt;
+   end loop;
+   close c;
+
+   set @alter_stmt = concat('alter table ', p_table_name, ' split partition ', p_partition_name,
+   ' at ( timestamp ''', l_split_ts, ''' ) ', ' into ( partition p_', l_partition_id, ' , partition PART_CURR )');
+   prepare alter_stmt from @alter_stmt;
+   execute alter_stmt;
+   deallocate prepare alter_stmt;
+end;
+//
 
 show errors for procedure split_and_sweep ;
 
