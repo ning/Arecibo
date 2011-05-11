@@ -26,7 +26,7 @@
       <groupId>com.google.code.guice</groupId>
       <artifactId>guice</artifactId>
       <optional>true</optional>
-    </dependency>  
+    </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
@@ -93,9 +93,14 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>com.jolbox</groupId> 
-      <artifactId>bonecp</artifactId> 
+      <groupId>com.jolbox</groupId>
+      <artifactId>bonecp</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>1.6</version>
     </dependency>
   </dependencies>
 </project>
