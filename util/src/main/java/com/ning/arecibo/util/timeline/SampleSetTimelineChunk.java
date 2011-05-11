@@ -55,9 +55,13 @@ public class SampleSetTimelineChunk {
     public void addHostSamples(final HostSamplesForTimestamp samples) {
         // You can only add samples at the end of a timeline;
         // If sample time is not >= endtime, log a warning
+        // TODO: Figure out if this constraint is realistic, or if
+        // we need a reordering pipeline to eliminate the constraint.
+        // The reasoning is that these samples only apply to this host,
+        // so we shouldn't get essentially simultaneous adds
         final DateTime timestamp = samples.getTimestamp();
         if (timestamp.isBefore(endTime)) {
-            log.warn("Adding samples for host %s, timestamp %s is earlier than the end time %s",
+            log.warn("Adding samples for host %s, timestamp %s is earlier than the end time %s; ignored",
                     hostName, dateFormatter.print(timestamp), dateFormatter.print(endTime));
             return;
         }
@@ -76,12 +80,14 @@ public class SampleSetTimelineChunk {
             }
             timeline.addSample(sample);
         }
-        // Now make sure to advance the kinds we haven't added samples to
+        // Now make sure to advance the timelines we haven't added samples to,
+        // since the samples for a given sample kind can come and go
         for (String sampleKind : currentKinds) {
             final SampleTimelineChunk timeline = timelines.get(sampleKind);
             timeline.addSample(nullSample);
         }
-        // Now we can
+        // Now we can update the state
+        endTime = timestamp;
         sampleCount++;
 
         if (checkEveryAccess) {
