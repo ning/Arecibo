@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
 
 import org.mortbay.jetty.Server;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.guice.MBeanModule;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -150,10 +152,12 @@ public class CoreMonitoringAgent
 	public static void main(String[] args)
 	{
 		Injector injector = Guice.createInjector(Stage.PRODUCTION, 
+		                                         new MBeanModule(),
 		                                         new AbstractModule() {
                                                      @Override
                                                      protected void configure() {
                                                          bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
+                                                         bind(MBeanExporter.class).toInstance(MBeanExporter.withPlatformMBeanServer());
                                                          bind(StatusPageHandler.class).asEagerSingleton();
                                                          // TODO: the embedded jetty below is configured with the default servlet
                                                          //       but it might not serve them from /static, maybe need to tweak it

@@ -1,9 +1,7 @@
 package com.ning.arecibo.agent.guice;
 
-import java.lang.management.ManagementFactory;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import javax.management.MBeanServer;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
@@ -73,7 +71,6 @@ public class AgentModule extends AbstractModule
         bind(JMXConfigIteratorFactory.class).asEagerSingleton();
         bind(SNMPConfigIteratorFactory.class).asEagerSingleton();
         bind(ConfigFileUtils.class).asEagerSingleton();
-        bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
         bind(AgentDataCollectorManager.class).asEagerSingleton();
 
         ExportBuilder builder = MBeanModule.newExporter(binder());

@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.Managed;
 import com.google.inject.Inject;
 import com.ning.arecibo.event.transport.EventService;
@@ -41,7 +40,7 @@ public class AreciboEventServiceChooser implements EventServiceChooser
     public AreciboEventServiceChooser(ServiceLocator serviceLocator,
                                       @ConsistentHashingSelector Selector selector,
                                       ConsistentHashingServiceChooser magic,
-                                      MBeanExporter exporter,
+                                      JMXCronTaskMaster cronTaskMaster,
                                       @EventSenderType String senderType,
                                       AsyncHttpClient httpClient) throws IOException
     {
@@ -52,10 +51,9 @@ public class AreciboEventServiceChooser implements EventServiceChooser
         this.udpClient = new EventServiceUDPClient(new JavaEventSerializer(), senderType);
         this.magic = magic;
 
-        JMXCronTaskMaster master = new JMXCronTaskMaster(Executors.newScheduledThreadPool(1), exporter);
         long jobInterval = Long.getLong("xn.event.chooser.invalidateCacheIntervalInMinutes", 60L);
 
-        CronJob job = master.exportNewFixedDelayCronJob(Math.abs(jobInterval), TimeUnit.MINUTES, "ning.realtime:type=EventServiceChooser,name=CacheRecycler", new Runnable()
+        CronJob job = cronTaskMaster.exportNewFixedDelayCronJob(Math.abs(jobInterval), TimeUnit.MINUTES, "ning.realtime:type=EventServiceChooser,name=CacheRecycler", new Runnable()
         {
             public void run()
             {

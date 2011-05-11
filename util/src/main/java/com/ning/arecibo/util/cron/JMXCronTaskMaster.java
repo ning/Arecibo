@@ -24,7 +24,7 @@ public class JMXCronTaskMaster
     private final MBeanExporter exporter;
 
     @Inject
-    public JMXCronTaskMaster(ScheduledExecutorService executorService,
+    public JMXCronTaskMaster(@JMXCronScheduler ScheduledExecutorService executorService,
                              MBeanExporter exporter)
     {
         this.executorService = executorService;
