@@ -1,9 +1,11 @@
 
 create table host (
    id int not null auto_increment,
-   host varchar(32) not null,
+   host_name varchar(32) not null,
+   created_dt int not null,
    primary key(id),
-   key idx_host(host)
+   key idx_host(host),
+   key idx_created_dt_host(created_dt, host, id)
 )
 ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

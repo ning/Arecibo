@@ -1,139 +1,116 @@
 package com.ning.arecibo.util.timeline;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
+import com.ning.arecibo.util.Logger;
 
 /**
  * This class represents a sequence of values for a single attribute,
- * e.g., "TP99 Response Time", for one host and one specific time range
+ * e.g., "TP99 Response Time", for one host and one specific time range.
+ * <p>
+ * It accumulates samples in a byte array object
  */
 public class SampleTimelineChunk {
+    private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
+    private static final int DEFAULT_CHUNK_BYTE_ARRAY_SIZE = 300;
 
     // TODO: the HostTimeLines member isn't referenced here.
     // Figure out if we really need the backpointer.
     private final SampleSetTimelineChunk timelines;
     private final String sampleKind;
-    private final List<SampleBase> samples;
+    private final ByteArrayOutputStream byteStream;
+    /**
+     * Any operation that writes to the outputStream must synchronize on it!
+     */
+    private final DataOutputStream outputStream;
 
     private int sampleCount;
+    private SampleBase lastSample;
 
     public SampleTimelineChunk(SampleSetTimelineChunk timelines, String sampleKind) {
         this.timelines = timelines;
         this.sampleKind = sampleKind;
-        this.samples = new ArrayList<SampleBase>();
+        this.byteStream = new ByteArrayOutputStream(DEFAULT_CHUNK_BYTE_ARRAY_SIZE);
+        this.outputStream = new DataOutputStream(byteStream);
+        lastSample = null;
         this.sampleCount = 0;
     }
 
     @SuppressWarnings("unchecked")
-    public void addPlaceholder(final byte repeatCount) {
+    public synchronized void addPlaceholder(final byte repeatCount) {
         if (repeatCount > 0) {
-            samples.add(new RepeatedSample(repeatCount, new NullSample()));
+            addLastSample();
+            lastSample = new RepeatedSample(repeatCount, new NullSample());
             sampleCount += repeatCount;
         }
     }
 
+    /**
+     * The log scanner can safely call this method, and will always end in a complete sample
+     * @return
+     */
+    public synchronized EncodedBytesAndSampleCount getEncodedSamples() {
+        if (lastSample != null) {
+            SampleCoder.encodeSample(outputStream, lastSample);
+        }
+        try {
+            outputStream.flush();
+            return new EncodedBytesAndSampleCount(byteStream.toByteArray(), sampleCount);
+        }
+        catch (IOException e) {
+            log.error(e, "In getEncodedSamples, IOException flushing outputStream");
+            // Do no harm - - this at least won't corrupt the encoding
+            return new EncodedBytesAndSampleCount(new byte[0], 0);
+        }
+    }
+
+    private synchronized void addLastSample() {
+        if (lastSample != null) {
+            SampleCoder.encodeSample(outputStream, lastSample);
+            lastSample = null;
+        }
+    }
+
     @SuppressWarnings("unchecked")
-    public void addSample(final SampleBase sample) {
-        final int size = samples.size();
-        if (size == 0) {
-            samples.add(sample);
+    public synchronized void addSample(final ScalarSample sample) {
+        if (lastSample == null) {
+            lastSample = sample;
         }
         else {
-            // Get the previous sample
-            final SampleBase previous = samples.get(size - 1);
-            final SampleOpcode previousOpcode = previous.getOpcode();
+            final SampleOpcode lastOpcode = lastSample.getOpcode();
             final SampleOpcode sampleOpcode = sample.getOpcode();
-            RepeatedSample r;
-            if (previousOpcode == SampleOpcode.REPEAT &&
-                (r = (RepeatedSample)previous).getSample().getOpcode() == sampleOpcode &&
-                (sampleOpcode == SampleOpcode.NULL || r.equals(sample)) &&
-                r.getRepeatCount() < RepeatedSample.MAX_REPEAT_COUNT) {
-                // We can just increment the count in the repeat instance
-                r.incrementRepeatCount();
-            }
-            else if (sampleOpcode == previousOpcode && sample.equals(previous)) {
-                // Replace the current ScalarSample at the end of the list with a REPEAT group.
-                samples.set(size - 1, new RepeatedSample((byte)2, sample));
+            if (lastOpcode == SampleOpcode.REPEAT) {
+                final RepeatedSample r = (RepeatedSample)lastSample;
+                if (r.getSample().getOpcode() == sampleOpcode &&
+                        (sampleOpcode == SampleOpcode.NULL || r.equals(sample)) &&
+                        r.getRepeatCount() < RepeatedSample.MAX_REPEAT_COUNT) {
+                    // We can just increment the count in the repeat instance
+                    r.incrementRepeatCount();
+                }
+                else {
+                    // A non-matching repeat - - just add it
+                    addLastSample();
+                    lastSample = sample;
+                }
             }
             else {
-                // None of the repeat optimizations work - - just add the item
-                samples.add(sample);
+                final ScalarSample lastScalarSample = (ScalarSample)lastSample;
+                if (sampleOpcode == lastOpcode &&
+                    ((sampleOpcode == SampleOpcode.NULL) || sample.getSampleValue().equals(lastScalarSample.getSampleValue()))) {
+                    // Replace lastSample with repeat group
+                    lastSample = new RepeatedSample((byte)2, lastScalarSample);
+                }
+                else {
+                    addLastSample();
+                    lastSample = sample;
+                }
             }
         }
         // In all cases, we got 1 more sample
         sampleCount++;
     }
-
-    /**
-     * This method converts the timeline into binary form, which
-     * is the form saved in the db and scanned when read from the db.
-     * @return a byte array containing the encoded representation of the time interval samples
-     */
-    @SuppressWarnings("unchecked")
-    public byte[] encode() throws IOException {
-        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        final DataOutputStream outputStream = new DataOutputStream(byteStream);
-        for (SampleBase sample : samples) {
-            // First put out the opcode value
-            final SampleOpcode opcode = sample.getOpcode();
-            RepeatedSample r;
-            switch (opcode) {
-            case REPEAT:
-                outputStream.write(opcode.getOpcodeIndex());
-                r = (RepeatedSample)sample;
-                outputStream.write(r.getRepeatCount());
-            case NULL:
-                break;
-            default:
-                opcode.encodeScalarSample(outputStream, (ScalarSample)sample);
-            }
-        }
-        outputStream.flush();
-        return byteStream.toByteArray();
-    }
-
-    /**
-     * This invoke the processor on the values in the timeline bytes.
-     * @param bytes the byte representation of a timeline
-     * @param processor the callback to which values value counts are passed to be processed.
-     * @throws IOException
-     */
-    public static void scan(final byte[] bytes, final TimelineTimestamps timestamps, final SampleProcessor processor) throws IOException{
-        final ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
-        final DataInputStream inputStream = new DataInputStream(byteStream);
-        int sampleCount = 0;
-        while (true) {
-            byte opcodeByte;
-            try {
-                opcodeByte = inputStream.readByte();
-            }
-            catch (EOFException e) {
-                return;
-            }
-            final SampleOpcode opcode = SampleOpcode.getOpcodeFromIndex(opcodeByte);
-            switch(opcode) {
-            case REPEAT:
-                final byte repeatCount = inputStream.readByte();
-                final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.readByte());
-                final Object value = repeatedOpcode.decodeScalarSample(inputStream);
-                processor.processSamples(timestamps, sampleCount, repeatCount, opcode, value);
-                sampleCount += repeatCount;
-                break;
-            default:
-                processor.processSamples(timestamps, sampleCount, 1, opcode, opcode.decodeScalarSample(inputStream));
-                sampleCount += 1;
-                break;
-            }
-        }
-    }
-
-
 
     public SampleSetTimelineChunk getTimelines() {
         return timelines;
@@ -143,7 +120,7 @@ public class SampleTimelineChunk {
         return sampleKind;
     }
 
-    public int getSampleCount() {
+    public synchronized int getSampleCount() {
         return sampleCount;
     }
 }
