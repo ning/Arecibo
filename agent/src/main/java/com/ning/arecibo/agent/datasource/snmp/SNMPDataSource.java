@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.snmp.SNMPConfig;
 import com.ning.arecibo.agent.datasource.DataSource;
@@ -21,7 +22,7 @@ public final class SNMPDataSource implements DataSource
 	private final String host;
 	private final int port;
 	private final String community;
-	private final int timeout;
+	private final TimeSpan timeout;
 	private final String snmpCompiledMibDir;
 	private final HashMap<String,SortedMap<Integer,Object>> cachedTableColumns;
 	
@@ -31,7 +32,7 @@ public final class SNMPDataSource implements DataSource
 	private volatile Map<String,String> configHashKeyMap;
 	private volatile String[] oidArray;
 	
-	public SNMPDataSource(Config config, int timeout, String snmpCompiledMibDir)
+	public SNMPDataSource(Config config, TimeSpan timeout, String snmpCompiledMibDir)
         throws DataSourceException
 	{
         if(!(config instanceof SNMPConfig)) {

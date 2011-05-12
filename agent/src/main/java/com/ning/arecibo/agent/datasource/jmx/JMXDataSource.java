@@ -23,7 +23,6 @@ public class JMXDataSource implements DataSource
 
 	protected final String host;
 	protected final int port;
-	protected final int connectionTimeout;
 	protected final JMXClientCache jmxClientCache;
     protected final JMXParserManager JMXParserManager;
 	protected volatile String jmxClientCacheKey;
@@ -35,7 +34,7 @@ public class JMXDataSource implements DataSource
 	protected volatile Map<String,String> configHashKeyMap;
 
 
-    public JMXDataSource(Config config, int connectionTimeout, JMXClientCache jmxClientCache, JMXParserManager JMXParserManager) throws DataSourceException
+    public JMXDataSource(Config config, JMXClientCache jmxClientCache, JMXParserManager JMXParserManager) throws DataSourceException
 	{
         if(!(config instanceof JMXConfig)) {
             throw new DataSourceException("JMXDataSource must be initialized with an instance of JMXConfig");
@@ -46,7 +45,6 @@ public class JMXDataSource implements DataSource
 		this.host = jmxConfig.getHost();
 		this.port = jmxConfig.getPort();
 		this.objectName = jmxConfig.getObjectName();
-		this.connectionTimeout = connectionTimeout;
 		this.jmxClientCache = jmxClientCache;
         this.JMXParserManager = JMXParserManager;
 		this.jmxClientCacheKey = null;
@@ -59,7 +57,7 @@ public class JMXDataSource implements DataSource
 	{
 		closeResources();
 		try {
-			Pair<String,JMXClient> cachePair = jmxClientCache.acquireClient(this.host,this.port,this.connectionTimeout);
+			Pair<String,JMXClient> cachePair = jmxClientCache.acquireClient(this.host, this.port);
 			this.jmxClientCacheKey = cachePair.getFirst();
 			this.jmxClient = cachePair.getSecond();
 			

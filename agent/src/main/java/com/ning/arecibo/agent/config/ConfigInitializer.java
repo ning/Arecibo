@@ -10,9 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import com.google.inject.Inject;
 import com.ning.arecibo.agent.config.jmx.JMXMonitoringProfilePoller;
-import com.ning.arecibo.agent.guice.ConfigInitTypeParam;
+import com.ning.arecibo.agent.guice.AgentConfig;
 import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
-import com.ning.arecibo.agent.guice.GuicePropsForExplicitMode;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.galaxy.GalaxyCorePicker;
 
@@ -20,24 +19,21 @@ public class ConfigInitializer
 {
 	private static final Logger log = Logger.getLogger(ConfigInitializer.class);
 
-	private final ConfigInitType configInitType;
+	private final AgentConfig agentConfig;
 	private final GuiceDefaultsForDataSources guiceDefaultsForDataSources;
-	private final GuicePropsForExplicitMode guicePropsForExplicitMode ;
 	private final GalaxyCorePicker galaxyCorePicker;
     private final ConfigFileUtils configFileUtils;
 
     @Inject
-	public ConfigInitializer(@ConfigInitTypeParam ConfigInitType configInitType,
-							GalaxyCorePicker galaxyCorePicker,
-                            ConfigFileUtils configFileUtils,
-							GuiceDefaultsForDataSources guiceDefaultsForDataSources,
-							GuicePropsForExplicitMode guicePropsForExplicitMode)
+	public ConfigInitializer(AgentConfig agentConfig,
+							 GalaxyCorePicker galaxyCorePicker,
+                             ConfigFileUtils configFileUtils,
+							 GuiceDefaultsForDataSources guiceDefaultsForDataSources)
 	{
-		this.configInitType = configInitType;
+        this.agentConfig = agentConfig;
 		this.galaxyCorePicker = galaxyCorePicker;
         this.configFileUtils = configFileUtils;
 		this.guiceDefaultsForDataSources = guiceDefaultsForDataSources;
-		this.guicePropsForExplicitMode = guicePropsForExplicitMode;
 	}
 
 	private ConfigReader getConfigViaExplicitParams() throws ConfigException
@@ -50,21 +46,17 @@ public class ConfigInitializer
 		//  Thus if there is only one config file name, but 10 hostnames, then the same config file will be applied to all 10 hosts, etc.
 		//  (Note it's a bit inefficient therefore, as it will repeatedly open and close the same input file)...
 		//
-	    
-	    List<String> configFileList = guicePropsForExplicitMode.getExplicitConfigFileList();
-	    List<String> hostList = guicePropsForExplicitMode.getExplicitHostList();
-	    List<String> pathList = guicePropsForExplicitMode.getExplicitPathList();
-	    List<String> typeList = guicePropsForExplicitMode.getExplicitTypeList();
-	    
-	    if(hostList == null || typeList == null || pathList == null) {
+	    if (agentConfig.getExplicitConfigFiles().isEmpty() ||
+            agentConfig.getExplicitTypes().isEmpty() ||
+            agentConfig.getExplicitPaths().isEmpty()) {
 	        log.debug("Could not configure via explicit params, must have non-null params for hostList, typeList and pathList");
 	        return null;
 	    }
 	
-	    Iterator<String> configFileIter = configFileList.iterator();
-	    Iterator<String> hostIter = hostList.iterator();
-	    Iterator<String> pathIter = pathList.iterator();
-	    Iterator<String> typeIter = typeList.iterator();
+	    Iterator<String> configFileIter = agentConfig.getExplicitConfigFiles().iterator();
+	    Iterator<String> hostIter = agentConfig.getExplicitHosts().iterator();
+	    Iterator<String> pathIter = agentConfig.getExplicitPaths().iterator();
+	    Iterator<String> typeIter = agentConfig.getExplicitTypes().iterator();
 	    
 	    String configFile = null;
 	    String host = null;
@@ -140,14 +132,16 @@ public class ConfigInitializer
 
 		ConfigReader configReader = null;
 
-		if (configInitType == ConfigInitType.CONFIG_BY_EXPLICIT_PARAMS) {
-			configReader = getConfigViaExplicitParams();
-		}
-		else if(configInitType == ConfigInitType.CONFIG_BY_CORE_TYPE_VIA_GALAXY_OUTPUT) {
-			configReader = getConfigViaGalaxyAndCoreTypeConfig();
-		}
-		else if(configInitType == ConfigInitType.CONFIG_BY_DISCOVERY_VIA_GALAXY_OUTPUT) {
-			configReader = getConfigViaGalaxyAndDiscovery();
+		switch (agentConfig.getConfigInitTypeParam()) {
+		    case CONFIG_BY_EXPLICIT_PARAMS:
+		        configReader = getConfigViaExplicitParams();
+		        break;
+		    case CONFIG_BY_CORE_TYPE_VIA_GALAXY_OUTPUT:
+		        configReader = getConfigViaGalaxyAndCoreTypeConfig();
+		        break;
+		    case CONFIG_BY_DISCOVERY_VIA_GALAXY_OUTPUT:
+		        configReader = getConfigViaGalaxyAndDiscovery();
+		        break;
 		}
 
 		List<Config> configList = null;

@@ -17,6 +17,7 @@ import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.service.ServiceNotAvailableException;
+import com.ning.arecibo.util.service.ServiceSelector;
 
 public class AggregatorServiceImpl extends UnicastRemoteObject implements RemoteAggregatorService
 {
@@ -36,12 +37,7 @@ public class AggregatorServiceImpl extends UnicastRemoteObject implements Remote
 		this.serviceLocator = serviceLocator;
 		this.registry = registry;
         this.eventServiceName = eventServiceName;
-		this.selector = new Selector() {
-			public boolean match(ServiceDescriptor sd)
-			{
-				return sd.getName().equals(eventServiceName);
-			}
-		};
+		this.selector = new ServiceSelector(eventServiceName);
     }
 
     public void register(final Aggregator agg,final long leaseTime,final TimeUnit leaseTimeUnit) throws RemoteException

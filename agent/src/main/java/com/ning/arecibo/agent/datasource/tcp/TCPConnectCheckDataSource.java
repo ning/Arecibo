@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.InetSocketAddress;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.tcp.TCPConnectCheckConfig;
@@ -34,11 +35,11 @@ public class TCPConnectCheckDataSource implements DataSource {
 
     private final String host;
     private final int port;
-    private final long timeout;
+    private final TimeSpan timeout;
 
     private final Map<String, String> configHashKeyMap;
 
-    public TCPConnectCheckDataSource(Config config, int timeout)
+    public TCPConnectCheckDataSource(Config config, TimeSpan timeout)
         throws DataSourceException {
 
         if(!(config instanceof TCPConnectCheckConfig)) {
@@ -48,9 +49,7 @@ public class TCPConnectCheckDataSource implements DataSource {
 
         this.host = config.getHost();
         this.port = tcpConnectCheckConfig.getPort();
-
-        // convert to ms from secs
-        this.timeout = 1000L * (long)timeout;
+        this.timeout = timeout;
 
         this.configHashKeyMap = new HashMap<String,String>();
     }
@@ -118,7 +117,7 @@ public class TCPConnectCheckDataSource implements DataSource {
             SocketAddress sockAddr = new InetSocketAddress(host,port);
 
             sock = new Socket();
-            sock.connect(sockAddr,(int)timeout);
+            sock.connect(sockAddr, (int)timeout.getMillis());
 
             values.put(configHashKeyMap.get(CONNECT_CHECK_RESULT), SUCCESSFUL_CONNECT_RESULT);
             values.put(configHashKeyMap.get(CONNECT_TEST_MESSAGE), SUCCESSFUL_CONNECT_MESSAGE);

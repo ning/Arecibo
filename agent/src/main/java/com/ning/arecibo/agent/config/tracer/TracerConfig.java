@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.ConfigType;
@@ -23,7 +24,8 @@ public final class TracerConfig extends Config
                 (String) optionsMap.get(Config.EVENT_ATTRIBUTE_TYPE),
                 Config.getMonitoringTypesFromObjectList((List) optionsMap.get(Config.MONITORING_TYPES)),
                 optionsMap.get(Config.POLLING_INTERVAL_SECS) != null?
-                        Integer.parseInt(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) : guiceDefaults.getDefaultPollingIntervalSeconds(),
+                        new TimeSpan(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) :
+                        guiceDefaults.getDefaultPollingInterval(),
                 host,
                 fullConfigPath,
                 deployedType);

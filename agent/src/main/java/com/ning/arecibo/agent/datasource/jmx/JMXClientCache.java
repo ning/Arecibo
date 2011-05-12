@@ -22,11 +22,11 @@ public class JMXClientCache {
 		generationCount = new AtomicLong(0L);
 	}
 	
-	public synchronized Pair<String,JMXClient> acquireClient(String host,int port,int connectionTimeout)
+	public synchronized Pair<String,JMXClient> acquireClient(String host, int port)
 			throws DataSourceException
 	{
 		
-		String baseHashKey = getBaseHashKey(host,port,connectionTimeout);
+		String baseHashKey = getBaseHashKey(host, port);
 		_CachedClientWrapper clientWrapper = jmxClientCache.get(baseHashKey);
 		
 		if(clientWrapper != null) {
@@ -39,7 +39,7 @@ public class JMXClientCache {
 		}
 		else {
 			// create a new one
-			JMXClient jmxClient = connectToJMX(host,port,connectionTimeout);	
+			JMXClient jmxClient = connectToJMX(host, port);	
 		
 			clientWrapper = new _CachedClientWrapper(jmxClient,generationCount.incrementAndGet());
 			clientWrapper.addReference();
@@ -93,8 +93,8 @@ public class JMXClientCache {
 			return null;
 	}
 	
-	private String getBaseHashKey(String host,int port,int connectionTimeout) {
-		return host + baseHashKeyDelimiter + port + baseHashKeyDelimiter + connectionTimeout;
+	private String getBaseHashKey(String host, int port) {
+		return host + baseHashKeyDelimiter + port + baseHashKeyDelimiter;
 	}
 	
 	private String getFullHashKey(String baseHashKey,long count) {
@@ -109,19 +109,15 @@ public class JMXClientCache {
 		return retPair;
 	}
 	
-	private JMXClient connectToJMX(String host, int port, int connectionTimeout)
+	private JMXClient connectToJMX(String host, int port)
 		throws DataSourceException
 	{
 		JMXClient jmxClient;
 		String hostAndPort = host + ":" + port;
 		
 		try {
-            /*
-            ** no longer use the JMXClient's built in timeout facility (it can leak threads)
-            ** now use the system property to set the rmi connection timeout
-			** //jmxClient = new JMXClient(hostAndPort, connectionTimeout, TimeUnit.SECONDS);
-			**
-            */
+            // we no longer use the JMXClient's built in timeout facility (it can leak threads)
+            // now use the system property to set the rmi connection timeout
             jmxClient = new JMXClient(hostAndPort);
 			log.info("Connected to JMX host and port:  '%s'", hostAndPort);
 		}

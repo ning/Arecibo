@@ -11,7 +11,6 @@ import com.ning.arecibo.agent.datasource.DataSourceException;
 import com.ning.arecibo.agent.datasource.jmx.JMXClient;
 import com.ning.arecibo.agent.datasource.jmx.JMXClientCache;
 import com.ning.arecibo.agent.datasource.jmx.MonitoredMBean;
-import com.ning.arecibo.agent.guice.ConnectionTimeout;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.Pair;
 
@@ -21,15 +20,11 @@ public final class JMXDynamicUtils
 
     public final static String wildCardDelim = "*";
 	
-	private final int connectionTimeout;
 	private final JMXClientCache jmxClientCache;
 	private Stack<String> jmxClientCacheKeys = null;
 	
 	@Inject
-	public JMXDynamicUtils(@ConnectionTimeout int connectionTimeout,
-							JMXClientCache jmxClientCache) {
-		
-		this.connectionTimeout = connectionTimeout;
+	public JMXDynamicUtils(JMXClientCache jmxClientCache) {
 		this.jmxClientCache = jmxClientCache;
 	}
 	
@@ -177,7 +172,7 @@ public final class JMXDynamicUtils
 		JMXClient jmxClient = null;
 		
 		try {
-			Pair<String,JMXClient> cachePair = jmxClientCache.acquireClient(config.getHost(), config.getPort(), connectionTimeout);
+			Pair<String,JMXClient> cachePair = jmxClientCache.acquireClient(config.getHost(), config.getPort());
 			
 			jmxClientCacheKey = cachePair.getFirst();
 			jmxClient = cachePair.getSecond();
@@ -244,7 +239,7 @@ public final class JMXDynamicUtils
 		JMXClient jmxClient = null;
 		
 		try {
-			Pair<String,JMXClient> cachePair = jmxClientCache.acquireClient(config.getHost(), config.getPort(), connectionTimeout);
+			Pair<String,JMXClient> cachePair = jmxClientCache.acquireClient(config.getHost(), config.getPort());
 			
 			jmxClientCacheKey = cachePair.getFirst();
 			jmxClient = cachePair.getSecond();

@@ -1,6 +1,7 @@
 package com.ning.arecibo.agent.config.tcp;
 
 import java.util.Map;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.ConfigType;
@@ -13,13 +14,18 @@ public class TCPConnectCheckConfig extends Config {
 
     protected final int port;
 
-    public TCPConnectCheckConfig(String host, String fullConfigPath, String deployedType, GuiceDefaultsForDataSources guiceDefaults,Map<String,Object> optionsMap) throws ConfigException {
+    public TCPConnectCheckConfig(String host,
+                                 String fullConfigPath,
+                                 String deployedType,
+                                 GuiceDefaultsForDataSources guiceDefaults,
+                                 Map<String,Object> optionsMap) throws ConfigException {
 
         super((String) optionsMap.get(Config.EVENT_TYPE),
                 Config.EVENT_ATTRIBUTE_TYPE_VIRTUAL,
                 null,
                 optionsMap.get(Config.POLLING_INTERVAL_SECS) != null?
-                        Integer.parseInt(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) : guiceDefaults.getDefaultPollingIntervalSeconds(),
+                        new TimeSpan(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) :
+                        guiceDefaults.getDefaultPollingInterval(),
                 host,
                 fullConfigPath,
                 deployedType);

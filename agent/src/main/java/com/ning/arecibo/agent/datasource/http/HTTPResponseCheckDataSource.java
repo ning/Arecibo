@@ -11,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLDecoder;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.http.HTTPResponseCheckConfig;
@@ -49,7 +50,7 @@ public class HTTPResponseCheckDataSource implements DataSource {
 
     private final String host;
     private final int port;
-    private final int timeout;
+    private final TimeSpan timeout;
     private final String httpUserAgentString;
     private final String httpProxyHost;
     private final int httpProxyPort;
@@ -66,7 +67,7 @@ public class HTTPResponseCheckDataSource implements DataSource {
 
     private volatile AsyncHttpClient httpClient = null;
 
-    public HTTPResponseCheckDataSource(Config config, int timeout, String httpUserAgentString, String httpProxyHost, int httpProxyPort)
+    public HTTPResponseCheckDataSource(Config config, TimeSpan timeout, String httpUserAgentString, String httpProxyHost, int httpProxyPort)
         throws DataSourceException {
 
         if(!(config instanceof HTTPResponseCheckConfig)) {
@@ -76,9 +77,7 @@ public class HTTPResponseCheckDataSource implements DataSource {
 
         this.host = config.getHost();
         this.port = httpResponseCheckConfig.getPort();
-
-        // convert to ms from secs
-        this.timeout = 1000 * timeout;
+        this.timeout = timeout;
 
         this.httpUserAgentString = httpUserAgentString;
         this.httpProxyHost = httpProxyHost;
@@ -99,9 +98,9 @@ public class HTTPResponseCheckDataSource implements DataSource {
     public void initialize() throws DataSourceException {
         Builder builder = new AsyncHttpClientConfig.Builder();
 
-        builder.setConnectionTimeoutInMs(timeout)
-            .setRequestTimeoutInMs(timeout)
-            .setUserAgent(httpUserAgentString);
+        builder.setConnectionTimeoutInMs((int)timeout.getMillis())
+               .setRequestTimeoutInMs((int)timeout.getMillis())
+               .setUserAgent(httpUserAgentString);
         // followRedirects doesn't play nice with proxy's, logic handled below instead
         //builder.setFollowRedirects(followRedirectsFlag);
         if (httpProxyHost != null && httpProxyHost.length() > 0) {

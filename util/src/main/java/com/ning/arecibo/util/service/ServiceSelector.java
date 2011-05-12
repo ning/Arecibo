@@ -1,4 +1,4 @@
-package com.ning.arecibo.lang;
+package com.ning.arecibo.util.service;
 
 import java.io.Serializable;
 

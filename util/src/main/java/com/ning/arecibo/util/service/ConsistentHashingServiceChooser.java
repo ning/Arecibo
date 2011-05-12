@@ -14,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.codec.binary.Hex;
+import com.google.inject.Inject;
 import com.ning.arecibo.util.NamedThreadFactory;
 
 /**
@@ -37,6 +38,7 @@ public class ConsistentHashingServiceChooser implements ServiceListener, Service
      * @param virtualNodes number of virtual nodes in addition to the node itself
      * @param selector the selector to decide what services the ConsistentHashingServiceChooser is selecting over
      */
+    @Inject
     public ConsistentHashingServiceChooser(ServiceLocator serviceLocator,
                                            @VirtualNodes int virtualNodes,
                                            @ConsistentHashingSelector Selector selector)

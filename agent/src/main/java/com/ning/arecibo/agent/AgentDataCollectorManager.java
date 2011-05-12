@@ -1,7 +1,7 @@
 package com.ning.arecibo.agent;
 
 import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -10,14 +10,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.skife.config.TimeSpan;
 import org.weakref.jmx.Managed;
-
 import com.google.inject.Inject;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
@@ -29,21 +29,11 @@ import com.ning.arecibo.agent.datasource.DataSource;
 import com.ning.arecibo.agent.datasource.DataSourceException;
 import com.ning.arecibo.agent.datasource.DataSourceType;
 import com.ning.arecibo.agent.datasource.DataSourceUtils;
-import com.ning.arecibo.agent.guice.ConfigUpdateInitialDelayRange;
-import com.ning.arecibo.agent.guice.ConfigUpdateInterval;
-import com.ning.arecibo.agent.guice.MaxActiveConfigs;
-import com.ning.arecibo.agent.guice.MaxPollingRetryDelay;
-import com.ning.arecibo.agent.guice.PerHostSemaphoreConcurrency;
-import com.ning.arecibo.agent.guice.PerHostSemaphoreMaxWaitMillis;
-import com.ning.arecibo.agent.guice.PerHostSemaphoreRetryMillis;
-import com.ning.arecibo.agent.guice.PublishedHostSuffix;
-import com.ning.arecibo.agent.guice.PublishedPathSuffix;
-import com.ning.arecibo.agent.guice.ThreadpoolSize;
+import com.ning.arecibo.agent.guice.AgentConfig;
 import com.ning.arecibo.agent.status.Status;
 import com.ning.arecibo.agent.status.StatusSummary;
 import com.ning.arecibo.agent.status.StatusType;
 import com.ning.arecibo.eventlogger.EventPublisher;
-
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.UUIDUtil;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
@@ -72,16 +62,7 @@ public final class AgentDataCollectorManager
 
 	private final Random random = new Random(System.currentTimeMillis());
 
-	private final int numThreads;
-	private final int maxActiveConfigs;
-	private final int configUpdateInterval;
-	private final int configUpdateInitialDelayRange;
-	private final int maxPollingRetryDelay;
-    private final int perHostSemaphoreConcurrency;
-    private final long perHostSemaphoreMaxWaitMillis;
-    private final long perHostSemaphoreRetryMillis;
-    private final String publishedHostSuffix;
-    private final String publishedPathSuffix;
+	private final AgentConfig agentConfig;
 	private final EventPublisher eventPublisher;
 	private final ConfigInitializer initializer;
 	private final DataSourceUtils dataSourceUtils;
@@ -93,31 +74,12 @@ public final class AgentDataCollectorManager
 
 
     @Inject
-	public AgentDataCollectorManager(@ThreadpoolSize int numThreads,
-									 @MaxActiveConfigs int maxActiveConfigs,
-	                                 @ConfigUpdateInterval int configUpdateInterval,
-	                                 @ConfigUpdateInitialDelayRange int configUpdateInitialDelayRange,
-	                                 @MaxPollingRetryDelay int maxPollingRetryDelay,
-                                     @PerHostSemaphoreConcurrency int perHostSemaphoreConcurrency,
-                                     @PerHostSemaphoreMaxWaitMillis long perHostSemaphoreMaxWaitMillis,
-                                     @PerHostSemaphoreRetryMillis long perHostSemaphoreRetryMillis,
-                                     @PublishedHostSuffix String publishedHostSuffix,
-                                     @PublishedPathSuffix String publishedPathSuffix,
+	public AgentDataCollectorManager(AgentConfig agentConfig,
 	                                 EventPublisher eventPublisher,
 	                                 ConfigInitializer initializer,
 	                                 DataSourceUtils dataSourceUtils)
 	{
-		this.numThreads = numThreads;
-		this.maxActiveConfigs = maxActiveConfigs;
-		this.configUpdateInterval = configUpdateInterval;
-		this.configUpdateInitialDelayRange = configUpdateInitialDelayRange;
-		this.maxPollingRetryDelay = maxPollingRetryDelay;
-        this.perHostSemaphoreConcurrency = perHostSemaphoreConcurrency;
-        this.perHostSemaphoreMaxWaitMillis = perHostSemaphoreMaxWaitMillis;
-        this.perHostSemaphoreRetryMillis = perHostSemaphoreRetryMillis;
-        this.publishedHostSuffix = publishedHostSuffix;
-        this.publishedPathSuffix = publishedPathSuffix;
-
+        this.agentConfig = agentConfig;
 		this.eventPublisher = eventPublisher;
 		this.initializer = initializer;
 		this.dataSourceUtils = dataSourceUtils;
@@ -178,7 +140,7 @@ public final class AgentDataCollectorManager
 			// create a new collector
 			final UUID uuidForHost = getUuidForHost(config.getHost());  // uuids are unique per host
 	
-			collector = new AgentDataCollector(dataSource, config, this.eventPublisher, uuidForHost, config.getHost(),this);
+			collector = new AgentDataCollector(dataSource, config, agentConfig, this.eventPublisher, uuidForHost, config.getHost(),this);
 			this.collectorMap.put(collectorKey, collector);   // we created a new one, so add it into the map
 	
 			String configKey = config.getConfigHashKey();
@@ -197,9 +159,11 @@ public final class AgentDataCollectorManager
             // create a new perHost semaphore, if needed
             Semaphore sem = perHostSemaphoreMap.get(config.getHost());
             if(sem == null) {
-                sem = new Semaphore(perHostSemaphoreConcurrency,true);
+                sem = new Semaphore(agentConfig.getPerHostSemaphoreConcurrency(), true);
                 perHostSemaphoreMap.put(config.getHost(),sem);
-                log.info("Adding new polling semaphore for host %s, with concurrency %d",config.getHost(),perHostSemaphoreConcurrency);
+                log.info("Adding new polling semaphore for host %s, with concurrency %d",
+                         config.getHost(),
+                         agentConfig.getPerHostSemaphoreConcurrency());
             }
 
 			return collector;
@@ -244,7 +208,8 @@ public final class AgentDataCollectorManager
     public boolean tryAcquirePerHostSemaphore(String host) {
         Semaphore sem = perHostSemaphoreMap.get(host);
         try {
-            return sem.tryAcquire(perHostSemaphoreMaxWaitMillis,TimeUnit.MILLISECONDS);
+            return sem.tryAcquire(agentConfig.getPerHostSemaphoreMaxWait().getPeriod(),
+                                  agentConfig.getPerHostSemaphoreMaxWait().getUnit());
         } catch (InterruptedException ieEx){
             // shouldn't happen
             return false;
@@ -257,7 +222,9 @@ public final class AgentDataCollectorManager
     }
 
     public void rescheduleCollectorAfterSemaphoreRetryDelay(AgentDataCollector collector) {
-        executor.schedule(collector,perHostSemaphoreRetryMillis,TimeUnit.MILLISECONDS);
+        executor.schedule(collector,
+                          agentConfig.getPerHostSemaphoreRetry().getPeriod(),
+                          agentConfig.getPerHostSemaphoreRetry().getUnit());
     }
 
 	public UUID getUuidForHost(String host)
@@ -272,10 +239,13 @@ public final class AgentDataCollectorManager
 
 	public synchronized void start()
 	{
-		this.executor = new ScheduledThreadPoolExecutor(this.numThreads);
+		this.executor = new ScheduledThreadPoolExecutor(agentConfig.getThreadpoolSize());
 
 		// start the config updater
-		this.executor.scheduleWithFixedDelay(new _CollectorConfigUpdater(),random.nextInt(configUpdateInitialDelayRange),configUpdateInterval,TimeUnit.SECONDS);
+		this.executor.scheduleWithFixedDelay(new _CollectorConfigUpdater(),
+		                                     random.nextInt(agentConfig.getConfigUpdateInitialDelayRange()),
+		                                     agentConfig.getConfigUpdateInterval().getPeriod(),
+		                                     agentConfig.getConfigUpdateInterval().getUnit());
 	}
 
 	public synchronized void stop()
@@ -340,14 +310,6 @@ public final class AgentDataCollectorManager
 		return statusSummary;
 	}
 
-    public String getPublishedHostSuffix() {
-        return publishedHostSuffix;
-    }
-
-    public String getPublishedPathSuffix() {
-        return publishedPathSuffix;
-    }
-
     private boolean testConfigForExclusion(Config config,List<Config> exclusionList) {
         if(exclusionList == null)
             return false;
@@ -380,7 +342,7 @@ public final class AgentDataCollectorManager
 
             for(Config config:configList) {
 
-                if(totalNewCount >= this.maxActiveConfigs) {
+                if(totalNewCount >= agentConfig.getMaxActiveConfigs()) {
                     totalExceedingMaxCount++;
                     toRemove.add(config);
                     continue;
@@ -429,8 +391,8 @@ public final class AgentDataCollectorManager
                             }
 
                             // bail if we've reached our max
-                            if(totalNewCount >= this.maxActiveConfigs) {
-                                log.info("maxActiveConfigs reached (" + this.maxActiveConfigs + "), skipping further config expansion");
+                            if(totalNewCount >= agentConfig.getMaxActiveConfigs()) {
+                                log.info("maxActiveConfigs reached (" + agentConfig.getMaxActiveConfigs() + "), skipping further config expansion");
                                 break;
                             }
                         }
@@ -542,7 +504,7 @@ public final class AgentDataCollectorManager
 					for(String newCollectorKey:newCollectorKeys) {
 					    AgentDataCollector newCollector = newCollectors.get(newCollectorKey);
 					    log.info("Scheduling new collector: '%s'", newCollectorKey);
-					    int intervalInSec = newCollector.getScheduledPollingIntervalSeconds();
+					    int intervalInSec = (int)(newCollector.getScheduledPollingInterval().getMillis() / 1000l);
 						executor.schedule(newCollector, random.nextInt(intervalInSec), TimeUnit.SECONDS);
 					}
 				}
@@ -554,8 +516,8 @@ public final class AgentDataCollectorManager
 	    }
 	}
 
-	public int getMaxPollingRetryDelay() {
-		return maxPollingRetryDelay;
+	public TimeSpan getMaxPollingRetryDelay() {
+		return agentConfig.getMaxPollingRetryDelay();
 	}
 
 	@MonitorableManaged(monitored = true)

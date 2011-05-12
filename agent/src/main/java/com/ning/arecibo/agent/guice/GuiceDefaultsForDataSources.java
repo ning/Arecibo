@@ -1,35 +1,24 @@
 package com.ning.arecibo.agent.guice;
 
-import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
-
+import org.skife.config.TimeSpan;
 import com.google.inject.Inject;
 import com.ning.arecibo.agent.config.ConfigType;
 
 public class GuiceDefaultsForDataSources
 {
+    private final AgentConfig agentConfig;
     private final Set<ConfigType> configTypesEnabled;
-	private final int jmxPort;
-	private final int snmpPort;
-	private final String snmpCommunity;
-	private final int defaultPollingIntervalSeconds;
-    private final boolean JMXMonitoringProfilePollingEnabled;
+    private final boolean isJMXMonitoringProfilePollingEnabled;
 
     @Inject
-	public GuiceDefaultsForDataSources(@ConfigTypesEnabled String configTypesEnabledString,
-                                        @DefaultPollingIntervalSeconds int defaultPollingIntervalSeconds,
-                                        @JMXMonitoringProfilePollingEnabled boolean JMXMonitoringProfilePollingEnabled,
-                                        @JMXPort int jmxPort,
-	                                    @SNMPCommunity String snmpCommunity,
-	                                    @SNMPPort int snmpPort)
+	public GuiceDefaultsForDataSources(AgentConfig agentConfig)
 	{
+        this.agentConfig = agentConfig;
         this.configTypesEnabled = new ConcurrentSkipListSet<ConfigType>();
-        StringTokenizer st = new StringTokenizer(configTypesEnabledString,",");
-        while(st.hasMoreTokens()) {
-            ConfigType configType = ConfigType.valueOf(st.nextToken().toUpperCase());
-
+        for (ConfigType configType : agentConfig.getConfigTypesEnabled()) {
             List<ConfigType> subTypes = configType.getSubTypes();
             if(subTypes == null || subTypes.size() == 0)
                 this.configTypesEnabled.add(configType);
@@ -38,15 +27,12 @@ public class GuiceDefaultsForDataSources
             }
         }
 
-        if(this.configTypesEnabled.contains(ConfigType.JMX))
-            this.JMXMonitoringProfilePollingEnabled = JMXMonitoringProfilePollingEnabled;
-        else
-            this.JMXMonitoringProfilePollingEnabled = false;
-
-        this.jmxPort = jmxPort;
-        this.defaultPollingIntervalSeconds = defaultPollingIntervalSeconds;
-        this.snmpCommunity = snmpCommunity;
-        this.snmpPort = snmpPort;
+        if(this.configTypesEnabled.contains(ConfigType.JMX)) {
+            this.isJMXMonitoringProfilePollingEnabled = agentConfig.isJMXMonitoringProfilePollingEnabled();
+        }
+        else {
+            this.isJMXMonitoringProfilePollingEnabled = false;
+        }
     }
 
     public boolean isConfigTypeEnabled(ConfigType cType)
@@ -60,26 +46,26 @@ public class GuiceDefaultsForDataSources
 
     public boolean isJMXMonitoringProfilePollingEnabled()
 	{
-		return JMXMonitoringProfilePollingEnabled;
+		return isJMXMonitoringProfilePollingEnabled;
 	}
 
     public int getJmxPort()
     {
-        return jmxPort;
+        return agentConfig.getJMXPort();
     }
 
-	public int getDefaultPollingIntervalSeconds()
+	public TimeSpan getDefaultPollingInterval()
 	{
-		return defaultPollingIntervalSeconds;
+		return agentConfig.getDefaultPollingInterval();
 	}
 
 	public String getSnmpCommunity()
 	{
-		return snmpCommunity;
+		return agentConfig.getSNMPCommunity();
 	}
 
 	public int getSnmpPort()
 	{
-		return snmpPort;
+		return agentConfig.getSNMPPort();
 	}
 }

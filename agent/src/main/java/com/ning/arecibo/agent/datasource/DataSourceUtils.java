@@ -15,53 +15,36 @@ import com.ning.arecibo.agent.datasource.jmx.JMXParserManager;
 import com.ning.arecibo.agent.datasource.snmp.SNMPDataSource;
 import com.ning.arecibo.agent.datasource.tcp.TCPConnectCheckDataSource;
 import com.ning.arecibo.agent.datasource.tracer.TracerDataSource;
-import com.ning.arecibo.agent.guice.ConnectionTimeout;
-import com.ning.arecibo.agent.guice.HTTPProxyHost;
-import com.ning.arecibo.agent.guice.HTTPProxyPort;
-import com.ning.arecibo.agent.guice.HTTPUserAgent;
-import com.ning.arecibo.agent.guice.SNMPCompiledMibDir;
-
+import com.ning.arecibo.agent.guice.AgentConfig;
 
 //TODO: This whole business of recognizing a config type by scanning for delimiters needs to be overhauled
 //	the configs should be more declarative of the config type
 public class DataSourceUtils {
 	
-	private int timeout;
-	private String snmpCompiledMibDir;
+	private final AgentConfig agentConfig;
 	private final JMXClientCache jmxClientCache;
 	private final JMXDynamicUtils jmxDynamicUtils;
     private final JMXParserManager jmxParserManager;
 	private final IdentityConfigIteratorFactory identityConfigIteratorFactory;
 	private final JMXConfigIteratorFactory jmxConfigIteratorFactory;
 	private final SNMPConfigIteratorFactory snmpConfigIteratorFactory;
-    private final String httpUserAgentString;
-    private final String httpProxyHost;
-    private final int httpProxyPort;
 
     @Inject
-	public DataSourceUtils(@ConnectionTimeout int timeout,
-            				@SNMPCompiledMibDir String snmpCompiledMibDir,
-                            SNMPConfigIteratorFactory snmpConfigIteratorFactory,
-            				JMXClientCache jmxClientCache,
-            				JMXDynamicUtils jmxDynamicUtils,
-                            JMXParserManager jmxParserManager,
-							JMXConfigIteratorFactory jmxConfigIteratorFactory,
-                            IdentityConfigIteratorFactory identityConfigIteratorFactory,
-							@HTTPUserAgent String httpUserAgentString,
-                            @HTTPProxyHost String httpProxyHost,
-                            @HTTPProxyPort int httpProxyPort) {
+	public DataSourceUtils(AgentConfig agentConfig,
+            			   SNMPConfigIteratorFactory snmpConfigIteratorFactory,
+            			   JMXClientCache jmxClientCache,
+            			   JMXDynamicUtils jmxDynamicUtils,
+                           JMXParserManager jmxParserManager,
+						   JMXConfigIteratorFactory jmxConfigIteratorFactory,
+                           IdentityConfigIteratorFactory identityConfigIteratorFactory) {
 		
-		this.timeout = timeout;
-		this.snmpCompiledMibDir = snmpCompiledMibDir;
+		this.agentConfig = agentConfig;
         this.jmxConfigIteratorFactory = jmxConfigIteratorFactory;
 		this.jmxClientCache = jmxClientCache;
 		this.jmxDynamicUtils = jmxDynamicUtils;
         this.jmxParserManager = jmxParserManager;
 		this.identityConfigIteratorFactory = identityConfigIteratorFactory;
 		this.snmpConfigIteratorFactory = snmpConfigIteratorFactory;
-        this.httpUserAgentString = httpUserAgentString;
-        this.httpProxyHost = httpProxyHost;
-        this.httpProxyPort = httpProxyPort;
 	}
 	
 	public DataSourceType getDataSourceType(Config config) throws DataSourceException {
@@ -116,19 +99,23 @@ public class DataSourceUtils {
 		DataSourceType dsType = getDataSourceType(config);
 		switch(dsType) {
 			case SNMP:
-				return new SNMPDataSource(config, this.timeout, this.snmpCompiledMibDir);
+				return new SNMPDataSource(config, agentConfig.getConnectionTimeout(), agentConfig.getSNMPCompiledMibDir());
 			case Tracer:
 				return new TracerDataSource(config);
 			case JMXComposite:
-				return new JMXCompositeDataSource(config, this.timeout, this.jmxClientCache, this.jmxParserManager);
+				return new JMXCompositeDataSource(config, this.jmxClientCache, this.jmxParserManager);
 			case JMXOperationInvocation:
-				return new JMXOperationInvocationDataSource(config, this.timeout, this.jmxClientCache, this.jmxParserManager);
+				return new JMXOperationInvocationDataSource(config, this.jmxClientCache, this.jmxParserManager);
 			case JMX:
-				return new JMXDataSource(config, this.timeout, this.jmxClientCache, this.jmxParserManager);
+				return new JMXDataSource(config, this.jmxClientCache, this.jmxParserManager);
             case HTTPResponseCheck:
-                return new HTTPResponseCheckDataSource(config,this.timeout,this.httpUserAgentString,this.httpProxyHost,this.httpProxyPort);
+                return new HTTPResponseCheckDataSource(config,
+                                                       agentConfig.getConnectionTimeout(),
+                                                       agentConfig.getHTTPUserAgent(),
+                                                       agentConfig.getHTTPProxyHost(),
+                                                       agentConfig.getHTTPProxyPort());
             case TCPConnectCheck:
-                return new TCPConnectCheckDataSource(config,this.timeout);
+                return new TCPConnectCheckDataSource(config, agentConfig.getConnectionTimeout());
 			default:
 				throw new DataSourceException("Could not create data source, unknown datasource type: " + dsType);
 		}

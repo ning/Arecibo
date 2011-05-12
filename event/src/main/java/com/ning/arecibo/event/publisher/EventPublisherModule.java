@@ -10,9 +10,10 @@ import com.ning.arecibo.eventlogger.EventPublisher;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.cron.JMXCronScheduler;
+import com.ning.arecibo.util.service.ConsistentHashingSelector;
 import com.ning.arecibo.util.service.ConsistentHashingServiceChooser;
 import com.ning.arecibo.util.service.Selector;
-import com.ning.arecibo.util.service.ServiceDescriptor;
+import com.ning.arecibo.util.service.ServiceSelector;
 import com.ning.arecibo.util.service.VirtualNodes;
 
 public class EventPublisherModule extends AbstractModule
@@ -45,13 +46,11 @@ public class EventPublisherModule extends AbstractModule
 		);
 
         bind(Selector.class)
-		      .annotatedWith(PublisherSelector.class)
-		      .toInstance(new Selector(){
-			public boolean match(ServiceDescriptor sd)
-			{
-				return sd.getName().equals(eventServiceName);
-			}
-		});
+		    .annotatedWith(PublisherSelector.class)
+		    .toInstance(new ServiceSelector(eventServiceName));
+        bind(Selector.class)
+            .annotatedWith(ConsistentHashingSelector.class)
+            .toInstance(new ServiceSelector(eventServiceName));
 
 		bind(ConsistentHashingServiceChooser.class).asEagerSingleton();
 		bind(ScheduledExecutorService.class).annotatedWith(JMXCronScheduler.class).toInstance(Executors.newScheduledThreadPool(1));

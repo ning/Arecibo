@@ -6,15 +6,14 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.google.inject.Inject;
 import com.ning.arecibo.event.publisher.EventServiceName;
 import com.ning.arecibo.event.transport.EventService;
-
 import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.service.ServiceNotAvailableException;
+import com.ning.arecibo.util.service.ServiceSelector;
 
 public class AggregatorService
 {
@@ -26,12 +25,7 @@ public class AggregatorService
                              final @EventServiceName String eventServiceName)
 	{
 		this.serviceLocator = serviceLocator;
-		this.selector = new Selector() {
-			public boolean match(ServiceDescriptor sd)
-			{
-				return sd.getName().equals(eventServiceName);
-			}
-		};
+		this.selector = new ServiceSelector(eventServiceName);
 		this.serviceLocator.startReadOnly();
 	}
 

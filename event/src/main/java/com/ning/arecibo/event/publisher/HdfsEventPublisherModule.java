@@ -12,7 +12,7 @@ import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.service.RandomSelector;
 import com.ning.arecibo.util.service.Selector;
-import com.ning.arecibo.util.service.ServiceDescriptor;
+import com.ning.arecibo.util.service.ServiceSelector;
 
 public class HdfsEventPublisherModule implements Module
 {
@@ -35,12 +35,7 @@ public class HdfsEventPublisherModule implements Module
 
         binder.bind(Selector.class)
 				.annotatedWith(RandomSelector.class)
-				.toInstance(new Selector(){
-			public boolean match(ServiceDescriptor sd)
-			{
-				return sd.getName().equals(serviceName);
-			}
-		});
+				.toInstance(new ServiceSelector(serviceName));
 
         binder.bindConstant().annotatedWith(RandomSelectorMaxUse.class).to(Integer.getInteger("arecibo.event.maxSelectorUse", RandomSelectorMaxUse.DEFAULT));
         binder.bindConstant().annotatedWith(MaxEventBufferSize.class).to(Integer.getInteger("arecibo.event.maxBufferSize", MaxEventBufferSize.DEFAULT));

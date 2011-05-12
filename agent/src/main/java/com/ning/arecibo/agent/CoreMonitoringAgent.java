@@ -5,13 +5,10 @@ import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.management.MBeanServer;
-
 import org.mortbay.jetty.Server;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.guice.MBeanModule;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -20,9 +17,8 @@ import com.google.inject.Stage;
 import com.google.inject.name.Named;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.eventapireceiver.EventProcessorImpl;
-import com.ning.arecibo.agent.guice.AdvertiseReceiverOnBeacon;
+import com.ning.arecibo.agent.guice.AgentConfig;
 import com.ning.arecibo.agent.guice.AgentModule;
-import com.ning.arecibo.agent.guice.RelayServiceName;
 import com.ning.arecibo.agent.status.StatusPageHandler;
 import com.ning.arecibo.event.publisher.EventPublisherModule;
 import com.ning.arecibo.event.publisher.EventSenderType;
@@ -37,6 +33,7 @@ import com.ning.arecibo.util.galaxy.GalaxyModule;
 import com.ning.arecibo.util.lifecycle.Lifecycle;
 import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
+import com.ning.arecibo.util.service.DummyServiceLocatorModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 
@@ -44,6 +41,7 @@ public class CoreMonitoringAgent
 {
 	private static final Logger log = Logger.getLogger(CoreMonitoringAgent.class);
 
+	private final AgentConfig agentConfig;
 	private final AgentDataCollectorManager dataCollector;
 	private final EventPublisher eventPublisher;
 	private final Server server;
@@ -51,20 +49,18 @@ public class CoreMonitoringAgent
     private final ServiceLocator serviceLocator;
     private final EmbeddedJettyConfig jettyConfig;
     private final int udpPort;
-    private final boolean advertiseReceiverOnBeacon;
-    private final String relayServiceName;
 
 	@Inject
-	private CoreMonitoringAgent(EmbeddedJettyConfig jettyConfig,
+	private CoreMonitoringAgent(AgentConfig agentConfig,
+	                            EmbeddedJettyConfig jettyConfig,
                                 @Named("UDPServerPort") int udpPort,
-                                @AdvertiseReceiverOnBeacon boolean advertiseReceiverOnBeacon,
-                                @RelayServiceName String relayServiceName,
                                 Lifecycle lifecycle,
                                 ServiceLocator serviceLocator,
                                 Server server,
                                 AgentDataCollectorManager dataCollector,
                                 EventPublisher eventPublisher) throws IOException, ConfigException
 	{
+	    this.agentConfig = agentConfig;
         this.lifecycle = lifecycle;
         this.serviceLocator = serviceLocator;
 		this.server = server;
@@ -72,21 +68,19 @@ public class CoreMonitoringAgent
 		this.dataCollector = dataCollector;
         this.jettyConfig = jettyConfig;
         this.udpPort = udpPort;
-        this.advertiseReceiverOnBeacon = advertiseReceiverOnBeacon;
-        this.relayServiceName = relayServiceName;
 	}
 
 	private void run()
 	{
 		try {
 
-            if(advertiseReceiverOnBeacon) {
+            if (agentConfig.isAdvertiseReceiverOnBeacon()) {
                 // advertise event endpoints
                 Map<String, String> map = new HashMap<String, String>();
                 map.put(EventService.HOST, jettyConfig.getHost());
                 map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
                 map.put(EventService.UDP_PORT, String.valueOf(udpPort));
-                ServiceDescriptor self = new ServiceDescriptor(relayServiceName, map);
+                ServiceDescriptor self = new ServiceDescriptor(agentConfig.getRelayServiceName(), map);
 
                 // advertise on beacon
                 serviceLocator.advertiseLocalService(self);
@@ -165,7 +159,8 @@ public class CoreMonitoringAgent
                                                      }
                                                  },
                                                  new LifecycleModule(),
-                                                 // TODO: need to bind an implementation of ServiceLocator
+                                                 // TODO: need to bind a real implementation of ServiceLocator
+                                                 new DummyServiceLocatorModule(),
                                                  new EventPublisherModule(EventSenderType.CLIENT),
                                                  new EmbeddedJettyJerseyModule(),
                                                  new RESTEventReceiverModule(EventProcessorImpl.class, "arecibo.agent:name=EventAPI"),

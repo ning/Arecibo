@@ -6,12 +6,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.EventServiceUDPClient;
 import com.ning.arecibo.eventlogger.Event;
-import com.ning.arecibo.lang.ServiceSelector;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceListener;
 import com.ning.arecibo.util.service.ServiceLocator;
+import com.ning.arecibo.util.service.ServiceSelector;
 
 public class ExternalPublisherEventService extends AbstractEventService implements ServiceListener
 {

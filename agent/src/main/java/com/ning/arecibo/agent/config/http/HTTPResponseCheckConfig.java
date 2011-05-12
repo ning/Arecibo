@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.ConfigType;
@@ -32,13 +33,18 @@ public class HTTPResponseCheckConfig extends Config {
     protected final String matchStatusMessageSubString;
     protected final String matchBodySubString;
 
-    public HTTPResponseCheckConfig(String host, String fullConfigPath, String deployedType, GuiceDefaultsForDataSources guiceDefaults,Map<String,Object> optionsMap) throws ConfigException {
+    public HTTPResponseCheckConfig(String host,
+                                   String fullConfigPath,
+                                   String deployedType,
+                                   GuiceDefaultsForDataSources guiceDefaults,
+                                   Map<String,Object> optionsMap) throws ConfigException {
 
         super((String) optionsMap.get(Config.EVENT_TYPE),
                 Config.EVENT_ATTRIBUTE_TYPE_VIRTUAL,
                 null,
-                optionsMap.get(Config.POLLING_INTERVAL_SECS) != null?
-                        Integer.parseInt(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) : guiceDefaults.getDefaultPollingIntervalSeconds(),
+                optionsMap.get(Config.POLLING_INTERVAL_SECS) != null ?
+                    new TimeSpan(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) :
+                    guiceDefaults.getDefaultPollingInterval(),
                 host,
                 fullConfigPath,
                 deployedType);

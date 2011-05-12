@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Properties;
 
+import org.skife.config.ConfigurationObjectFactory;
 import org.testng.annotations.Test;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.ConfigFileUtils;
 import com.ning.arecibo.agent.config.ConfigStreamReader;
 import com.ning.arecibo.agent.config.ConfigType;
+import com.ning.arecibo.agent.guice.AgentConfig;
 import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
 import com.ning.arecibo.util.Logger;
 
@@ -30,6 +33,7 @@ public class ConfigStreamReaderTest {
             }
 
             File[] files = resourceDir.listFiles();
+            AgentConfig config = new ConfigurationObjectFactory(System.getProperties()).build(AgentConfig.class);
             for(File file:files) {
                 String fileName = file.getName();
                 int suffixIndex = fileName.lastIndexOf(ConfigFileUtils.CONFIG_FILE_SUFFIX);
@@ -38,8 +42,12 @@ public class ConfigStreamReaderTest {
                 }
 
                 String monitoringType = fileName.substring(0,suffixIndex);
+                Properties props = new Properties();
 
-                GuiceDefaultsForDataSources defaults = new GuiceDefaultsForDataSources(ConfigType.ALL.toString() + "," + ConfigType.EXCLUSION.toString(),-1,false,-1,"",-1);
+                props.put("arecibo.tools.coremonitor.config_types_enabled", ConfigType.ALL.toString() + "," + ConfigType.EXCLUSION);
+                props.put("arecibo.tools.coremonitor.jmx_monitoring_profile_polling_enabled", "false");
+
+                GuiceDefaultsForDataSources defaults = new GuiceDefaultsForDataSources(config);
                 ConfigFileUtils configFileUtils = new ConfigFileUtils(defaults);
 
                 List<InputStream> configStreams = configFileUtils.getMonitoringTypeConfigStreamList(monitoringType,monitoringType,false);

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import org.apache.commons.lang.StringUtils;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.util.jmx.MonitoringType;
 
 public abstract class Config
@@ -21,7 +22,7 @@ public abstract class Config
     protected final String eventAttributeType;
     protected final List<MonitoringType> monitoringTypes;
     protected final String monitoringTypesString;
-	protected final int pollingIntervalSeconds;
+	protected final TimeSpan pollingInterval;
 
 	// galaxy config path components
 	protected final String deployedEnv;
@@ -29,8 +30,13 @@ public abstract class Config
 	protected final String deployedType;
 	protected final String deployedConfigSubPath;
 
-    public Config(String eventType, String eventAttributeType,List<MonitoringType> monitoringTypes, int pollingIntervalSeconds,
-                  String host, String fullConfigPath, String deployedType) throws ConfigException
+    public Config(String eventType,
+                  String eventAttributeType,
+                  List<MonitoringType> monitoringTypes,
+                  TimeSpan pollingInterval,
+                  String host,
+                  String fullConfigPath,
+                  String deployedType) throws ConfigException
 	{
 
         if(eventType == null || eventAttributeType == null)
@@ -40,8 +46,7 @@ public abstract class Config
 		this.eventType = eventType;
 		this.eventAttributeType = eventAttributeType;
 		this.deployedType = deployedType;
-		
-		this.pollingIntervalSeconds = pollingIntervalSeconds;
+		this.pollingInterval = pollingInterval;
 
         if(fullConfigPath == null)
             fullConfigPath = "";
@@ -98,7 +103,7 @@ public abstract class Config
 		this.eventAttributeType = eventAttributeType;
 
         this.host = orig.host;
-		this.pollingIntervalSeconds = orig.pollingIntervalSeconds;
+		this.pollingInterval = orig.pollingInterval;
 
 		this.deployedEnv = orig.deployedEnv;
 		this.deployedVersion = orig.deployedVersion;
@@ -151,9 +156,9 @@ public abstract class Config
 		return deployedConfigSubPath;
 	}
 
-	public int getPollingIntervalSeconds()
+	public TimeSpan getPollingInterval()
 	{
-		return pollingIntervalSeconds;
+		return pollingInterval;
 	}
 
 	public String getConfigDescriptor()
@@ -171,7 +176,7 @@ public abstract class Config
 				this.getDeployedConfigSubPath() + ":" +
 				this.getDeployedEnv() + ":" +
 				this.getDeployedVersion() + ":" +
-				this.getPollingIntervalSeconds();
+				this.getPollingInterval();
 	}
 
 	public String getConfigHashKey()
@@ -297,7 +302,7 @@ public abstract class Config
 		if(!StringUtils.equals(this.deployedConfigSubPath,cmpConfig.deployedConfigSubPath))
 			return false;
 			
-		if(this.pollingIntervalSeconds != cmpConfig.pollingIntervalSeconds)
+		if(!this.pollingInterval.equals(cmpConfig.pollingInterval))
 			return false;
 		
 		return true;

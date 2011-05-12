@@ -17,12 +17,12 @@ public class ExclusionConfig extends Config {
     public ExclusionConfig(Map<String,Object> optionsMap) throws ConfigException {
 
         super((String) optionsMap.get(Config.EVENT_TYPE),
-                (String) optionsMap.get(Config.EVENT_ATTRIBUTE_TYPE),
-                null,
-                0,
-                null,
-                null,
-                null);
+              (String) optionsMap.get(Config.EVENT_ATTRIBUTE_TYPE),
+              null,
+              null,
+              null,
+              null,
+              null);
 
         String eventType = (String)optionsMap.get(Config.EVENT_TYPE);
         String eventAttributeType = (String)optionsMap.get(Config.EVENT_ATTRIBUTE_TYPE);

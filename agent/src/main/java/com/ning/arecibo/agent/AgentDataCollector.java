@@ -6,10 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.datasource.DataSource;
 import com.ning.arecibo.agent.datasource.DataSourceException;
 import com.ning.arecibo.agent.datasource.DataSourceType;
+import com.ning.arecibo.agent.guice.AgentConfig;
 import com.ning.arecibo.agent.status.Status;
 import com.ning.arecibo.agent.status.StatusType;
 import com.ning.arecibo.agent.transform.CounterRateTransform;
@@ -30,6 +32,7 @@ public final class AgentDataCollector implements Runnable
 	public static final int COLLECTOR_INIT_STARTED = 1;
 	public static final int COLLECTOR_INIT_COMPLETED = 2;
 
+	private final AgentConfig agentConfig;
 	private final EventPublisher eventPublisher;
 	private final String hostName;
 
@@ -45,14 +48,13 @@ public final class AgentDataCollector implements Runnable
 	private final AgentDataCollectorManager collectorManager;
 
 	private final HashMap<String, Config> configsByHashKey;
-	private final Map<String, Status> status;                   
+	private final Map<String, Status> status;
 	private final DataSource dataSource;
 
 	private volatile Map<String, _TransformableAttribute> expandedAttributes;      // attribute --> class
 
 	private final AtomicInteger collectorInitialization;
-	private final int scheduledPollingIntervalSeconds;
-    private final long scheduledPollingIntervalMillis;
+	private final TimeSpan scheduledPollingInterval;
 	private final String eventType;                                   // defined when live
 
 	private volatile boolean abort = false;
@@ -65,12 +67,14 @@ public final class AgentDataCollector implements Runnable
     private volatile long lastPollingIntervalNanos = 0L;
 
     public AgentDataCollector(DataSource dataSource,
-								Config config, 
-								EventPublisher eventPublisher, 
-								UUID uuid, 
-								String hostName,
-								AgentDataCollectorManager collectorManager)
+							  Config config,
+							  AgentConfig agentConfig,
+							  EventPublisher eventPublisher, 
+							  UUID uuid, 
+							  String hostName,
+							  AgentDataCollectorManager collectorManager)
 	{
+        this.agentConfig = agentConfig;
 		this.eventPublisher = eventPublisher;
 		if (dataSource == null || config == null || eventPublisher == null) {
 			throw new IllegalArgumentException();
@@ -86,9 +90,7 @@ public final class AgentDataCollector implements Runnable
 		this.deployedVersion = config.getDeployedVersion();
 		this.deployedType = config.getDeployedType();
 		this.deployedConfigSubPath = config.getDeployedConfigSubPath();
-		this.scheduledPollingIntervalSeconds = config.getPollingIntervalSeconds();
-
-        this.scheduledPollingIntervalMillis = 1000L * (long)this.scheduledPollingIntervalSeconds;
+		this.scheduledPollingInterval = config.getPollingInterval();
 
 		this.configsByHashKey = new HashMap<String, Config>();
 		this.configsByHashKey.put(config.getConfigHashKey(), config);                 // may be wildcarded
@@ -264,11 +266,11 @@ public final class AgentDataCollector implements Runnable
 				publishEvent(new MonitoringEvent(updateTime,
                                                     this.eventType,
                                                     this.uuid,
-                                                    this.hostName + collectorManager.getPublishedHostSuffix(),
+                                                    this.hostName + agentConfig.getPublishedHostSuffix(),
                                                     this.deployedEnv,
                                                     this.deployedVersion,
                                                     this.deployedType,
-                                                    this.deployedConfigSubPath + collectorManager.getPublishedPathSuffix(),
+                                                    this.deployedConfigSubPath + agentConfig.getPublishedPathSuffix(),
                                                     publishValues));
 			}
 
@@ -312,7 +314,7 @@ public final class AgentDataCollector implements Runnable
             if(okToRescheduleNormally) {
                 if(semaphoreAcquired) {
                     long currentTime = System.currentTimeMillis();
-                    long nextDelayMillis = scheduledPollingIntervalMillis - ((currentTime - referenceExecutionStartTime) % (scheduledPollingIntervalMillis));
+                    long nextDelayMillis = scheduledPollingInterval.getMillis() - ((currentTime - referenceExecutionStartTime) % (scheduledPollingInterval.getMillis()));
                     collectorManager.rescheduleCollector(this,nextDelayMillis);
                 }
                 else {
@@ -338,13 +340,13 @@ public final class AgentDataCollector implements Runnable
 				newSkipCount = currentCycleSkipCount * 2;
 			}
 			
-			int maxPollingRetryDelay = collectorManager.getMaxPollingRetryDelay();
-			int newSkipSeconds = newSkipCount * this.scheduledPollingIntervalSeconds;
-			if(newSkipSeconds > maxPollingRetryDelay) {
-				newSkipSeconds = maxPollingRetryDelay;
+			TimeSpan maxPollingRetryDelay = collectorManager.getMaxPollingRetryDelay();
+			long newSkipInterval = (newSkipCount * this.scheduledPollingInterval.getMillis());
+			if (newSkipInterval > maxPollingRetryDelay.getMillis()) {
+			    newSkipInterval = maxPollingRetryDelay.getMillis();
 			}
 			
-			currentCycleSkipCount = (int)Math.floor((double)newSkipSeconds/(double)this.scheduledPollingIntervalSeconds);
+			currentCycleSkipCount = (int)Math.floor((double)newSkipInterval/(double)this.scheduledPollingInterval.getMillis());
 			cyclesToSkip = currentCycleSkipCount;
 		}
 		else {
@@ -667,9 +669,9 @@ public final class AgentDataCollector implements Runnable
         return this.lastPollingIntervalNanos;
     }
 
-	public int getScheduledPollingIntervalSeconds()
+	public TimeSpan getScheduledPollingInterval()
 	{
-		return this.scheduledPollingIntervalSeconds;
+		return this.scheduledPollingInterval;
 	}
 
 

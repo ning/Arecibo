@@ -12,6 +12,7 @@ import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.service.ServiceNotAvailableException;
+import com.ning.arecibo.util.service.ServiceSelector;
 
 public class ClusterAwareAlertClient
 {
@@ -38,7 +39,7 @@ public class ClusterAwareAlertClient
 		this.alertPortOverride = alertPortOverride;
 
 		if(alertHostOverride == null || alertHostOverride.length() == 0) {
-		    this.selector = new AlertService.Selector();
+		    this.selector = new ServiceSelector(AlertService.NAME);
 		    log.info("Using prepared selector for alertService");
 		}
 		else {

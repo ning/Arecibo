@@ -27,9 +27,9 @@ public class JMXOperationInvocationDataSource extends JMXDataSource
 	private volatile List<String[]> argumentsList = null;
 	private volatile List<String[]> signatureList = null;
 
-	public JMXOperationInvocationDataSource(Config config, int connectionTimeout, JMXClientCache jmxClientCache, JMXParserManager jmxParserManager) throws DataSourceException
+	public JMXOperationInvocationDataSource(Config config, JMXClientCache jmxClientCache, JMXParserManager jmxParserManager) throws DataSourceException
 	{
-		super(config, connectionTimeout, jmxClientCache, jmxParserManager);
+		super(config, jmxClientCache, jmxParserManager);
 	}
 
 	@Override

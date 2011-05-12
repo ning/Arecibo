@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.ConfigType;
@@ -24,14 +25,18 @@ public final class SNMPConfig extends Config
     // can't make this final, since we need to dynamically discover in case of snmp beans, at least for now
     protected volatile boolean isCounterOverride = false;
 
-    public SNMPConfig(String host, String fullConfigPath, String deployedType,
-                        GuiceDefaultsForDataSources guiceDefaults, Map<String,Object> optionsMap) throws ConfigException
+    public SNMPConfig(String host,
+                      String fullConfigPath,
+                      String deployedType,
+                      GuiceDefaultsForDataSources guiceDefaults,
+                      Map<String,Object> optionsMap) throws ConfigException
     {
         super((String) optionsMap.get(Config.EVENT_TYPE),
               (String) optionsMap.get(Config.EVENT_ATTRIBUTE_TYPE),
               Config.getMonitoringTypesFromObjectList((List) optionsMap.get(Config.MONITORING_TYPES)),
-              optionsMap.get(Config.POLLING_INTERVAL_SECS) != null?
-                    Integer.parseInt(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) : guiceDefaults.getDefaultPollingIntervalSeconds(),
+              optionsMap.get(Config.POLLING_INTERVAL_SECS) != null ?
+                    new TimeSpan(optionsMap.get(Config.POLLING_INTERVAL_SECS).toString()) :
+                    guiceDefaults.getDefaultPollingInterval(),
               host,
               fullConfigPath,
               deployedType);

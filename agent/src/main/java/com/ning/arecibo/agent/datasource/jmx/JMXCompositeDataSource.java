@@ -20,12 +20,10 @@ public class JMXCompositeDataSource extends JMXDataSource
 
 	private volatile Map<String, Set<String>> attributeMap ;
 
-	public JMXCompositeDataSource(Config config, int connectionTimeout, JMXClientCache jmxClientCache, JMXParserManager jmxParserManager) throws DataSourceException
+	public JMXCompositeDataSource(Config config, JMXClientCache jmxClientCache, JMXParserManager jmxParserManager) throws DataSourceException
 	{
-		super(config, connectionTimeout, jmxClientCache, jmxParserManager);
+		super(config, jmxClientCache, jmxParserManager);
 	}
-
-
 	
 	@Override
 	public void finalizePreparation() {

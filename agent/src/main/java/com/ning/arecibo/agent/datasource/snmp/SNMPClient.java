@@ -11,6 +11,7 @@ import java.util.SortedMap;
 import java.util.Stack;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
+import org.skife.config.TimeSpan;
 
 import com.adventnet.snmp.beans.SnmpTarget;
 import com.adventnet.snmp.mibs.LeafSyntax;
@@ -41,12 +42,12 @@ final class SNMPClient
 	private final String host;
 	private final int port;
 	private final String community;
-	private final int timeout;
+	private final TimeSpan timeout;
 	private final String compiledMibWorkDir;
 	
 	private final SnmpTarget snmpTarget;
 
-	public SNMPClient(String host, int port, String community, int timeout, String compiledMibWorkDir) throws IllegalArgumentException
+	public SNMPClient(String host, int port, String community, TimeSpan timeout, String compiledMibWorkDir) throws IllegalArgumentException
 	{
 		try {
 			if (community.equals("")) {
@@ -66,7 +67,7 @@ final class SNMPClient
 			this.snmpTarget.setCommunity(this.community);
 			this.snmpTarget.setTargetHost(this.host);
 			this.snmpTarget.setTargetPort(this.port);
-			this.snmpTarget.setTimeout(this.timeout);
+			this.snmpTarget.setTimeout((int)(this.timeout.getMillis() / 1000l));
 			this.snmpTarget.setMibPath(this.compiledMibWorkDir);
 		}
 		catch(RuntimeException ruEx) {
