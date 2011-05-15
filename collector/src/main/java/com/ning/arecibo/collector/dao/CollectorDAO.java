@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.CRC32;
 import org.apache.commons.lang.StringUtils;
+import org.skife.config.DataAmount;
+import org.skife.config.DataAmountUnit;
+import org.skife.config.TimeSpan;
 import org.skife.jdbi.v2.Folder;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
@@ -51,29 +54,9 @@ import com.ning.arecibo.collector.RemoteCollector;
 import com.ning.arecibo.collector.ResolutionTagGenerator;
 import com.ning.arecibo.collector.ResolutionUtils;
 import com.ning.arecibo.collector.contentstore.DbEntryUtil;
-import com.ning.arecibo.collector.guice.BufferWindowInSeconds;
+import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.guice.CollectorConstants;
-import com.ning.arecibo.collector.guice.CollectorReadOnlyMode;
-import com.ning.arecibo.collector.guice.EnableBatchRetryOnIntegrityViolation;
-import com.ning.arecibo.collector.guice.EnableDuplicateEventLogging;
-import com.ning.arecibo.collector.guice.EnablePerTableInserts;
-import com.ning.arecibo.collector.guice.EnablePreparedBatchInserts;
 import com.ning.arecibo.collector.guice.EventTableDescriptors;
-import com.ning.arecibo.collector.guice.HostUpdateInterval;
-import com.ning.arecibo.collector.guice.MaxAsynchInsertQueueSize;
-import com.ning.arecibo.collector.guice.MaxAsynchTriageQueueSize;
-import com.ning.arecibo.collector.guice.MaxBatchInsertSize;
-import com.ning.arecibo.collector.guice.MaxBatchInsertThreads;
-import com.ning.arecibo.collector.guice.MaxPendingEvents;
-import com.ning.arecibo.collector.guice.MaxPendingEventsCheckIntervalMs;
-import com.ning.arecibo.collector.guice.MaxSplitAndSweepInitialDelayMinutes;
-import com.ning.arecibo.collector.guice.MaxTableSpaceMB;
-import com.ning.arecibo.collector.guice.MaxTriageThreads;
-import com.ning.arecibo.collector.guice.MinBatchInsertSize;
-import com.ning.arecibo.collector.guice.ReductionFactors;
-import com.ning.arecibo.collector.guice.TableSpaceName;
-import com.ning.arecibo.collector.guice.TablespaceStatsUpdateIntervalMinutes;
-import com.ning.arecibo.collector.guice.ThrottlePctFreeThreshold;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.eventlogger.Event;
@@ -94,30 +77,10 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
 	private final XStream xstream = XStreamUtils.getXStreamNoStringCache() ;
 
+	private final CollectorConfig collectorConfig;
 	private final IDBI dbi;
-	private final String tablespace;
-	private final int tablespaceStatsUpdateIntervalMinutes;
-	private final int maxTableSpaceMB;
-	private final int maxSplitAndSweepInitialDelayMinutes;
-	private final int throttlePctFree;
-	private final long hostUpdateInterval;
-	private final Boolean readOnlyMode;
-	private final int bufferWindowInSecs;
-	private final int[] reductionFactors;
 	private final Map<String,EventTableDescriptor> eventTableDescriptors;
 	private final ResolutionUtils resolutionUtils;
-    private final int maxTriageThreads;
-    private final int maxBatchInsertThreads;
-    private final int minBatchInsertSize;
-    private final int maxBatchInsertSize;
-    private final int maxAsynchTriageQueueSize;
-    private final int maxAsynchInsertQueueSize;
-    private final int maxPendingEvents;
-    private final long maxPendingEventsCheckIntervalMs;
-    private final Boolean enableBatchRetryOnIntegrityViolation;
-    private final Boolean enableDuplicateEventLogging;
-    private final Boolean enablePerTableInserts;
-    private final Boolean enablePreparedBatchInserts;
     private final AtomicLong retryIdCounter = new AtomicLong(0L);
     private volatile boolean maxPendingEventsExceeded = false;
 
@@ -134,8 +97,8 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     private final AtomicLong discardedEventsDueToIntegrityViolation = new AtomicLong(0L);
     private final AtomicLong retriedEventsDueToIntegrityViolation = new AtomicLong(0L);
     private final AtomicLong retriedEventsDueToIntegrityViolationInserted = new AtomicLong(0L);
-    private final AtomicLong asynchTriageQueueEventCount = new AtomicLong(0L);
-    private final AtomicLong asynchInsertQueueEventCount = new AtomicLong(0L);
+    private final AtomicLong asyncTriageQueueEventCount = new AtomicLong(0L);
+    private final AtomicLong asyncInsertQueueEventCount = new AtomicLong(0L);
 
 	// Last Event Caches
 	private final ConcurrentHashMap<String,Map<String,MapEvent>> lastHostEvents = new ConcurrentHashMap<String,Map<String,MapEvent>>();
@@ -154,12 +117,12 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     private final ReentrantReadWriteLock[] bufferQueueLock;
 
     // Triage Queue
-    private final ArrayBlockingQueue<Runnable> asynchTriageQueue;
-    private final ThreadPoolExecutor asynchTriageExecutor;
+    private final ArrayBlockingQueue<Runnable> asyncTriageQueue;
+    private final ThreadPoolExecutor asyncTriageExecutor;
 
     // Insert Queue
-    private final ArrayBlockingQueue<Runnable> asynchInsertQueue;
-    private final ThreadPoolExecutor asynchInsertExecutor;
+    private final ArrayBlockingQueue<Runnable> asyncInsertQueue;
+    private final ThreadPoolExecutor asyncInsertExecutor;
 
 	private final Random random = new Random(System.currentTimeMillis());
 
@@ -168,79 +131,39 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
 
     @Inject
-	public CollectorDAO(@Named(CollectorConstants.COLLECTOR_DB) IDBI dbi,
-	                    @TableSpaceName String tablespace,
-	                    @ThrottlePctFreeThreshold int throttlePctFree,
-	                    @TablespaceStatsUpdateIntervalMinutes int tablespaceStatsUpdateIntervalMinutes,
-	                    @MaxTableSpaceMB int maxTableSpaceMB,
-	                    @MaxSplitAndSweepInitialDelayMinutes int maxSplitAndSweepInitialDelayMinutes,
-                        @MaxTriageThreads int maxTriageThreads,
-                        @MaxBatchInsertThreads int maxBatchInsertThreads,
-                        @MinBatchInsertSize int minBatchInsertSize,
-                        @MaxBatchInsertSize int maxBatchInsertSize,
-                        @MaxAsynchTriageQueueSize int maxAsynchTriageQueueSize,
-                        @MaxAsynchInsertQueueSize int maxAsynchInsertQueueSize,
-                        @MaxPendingEvents int maxPendingEvents,
-                        @MaxPendingEventsCheckIntervalMs long maxPendingEventsCheckIntervalMs,
-	                    @HostUpdateInterval long hostUpdateInterval,
-	                    @CollectorReadOnlyMode Boolean readOnlyMode,
-                        @EnableBatchRetryOnIntegrityViolation Boolean enableBatchRetryOnIntegrityViolation,
-                        @EnableDuplicateEventLogging Boolean enableDuplicateEventLogging,
-                        @EnablePerTableInserts Boolean enablePerTableInserts,
-                        @EnablePreparedBatchInserts Boolean enablePreparedBatchInserts,
-	                    @BufferWindowInSeconds int bufferWindowInSecs,
-	                    @ReductionFactors int[] reductionFactors,
+	public CollectorDAO(CollectorConfig collectorConfig,
+	                    @Named(CollectorConstants.COLLECTOR_DB) IDBI dbi,
 	                    @EventTableDescriptors Map<String,EventTableDescriptor> eventTableDescriptors,
 	                    Registry registry,
 	                    ResolutionUtils resolutionUtils) throws RemoteException, AlreadyBoundException
 	{
         log.info("LocalTimeZone = %s", localTZ);
        
-        if(readOnlyMode) {
+        if (collectorConfig.isCollectorInReadOnlyMode()) {
             log.info("Initializing CollectorDAO in ReadOnlyMode");
         }
 
+        this.collectorConfig = collectorConfig;
 		this.dbi = dbi;
-		this.tablespace = tablespace;
-		this.tablespaceStatsUpdateIntervalMinutes = tablespaceStatsUpdateIntervalMinutes;
-		this.maxTableSpaceMB = maxTableSpaceMB;
-		this.maxSplitAndSweepInitialDelayMinutes = maxSplitAndSweepInitialDelayMinutes;
-		this.throttlePctFree = throttlePctFree;
-		this.hostUpdateInterval = hostUpdateInterval;
-		this.readOnlyMode = readOnlyMode;
-        this.enableBatchRetryOnIntegrityViolation = enableBatchRetryOnIntegrityViolation;
-        this.enableDuplicateEventLogging = enableDuplicateEventLogging;
-        this.enablePerTableInserts = enablePerTableInserts;
-        this.enablePreparedBatchInserts = enablePreparedBatchInserts;
-		this.bufferWindowInSecs = bufferWindowInSecs;
-		this.reductionFactors = reductionFactors;
 		this.eventTableDescriptors = eventTableDescriptors;
 		this.resolutionUtils = resolutionUtils;
-        this.maxTriageThreads = maxTriageThreads;
-        this.maxBatchInsertThreads = maxBatchInsertThreads;
-        this.minBatchInsertSize = minBatchInsertSize;
-        this.maxBatchInsertSize = maxBatchInsertSize;
-        this.maxAsynchTriageQueueSize = maxAsynchTriageQueueSize;
-        this.maxAsynchInsertQueueSize = maxAsynchInsertQueueSize;
-        this.maxPendingEvents = maxPendingEvents;
-        this.maxPendingEventsCheckIntervalMs = maxPendingEventsCheckIntervalMs;
 
         // set up statistics window engine for transaction/insert time
 		this.transactionTimeStats = new MiniEsperEngine<Long>("TransactionTime", Long.class);
         this.insertTimePerEventStats = new MiniEsperEngine<Double>("InsertTimePerEvent", Double.class);
 
 
-        // define the asynch triage queue
-        this.asynchTriageQueue = new ArrayBlockingQueue<Runnable>(this.maxAsynchTriageQueueSize,true);
+        // define the async triage queue
+        this.asyncTriageQueue = new ArrayBlockingQueue<Runnable>(collectorConfig.getMaxAsyncTriageQueueSize(), true);
 
-        // set up asynchTriageExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
-        this.asynchTriageExecutor = initializeAsynchTriageExecutor();
+        // set up asyncTriageExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
+        this.asyncTriageExecutor = initializeAsyncTriageExecutor();
 
-        // define the asynch insert queue
-        this.asynchInsertQueue = new ArrayBlockingQueue<Runnable>(this.maxAsynchInsertQueueSize,true);
+        // define the async insert queue
+        this.asyncInsertQueue = new ArrayBlockingQueue<Runnable>(collectorConfig.getMaxAsyncInsertQueueSize(), true);
 
-        // set up asynchInsertExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
-        this.asynchInsertExecutor = initializeAsynchInsertExecutor();
+        // set up asyncInsertExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
+        this.asyncInsertExecutor = initializeAsyncInsertExecutor();
 
 
         // init buffer queues
@@ -310,54 +233,52 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         return !maxPendingEventsExceeded;
     }
 
-    private ThreadPoolExecutor initializeAsynchTriageExecutor() {
+    private ThreadPoolExecutor initializeAsyncTriageExecutor() {
 
-        // set up asynchTriageExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
-        return new  ThreadPoolExecutor(this.maxTriageThreads,
-                                        this.maxTriageThreads,
-                                        60L, TimeUnit.SECONDS,
-                                        this.asynchTriageQueue,
-                                        new NamedThreadFactory(getClass().getSimpleName() + "_asynchTriageExecutor"),
-                                        new RejectedExecutionHandler()
-                                        {
-                                            @Override
-                                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                                                AsynchTriageRunnable atRemoved = (AsynchTriageRunnable) r;
-                                                int numRemoved = atRemoved.size();
+        // set up asyncTriageExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
+        return new ThreadPoolExecutor(collectorConfig.getMaxTriageThreads(),
+                                      collectorConfig.getMaxTriageThreads(),
+                                      60L, TimeUnit.SECONDS,
+                                      this.asyncTriageQueue,
+                                      new NamedThreadFactory(getClass().getSimpleName() + "_asyncTriageExecutor"),
+                                      new RejectedExecutionHandler()
+                                      {
+                                          @Override
+                                          public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                              AsyncTriageRunnable atRemoved = (AsyncTriageRunnable) r;
+                                              int numRemoved = atRemoved.size();
 
-                                                log.info("Removing batch from asynch triage queue due to max backlog (%d) reached: %d events being thrown away",
-                                                        CollectorDAO.this.maxAsynchTriageQueueSize, numRemoved);
+                                              log.info("Removing batch from async triage queue due to max backlog (%d) reached: %d events being thrown away",
+                                                       collectorConfig.getMaxAsyncTriageQueueSize(), numRemoved);
 
-                                                discardedEventsDueToTriageQueueOverflow.getAndAdd(numRemoved);
-                                                asynchTriageQueueEventCount.getAndAdd(-numRemoved);
-                                            }
-                                        }
-                                );
+                                              discardedEventsDueToTriageQueueOverflow.getAndAdd(numRemoved);
+                                              asyncTriageQueueEventCount.getAndAdd(-numRemoved);
+                                          }
+                                      });
     }
 
-    private ThreadPoolExecutor initializeAsynchInsertExecutor() {
+    private ThreadPoolExecutor initializeAsyncInsertExecutor() {
 
-        // set up asynchInsertExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
-        return new ThreadPoolExecutor(this.maxBatchInsertThreads,
-                                        this.maxBatchInsertThreads,
-                                        60L, TimeUnit.SECONDS,
-                                        this.asynchInsertQueue,
-                                        new NamedThreadFactory(getClass().getSimpleName() + "_asynchInsertExecutor"),
-                                        new RejectedExecutionHandler()
-                                        {
-                                            @Override
-                                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                                                AsynchInsertRunnable aiRemoved = (AsynchInsertRunnable) r;
-                                                int numRemoved = aiRemoved.size();
+        // set up asyncInsertExecutor, provide a RejectedExecutionHandler to throw out batches when overflow reached
+        return new ThreadPoolExecutor(collectorConfig.getMaxBatchInsertThreads(),
+                                      collectorConfig.getMaxBatchInsertThreads(),
+                                      60L, TimeUnit.SECONDS,
+                                      this.asyncInsertQueue,
+                                      new NamedThreadFactory(getClass().getSimpleName() + "_asyncInsertExecutor"),
+                                      new RejectedExecutionHandler()
+                                      {
+                                          @Override
+                                          public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                              AsyncInsertRunnable aiRemoved = (AsyncInsertRunnable) r;
+                                              int numRemoved = aiRemoved.size();
 
-                                                log.info("Removing batch from asynch insert queue due to max backlog (%d) reached: %d events being thrown away",
-                                                        CollectorDAO.this.maxAsynchInsertQueueSize, numRemoved);
+                                              log.info("Removing batch from async insert queue due to max backlog (%d) reached: %d events being thrown away",
+                                                       collectorConfig.getMaxAsyncInsertQueueSize(), numRemoved);
 
-                                                discardedEventsDueToInsertQueueOverflow.getAndAdd(numRemoved);
-                                                asynchInsertQueueEventCount.getAndAdd(-numRemoved);
-                                            }
-                                        }
-                                );
+                                              discardedEventsDueToInsertQueueOverflow.getAndAdd(numRemoved);
+                                              asyncInsertQueueEventCount.getAndAdd(-numRemoved);
+                                          }
+                                      });
     }
 
     private void scheduleBufferSwapThread() {
@@ -386,7 +307,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             }
 
                             if (!list.isEmpty()) {
-                                AsynchTriageRunnable atRunnable = new AsynchTriageRunnable(list);
+                                AsyncTriageRunnable atRunnable = new AsyncTriageRunnable(list);
                                 atRunnable.submit();
                             }
                         }
@@ -394,7 +315,10 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             log.warn(e, "RuntimeException:");
                         }
                     }
-                }, bufferWindowInSecs, bufferWindowInSecs, TimeUnit.SECONDS);
+                },
+                collectorConfig.getBufferWindow().getPeriod(),
+                collectorConfig.getBufferWindow().getPeriod(),
+                collectorConfig.getBufferWindow().getUnit());
     }
 
     private void scheduleTablespaceStatsThread() {
@@ -409,18 +333,20 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     log.warn(e,"CollectorDAOException:");
                 }
             }
-        }, 0, this.tablespaceStatsUpdateIntervalMinutes, TimeUnit.MINUTES);
+        },
+        0,
+        collectorConfig.getTablespaceStatsUpdateInterval().getPeriod(),
+        collectorConfig.getTablespaceStatsUpdateInterval().getUnit());
     }
 
 
     private void scheduleSplitAndSweepThread() {
+        TimeSpan max = collectorConfig.getMaxSplitAndSweepInitialDelay();
+        int maxSplitAndSweepInitialDelay = (int)TimeUnit.MINUTES.convert(max.getPeriod(),
+                                                                         max.getUnit());
 
-        for(EventTableDescriptor tableDescriptor:this.eventTableDescriptors.values()) {
-
-            if (tableDescriptor.getSplitIntervalInMinutes() < 0)
-                continue;
-
-            int initialDelayMinutes = random.nextInt(this.maxSplitAndSweepInitialDelayMinutes);
+        for (EventTableDescriptor tableDescriptor : eventTableDescriptors.values()) {
+            int initialDelayMinutes = random.nextInt(maxSplitAndSweepInitialDelay);
             log.info("Scheduling splitAndSweep thread in " + initialDelayMinutes + " minutes for tableDescriptor: " + tableDescriptor.getHashKey());
 
             final EventTableDescriptor finalTableDescriptor = tableDescriptor;
@@ -435,7 +361,11 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                         log.warn(cdEx, "Got exception during splitAndSweep, tableDescriptor: " + finalTableDescriptor.getHashKey());
                     }
                 }
-            }, random.nextInt(this.maxSplitAndSweepInitialDelayMinutes), tableDescriptor.getSplitIntervalInMinutes(), TimeUnit.MINUTES);
+            },
+            initialDelayMinutes,
+            TimeUnit.MINUTES.convert(tableDescriptor.getSplitInterval().getPeriod(),
+                                     tableDescriptor.getSplitInterval().getUnit()),
+            TimeUnit.MINUTES);
         }
     }
 
@@ -445,20 +375,24 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
             public void run() {
                 boolean currValue = maxPendingEventsExceeded;
 
-                long currPendingEvents = asynchTriageQueueEventCount.get() + asynchInsertQueueEventCount.get();
-                maxPendingEventsExceeded = currPendingEvents > maxPendingEvents;
+                long currPendingEvents = asyncTriageQueueEventCount.get() + asyncInsertQueueEventCount.get();
+                maxPendingEventsExceeded = currPendingEvents > collectorConfig.getMaxPendingEvents();
 
                 if(currValue != maxPendingEventsExceeded) {
-                    if(maxPendingEventsExceeded) {
-                        log.warn("Max pending events exceeded (%d > %d), blocking event submission",currPendingEvents,maxPendingEvents);
+                    if (maxPendingEventsExceeded) {
+                        log.warn("Max pending events exceeded (%d > %d), blocking event submission",
+                                 currPendingEvents, collectorConfig.getMaxPendingEvents());
                     }
                     else {
-                        log.info("Max pending events no longer exceeded (%d < %d), re-enabling event submission",currPendingEvents,maxPendingEvents);
+                        log.info("Max pending events no longer exceeded (%d < %d), re-enabling event submission",
+                                 currPendingEvents, collectorConfig.getMaxPendingEvents());
                     }
                 }
             }
-
-        },maxPendingEventsCheckIntervalMs,maxPendingEventsCheckIntervalMs,TimeUnit.MILLISECONDS);
+        },
+        collectorConfig.getMaxPendingEventsCheckInterval().getPeriod(),
+        collectorConfig.getMaxPendingEventsCheckInterval().getPeriod(),
+        collectorConfig.getMaxPendingEventsCheckInterval().getUnit());
     }
 
 	private void populateCaches() throws CollectorDAOException
@@ -469,7 +403,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 				public Object withHandle(Handle handle) throws Exception
 				{
 					handle.createQuery(getClass().getPackage().getName()+":getHosts")
-							.fold(hostMap, new Folder<ConcurrentHashMap<String, CachedHost>>()
+					      .fold(hostMap, new Folder<ConcurrentHashMap<String, CachedHost>>()
 							{
 								public ConcurrentHashMap<String, CachedHost> fold(ConcurrentHashMap<String, CachedHost> map, ResultSet rs) throws SQLException
 								{
@@ -553,7 +487,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
 	private void splitAndSweep(final EventTableDescriptor tableDescriptor) throws CollectorDAOException
 	{
-	    if(readOnlyMode) {
+	    if (collectorConfig.isCollectorInReadOnlyMode()) {
             AggregationType aggType = tableDescriptor.getAggregationType();
             String baseTableName = aggType.getBaseTableName();
             String tableName = baseTableName + resolutionUtils.getResolutionTag(tableDescriptor.getReductionFactor());
@@ -566,8 +500,8 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     			public Void withHandle(Handle handle) throws Exception
     			{
                     setMaxTs(tableDescriptor,0L);
-                    final Timestamp ts = new Timestamp(tableDescriptor.getMaxTs() - gmtOffset + TimeUnit.MILLISECONDS.convert(
-                    		tableDescriptor.getSplitIntervalInMinutes() * tableDescriptor.getSplitNumPartitionsAhead(), TimeUnit.MINUTES));
+                    final Timestamp ts = new Timestamp(tableDescriptor.getMaxTs() - gmtOffset +
+                                                       tableDescriptor.getSplitInterval().getMillis() * tableDescriptor.getSplitNumPartitionsAhead());
                     
     				return handle.inTransaction(new TransactionCallback<Void>()
     				{
@@ -606,12 +540,15 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     			public TablespaceStats withHandle(Handle handle) throws Exception
     			{
     				return handle.createQuery(getClass().getPackage().getName() + ":table_space_stats")
-    						.bind("tablespace", tablespace)
+    						.bind("tablespace", collectorConfig.getTableSpaceName())
     						.map(new ResultSetMapper<TablespaceStats>()
     						{
     							public TablespaceStats map(int i, ResultSet rs, StatementContext statementContext) throws SQLException
     							{
-    								return new TablespaceStats(rs.getLong("freeAllocatedMB"), rs.getLong("totalAllocatedMB"), rs.getLong("usedMB"), maxTableSpaceMB);
+    								return new TablespaceStats(rs.getLong("freeAllocatedMB"),
+    								                           rs.getLong("totalAllocatedMB"),
+    								                           rs.getLong("usedMB"),
+    								                           collectorConfig.getMaxTableSpace());
     							}
     						})
     						.first();
@@ -629,7 +566,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 	private boolean checkTablespaceStats() {
 		
     	TablespaceStats stats = tablespaceStats.get();
-        if ( stats != null && stats.pctFree < throttlePctFree ) {
+        if ( stats != null && stats.pctFree < collectorConfig.getThrottlePctFreeThreshold()) {
 			log.warn("tablespace %.1f percent free, discarding events", stats.pctFree);
 			return false;
 		}
@@ -652,7 +589,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
             {
                 public Object inTransaction(Handle handle, TransactionStatus transactionStatus) throws Exception
                 {
-                    if(enablePreparedBatchInserts) {
+                    if (collectorConfig.isPreparedBatchInsertsEnabled()) {
                         insertListWithPreparedBatches(label,events,handle);
                     }
                     else {
@@ -681,22 +618,24 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                 SQLException sqlEx = (SQLException)t;
 
                 // NOTE: this is Oracle specific, error code 1 is for integrity violations
-                if(sqlEx.getErrorCode() != 1) {
+                if (sqlEx.getErrorCode() != 1) {
                     throw new CollectorDAOException("Got RuntimeException:",e);
                 }
 
                 String subLabel;
-                if(!log.isDebugEnabled() && label.contains(RETRY_LABEL_PREFIX))
+                if (!log.isDebugEnabled() && label.contains(RETRY_LABEL_PREFIX)) {
                     subLabel = label.substring(0,label.indexOf(RETRY_LABEL_PREFIX)) + " (retried)";
-                else
+                }
+                else {
                     subLabel = label;
+                }
 
                 log.info("failed batch insert for %s: %s",subLabel,sqlEx.getMessage().trim());
 
-                if(!enableBatchRetryOnIntegrityViolation || events.size() <= 1) {
+                if (!collectorConfig.isBatchRetryOnIntegrityViolationEnabled() || events.size() <= 1) {
                     log.info("throwing out %d record(s) for %s",events.size(),subLabel);
 
-                    if(enableDuplicateEventLogging && events.size() == 1) {
+                    if (collectorConfig.isDuplicateEventLoggingEnabled() && events.size() == 1) {
                         Event event = events.get(0);
                         log.info("throwing out duplicate event: %s %s %s", event.getEventType(),event.getTimestamp(),events.toString());
                     }
@@ -728,8 +667,8 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     }
 
                     
-                    AsynchInsertRunnable aiRunnable1 = new AsynchInsertRunnable(retryId1,subList1);
-                    AsynchInsertRunnable aiRunnable2 = new AsynchInsertRunnable(retryId2,subList2);
+                    AsyncInsertRunnable aiRunnable1 = new AsyncInsertRunnable(retryId1,subList1);
+                    AsyncInsertRunnable aiRunnable2 = new AsyncInsertRunnable(retryId2,subList2);
 
                     aiRunnable1.submit();
                     aiRunnable2.submit();
@@ -752,7 +691,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     {
         // TODO: Much of this is specific to the aggregator plugin, need to remove this dependency somehow
 
-        // Note: If the asynchTriageExecutor is in use, the code here that disambiguates the aggType/templateName should
+        // Note: If the asyncTriageExecutor is in use, the code here that disambiguates the aggType/templateName should
         // be the same for every event in the loop, so might be able to save efficiency by moving that logic outside of the
         // for loop, or even pass in directly as part of the triaged info for the list.  For now, keep the full disambiguation
         // on the event level, in case we want to restore the ability to send heterogeneous event lists in a batch
@@ -801,7 +740,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     }
 
                     PreparedBatch preparedBatch = null;
-                    if(!readOnlyMode) {
+                    if (!collectorConfig.isCollectorInReadOnlyMode()) {
                         preparedBatch = preparedBatches.get(templateName);
                         if(preparedBatch == null) {
                             preparedBatch = handle.prepareBatch(getClass().getPackage().getName() + templateName);
@@ -811,7 +750,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
                     switch (aggType) {
                         case HOST:
-                            if (checkNotEqualLastValue(lastHostEvents, me.getHostName() + resolutionTag, mapEvent) && !readOnlyMode) {
+                            if (!collectorConfig.isCollectorInReadOnlyMode() &&
+                                checkNotEqualLastValue(lastHostEvents, me.getHostName() + resolutionTag, mapEvent))
+                            {
                                 preparedBatchPart = preparedBatch.add();
                                 preparedBatchPart.define("host_event_table", tableName)
                                                     .bind("ts", ts)
@@ -820,7 +761,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             }
                             break;
                         case TYPE:
-                            if (checkNotEqualLastValue(lastTypeEvents, me.getDeployedType() + resolutionTag, mapEvent) && !readOnlyMode) {
+                            if (!collectorConfig.isCollectorInReadOnlyMode() && 
+                                checkNotEqualLastValue(lastTypeEvents, me.getDeployedType() + resolutionTag, mapEvent))
+                            {
                                 preparedBatchPart = preparedBatch.add();
                                 preparedBatchPart.define("type_event_table", tableName)
                                                     .bind("ts", ts)
@@ -829,7 +772,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             }
                             break;
                         case PATH:
-                            if (checkNotEqualLastValue(lastPathEvents, me.getDeployedType() + ":" + me.getDeployedConfigSubPath() + resolutionTag, mapEvent) && !readOnlyMode) {
+                            if (!collectorConfig.isCollectorInReadOnlyMode() &&
+                                checkNotEqualLastValue(lastPathEvents, me.getDeployedType() + ":" + me.getDeployedConfigSubPath() + resolutionTag, mapEvent))
+                            {
                                 preparedBatchPart = preparedBatch.add();
                                 preparedBatchPart.define("path_event_table", tableName)
                                                     .bind("ts", ts)
@@ -840,11 +785,11 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             break;
                     }
                 }
-                else if (!readOnlyMode) {
+                else if (!collectorConfig.isCollectorInReadOnlyMode()) {
 
                     // insert in the generic table (shouldn't happen currently)
                     PreparedBatch preparedBatch = preparedBatches.get("generic");
-                    if(preparedBatch == null) {
+                    if (preparedBatch == null) {
                         preparedBatch = handle.prepareBatch(getClass().getPackage().getName() + AggregationType.GENERIC.getTemplateName());
                         preparedBatches.put("generic",preparedBatch);
                     }
@@ -859,11 +804,11 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     DbEntryUtil.bind(preparedBatchPart, xstream.toXML(event));
                 }
                 else {
-                    if (readOnlyMode) {
+                    if (collectorConfig.isCollectorInReadOnlyMode()) {
                         //log.debug("event not inserted, read_only_mode : %s", e);
                     }
                     else {
-                        if(enableDuplicateEventLogging) {
+                        if (collectorConfig.isDuplicateEventLoggingEnabled()) {
                             log.info("ignoring duplicate event: %s %s %s", event.getEventType(),event.getTimestamp(),events.toString());
                         }
                         discardedEventsDueToConsecutiveDuplicate.incrementAndGet();
@@ -943,7 +888,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
                     switch (aggType) {
                         case HOST:
-                            if (checkNotEqualLastValue(lastHostEvents, me.getHostName() + resolutionTag, event) && !readOnlyMode) {
+                            if (!collectorConfig.isCollectorInReadOnlyMode() &&
+                                checkNotEqualLastValue(lastHostEvents, me.getHostName() + resolutionTag, event))
+                            {
                                 updateStmt = handle.createStatement(getClass().getPackage().getName() + templateName)
                                         .define("host_event_table", tableName)
                                         .bind("ts", ts)
@@ -952,7 +899,8 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             }
                             break;
                         case TYPE:
-                            if (checkNotEqualLastValue(lastTypeEvents, me.getDeployedType() + resolutionTag, event) && !readOnlyMode) {
+                            if (!collectorConfig.isCollectorInReadOnlyMode() && checkNotEqualLastValue(lastTypeEvents, me.getDeployedType() + resolutionTag, event))
+                            {
                                 updateStmt = handle.createStatement(getClass().getPackage().getName() + templateName)
                                         .define("type_event_table", tableName)
                                         .bind("ts", ts)
@@ -961,7 +909,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             }
                             break;
                         case PATH:
-                            if (checkNotEqualLastValue(lastPathEvents, me.getDeployedType() + ":" + me.getDeployedConfigSubPath() + resolutionTag, event) && !readOnlyMode) {
+                            if (!collectorConfig.isCollectorInReadOnlyMode() &&
+                                checkNotEqualLastValue(lastPathEvents, me.getDeployedType() + ":" + me.getDeployedConfigSubPath() + resolutionTag, event))
+                            {
                                 updateStmt = handle.createStatement(getClass().getPackage().getName() + templateName)
                                         .define("path_event_table", tableName)
                                         .bind("ts", ts)
@@ -972,7 +922,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                             break;
                     }
                 }
-                else if (!readOnlyMode) {
+                else if (!collectorConfig.isCollectorInReadOnlyMode()) {
                     updateStmt = handle.createStatement(getClass().getPackage().getName() + ":insert_generic_event")
                             .define("generic_event_table", "generic_events")
                             .bind("ts", ts)
@@ -982,11 +932,11 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     DbEntryUtil.bindAndExecute(updateStmt, xstream.toXML(e));
                 }
                 else {
-                    if (readOnlyMode) {
+                    if (collectorConfig.isCollectorInReadOnlyMode()) {
                         //log.debug("event not inserted, read_only_mode : %s", e);
                     }
                     else {
-                        if(enableDuplicateEventLogging) {
+                        if (collectorConfig.isDuplicateEventLoggingEnabled()) {
                             log.info("ignoring duplicate event: %s %s %s", e.getEventType(),e.getTimestamp(),e.toString());
                         }
                         discardedEventsDueToConsecutiveDuplicate.incrementAndGet();
@@ -1061,7 +1011,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 				if (saved == null) {
                     final Integer next = getNextID();
                     Integer old = typeMap.putIfAbsent(type, next);
-                    if (old == null && !readOnlyMode) {
+                    if (old == null && !collectorConfig.isCollectorInReadOnlyMode()) {
                         dbi.withHandle(new HandleCallback<Object>()
                         {
                             public Object withHandle(Handle handle) throws Exception
@@ -1108,7 +1058,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 				if (saved == null) {
                     final Integer next = getNextID();
                     Integer old = pathMap.putIfAbsent(path, next);
-                    if (old == null && !readOnlyMode) {
+                    if (old == null && !collectorConfig.isCollectorInReadOnlyMode()) {
                         dbi.withHandle(new HandleCallback<Object>()
                         {
                             public Object withHandle(Handle handle) throws Exception
@@ -1155,7 +1105,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 				if (saved == null) {
                     final Integer next = getNextID();
                     Integer old = eventTypeMap.putIfAbsent(eventType, next);
-                    if (old == null && !readOnlyMode) {
+                    if (old == null && !collectorConfig.isCollectorInReadOnlyMode()) {
                         dbi.withHandle(new HandleCallback<Object>()
                         {
                             public Object withHandle(Handle handle) throws Exception
@@ -1344,7 +1294,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
     @Override
     public int[] getReductionFactors() {
-        return this.reductionFactors;
+        return collectorConfig.getReductionFactors();
     }
 
     @Override
@@ -1614,7 +1564,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 		if (stats == null) {
 			return -1;
 		}
-		return stats.freeAllocatedMB;
+		return stats.freeAllocatedMiB;
 	}
 
 	@MonitorableManaged(monitored = true)
@@ -1634,7 +1584,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 		if (stats == null) {
 			return -1;
 		}
-		return stats.usedMB;
+		return stats.usedMiB;
 	}
 
 	@MonitorableManaged(monitored = true)
@@ -1644,7 +1594,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 		if (stats == null) {
 			return -1;
 		}
-		return stats.totalAllocatedMB;
+		return stats.totalAllocatedMiB;
 	}
 
 	@MonitorableManaged(monitored = true, monitoringType = { MonitoringType.RATE, MonitoringType.COUNTER })
@@ -1688,39 +1638,42 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
     }
 
 	@MonitorableManaged(monitored = true, monitoringType = { MonitoringType.VALUE })
-    public long getAsynchTriageQueueSize() {
-        return this.asynchTriageQueue.size();
+    public long getAsyncTriageQueueSize() {
+        return this.asyncTriageQueue.size();
     }
 
 	@MonitorableManaged(monitored = true, monitoringType = { MonitoringType.VALUE })
-    public long getAsynchInsertQueueSize() {
-        return this.asynchInsertQueue.size();
+    public long getAsyncInsertQueueSize() {
+        return this.asyncInsertQueue.size();
     }
 
 	@MonitorableManaged(monitored = true, monitoringType = { MonitoringType.VALUE })
-    public long getAsynchInsertQueuedEventCount() {
-        return this.asynchInsertQueueEventCount.get();
+    public long getAsyncInsertQueuedEventCount() {
+        return this.asyncInsertQueueEventCount.get();
     }
 
 	@MonitorableManaged(monitored = true, monitoringType = { MonitoringType.VALUE })
-	public long getAsynchTriageQueuedEventCount() {
-		return this.asynchTriageQueueEventCount.get();
+	public long getAsyncTriageQueuedEventCount() {
+		return this.asyncTriageQueueEventCount.get();
 	}
 
     private static class TablespaceStats
     {
-        final long freeAllocatedMB, totalAllocatedMB, usedMB, maxMB;
+        final long freeAllocatedMiB;
+        final long totalAllocatedMiB;
+        final long usedMiB;
+        final long maxMiB;
         final double pctFree;
 
-        private TablespaceStats(long freeAllocatedMB, long totalAllocatedMB, long usedMB, long maxMB)
+        private TablespaceStats(long freeAllocatedMB, long totalAllocatedMB, long usedMB, DataAmount maxAmount)
         {
-            this.freeAllocatedMB = freeAllocatedMB;
-            this.totalAllocatedMB = totalAllocatedMB;
-            this.usedMB = usedMB;
-            this.maxMB = maxMB;
+            this.freeAllocatedMiB = freeAllocatedMB;
+            this.totalAllocatedMiB = totalAllocatedMB;
+            this.usedMiB = usedMB;
+            this.maxMiB = maxAmount.convertTo(DataAmountUnit.MEBIBYTE).getValue();
 
-            if(this.maxMB > 0) {
-                this.pctFree = 100.0*(double)(maxMB - usedMB)/(double)maxMB;
+            if(this.maxMiB > 0) {
+                this.pctFree = 100.0*(double)(maxMiB - usedMB)/(double)maxMiB;
             }
             else {
                 this.pctFree = 100.0*(double)freeAllocatedMB / (double)totalAllocatedMB;
@@ -1766,8 +1719,9 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                 throws CollectorDAOException
         {
             try {
-                if(readOnlyMode)
+                if (collectorConfig.isCollectorInReadOnlyMode()) {
                     return;
+                }
 
                 id = getNextID();
                 dbi.withHandle(new HandleCallback<Object>()
@@ -1793,14 +1747,16 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                 throws CollectorDAOException
         {
             try {
-                if (System.currentTimeMillis() - last_updated > hostUpdateInterval && checksum() != other.checksum()) {
+                if ((System.currentTimeMillis() - last_updated > collectorConfig.getHostUpdateInterval().getMillis()) &&
+                    (checksum() != other.checksum()))
+                {
                     log.debug("updating host info %s", other.toString());
                     this.ver = other.ver ;
                     this.path = other.path ;
                     this.type = other.type ;
                     this.env = other.env ;
 
-                    if(!readOnlyMode) {
+                    if (!collectorConfig.isCollectorInReadOnlyMode()) {
                         dbi.withHandle(new HandleCallback<Object>()
                         {
                             public Object withHandle(Handle handle) throws Exception
@@ -1879,17 +1835,17 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
         }
     }
 
-    private class AsynchTriageRunnable implements Runnable {
+    private class AsyncTriageRunnable implements Runnable {
 
         private final List<Event> events;
 
-        public AsynchTriageRunnable(List<Event> events) {
+        public AsyncTriageRunnable(List<Event> events) {
             this.events = events;
         }
 
         public void submit() {
-            asynchTriageQueueEventCount.getAndAdd(this.size());
-            asynchTriageExecutor.execute(this);
+            asyncTriageQueueEventCount.getAndAdd(this.size());
+            asyncTriageExecutor.execute(this);
         }
 
         public int size() {
@@ -1901,7 +1857,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
         public void run() {
 
-            asynchTriageQueueEventCount.getAndAdd(-this.size());
+            asyncTriageQueueEventCount.getAndAdd(-this.size());
             log.info("triaging %d events in batch...",events.size());
 
             Map<String,List<Event>> perTableListMap = new HashMap<String,List<Event>>();
@@ -1921,7 +1877,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
                     AggregationType aggType = AggregationType.valueOf(aggObj.toString().toUpperCase());
 
-                    if(enablePerTableInserts) {
+                    if (collectorConfig.isPerTableInsertsEnabled()) {
                         String resolutionTag = mapEvent.getValue("reduction").toString();
                         if (resolutionTag != null && resolutionTag.length() > 0) {
                             tableName = aggType.getBaseTableName() + resolutionTag;
@@ -1963,13 +1919,13 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
                 List<Event> perTableList = perTableListMap.get(tableName);
 
-                if(perTableList == null) {
+                if (perTableList == null) {
                     perTableList = new ArrayList<Event>();
                     perTableListMap.put(tableName,perTableList);
                 }
 
                 perTableList.add(event);
-                if(perTableList.size() >= maxBatchInsertSize) {
+                if (perTableList.size() >= collectorConfig.getMaxBatchInsertSize()) {
                     submitInsertRunnable(perTableListMap.remove(tableName),tableName);
                 }
             }
@@ -1978,14 +1934,14 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
             // keep a combined list for those tables which have less than the minimum size
             List<Event> combinedList = null;
             String combinedListLabel = null;
-            for(String tableName:perTableListMap.keySet()) {
+            for (String tableName:perTableListMap.keySet()) {
                 List<Event> perTableList = perTableListMap.get(tableName);
 
-                if(perTableList.size() >= minBatchInsertSize) {
+                if (perTableList.size() >= collectorConfig.getMinBatchInsertSize()) {
                     submitInsertRunnable(perTableList,tableName);
                 }
                 else {
-                    if(combinedList == null) {
+                    if (combinedList == null) {
                         combinedList = perTableList;
                         combinedListLabel = tableName;
                     }
@@ -1995,29 +1951,30 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
                     }
                 }
             }
-            if(combinedList != null)
+            if (combinedList != null) {
                 submitInsertRunnable(combinedList,combinedListLabel);
+            }
         }
 
         private void submitInsertRunnable(List<Event> perTableList,String label) {
-            AsynchInsertRunnable aiRunnable = new AsynchInsertRunnable(label,perTableList);
+            AsyncInsertRunnable aiRunnable = new AsyncInsertRunnable(label,perTableList);
             aiRunnable.submit();
         }
     }
 
-    private class AsynchInsertRunnable implements Runnable {
+    private class AsyncInsertRunnable implements Runnable {
 
         private final String label;
         private final List<Event> events;
 
-        public AsynchInsertRunnable(String label,List<Event> events) {
+        public AsyncInsertRunnable(String label,List<Event> events) {
             this.label = label;
             this.events = events;
         }
 
         public void submit() {
-            asynchInsertQueueEventCount.getAndAdd(this.size());
-            asynchInsertExecutor.execute(this);
+            asyncInsertQueueEventCount.getAndAdd(this.size());
+            asyncInsertExecutor.execute(this);
         }
 
         public int size() {
@@ -2029,7 +1986,7 @@ public class CollectorDAO extends UnicastRemoteObject implements RemoteCollector
 
         public void run() {
             try {
-                asynchInsertQueueEventCount.getAndAdd(-this.size());
+                asyncInsertQueueEventCount.getAndAdd(-this.size());
 
                 String subLabel;
                 if (!log.isDebugEnabled() && label.contains(RETRY_LABEL_PREFIX))

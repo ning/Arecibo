@@ -1,6 +1,7 @@
 package com.ning.arecibo.aggregator.guice;
 
 import java.util.UUID;
+import org.skife.config.ConfigurationObjectFactory;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
@@ -34,9 +35,9 @@ public class AggregatorModule extends AbstractModule
     @Override
 	public void configure()
 	{
-        bindConstant().annotatedWith(AsynchUpdateWorkerBufferSize.class).to(Integer.getInteger(AsynchUpdateWorkerBufferSize.PROPERTY_NAME, AsynchUpdateWorkerBufferSize.DEFAULT));
-        bindConstant().annotatedWith(AsynchUpdateWorkerNumThreads.class).to(Integer.getInteger(AsynchUpdateWorkerNumThreads.PROPERTY_NAME, AsynchUpdateWorkerNumThreads.DEFAULT));
+        AggregatorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(AggregatorConfig.class);
 
+        bind(AggregatorConfig.class).toInstance(config);
 		bind(UUID.class).annotatedWith(SelfUUID.class).toInstance(UUID.randomUUID());
 
 	    bind(EventDictionary.class).asEagerSingleton();

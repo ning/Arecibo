@@ -64,7 +64,7 @@ public class DbEntryUtil
     public static final String IS_PRIVATE_COLUMN_NAME = "is_private";
 
     private static final Logger log = Logger.getLogger(DbEntryUtil.class);
-    private static final EntryMode globalMode = EntryMode.valueOf(System.getProperty("xn.db.entry.compression", "GZIP"));
+    private static final EntryMode globalMode = EntryMode.GZIP;
     public static final String UTF8 = "UTF-8";
     private static EfficientBlobMapper mapper = new EfficientBlobMapper(ENTRY_COLUMN_NAME);
 

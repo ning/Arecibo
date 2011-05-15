@@ -1,23 +1,19 @@
 package com.ning.arecibo.dashboard.alert;
 
+import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_HOST_NAME;
+import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_PATH_NAME;
+import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_TYPE_NAME;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.atomic.AtomicLong;
 import com.google.inject.Inject;
-import com.ning.arecibo.dashboard.guice.AlertManagerEnabled;
-
+import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.Logger;
-
-
-import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_HOST_NAME;
-import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_PATH_NAME;
-import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_TYPE_NAME;
 
 public class AlertStatusManager implements Runnable
 {
@@ -36,29 +32,26 @@ public class AlertStatusManager implements Runnable
     private ScheduledThreadPoolExecutor executor;
     
     private final ClusterAwareAlertClient alertClient;
-    private final Boolean alertManagerEnabled;
+    private final DashboardConfig dashboardConfig;
 
     private final ConcurrentHashMap<String, DashboardAlertStatus> alertsByHost = new ConcurrentHashMap<String, DashboardAlertStatus>();
     private final ConcurrentHashMap<String, DashboardAlertStatus> alertsByType = new ConcurrentHashMap<String, DashboardAlertStatus>();
     private final ConcurrentHashMap<String, DashboardAlertStatus> alertsByPathWithType = new ConcurrentHashMap<String, DashboardAlertStatus>();
     private final ConcurrentHashMap<String, DashboardAlertStatus> alertsOverall = new ConcurrentHashMap<String, DashboardAlertStatus>();
-    
     private final ConcurrentHashMap<String,Long> alertMatchMap = new ConcurrentHashMap<String,Long>();
     
     private volatile Boolean alertStatusAvailable = false;
 
-
     @Inject
-    public AlertStatusManager(@AlertManagerEnabled Boolean alertManagerEnabled,
+    public AlertStatusManager(DashboardConfig dashboardConfig,
                               ClusterAwareAlertClient alertClient) {
-    	
-    	this.alertManagerEnabled = alertManagerEnabled;
+    	this.dashboardConfig = dashboardConfig;
         this.alertClient = alertClient;
     }
     
     public synchronized void start()
     {
-    	if(!alertManagerEnabled) {
+    	if (!dashboardConfig.isAlertManagerEnabled()) {
     		log.info("Disabling the alertManager");
     		return;
     	}

@@ -7,8 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.weakref.jmx.Managed;
 import com.google.inject.Inject;
-import com.ning.arecibo.aggregator.guice.AsynchUpdateWorkerBufferSize;
-import com.ning.arecibo.aggregator.guice.AsynchUpdateWorkerNumThreads;
+import com.ning.arecibo.aggregator.guice.AggregatorConfig;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
@@ -19,29 +18,26 @@ public class AsynchronousUpdateWorker
 	private static final Logger log = Logger.getLogger(AsynchronousUpdateWorker.class);
 
 	final ThreadPoolExecutor executor;
-    final ArrayBlockingQueue<Runnable> asynchDispatchQueue;
+    final ArrayBlockingQueue<Runnable> asyncDispatchQueue;
     final AtomicLong discardedTasksDueToOverflow = new AtomicLong(0L);
 
     @Inject
-	public AsynchronousUpdateWorker(@AsynchUpdateWorkerBufferSize int bufferSize,
-                                    @AsynchUpdateWorkerNumThreads int numThreads)
+	public AsynchronousUpdateWorker(AggregatorConfig config)
 	{
-        this.asynchDispatchQueue = new ArrayBlockingQueue<Runnable>(bufferSize);
+        this.asyncDispatchQueue = new ArrayBlockingQueue<Runnable>(config.getAsyncUpdateWorkerBufferSize());
 
-		executor = new ThreadPoolExecutor(numThreads, numThreads,
-                60L, TimeUnit.SECONDS,
-                this.asynchDispatchQueue,
-				new NamedThreadFactory(getClass().getSimpleName()),
-                new RejectedExecutionHandler() {
-
-                    @Override
-                    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                        log.warn("AsynchronousUpdateWorker queue full, discarding task");
-                        discardedTasksDueToOverflow.getAndIncrement();
-                    }
-
-                });
-        
+		executor = new ThreadPoolExecutor(config.getAsyncUpdateWorkerNumThreads(),
+		                                  config.getAsyncUpdateWorkerNumThreads(),
+		                                  60L, TimeUnit.SECONDS,
+		                                  this.asyncDispatchQueue,
+		                                  new NamedThreadFactory(getClass().getSimpleName()),
+		                                  new RejectedExecutionHandler() {
+                                              @Override
+                                              public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                                  log.warn("AsynchronousUpdateWorker queue full, discarding task");
+                                                  discardedTasksDueToOverflow.getAndIncrement();
+                                              }
+                                          });
 	}
 
     public void executeLater(final Runnable run)

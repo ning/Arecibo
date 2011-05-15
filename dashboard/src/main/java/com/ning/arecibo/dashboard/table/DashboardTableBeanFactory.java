@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import com.google.inject.Inject;
 import com.ning.arecibo.dashboard.context.DashboardTableContextManager;
-import com.ning.arecibo.dashboard.guice.TableCacheSize;
+import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.LRUCache;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
@@ -29,14 +29,11 @@ public class DashboardTableBeanFactory
     private static AtomicLong tableBeanCacheHits = new AtomicLong();
     private static AtomicLong tableBeanCacheMisses = new AtomicLong();
     
-    private final int tableCacheSize;
-    
     private final LRUCache<String, CachedTableBeanWrapper> lruCache;
     
     @Inject
-    public DashboardTableBeanFactory(@TableCacheSize int tableCacheSize) {
-    	this.tableCacheSize = tableCacheSize;
-    	lruCache = new LRUCache<String, CachedTableBeanWrapper>(this.tableCacheSize);    
+    public DashboardTableBeanFactory(DashboardConfig dashboardConfig) {
+    	lruCache = new LRUCache<String, CachedTableBeanWrapper>(dashboardConfig.getTableCacheSize());    
     }
     
     public DashboardTableBean getTableBeanBySignature(DashboardTableContextManager contextManager,long timeoutSeconds,String tableBeanSignature) {

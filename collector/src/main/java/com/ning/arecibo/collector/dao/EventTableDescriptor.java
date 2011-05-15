@@ -1,13 +1,14 @@
 package com.ning.arecibo.collector.dao;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.skife.config.TimeSpan;
 
 public class EventTableDescriptor {
 	
 	private final AggregationType aggType;
 	private final int reductionFactor;
 	private final String resolutionTag;
-	private final int splitIntervalInMinutes;
+	private final TimeSpan splitInterval;
 	private final int numPartitionsToKeep;
 	private final int splitNumPartitionsAhead;
 	private final AtomicLong maxTs;
@@ -16,13 +17,13 @@ public class EventTableDescriptor {
 										int reductionFactor,
 										String resolutionTag,
 										int numPartitionsToKeep,
-										int splitIntervalInMinutes,
+										TimeSpan splitInterval,
 										int splitNumPartitionsAhead) {
 		
 		this.aggType = aggType;
 		this.reductionFactor = reductionFactor;
 		this.resolutionTag = resolutionTag;
-		this.splitIntervalInMinutes = splitIntervalInMinutes;
+		this.splitInterval = splitInterval;
 		this.numPartitionsToKeep = numPartitionsToKeep;
 		this.splitNumPartitionsAhead = splitNumPartitionsAhead;
 		this.maxTs = new AtomicLong(System.currentTimeMillis());
@@ -36,8 +37,8 @@ public class EventTableDescriptor {
 		return reductionFactor;
 	}
 	
-	public int getSplitIntervalInMinutes() {
-		return splitIntervalInMinutes;
+	public TimeSpan getSplitInterval() {
+		return splitInterval;
 	}
 	
 	public int getNumPartitionsToKeep() {

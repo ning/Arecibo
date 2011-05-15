@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.lang.StringUtils;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Query;
@@ -31,12 +32,7 @@ import com.google.inject.name.Named;
 import com.ning.arecibo.collector.RemoteCollector;
 import com.ning.arecibo.collector.ResolutionTagGenerator;
 import com.ning.arecibo.collector.contentstore.DbEntryUtil;
-import com.ning.arecibo.dashboard.guice.CollectorCacheMaxWaitMS;
-import com.ning.arecibo.dashboard.guice.CollectorCacheSize;
-import com.ning.arecibo.dashboard.guice.CollectorCacheTimeToLiveMS;
-import com.ning.arecibo.dashboard.guice.CollectorHostOverride;
-import com.ning.arecibo.dashboard.guice.CollectorRMIPortOverride;
-import com.ning.arecibo.dashboard.guice.CollectorServiceName;
+import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.dashboard.guice.DashboardConstants;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.transport.EventService;
@@ -78,17 +74,13 @@ public final class DashboardCollectorDAO
     private final AtomicLong cacheTimeouts = new AtomicLong();
     private final AtomicLong cacheRequestFailuresDueToGC = new AtomicLong();
 
+    private final DashboardConfig dashboardConfig;
 	private final AtomicReference<RemoteCollector> collector = new AtomicReference<RemoteCollector>();
 	private volatile ResolutionTagGenerator resTagGenerator;
 	private volatile int[] reductionFactors;
 	private volatile Map<Integer,String> resolutionTags;
 
 	private final IDBI dbi;
-	private final String collectorHostOverride;
-	private final int collectorRMIPortOverride;
-	private final int collectorCacheSize;
-    private final long collectorCacheMaxWaitMS;
-    private final long collectorCacheTimeToLiveMS;
 	private final XStream xstream = XStreamUtils.getXStreamNoStringCache();
 
 	private final LRUCache<String, CachedEvents> lruCache;
@@ -96,34 +88,19 @@ public final class DashboardCollectorDAO
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
 
     @Inject
-	public DashboardCollectorDAO(@Named(DashboardConstants.DASHBOARD_COLLECTOR_DB) IDBI dbi,
-	                    ServiceLocator cluster,
-                        @CollectorServiceName String collectorServiceName,
-	                    @CollectorCacheSize int collectorCacheSize,
-                        @CollectorCacheMaxWaitMS long collectorCacheMaxWaitMS,
-                        @CollectorCacheTimeToLiveMS long collectorCacheTimeToLiveMS,
-	                    @CollectorHostOverride String collectorHostOverride,
-	                    @CollectorRMIPortOverride int collectorRMIPortOverride)
+	public DashboardCollectorDAO(DashboardConfig dashboardConfig,
+	                             @Named(DashboardConstants.DASHBOARD_COLLECTOR_DB) IDBI dbi,
+	                             ServiceLocator cluster)
 	{
+        this.dashboardConfig = dashboardConfig;
 		this.dbi = dbi;
-		this.collectorCacheSize = collectorCacheSize;
-        this.collectorCacheMaxWaitMS = collectorCacheMaxWaitMS;
-        this.collectorCacheTimeToLiveMS = collectorCacheTimeToLiveMS;
-		this.collectorHostOverride = collectorHostOverride;
-		this.collectorRMIPortOverride = collectorRMIPortOverride;
 		
 		this.reductionFactors = null;
 		this.resolutionTags = null;
 
-		this.lruCache = new LRUCache<String, CachedEvents>(this.collectorCacheSize);
+		this.lruCache = new LRUCache<String, CachedEvents>(dashboardConfig.getCollectorCacheSize());
 	
-		if (collectorHostOverride == null || collectorHostOverride.length() == 0) {
-			initRemoteCollectorViaBeacon(cluster,collectorServiceName);
-		}
-		else {
-			initRemoteCollectorViaCollectorHostOverride();
-		}
-		
+		initRemoteCollector();
 	}
 	
 	public int[] getReductionFactors() {
@@ -133,13 +110,15 @@ public final class DashboardCollectorDAO
 		    return this.reductionFactors.clone();
 	}
 
-	private void initRemoteCollectorViaCollectorHostOverride()
+	private void initRemoteCollector()
 	{
-		log.info("Using collectorHostOverride at " + collectorHostOverride);
-		log.info("Using collectorRMIPortOverride " + collectorRMIPortOverride);
+		log.info("Using collectorHostOverride at %s", dashboardConfig.getCollectorHost());
+
+		String[] hostAndPort = dashboardConfig.getCollectorHost().split(":");
 
 		try {
-			Registry r = LocateRegistry.getRegistry(collectorHostOverride, collectorRMIPortOverride);
+			Registry r = LocateRegistry.getRegistry(hostAndPort[0],
+			                                        hostAndPort.length > 1 ? Integer.parseInt(hostAndPort[1]) : 8989);
 			RemoteCollector c = (RemoteCollector) r.lookup(RemoteCollector.class.getSimpleName());
 			collector.set(c);
 			log.info("found collector %s", collector);
@@ -152,55 +131,6 @@ public final class DashboardCollectorDAO
 		catch (NotBoundException e) {
 			log.error(e);
 		}
-	}
-
-
-	private void initRemoteCollectorViaBeacon(ServiceLocator cluster,final String collectorServiceName)
-	{
-
-		final Selector selector = new Selector()
-		{
-			public boolean match(ServiceDescriptor sd)
-			{
-				return sd.getName().equals(collectorServiceName);
-			}
-		};
-
-		cluster.registerListener(selector, Executors.newFixedThreadPool(1), new ServiceListener()
-		{
-
-			public void onRemove(ServiceDescriptor serviceDescriptor)
-			{
-				// this seems to be highly unreliable, don't reset anything here, seems to come out of order, and late...
-				log.info("Got onRemove beacon event for the collector (ignoring)");
-			}
-
-			public void onAdd(ServiceDescriptor sd)
-			{
-				//TODO: Remove dependence on beacon here, not sure we always get this event
-				int port = Integer.parseInt(sd.getProperties().get("arecibo.rmi.port"));
-				String host = sd.getProperties().get(EventService.HOST);
-
-				try {
-					Registry r = LocateRegistry.getRegistry(host, port);
-					RemoteCollector c = (RemoteCollector) r.lookup(RemoteCollector.class.getSimpleName());
-					collector.set(c);
-					
-					initResolutionFactors();
-				}
-				catch (RemoteException e) {
-					log.warn(e);
-				}
-				catch (NotBoundException e) {
-					log.warn(e);
-				}
-				catch (RuntimeException e) {
-					log.warn(e);
-				}
-			}
-		});
-
-		cluster.startReadOnly();
 	}
 
 	private void initResolutionFactors() throws RemoteException {
@@ -621,7 +551,9 @@ public final class DashboardCollectorDAO
 						lruCache.remove(cacheKey);
 					}
 				}
-			}, collectorCacheTimeToLiveMS, TimeUnit.MILLISECONDS);
+			},
+			dashboardConfig.getCollectorCacheTimeToLive().getPeriod(),
+			dashboardConfig.getCollectorCacheTimeToLive().getUnit());
 			return CachedEvents.getValues(key, results);
 		}
 		else {
@@ -631,7 +563,8 @@ public final class DashboardCollectorDAO
                 log.debug("waiting for cacheKey %s", cacheKey);
 
                 long startWaitTime = System.currentTimeMillis();
-				cachedEvents.waitFor(collectorCacheMaxWaitMS, TimeUnit.MILLISECONDS);
+				cachedEvents.waitFor(dashboardConfig.getCollectorCacheMaxWait().getPeriod(),
+				                     dashboardConfig.getCollectorCacheMaxWait().getUnit());
                 logCacheHitWaitTime(startWaitTime);
             }
             catch (InterruptedException e) {

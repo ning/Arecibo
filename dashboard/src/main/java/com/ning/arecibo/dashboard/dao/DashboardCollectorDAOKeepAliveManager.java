@@ -1,16 +1,15 @@
 package com.ning.arecibo.dashboard.dao;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.Map;
-import java.util.List;
-
+import org.apache.commons.lang.StringUtils;
 import com.google.inject.Inject;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.dashboard.graph.DashboardGraphUtils;
-import com.ning.arecibo.dashboard.guice.DashboardCollectorKeepAliveHost;
-
+import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 
@@ -25,22 +24,22 @@ public class DashboardCollectorDAOKeepAliveManager implements Runnable
     private AtomicLong lastExecutionTime = new AtomicLong(0L);
     private AtomicLong lastExecutionResultCount = new AtomicLong(0L);
 
+    private final DashboardConfig dashboardConfig;
     private final DashboardCollectorDAO dao;
     private final GalaxyStatusManager galaxyStatusManager;
-    private final String dashboardKeepAliveHost;
 
     @Inject
-    public DashboardCollectorDAOKeepAliveManager(DashboardCollectorDAO dao,
-                                                 GalaxyStatusManager galaxyStatusManager,
-                                                 @DashboardCollectorKeepAliveHost String dashboardKeepAliveHost) {
+    public DashboardCollectorDAOKeepAliveManager(DashboardConfig dashboardConfig,
+                                                 DashboardCollectorDAO dao,
+                                                 GalaxyStatusManager galaxyStatusManager) {
+        this.dashboardConfig = dashboardConfig;
         this.dao = dao;
         this.galaxyStatusManager = galaxyStatusManager;
-        this.dashboardKeepAliveHost = dashboardKeepAliveHost;
     }
 
     public synchronized void start()
     {
-        if(dashboardKeepAliveHost == null || dashboardKeepAliveHost.length() == 0) {
+        if (StringUtils.isBlank(dashboardConfig.getDashboardCollectorKeepAliveHost())) {
             log.info("No dashboard collector keep alive host defined, not starting keep alive manager");
             return;
         }
@@ -49,7 +48,7 @@ public class DashboardCollectorDAOKeepAliveManager implements Runnable
         this.executor = new ScheduledThreadPoolExecutor(1);
 
         // start the config updater
-        this.executor.scheduleWithFixedDelay(this,0, KEEP_ALIVE_INTERVAL,TimeUnit.MILLISECONDS);
+        this.executor.scheduleWithFixedDelay(this, 0, KEEP_ALIVE_INTERVAL, TimeUnit.MILLISECONDS);
     }
 
     public synchronized void stop()
@@ -74,34 +73,49 @@ public class DashboardCollectorDAOKeepAliveManager implements Runnable
             }
 
             long resultCount = 0L;
-            String coreType = galaxyStatusManager.getCoreType(dashboardKeepAliveHost);
-            String path = galaxyStatusManager.getConfigSubPath(dashboardKeepAliveHost);
+            String coreType = galaxyStatusManager.getCoreType(dashboardConfig.getDashboardCollectorKeepAliveHost());
+            String path = galaxyStatusManager.getConfigSubPath(dashboardConfig.getDashboardCollectorKeepAliveHost());
             List<Map<String, Object>> results;
 
             String eventType = "DAOKeepAliveManager";
             String attributeType = "LastKeepAliveQueryTimeMS";
 
-            for(int reductionFactor:reductionFactors) {
+            for (int reductionFactor : reductionFactors) {
 
                 long timeWindow = reductionFactor * DashboardGraphUtils.TimeWindow.getDefaultTimeWindow().getMillis();
                 ResolutionRequest resRequest = new ResolutionRequest(ResolutionRequestType.FIXED,reductionFactor);
 
-                if(dashboardKeepAliveHost != null && !dashboardKeepAliveHost.equals("")) {
-                    results = dao.getValuesForHostEvent(dashboardKeepAliveHost,eventType,attributeType,resRequest,timeWindow);
-                    if(results != null)
+                if (StringUtils.isNotBlank(dashboardConfig.getDashboardCollectorKeepAliveHost())) {
+                    results = dao.getValuesForHostEvent(dashboardConfig.getDashboardCollectorKeepAliveHost(),
+                                                        eventType,
+                                                        attributeType,
+                                                        resRequest,timeWindow);
+                    if (results != null) {
                         resultCount += results.size();
+                    }
                 }
 
-                if(coreType != null && !coreType.equals("")) {
-                    results = dao.getValuesForTypeEvent(coreType,eventType,attributeType,resRequest,timeWindow);
-                    if(results != null)
+                if (StringUtils.isNotBlank(coreType)) {
+                    results = dao.getValuesForTypeEvent(coreType,
+                                                        eventType,
+                                                        attributeType,
+                                                        resRequest,
+                                                        timeWindow);
+                    if (results != null) {
                         resultCount += results.size();
+                    }
                 }
 
-                if(coreType != null && !coreType.equals("") && path != null && !path.equals("")) {
-                    results = dao.getValuesForPathWithTypeEvent(coreType,path,eventType,attributeType,resRequest,timeWindow);
-                    if(results != null)
+                if (StringUtils.isNotBlank(coreType) && StringUtils.isNotBlank(path)) {
+                    results = dao.getValuesForPathWithTypeEvent(coreType,
+                                                                path,
+                                                                eventType,
+                                                                attributeType,
+                                                                resRequest,
+                                                                timeWindow);
+                    if (results != null) {
                         resultCount += results.size();
+                    }
                 }
             }
 

@@ -2,11 +2,9 @@ package com.ning.arecibo.dashboard.alert;
 
 import java.io.IOException;
 import java.util.List;
-
+import org.apache.commons.lang.StringUtils;
 import com.google.inject.Inject;
-import com.ning.arecibo.dashboard.guice.AlertHostOverride;
-import com.ning.arecibo.dashboard.guice.AlertPortOverride;
-
+import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
@@ -18,33 +16,29 @@ public class ClusterAwareAlertClient
 {
 	private final static Logger log = Logger.getLogger(ClusterAwareAlertClient.class);
 
+	private final DashboardConfig dashboardConfig;
 	private final ServiceLocator serviceLocator;
 	private final AlertRESTClient api;
 	private final Selector selector;
-	
-	private final String alertHostOverride;
-	private final int alertPortOverride;
 
 	private volatile int maxRetries = 3;
 
 	@Inject
-	public ClusterAwareAlertClient(ServiceLocator serviceLocator, 
-	                               AlertRESTClient api,
-	                               @AlertHostOverride String alertHostOverride,
-	                               @AlertPortOverride int alertPortOverride)
+	public ClusterAwareAlertClient(DashboardConfig dashboardConfig,
+	                               ServiceLocator serviceLocator, 
+	                               AlertRESTClient api)
 	{
+	    this.dashboardConfig = dashboardConfig;
 		this.serviceLocator = serviceLocator;
 		this.api = api;
-		this.alertHostOverride = alertHostOverride;
-		this.alertPortOverride = alertPortOverride;
 
-		if(alertHostOverride == null || alertHostOverride.length() == 0) {
+		if (StringUtils.isBlank(dashboardConfig.getAlertHostOverride())) {
 		    this.selector = new ServiceSelector(AlertService.NAME);
 		    log.info("Using prepared selector for alertService");
 		}
 		else {
 		    this.selector = null;
-		    log.info("Using override host/port for alert service, at: " + alertHostOverride + ":" + alertPortOverride);
+		    log.info("Using override host/port for alert service, at: %s", dashboardConfig.getAlertHostOverride());
 		}
 	}
 
@@ -77,8 +71,9 @@ public class ClusterAwareAlertClient
 				port = Integer.parseInt(descriptor.getProperties().get(AlertService.PORT_KEY));
 		    }
 		    else {
-		        host = this.alertHostOverride;
-		        port = this.alertPortOverride;
+		        String[] hostAndPort = dashboardConfig.getAlertHostOverride().split(":");
+		        host = hostAndPort[0];
+		        port = hostAndPort.length > 0 ? Integer.parseInt(hostAndPort[1]) : 80;
 		    }
 
 			try {

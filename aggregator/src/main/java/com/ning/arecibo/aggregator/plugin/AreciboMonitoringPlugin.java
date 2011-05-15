@@ -6,8 +6,9 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.StringTokenizer;
-
+import java.util.concurrent.TimeUnit;
+import org.antlr.stringtemplate.StringTemplate;
+import org.antlr.stringtemplate.StringTemplateGroup;
 import com.google.inject.Inject;
 import com.ning.arecibo.aggregator.dictionary.EventDefinition;
 import com.ning.arecibo.aggregator.dictionary.EventDictionary;
@@ -15,10 +16,7 @@ import com.ning.arecibo.aggregator.impl.AggregatorRegistry;
 import com.ning.arecibo.aggregator.impl.EventProcessorImpl;
 import com.ning.arecibo.aggregator.listeners.EventPreProcessorListener;
 import com.ning.arecibo.aggregator.listeners.EventRegistrationListener;
-import com.ning.arecibo.aggregator.plugin.guice.BaseLevelBatchIntervalSeconds;
-import com.ning.arecibo.aggregator.plugin.guice.BaseLevelTimeWindowSeconds;
-import com.ning.arecibo.aggregator.plugin.guice.ReceiverServiceName;
-import com.ning.arecibo.aggregator.plugin.guice.ReductionFactors;
+import com.ning.arecibo.aggregator.plugin.guice.MonitoringPluginConfig;
 import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.lang.Aggregator;
 import com.ning.arecibo.lang.AggregatorCallback;
@@ -26,9 +24,6 @@ import com.ning.arecibo.lang.ConstantDispatchRouter;
 import com.ning.arecibo.lang.DispatcherCallback;
 import com.ning.arecibo.lang.ExternalPublisher;
 import com.ning.arecibo.lang.InternalDispatcher;
-import org.antlr.stringtemplate.StringTemplate;
-import org.antlr.stringtemplate.StringTemplateGroup;
-
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.TemplateGroupLoader;
 
@@ -36,6 +31,7 @@ public class AreciboMonitoringPlugin implements DynamicAggregatorPlugin, EventRe
 {
 	private static final Logger log = Logger.getLogger(AreciboMonitoringPlugin.class);
 
+	public static final String NS = "monitoring";
     // suffixes
 	private final static String HOST_SUFFIX = "_host";
 	private final static String PATH_SUFFIX = "_path";
@@ -54,55 +50,48 @@ public class AreciboMonitoringPlugin implements DynamicAggregatorPlugin, EventRe
 	private final static Class<String> BASE_REQUIRED_FIELD_CLASS = String.class;
 
 	private final StringTemplateGroup templates = TemplateGroupLoader.load(AreciboMonitoringPlugin.class, "/sql.st");
-	public static final String NS = "monitoring" ;
-	private final String serviceName;
-    private final int baseLevelBatchIntervalSeconds;
-    private final int baseLevelTimeWindowSeconds;
+	private final MonitoringPluginConfig config;
     private final AggregatorRegistry registry;
     private final EventDictionary dictionary;
     private final EventProcessorImpl eventProcessor;
-    private final int[] reductionFactors;
 
-    private int numReductionLevels;
     private final String[] reductionLevelIntervalSeconds;
     private final String[] reductionLevelTimeWindowSeconds;
     private final String[] reductionLevelTags;
     private final List<ExternalPublisher> externalPublishers;
 
     @Inject
-	public AreciboMonitoringPlugin(AggregatorRegistry registry,
-								 EventDictionary dictionary,
-								 EventProcessorImpl eventProcessor,
-                                 @ReceiverServiceName String service,
-                                 @BaseLevelBatchIntervalSeconds int baseLevelBatchIntervalSeconds,
-                                 @BaseLevelTimeWindowSeconds int baseLevelTimeWindowSeconds,
-                                 @ReductionFactors int[] reductionFactors)
+	public AreciboMonitoringPlugin(MonitoringPluginConfig config,
+	                               AggregatorRegistry registry,
+	                               EventDictionary dictionary,
+	                               EventProcessorImpl eventProcessor)
 	{
-		this.serviceName = service;
-        this.baseLevelBatchIntervalSeconds = baseLevelBatchIntervalSeconds;
-        this.baseLevelTimeWindowSeconds = baseLevelTimeWindowSeconds;
+		this.config = config;
         this.registry = registry;
         this.dictionary = dictionary;
         this.eventProcessor = eventProcessor;
 
         // note, ultimately, the collector should tell the aggregators which reduction factors to use, etc...
-        this.reductionFactors = reductionFactors;
-        this.numReductionLevels = reductionFactors.length;
+        int numReductionLevels = config.getReductionFactors().length;
         this.reductionLevelIntervalSeconds = new String[numReductionLevels];
         this.reductionLevelTimeWindowSeconds = new String[numReductionLevels];
         this.reductionLevelTags = new String[numReductionLevels];
 
-        int level=0;
-        for(int reductionFactor:this.reductionFactors) {
-        	this.reductionLevelIntervalSeconds[level] = reductionFactor * this.baseLevelBatchIntervalSeconds + " sec";
+        long batchIntervalSec = TimeUnit.SECONDS.convert(config.getBaseLevelBatchInterval().getPeriod(),
+                                                         config.getBaseLevelBatchInterval().getUnit());
+        long batchWindowSec = TimeUnit.SECONDS.convert(config.getBaseLevelTimeWindow().getPeriod(),
+                                                         config.getBaseLevelTimeWindow().getUnit());
+        int level = 0;
+        for (int reductionFactor : config.getReductionFactors()) {
+        	this.reductionLevelIntervalSeconds[level] = reductionFactor * batchIntervalSec + " sec";
         	if(level == 0) {
-        		this.reductionLevelTimeWindowSeconds[level] = this.baseLevelTimeWindowSeconds + " sec";
+        		this.reductionLevelTimeWindowSeconds[level] = batchIntervalSec + " sec";
 
         		// for backwards compatibility
         		this.reductionLevelTags[level] = "";
         	}
         	else {
-        		this.reductionLevelTimeWindowSeconds[level] = ((int)(((double)reductionFactor + 0.5) * (double)this.baseLevelBatchIntervalSeconds)) + " sec";
+        		this.reductionLevelTimeWindowSeconds[level] = ((int)(((double)reductionFactor + 0.5) * (double)batchIntervalSec)) + " sec";
         		this.reductionLevelTags[level] = "_" + reductionFactor + "X";
         	}
         	level++;
@@ -113,9 +102,7 @@ public class AreciboMonitoringPlugin implements DynamicAggregatorPlugin, EventRe
         this.registry.registerPlugin(this);
 
         this.externalPublishers = new ArrayList<ExternalPublisher>();
-        StringTokenizer st = new StringTokenizer(service,",");
-        while(st.hasMoreTokens()) {
-            String serviceName = st.nextToken();
+        for (String serviceName : config.getReceiverServiceNames()) {
             externalPublishers.add(new ExternalPublisher(serviceName));
         }
 	}
@@ -173,9 +160,10 @@ public class AreciboMonitoringPlugin implements DynamicAggregatorPlugin, EventRe
 	private AggregatorCallback getNestedAggregatorStack(final int depth,final String name,final String queryName,final String inSuffix,final String outSuffix,
 														final String eventName,final List<String> numerics,final List<ExternalPublisher> externalPublishers) {
 
-		if(depth >= numReductionLevels)
+		if (depth >= config.getReductionFactors().length) {
 			// shouldn't happen
 			return null;
+		}
 
 		final String timeWindowSecs = reductionLevelTimeWindowSeconds[depth];
 		final String batchIntervalSecs = reductionLevelIntervalSeconds[depth];
@@ -194,7 +182,7 @@ public class AreciboMonitoringPlugin implements DynamicAggregatorPlugin, EventRe
 
 		final String outputEventName = eventName + outSuffix + reductionLevelTags[depth];
 
-		if(depth == numReductionLevels-1) {
+		if (depth == config.getReductionFactors().length - 1) {
 			return new AggregatorCallback() {
 				public void configure(Aggregator agg)
 				{
@@ -217,7 +205,7 @@ public class AreciboMonitoringPlugin implements DynamicAggregatorPlugin, EventRe
 					{
 						public void configure(InternalDispatcher internalDispatcher)
 						{
-							internalDispatcher.addAggregator(name + reductionFactors[depth],getNestedAggregatorStack(depth+1,name,queryName,outSuffix,outSuffix,eventName,numerics,externalPublishers));
+							internalDispatcher.addAggregator(name + config.getReductionFactors()[depth],getNestedAggregatorStack(depth+1,name,queryName,outSuffix,outSuffix,eventName,numerics,externalPublishers));
 						}
 					},true);
 

@@ -28,20 +28,6 @@ public class DashboardModule extends AbstractModule
     @Override
 	public void configure()
 	{
-        bindConstant().annotatedWith(CollectorCacheSize.class).to(Integer.getInteger("arecibo.dashboard.collector_cache_size", CollectorCacheSize.DEFAULT));
-        bindConstant().annotatedWith(CollectorCacheMaxWaitMS.class).to(Long.getLong("arecibo.dashboard.collector_cache_max_wait_ms", CollectorCacheMaxWaitMS.DEFAULT));
-        bindConstant().annotatedWith(CollectorCacheTimeToLiveMS.class).to(Long.getLong("arecibo.dashboard.collector_cache_time_to_live_ms", CollectorCacheTimeToLiveMS.DEFAULT));
-        bindConstant().annotatedWith(TableCacheSize.class).to(Integer.getInteger("arecibo.dashboard.table_cache_size", TableCacheSize.DEFAULT));
-		bindConstant().annotatedWith(AlertHostOverride.class).to(System.getProperty("arecibo.dashboard.alert_host_override" , AlertHostOverride.DEFAULT));
-		bindConstant().annotatedWith(AlertPortOverride.class).to(Integer.getInteger("arecibo.dashboard.alert_port_override", AlertPortOverride.DEFAULT));
-		bindConstant().annotatedWith(AlertManagerEnabled.class).to(Boolean.parseBoolean(System.getProperty("arecibo.dashboard.alert_manager_enabled", Boolean.toString(AlertManagerEnabled.DEFAULT))));
-		bindConstant().annotatedWith(CollectorHostOverride.class).to(System.getProperty("arecibo.dashboard.collector_host_override", CollectorHostOverride.DEFAULT));
-		bindConstant().annotatedWith(CollectorRMIPortOverride.class).to(Integer.getInteger("arecibo.dashboard.collector_rmiport_override", CollectorRMIPortOverride.DEFAULT));
-		bindConstant().annotatedWith(DashboardCollectorKeepAliveHost.class).to(System.getProperty("arecibo.dashboard.dashboard_collector_keep_alive_host", DashboardCollectorKeepAliveHost.DEFAULT));
-		bindConstant().annotatedWith(CollectorServiceName.class).to(System.getProperty("arecibo.collector.service_name", CollectorServiceName.DEFAULT));
-		bindConstant().annotatedWith(E2EZThresholdConfigCacheSize.class).to(Integer.getInteger("arecibo.dashboard.e2ez_threshold_config_cache_size", E2EZThresholdConfigCacheSize.DEFAULT));
-		bindConstant().annotatedWith(E2EZTimeRangeMapCacheSize.class).to(Integer.getInteger("arecibo.dashboard.e2ez_time_range_map_cache_size", E2EZTimeRangeMapCacheSize.DEFAULT));
-
         bind(DashboardFormatManager.class).asEagerSingleton();
         bind(GalaxyStatusManager.class).asEagerSingleton();
         bind(AlertStatusManager.class).asEagerSingleton();

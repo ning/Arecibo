@@ -15,8 +15,7 @@ import com.ning.arecibo.alert.confdata.objects.ConfDataAlertIncidentLog;
 import com.ning.arecibo.alert.confdata.objects.ConfDataThresholdConfig;
 import com.ning.arecibo.alert.confdata.objects.ConfDataThresholdQualifyingAttr;
 import com.ning.arecibo.dashboard.alert.DashboardAlertStatus;
-import com.ning.arecibo.dashboard.guice.E2EZThresholdConfigCacheSize;
-import com.ning.arecibo.dashboard.guice.E2EZTimeRangeMapCacheSize;
+import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.LRUCache;
 
 public class E2EZHistoricalMetricStatusCache {
@@ -26,12 +25,11 @@ public class E2EZHistoricalMetricStatusCache {
     private final ConfDataDAO alertConfDataDAO;
 
     @Inject
-    public E2EZHistoricalMetricStatusCache(@E2EZThresholdConfigCacheSize int thesholdConfigCacheSize,
-                                           @E2EZTimeRangeMapCacheSize int timeRangeCacheSize,
+    public E2EZHistoricalMetricStatusCache(DashboardConfig dashboardConfig,
                                            ConfDataDAO alertConfDataDAO) {
         this.alertConfDataDAO = alertConfDataDAO;
-        this.lruPerThresholdConfigStatusCache = new LRUCache<Long, DashboardAlertStatus>(thesholdConfigCacheSize);
-        this.lruTimeRangeMapCache = new LRUCache<String, Map<String,DashboardAlertStatus>>(timeRangeCacheSize);
+        this.lruPerThresholdConfigStatusCache = new LRUCache<Long, DashboardAlertStatus>(dashboardConfig.getE2EZThresholdConfigCacheSize());
+        this.lruTimeRangeMapCache = new LRUCache<String, Map<String, DashboardAlertStatus>>(dashboardConfig.getE2EZTimeRangeMapCacheSize());
     }
 
     public String getMetricCacheKey(E2EZMetric metric) {

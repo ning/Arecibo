@@ -3,21 +3,18 @@ package com.ning.arecibo.collector;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.management.MBeanServer;
-
 import org.mortbay.jetty.Server;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Stage;
-import com.google.inject.name.Named;
+import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.guice.CollectorModule;
-import com.ning.arecibo.collector.guice.CollectorServiceName;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.event.receiver.RESTEventReceiverModule;
+import com.ning.arecibo.event.receiver.UDPEventReceiverConfig;
 import com.ning.arecibo.event.receiver.UDPEventReceiverModule;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.util.EmbeddedJettyConfig;
@@ -27,6 +24,7 @@ import com.ning.arecibo.util.lifecycle.Lifecycle;
 import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
+import com.ning.arecibo.util.rmi.RMIRegistryConfig;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 
@@ -36,40 +34,40 @@ public class EventCollectorServer
 	private final Server server;
 	private final Lifecycle lifecycle;
 	private final ServiceLocator serviceLocator;
-    private final String serviceName;
-	private final EmbeddedJettyConfig config;
-	private final int udpPort;
-	private final int rmiPort;
+    private final CollectorConfig collectorConfig;
+	private final EmbeddedJettyConfig jettyConfig;
+	private final UDPEventReceiverConfig udpConfig;
+	private final RMIRegistryConfig rmiConfig;
 	
     public static final String NAME = EventCollectorServer.class.getSimpleName();
 
 	@Inject
-	public EventCollectorServer(Server server,
-	                            Lifecycle lifecycle,
-	                            ServiceLocator serviceLocator,
-                                @CollectorServiceName String serviceName,
+	public EventCollectorServer(CollectorConfig collectorConfig,
                                 EmbeddedJettyConfig config,
-	                            @Named("UDPServerPort") int udpPort,
-	                            @Named("RMIRegistryPort") int rmiPort)
+                                UDPEventReceiverConfig udpConfig,
+                                RMIRegistryConfig rmiConfig,
+	                            Server server,
+	                            Lifecycle lifecycle,
+	                            ServiceLocator serviceLocator)
 	{
+	    this.collectorConfig = collectorConfig;
+	    this.jettyConfig = config;
+	    this.udpConfig = udpConfig;
+	    this.rmiConfig = rmiConfig;
 		this.server = server;
 		this.lifecycle = lifecycle;
 		this.serviceLocator = serviceLocator;
-        this.serviceName = serviceName;
-		this.config = config;
-		this.udpPort = udpPort;
-		this.rmiPort = rmiPort;
 	}
 
 	public void run() throws Exception
 	{
 		// advertise event endpoints
 		Map<String, String> map = new HashMap<String, String>();
-		map.put(EventService.HOST, config.getHost());
-		map.put(EventService.JETTY_PORT, String.valueOf(config.getPort()));
-		map.put(EventService.UDP_PORT, String.valueOf(udpPort));
-		map.put(EventService.RMI_PORT, String.valueOf(rmiPort));
-		ServiceDescriptor self=new ServiceDescriptor(serviceName,map);
+		map.put(EventService.HOST, jettyConfig.getHost());
+		map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
+		map.put(EventService.UDP_PORT, String.valueOf(udpConfig.getPort()));
+		map.put(EventService.RMI_PORT, String.valueOf(rmiConfig.getPort()));
+		ServiceDescriptor self=new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
 
 		// advertise on beacon
 		serviceLocator.advertiseLocalService(self);
@@ -77,7 +75,7 @@ public class EventCollectorServer
 		
 		String name = getClass().getSimpleName();
 		final long startTime = System.currentTimeMillis();
-		log.info("Starting up %s on port %d", name, config.getPort());
+		log.info("Starting up %s on port %d", name, jettyConfig.getPort());
 
 		lifecycle.fire(LifecycleEvent.START);
 
