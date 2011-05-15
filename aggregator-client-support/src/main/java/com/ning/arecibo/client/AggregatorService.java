@@ -7,7 +7,7 @@ import java.rmi.registry.Registry;
 import java.util.HashMap;
 import java.util.Map;
 import com.google.inject.Inject;
-import com.ning.arecibo.event.publisher.EventServiceName;
+import com.ning.arecibo.event.publisher.EventPublisherConfig;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
@@ -22,10 +22,10 @@ public class AggregatorService
 
 	@Inject
 	public AggregatorService(ServiceLocator serviceLocator,
-                             final @EventServiceName String eventServiceName)
+                             EventPublisherConfig eventPublisherConfig)
 	{
 		this.serviceLocator = serviceLocator;
-		this.selector = new ServiceSelector(eventServiceName);
+		this.selector = new ServiceSelector(eventPublisherConfig.getEventServiceName());
 		this.serviceLocator.startReadOnly();
 	}
 

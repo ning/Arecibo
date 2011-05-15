@@ -48,6 +48,11 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.skife.config</groupId>
+      <artifactId>config-magic</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>org.jdbi</groupId>
       <artifactId>jdbi</artifactId>
       <optional>true</optional>

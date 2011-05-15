@@ -5,7 +5,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.google.inject.Inject;
-import com.ning.arecibo.event.publisher.cluster.RandomSelectorMaxUse;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.JavaEventSerializer;
@@ -20,29 +19,27 @@ import com.ning.http.client.AsyncHttpClient;
 
 public class RandomEventServiceChooser implements EventServiceChooser
 {
+    private final EventPublisherConfig config;
 	private final ServiceLocator serviceLocator;
 	private final EventServiceRESTClient restClient;
 	private final Selector selector;
 	private final RandomServiceChooser chooser;
 	private final AtomicInteger serviceUseCount = new AtomicInteger(0);
-	private final int maxServiceUseCount;
 	private final ExecutorService executor = new FailsafeScheduledExecutor(10, new NamedThreadFactory("EventServiceChooser"));
 	private volatile EventService eventService;
 
 	@Inject
-	public RandomEventServiceChooser(
-		ServiceLocator serviceLocator,
-		@RandomSelector Selector selector,
-		RandomServiceChooser chooser,
-		@EventSenderType String senderType,
-		@RandomSelectorMaxUse int maxServiceUseCount,
-		AsyncHttpClient httpClient
-	)
+	public RandomEventServiceChooser(EventPublisherConfig config,
+	                                 ServiceLocator serviceLocator,
+	                                 @RandomSelector Selector selector,
+	                                 RandomServiceChooser chooser,
+	                                 @EventSenderType String senderType,
+	                                 AsyncHttpClient httpClient)
 	{
+	    this.config = config;
 		this.serviceLocator = serviceLocator;
 		this.selector = selector;
 		this.chooser = chooser;
-		this.maxServiceUseCount = maxServiceUseCount;
 		this.serviceLocator.startReadOnly();
 		this.restClient = new EventServiceRESTClient(httpClient, new JavaEventSerializer(), senderType);
 	}
@@ -62,7 +59,7 @@ public class RandomEventServiceChooser implements EventServiceChooser
 	@Override
 	public EventService choose(UUID uuid) throws IOException
 	{
-		if (eventService == null || serviceUseCount.getAndIncrement() > maxServiceUseCount) {
+		if (eventService == null || serviceUseCount.getAndIncrement() > config.getRandomSelectorMaxUse()) {
 			ServiceDescriptor sd = chooser.getResponsibleService(uuid.toString());
 
 			if (sd == null) {
@@ -78,7 +75,7 @@ public class RandomEventServiceChooser implements EventServiceChooser
 	@Override
 	public void invalidate(UUID uuid)
 	{
-		serviceUseCount.set(maxServiceUseCount);
+		serviceUseCount.set(config.getRandomSelectorMaxUse());
 	}
 
 	@Override

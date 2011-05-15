@@ -1,67 +1,37 @@
 package com.ning.arecibo.util.galaxy;
 
-import java.util.ArrayList;
 import java.util.List;
+import org.skife.config.Config;
+import org.skife.config.Default;
+import org.skife.config.DefaultNull;
 
-public class GalaxyConfig
+public interface GalaxyConfig
 {
-    private final List<String> gonsoleUrls;
-    private final String galaxyCommandPath;
-    private final int galaxyCommandTimeout;
-    private final String coreTypeFilter;
-    private final String localZoneFilter;
-    private final String globalZoneFilter;
-    private final String galaxyOutputOverrideFile;
+    @Config("arecibo.galaxywrapper.gonsole_url_list")
+    @Default("")
+    List<String> getGonsoleUrls();
 
-    public GalaxyConfig(List<String> gonsoleUrls,
-                        String galaxyCommandPath,
-                        int galaxyCommandTimeout,
-                        String coreTypeFilter,
-                        String localZoneFilter,
-                        String globalZoneFilter,
-                        String galaxyOutputOverrideFile)
-    {
-        this.gonsoleUrls = new ArrayList<String>(gonsoleUrls);
-        this.galaxyCommandPath = galaxyCommandPath;
-        this.galaxyCommandTimeout = galaxyCommandTimeout;
-        this.coreTypeFilter = coreTypeFilter;
-        this.localZoneFilter = localZoneFilter;
-        this.globalZoneFilter = globalZoneFilter;
-        this.galaxyOutputOverrideFile = galaxyOutputOverrideFile;
-    }
+    @Config("arecibo.galaxywrapper.galaxy_command_path")
+    @Default("")
+    String getGalaxyCommandPath();
 
-    public List<String> getGonsoleUrls()
-    {
-        return gonsoleUrls;
-    }
+    @Config("arecibo.galaxywrapper.galaxy_command_timeout")
+    @Default("30")
+    int getGalaxyCommandTimeout();
 
-    public String getGalaxyCommandPath()
-    {
-        return galaxyCommandPath;
-    }
+    @Config("arecibo.galaxywrapper.core_type_filter")
+    @DefaultNull
+    String getCoreTypeFilter();
 
-    public int getGalaxyCommandTimeout()
-    {
-        return galaxyCommandTimeout;
-    }
+    @Config("arecibo.galaxywrapper.local_zone_filter")
+    @DefaultNull
+    String getLocalZoneFilter();
 
-    public String getCoreTypeFilter()
-    {
-        return coreTypeFilter;
-    }
+    @Config("arecibo.galaxywrapper.global_zone_filter")
+    @DefaultNull
+    String getGlobalZoneFilter();
 
-    public String getLocalZoneFilter()
-    {
-        return localZoneFilter;
-    }
-
-    public String getGlobalZoneFilter()
-    {
-        return globalZoneFilter;
-    }
-
-    public String getGalaxyOutputOverrideFile()
-    {
-        return galaxyOutputOverrideFile;
-    }
+    @Config("arecibo.galaxywrapper.galaxy_output_override_file")
+    @Default("")
+    String getGalaxyOutputOverrideFile();
 }

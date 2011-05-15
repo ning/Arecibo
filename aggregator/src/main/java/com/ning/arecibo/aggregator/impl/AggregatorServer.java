@@ -7,18 +7,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.mortbay.jetty.Server;
 import org.weakref.jmx.Managed;
-
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.ning.arecibo.aggregator.guice.SelfUUID;
 import com.ning.arecibo.aggregator.plugin.AreciboMonitoringPlugin;
 import com.ning.arecibo.client.RemoteAggregatorService;
 import com.ning.arecibo.event.publisher.AreciboEventServiceChooser;
+import com.ning.arecibo.event.publisher.EventPublisherConfig;
 import com.ning.arecibo.event.publisher.EventServiceChooser;
-import com.ning.arecibo.event.publisher.EventServiceName;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.lang.Aggregator;
 import com.ning.arecibo.util.EmbeddedJettyConfig;
@@ -42,17 +40,17 @@ public class AggregatorServer
 
 	@Inject
 	public AggregatorServer(Server server,
-                         Lifecycle lifecycle,
-                         final ServiceLocator serviceLocator,
-                         EmbeddedJettyConfig jettyConfig,
-                         final EventServiceChooser chooser,
-                         @EventServiceName String eventServiceName,
-                         @Named("UDPServerPort") int udpPort,
-                         @SelfUUID UUID selfUUID,
-                         Registry registry,
-                         @Named("RMIRegistryPort") int rmiPort,
-                         AggregatorRegistry aggregatorRegistry,
-                         AggregatorServiceImpl aggregatorServiceImpl) throws AlreadyBoundException, RemoteException
+                            Lifecycle lifecycle,
+                            final ServiceLocator serviceLocator,
+                            EmbeddedJettyConfig jettyConfig,
+                            final EventServiceChooser chooser,
+                            EventPublisherConfig eventPublisherConfig,
+                            @Named("UDPServerPort") int udpPort,
+                            @SelfUUID UUID selfUUID,
+                            Registry registry,
+                            @Named("RMIRegistryPort") int rmiPort,
+                            AggregatorRegistry aggregatorRegistry,
+                            AggregatorServiceImpl aggregatorServiceImpl) throws AlreadyBoundException, RemoteException
     {
 		this.server = server;
 		this.lifecycle = lifecycle;
@@ -69,7 +67,7 @@ public class AggregatorServer
 		map.put(EventService.UDP_PORT, String.valueOf(udpPort));
 		map.put(EventService.RMI_PORT, String.valueOf(rmiPort));
 
-		ServiceDescriptor self = new ServiceDescriptor(selfUUID, eventServiceName, map);
+		ServiceDescriptor self = new ServiceDescriptor(selfUUID, eventPublisherConfig.getEventServiceName(), map);
 		serviceLocator.advertiseLocalService(self);
 
 		lifecycle.addListener(LifecycleEvent.STOP, new LifecycleListener()
@@ -92,7 +90,7 @@ public class AggregatorServer
 		    }
 	    }
 	    catch (ServiceNotAvailableException e) {
-		    log.info("no other service with name '%s' available, skipping synchronization", eventServiceName);
+		    log.info("no other service with name '%s' available, skipping synchronization", eventPublisherConfig.getEventServiceName());
 	    }
     }
 

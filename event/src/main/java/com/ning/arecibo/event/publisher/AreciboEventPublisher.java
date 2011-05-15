@@ -19,7 +19,6 @@ public class AreciboEventPublisher extends AbstractEventPublisher
 	private static final Logger log = Logger.getLogger(AreciboEventPublisher.class);
 	private final EventServiceChooser chooser;
 	private final ServiceLocator serviceLocator;
-    private final String eventServiceName;
 	private final Selector selector;
     private final ExecutorService globalExecutor;
     private final AsynchronousSender asyncSender;
@@ -29,23 +28,19 @@ public class AreciboEventPublisher extends AbstractEventPublisher
 	private final AtomicLong udpEventsDelivered = new AtomicLong(0);
 
     @Inject
-	public AreciboEventPublisher(EventServiceChooser chooser,
-	                             @MaxEventDispatchers int numThreads,
-	                             @MaxEventBufferSize int bufferSize,
-	                             @MaxDrainDelayInMS final long drainDelay,
+	public AreciboEventPublisher(EventPublisherConfig config,
+	                             EventServiceChooser chooser,
 	                             ServiceLocator serviceLocator,
-                                 @EventServiceName String eventServiceName,
                                  @PublisherSelector Selector selector,
-	                             @LocalSpoolRoot String localSpoolPath,
-	                             @SpooledEventExpirationInMS long spoolExpiration,
-                                 @PublisherExecutor ExecutorService globalExecutor)
+	                             @PublisherExecutor ExecutorService globalExecutor)
 	{
 		this.chooser = chooser;
 		this.serviceLocator = serviceLocator;
-        this.eventServiceName = eventServiceName;
 		this.selector = selector;
         this.globalExecutor = globalExecutor;
-        this.asyncSender = new AsynchronousSender(numThreads, bufferSize, drainDelay){
+        this.asyncSender = new AsynchronousSender(config.getMaxEventDispatchers(),
+                                                  config.getMaxEventBufferSize(),
+                                                  config.getMaxDrainDelay()) {
 			protected void eventDiscarded(Runnable runnable)
 			{
 				eventsDiscarded.incrementAndGet();
@@ -53,9 +48,14 @@ public class AreciboEventPublisher extends AbstractEventPublisher
 			}
 		};
 
-		File spoolRoot = new File(localSpoolPath).getAbsoluteFile();
+		File spoolRoot = config.getLocalSpoolRoot().getAbsoluteFile();
 		File publisherRoot = new File(spoolRoot, "publisher");
-		this.spool = new Spool(this.eventServiceName, publisherRoot, this.serviceLocator, this.selector, this.globalExecutor, spoolExpiration){
+		this.spool = new Spool(config.getEventServiceName(),
+		                       publisherRoot,
+		                       this.serviceLocator,
+		                       this.selector,
+		                       this.globalExecutor,
+		                       config.getSpooledEventExpiration()) {
 			protected void sendViaREST(Event evt) throws IOException
 			{
 				sendREST(evt);

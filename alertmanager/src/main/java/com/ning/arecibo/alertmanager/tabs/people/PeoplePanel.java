@@ -153,7 +153,7 @@ public class PeoplePanel extends Panel {
             }
         };
 
-        final int numRows = ((AreciboAlertManager)getApplication()).getConfigProps().getGeneralTableDisplayRows();
+        final int numRows = ((AreciboAlertManager)getApplication()).getConfig().getGeneralTableDisplayRows();
         dataTable = new AjaxFallbackDefaultDataTable<PersonExtendedForDisplay>("table", columns, dataProvider, numRows);
         dataTable.setOutputMarkupPlaceholderTag(true);
 

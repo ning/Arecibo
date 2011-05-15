@@ -5,8 +5,6 @@ import org.apache.wicket.Response;
 import org.apache.wicket.Session;
 import org.apache.wicket.protocol.http.WebApplication;
 import org.apache.wicket.util.time.Duration;
-
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Stage;
@@ -21,11 +19,8 @@ public class AreciboAlertManager extends WebApplication
 {
     final static Logger log = Logger.getLogger(AreciboAlertManager.class);
 
-    private volatile ConfDataDAO confDataDAO = null;
-    private volatile AreciboAlertManagerConfigProps configProps = null;
-
-	public AreciboAlertManager()
-	{}
+    private volatile ConfDataDAO confDataDAO;
+    private volatile AreciboAlertManagerConfig config;
 
     @Override
     public void init() {
@@ -39,25 +34,13 @@ public class AreciboAlertManager extends WebApplication
 
         getApplicationSettings().setPageExpiredErrorPage(getHomePage());
 
-        // allow suppressing jmx module (and logging module by extension)
-        // this is needed in the case where it lives in the same jetty instance as the
-        // dashboard, which also initializes these modules
-        final boolean suppressJmxInit = Boolean.getBoolean("arecibo.alertmanager.suppress_jmx_module_init");
-
         Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(),
-            new AbstractModule() {
-                @Override
-                protected void configure() {
-                    // TODO Auto-generated method stub
-                    
-                }
-            },
             new AlertDataModule(),
             new AlertManagerModule());
 
         confDataDAO = injector.getInstance(ConfDataDAO.class);
-        configProps = injector.getInstance(AreciboAlertManagerConfigProps.class);
+        config = injector.getInstance(AreciboAlertManagerConfig.class);
     }
 
     @Override
@@ -75,7 +58,7 @@ public class AreciboAlertManager extends WebApplication
         return this.confDataDAO;
     }
 
-    public AreciboAlertManagerConfigProps getConfigProps() {
-        return this.configProps;
+    public AreciboAlertManagerConfig getConfig() {
+        return this.config;
     }
 }

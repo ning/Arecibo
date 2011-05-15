@@ -1,6 +1,6 @@
 package com.ning.arecibo.alert.conf;
 
-import java.lang.Runnable;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -8,11 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.sql.Timestamp;
-
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.client.AlertActivationStatus;
 import com.ning.arecibo.alert.client.AlertStatus;
@@ -20,7 +17,7 @@ import com.ning.arecibo.alert.confdata.dao.ConfDataDAO;
 import com.ning.arecibo.alert.confdata.dao.ConfDataDAOException;
 import com.ning.arecibo.alert.confdata.objects.ConfDataObject;
 import com.ning.arecibo.alert.email.EmailManager;
-import com.ning.arecibo.alert.guice.ConfigUpdateInterval;
+import com.ning.arecibo.alert.guice.AlertServiceConfig;
 import com.ning.arecibo.alert.logging.LoggingManager;
 import com.ning.arecibo.alert.manage.AlertManager;
 import com.ning.arecibo.alert.objects.AlertIncidentLog;
@@ -37,7 +34,6 @@ import com.ning.arecibo.alert.objects.StatefulConfigurableObject;
 import com.ning.arecibo.alert.objects.ThresholdConfig;
 import com.ning.arecibo.alert.objects.ThresholdContextAttr;
 import com.ning.arecibo.alert.objects.ThresholdQualifyingAttr;
-
 import com.ning.arecibo.util.Logger;
 
 
@@ -47,11 +43,11 @@ public class ConfigManager implements Runnable
 {
     private final static Logger log = Logger.getLogger(ConfigManager.class);
     
+    private final AlertServiceConfig alertServiceConfig;
     private final ConfDataDAO confDataDAO;
     private final AlertManager alertManager;
     private final EmailManager emailManager;
     private final LoggingManager loggingManager;
-    private final int configUpdateInterval;
 
     private final ConcurrentHashMap<Long,AlertingConfig> alertingConfigs;
     private final ConcurrentHashMap<Long,ManagingKey> managingKeys;
@@ -73,16 +69,16 @@ public class ConfigManager implements Runnable
 
 
     @Inject
-    public ConfigManager(ConfDataDAO confDataDAO,
-                             AlertManager alertManager,
-                             EmailManager emailManager,
-                             LoggingManager loggingManager,
-                             @ConfigUpdateInterval int configUpdateInterval) {
+    public ConfigManager(AlertServiceConfig alertServiceConfig,
+                         ConfDataDAO confDataDAO,
+                         AlertManager alertManager,
+                         EmailManager emailManager,
+                         LoggingManager loggingManager) {
+        this.alertServiceConfig = alertServiceConfig;
         this.confDataDAO = confDataDAO;
         this.alertManager = alertManager;
         this.emailManager = emailManager;
         this.loggingManager = loggingManager;
-        this.configUpdateInterval = configUpdateInterval;
 
         this.alertingConfigs = new ConcurrentHashMap<Long, AlertingConfig>();
         this.managingKeys = new ConcurrentHashMap<Long, ManagingKey>();
@@ -114,7 +110,10 @@ public class ConfigManager implements Runnable
         postConfigInitialization();
         
         // start the config updater
-        this.schedFuture = this.executor.scheduleWithFixedDelay(this,this.configUpdateInterval,this.configUpdateInterval,TimeUnit.SECONDS);
+        this.schedFuture = this.executor.scheduleWithFixedDelay(this,
+                                                                alertServiceConfig.getConfigUpdateInterval().getPeriod(),
+                                                                alertServiceConfig.getConfigUpdateInterval().getPeriod(),
+                                                                alertServiceConfig.getConfigUpdateInterval().getUnit());
     }
 
     public synchronized void stop()
@@ -127,7 +126,10 @@ public class ConfigManager implements Runnable
         // try to synchronously update config, without waiting for next update interval delay,
         // cancel current thread then reschedule, with no delay, ex post haste
         if(this.schedFuture == null || this.schedFuture.cancel(false)) {
-            this.schedFuture = this.executor.scheduleWithFixedDelay(this,0,this.configUpdateInterval,TimeUnit.SECONDS);
+            this.schedFuture = this.executor.scheduleWithFixedDelay(this,
+                                                                    0,
+                                                                    alertServiceConfig.getConfigUpdateInterval().getPeriod(),
+                                                                    alertServiceConfig.getConfigUpdateInterval().getUnit());
         }
     }
 

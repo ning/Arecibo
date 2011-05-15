@@ -18,6 +18,11 @@ public class ServiceSelector implements Selector, Serializable
 		this.serviceName = serviceName;
 	}
 
+	public String getServiceName()
+	{
+	    return serviceName;
+	}
+
 	public boolean match(ServiceDescriptor sd)
 	{
 		return StringUtils.equals(sd.getName(), serviceName);

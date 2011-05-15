@@ -2,15 +2,11 @@ package com.ning.arecibo.alert.email;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
-import com.google.inject.Inject;
-import com.ning.arecibo.alert.guice.FromEmailAddress;
-import com.ning.arecibo.alert.guice.SMTPHost;
-import org.apache.commons.mail.SimpleEmail;
 import org.apache.commons.mail.EmailException;
-
+import org.apache.commons.mail.SimpleEmail;
+import com.google.inject.Inject;
+import com.ning.arecibo.alert.guice.AlertServiceConfig;
 import com.ning.arecibo.util.Logger;
-
 
 public class EmailManager
 {
@@ -18,16 +14,12 @@ public class EmailManager
 
     public final static int MAX_CHARS_FOR_SMS = 140;
  
-    private final String smtpHost;
-    private final String fromEmailAddress;
+    private final AlertServiceConfig alertServiceConfig;
     private final String sendingHostSignature;
     
     @Inject
-    public EmailManager(@SMTPHost String smtpHost,
-                        @FromEmailAddress String fromEmailAddress) {
-        
-        this.smtpHost = smtpHost;
-        this.fromEmailAddress = fromEmailAddress;
+    public EmailManager(AlertServiceConfig alertServiceConfig) {
+        this.alertServiceConfig = alertServiceConfig;
         
         String hostName;
         String hostIp;
@@ -49,19 +41,19 @@ public class EmailManager
         
     }
     
-    public boolean sendEmail(String to,String from,String subject,String message) {
-    	return sendEmail(to,from,subject,message,false);
+    public boolean sendEmail(String to, String from, String subject, String message) {
+    	return sendEmail(to, from, subject, message, false);
     }
     
-    public boolean sendEmail(String to,String from,String subject,String message,boolean appendSendingHostInfo) {
-    	
+    public boolean sendEmail(String to, String from, String subject, String message, boolean appendSendingHostInfo) {
+
     	if(appendSendingHostInfo) {
     		message += sendingHostSignature;
     	}
         
         try {
             SimpleEmail email = new SimpleEmail();
-            email.setHostName(smtpHost);
+            email.setHostName(alertServiceConfig.getSMTPHost());
         	email.addTo(to);
         	email.setFrom(from);
         	email.setSubject(subject);
@@ -82,6 +74,6 @@ public class EmailManager
     }
     
     public String getFrom() {
-        return fromEmailAddress;
+        return alertServiceConfig.getFromEmailAddress();
     }
 }

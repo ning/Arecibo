@@ -10,10 +10,9 @@ import java.util.concurrent.TimeUnit;
 import com.google.inject.Inject;
 import com.ning.arecibo.client.AggregatorService;
 import com.ning.arecibo.client.RemoteAggregatorService;
-import com.ning.arecibo.event.publisher.EventServiceName;
+import com.ning.arecibo.event.publisher.EventPublisherConfig;
 import com.ning.arecibo.lang.Aggregator;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.service.ServiceNotAvailableException;
@@ -24,20 +23,16 @@ public class AggregatorServiceImpl extends UnicastRemoteObject implements Remote
 	private static final Logger log = Logger.getLogger(AggregatorServiceImpl.class);
 	private final ServiceLocator serviceLocator;
 	private final AggregatorRegistry registry;
-	private final Selector selector;
-    private final String eventServiceName;
+	private final ServiceSelector selector;
 
 	@Inject
 	public AggregatorServiceImpl(ServiceLocator serviceLocator,
                                  AggregatorRegistry registry,
-                                 final @EventServiceName String eventServiceName)
-
-			throws RemoteException
+                                 EventPublisherConfig eventPublisherConfig) throws RemoteException
 	{
 		this.serviceLocator = serviceLocator;
 		this.registry = registry;
-        this.eventServiceName = eventServiceName;
-		this.selector = new ServiceSelector(eventServiceName);
+		this.selector = new ServiceSelector(eventPublisherConfig.getEventServiceName());
     }
 
     public void register(final Aggregator agg,final long leaseTime,final TimeUnit leaseTimeUnit) throws RemoteException
@@ -121,7 +116,7 @@ public class AggregatorServiceImpl extends UnicastRemoteObject implements Remote
 
 	public RemoteAggregatorRegistry getRemoteAggregatorRegistryExcluding(ServiceDescriptor self) throws ServiceNotAvailableException
 	{
-		log.info("looking for '%s' servers....",this.eventServiceName);
+		log.info("looking for '%s' servers....", selector.getServiceName());
         Set<ServiceDescriptor> list = serviceLocator.selectServices(selector);
         ServiceDescriptor sd = null;
         for ( ServiceDescriptor s : list ) {

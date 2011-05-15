@@ -1,64 +1,37 @@
 package com.ning.arecibo.util;
 
-public class EmbeddedJettyConfig
+import org.skife.config.Config;
+import org.skife.config.Default;
+
+public abstract class EmbeddedJettyConfig
 {
-    private final String host;
-    private final int port;
-    private final int lowThreads;
-    private final int minThreads;
-    private final int maxThreads;
-    private final int acceptQueueSize;
-    private final String requestLogPath;
+    @Config("arecibo.host")
+    @Default("0.0.0.0")
+    public abstract String getHost();
 
-    public EmbeddedJettyConfig(String host,
-                               int port,
-                               int lowThreads,
-                               int minThreads,
-                               int maxThreads,
-                               int acceptQueueSize,
-                               String requestLogPath)
-    {
-        this.host = host;
-        this.port = port;
-        this.lowThreads = lowThreads;
-        this.minThreads = minThreads;
-        this.maxThreads = maxThreads;
-        this.acceptQueueSize = acceptQueueSize;
-        this.requestLogPath = requestLogPath;
-    }
+    @Config("arecibo.jetty.port")
+    @Default("8088")
+    public abstract int getPort();
 
-    public String getHost()
-    {
-        return host;
-    }
+    @Config("arecibo.jetty.threads.low")
+    @Default("10")
+    public abstract int getLowThreads();
 
-    public int getPort()
-    {
-        return port;
-    }
+    @Config("arecibo.jetty.threads.min")
+    @Default("1")
+    public abstract int getMinThreads();
 
-    public int getLowThreads()
-    {
-        return lowThreads;
-    }
+    @Config("arecibo.jetty.threads.max")
+    @Default("200")
+    public abstract int getMaxThreads();
 
-    public int getMinThreads()
-    {
-        return minThreads;
-    }
-
-    public int getMaxThreads()
-    {
-        return maxThreads;
-    }
-
+    @Config("arecibo.jetty.accept-queue")
     public int getAcceptQueueSize()
     {
-        return acceptQueueSize;
+        return getMaxThreads();
     }
 
-    public String getRequestLogPath()
-    {
-        return requestLogPath;
-    }
+    @Config("arecibo.jetty.requestLog.logDir")
+    @Default("logs")
+    public abstract String getRequestLogPath();
 }

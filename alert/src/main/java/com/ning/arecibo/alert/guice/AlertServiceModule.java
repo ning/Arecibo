@@ -1,6 +1,7 @@
 package com.ning.arecibo.alert.guice;
 
 import java.util.UUID;
+import org.skife.config.ConfigurationObjectFactory;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
@@ -14,7 +15,7 @@ import com.ning.arecibo.alert.endpoint.JSONAlertStatusEndPoint;
 import com.ning.arecibo.alert.logging.LoggingManager;
 import com.ning.arecibo.alert.manage.AlertManager;
 import com.ning.arecibo.alert.manage.AsynchronousEventHandler;
-import com.ning.arecibo.event.publisher.EventServiceName;
+import com.ning.arecibo.event.publisher.EventPublisherConfig;
 import com.ning.arecibo.util.Logger;
 
 public class AlertServiceModule extends AbstractModule
@@ -24,14 +25,10 @@ public class AlertServiceModule extends AbstractModule
     @Override
 	public void configure()
 	{
-        bindConstant().annotatedWith(EventServiceName.class).to(System.getProperty("arecibo.event.eventServiceName"));
-        
-        bindConstant().annotatedWith(ConfigUpdateInterval.class).to(Integer.getInteger("arecibo.alert.config_update_interval", ConfigUpdateInterval.DEFAULT));
-        bindConstant().annotatedWith(EventHandlerBufferSize.class).to(Integer.getInteger("arecibo.alert.event_handler_buffer_size", EventHandlerBufferSize.DEFAULT));
-        bindConstant().annotatedWith(EventHandlerNumThreads.class).to(Integer.getInteger("arecibo.alert.event_handler_num_threads", EventHandlerNumThreads.DEFAULT));
-		bindConstant().annotatedWith(SMTPHost.class).to(System.getProperty("arecibo.alert.smtp_host", SMTPHost.DEFAULT));
-		bindConstant().annotatedWith(FromEmailAddress.class).to(System.getProperty("arecibo.alert.from_email_address", FromEmailAddress.DEFAULT));
+        ConfigurationObjectFactory configFactory = new ConfigurationObjectFactory(System.getProperties());
+        EventPublisherConfig eventPublisherConfig = configFactory.build(EventPublisherConfig.class);
 
+        bind(EventPublisherConfig.class).toInstance(eventPublisherConfig);
 		bind(AsynchronousEventHandler.class).asEagerSingleton();	
 
         bind(ConfigManager.class).asEagerSingleton();

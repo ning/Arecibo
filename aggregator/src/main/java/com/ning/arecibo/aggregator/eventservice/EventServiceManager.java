@@ -7,12 +7,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import com.google.inject.Inject;
 import com.ning.arecibo.event.publisher.AsynchronousSender;
+import com.ning.arecibo.event.publisher.EventPublisherConfig;
 import com.ning.arecibo.event.publisher.EventSenderType;
-import com.ning.arecibo.event.publisher.LocalSpoolRoot;
-import com.ning.arecibo.event.publisher.MaxDrainDelayInMS;
-import com.ning.arecibo.event.publisher.MaxEventBufferSize;
-import com.ning.arecibo.event.publisher.MaxEventDispatchers;
-import com.ning.arecibo.event.publisher.SpooledEventExpirationInMS;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.EventServiceUDPClient;
@@ -36,19 +32,17 @@ public class EventServiceManager
     private final AtomicLong externalEventsFailed = new AtomicLong();
 
     @Inject
-	public EventServiceManager(ServiceLocator serviceLocator,
+	public EventServiceManager(EventPublisherConfig config,
+	                           ServiceLocator serviceLocator,
                                AsyncHttpClient httpClient,
-	                           @MaxEventDispatchers int numThreads,
-	                           @MaxEventBufferSize int bufferSize,
-	                           @MaxDrainDelayInMS final long drainDelay,
-	                           @LocalSpoolRoot String localSpoolPath,
-	                           @SpooledEventExpirationInMS long spoolExpiration,
-                               @EventSenderType String senderType) throws IOException
+	                           @EventSenderType String senderType) throws IOException
     {
 		this.serviceLocator = serviceLocator;
 		this.restClient = new EventServiceRESTClient(httpClient, new JavaEventSerializer(), senderType);
 		this.udpClient = new EventServiceUDPClient(new JavaEventSerializer(), senderType);
-		this.asyncSender = new AsynchronousSender(numThreads, bufferSize, drainDelay);
+		this.asyncSender = new AsynchronousSender(config.getMaxEventDispatchers(),
+		                                          config.getMaxEventBufferSize(),
+		                                          config.getMaxDrainDelay());
 	}
 
 	public void start()

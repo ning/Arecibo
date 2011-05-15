@@ -216,7 +216,7 @@ public class ThresholdsPanel extends Panel {
             }
         };
 
-        final int numRows = ((AreciboAlertManager)getApplication()).getConfigProps().getThresholdsTableDisplayRows();
+        final int numRows = ((AreciboAlertManager)getApplication()).getConfig().getThresholdsTableDisplayRows();
         dataTable = new AjaxFallbackDefaultDataTable<ThresholdConfigExtendedForDisplay>("table", columns, dataProvider, numRows);
         dataTable.setOutputMarkupPlaceholderTag(true);
 

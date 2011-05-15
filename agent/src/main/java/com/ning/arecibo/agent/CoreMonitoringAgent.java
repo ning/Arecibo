@@ -164,7 +164,7 @@ public class CoreMonitoringAgent
                                                  new EventPublisherModule(EventSenderType.CLIENT),
                                                  new EmbeddedJettyJerseyModule(),
                                                  new RESTEventReceiverModule(EventProcessorImpl.class, "arecibo.agent:name=EventAPI"),
-                                                 new UDPEventReceiverModule(5),
+                                                 new UDPEventReceiverModule(),
 												 new GalaxyModule(),
 												 new AgentModule());
 

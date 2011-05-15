@@ -1,7 +1,8 @@
 package com.ning.arecibo.alertmanager.guice;
 
+import org.skife.config.ConfigurationObjectFactory;
 import com.google.inject.AbstractModule;
-import com.ning.arecibo.alertmanager.AreciboAlertManagerConfigProps;
+import com.ning.arecibo.alertmanager.AreciboAlertManagerConfig;
 import com.ning.arecibo.util.Logger;
 
 public class AlertManagerModule extends AbstractModule
@@ -11,9 +12,8 @@ public class AlertManagerModule extends AbstractModule
     @Override
 	public void configure()
 	{
-        bindConstant().annotatedWith(GeneralTableDisplayRows.class).to(Integer.getInteger("arecibo.alertmanager.general_table_display_rows", GeneralTableDisplayRows.DEFAULT));
-        bindConstant().annotatedWith(ThresholdsTableDisplayRows.class).to(Integer.getInteger("arecibo.alertmanager.thresholds_table_display_rows", ThresholdsTableDisplayRows.DEFAULT));
+        AreciboAlertManagerConfig config = new ConfigurationObjectFactory(System.getProperties()).build(AreciboAlertManagerConfig.class);
 
-        bind(AreciboAlertManagerConfigProps.class).asEagerSingleton();
+        bind(AreciboAlertManagerConfig.class).toInstance(config);
 	}
 }

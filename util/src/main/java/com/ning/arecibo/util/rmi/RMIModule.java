@@ -1,15 +1,17 @@
 package com.ning.arecibo.util.rmi;
 
 import java.rmi.registry.Registry;
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.name.Names;
+import org.skife.config.ConfigurationObjectFactory;
+import com.google.inject.AbstractModule;
 
-public class RMIModule implements Module
+public class RMIModule extends AbstractModule
 {
-	public void configure(Binder binder)
+    @Override
+	public void configure()
 	{
-		binder.bind(Registry.class).toProvider(RMIRegistryProvider.class).asEagerSingleton();
-		binder.bindConstant().annotatedWith(Names.named("RMIRegistryPort")).to(System.getProperty("arecibo.rmi.port", "auto"));
+	    RMIRegistryConfig config = new ConfigurationObjectFactory(System.getProperties()).build(RMIRegistryConfig.class);
+
+	    bind(RMIRegistryConfig.class).toInstance(config);
+	    bind(Registry.class).toProvider(RMIRegistryProvider.class).asEagerSingleton();
 	}
 }

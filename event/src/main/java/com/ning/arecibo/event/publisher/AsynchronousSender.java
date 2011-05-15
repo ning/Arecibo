@@ -4,13 +4,14 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.util.NamedThreadFactory;
 
 public class AsynchronousSender
 {
 	private ThreadPoolExecutor asyncSender;
 
-	public AsynchronousSender(int numThreads, int bufferSize, final long drainDelay)
+	public AsynchronousSender(int numThreads, int bufferSize, final TimeSpan drainDelay)
 	{
 		this.asyncSender = new ThreadPoolExecutor(0, numThreads,
 				60L, TimeUnit.SECONDS,
@@ -20,7 +21,9 @@ public class AsynchronousSender
 						boolean ok = super.offer(runnable);
 						if ( !ok ) {
 							try {
-								boolean retryOk = super.offer(runnable, drainDelay, TimeUnit.MILLISECONDS);
+								boolean retryOk = super.offer(runnable,
+								                              drainDelay.getPeriod(),
+								                              drainDelay.getUnit());
 								if ( ! retryOk ) {
 									eventDiscarded(runnable);
 								}

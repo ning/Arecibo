@@ -5,22 +5,21 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import com.google.inject.name.Named;
 
 public class RMIRegistryProvider implements Provider<Registry>
 {
-	private final int port;
+	private final RMIRegistryConfig config;
 
 	@Inject
-	public RMIRegistryProvider(@Named("RMIRegistryPort") int port)
+	public RMIRegistryProvider(RMIRegistryConfig config)
 	{
-		this.port = port;
+		this.config = config;
 	}
 
 	public Registry get()
 	{
 		try {
-			return LocateRegistry.createRegistry(port);
+			return LocateRegistry.createRegistry(config.getPort());
 		}
 		catch (RemoteException e) {
 			return null;

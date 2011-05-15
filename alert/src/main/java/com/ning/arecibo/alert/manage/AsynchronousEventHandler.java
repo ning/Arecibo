@@ -7,8 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.weakref.jmx.Managed;
 import com.google.inject.Inject;
-import com.ning.arecibo.alert.guice.EventHandlerBufferSize;
-import com.ning.arecibo.alert.guice.EventHandlerNumThreads;
+import com.ning.arecibo.alert.guice.AlertServiceConfig;
 import com.ning.arecibo.alert.manage.AlertEventProcessor.AlertEventRunnableHandler;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.Logger;
@@ -22,21 +21,14 @@ public class AsynchronousEventHandler
 
 	private final AtomicLong eventsDiscarded = new AtomicLong(0L);	
 	
-	final ThreadPoolExecutor executor;
-	final int bufferSize;
-	final int numThreads;
-    final ArrayBlockingQueue<Runnable> asynchEventQueue;
+	private final ThreadPoolExecutor executor;
+	private final ArrayBlockingQueue<Runnable> asynchEventQueue;
 
 	@Inject
-	public AsynchronousEventHandler(@EventHandlerBufferSize int bufferSize,
-									@EventHandlerNumThreads int numThreads)
+	public AsynchronousEventHandler(final AlertServiceConfig alertServiceConfig)
 	{
-		this.numThreads = numThreads;
-		this.bufferSize = bufferSize;
-
-        this.asynchEventQueue = new ArrayBlockingQueue<Runnable>(bufferSize);
-		
-		executor = new ThreadPoolExecutor(0, this.numThreads,
+        this.asynchEventQueue = new ArrayBlockingQueue<Runnable>(alertServiceConfig.getEventHandlerBufferSize());
+		this.executor = new ThreadPoolExecutor(0, alertServiceConfig.getEventHandlerNumThreads(),
 				60L, TimeUnit.SECONDS,
                 this.asynchEventQueue,
 				new NamedThreadFactory(getClass().getSimpleName()),
@@ -46,7 +38,8 @@ public class AsynchronousEventHandler
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         Event removedEvent = ((AlertEventRunnableHandler)r).getEvent();
                         log.warn("AsynchronousEventHandler queue full (%d), discarding event %s",
-                                            AsynchronousEventHandler.this.bufferSize,removedEvent.toString());
+                                 alertServiceConfig.getEventHandlerBufferSize(),
+                                 removedEvent.toString());
                         eventsDiscarded.getAndIncrement();
                     }
 

@@ -1,29 +1,25 @@
 package com.ning.arecibo.event.receiver;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.name.Named;
-
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 
 public class DatagramSocketProvider implements Provider<DatagramSocket>
 {
-    private final String host;
-    private final int port;
+    private final UDPEventReceiverConfig config;
 
     @Inject
-    public DatagramSocketProvider(@Named("UDPServerHost") String host, @Named("UDPServerPort") int port)
+    public DatagramSocketProvider(UDPEventReceiverConfig config)
     {
-        this.host = host;
-        this.port = port;
+        this.config = config;
     }
 
     public DatagramSocket get()
     {
         try {
-            DatagramSocket socket = new DatagramSocket(new InetSocketAddress(host, port));
+            DatagramSocket socket = new DatagramSocket(new InetSocketAddress(config.getHost(), config.getPort()));
             //socket.bind();
             return socket ;
         }

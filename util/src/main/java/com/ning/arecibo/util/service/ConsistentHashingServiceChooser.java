@@ -30,7 +30,7 @@ public class ConsistentHashingServiceChooser implements ServiceListener, Service
     private final ExecutorService executor = Executors.newCachedThreadPool(new NamedThreadFactory("NodeChooser listener"));
     private final TreeMap<String, ServiceDescriptor> descriptorsByHash = new TreeMap<String, ServiceDescriptor>();
 
-    private final int virtualNodes;
+    private final ConsistentHashingConfig config;
     private final Selector selector;
 
     /**
@@ -39,13 +39,13 @@ public class ConsistentHashingServiceChooser implements ServiceListener, Service
      * @param selector the selector to decide what services the ConsistentHashingServiceChooser is selecting over
      */
     @Inject
-    public ConsistentHashingServiceChooser(ServiceLocator serviceLocator,
-                                           @VirtualNodes int virtualNodes,
+    public ConsistentHashingServiceChooser(ConsistentHashingConfig config,
+                                           ServiceLocator serviceLocator,
                                            @ConsistentHashingSelector Selector selector)
     {
-        this.serviceLocator      = serviceLocator;
-        this.virtualNodes = virtualNodes;
-        this.selector     = selector;       
+        this.config = config;
+        this.serviceLocator = serviceLocator;
+        this.selector = selector;       
     }
 
     private String computeNodeHash(String key)
@@ -72,14 +72,14 @@ public class ConsistentHashingServiceChooser implements ServiceListener, Service
 
     private List<String> getVirtualNodeHashes(ServiceDescriptor sd)
     {
-        List<String> keys = new ArrayList<String>(virtualNodes);
+        List<String> keys = new ArrayList<String>(config.getVirtualNodes());
 
         // this helps ensure that findClosest(getUuid().toString()) returns the node with the same key
         // Usually, relying on arbitrary hashes is enough, but it may be useful to be able to get a node more predictably
         // and fall back to other nodes if that one is not available (e.g., where the keys represent "partitions")
         keys.add(computeNodeHash(sd.getUuid().toString()));
 
-        for (int i = 0; i < virtualNodes; ++i) {
+        for (int i = 0; i < config.getVirtualNodes(); ++i) {
             keys.add(computeNodeHash(sd.getUuid().toString() + "-" + i));
         }
 

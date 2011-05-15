@@ -1,26 +1,26 @@
 package com.ning.arecibo.alert.manage;
 
+import static com.ning.arecibo.alert.client.AlertActivationStatus.ERROR;
+import static com.ning.arecibo.alert.client.AlertActivationStatus.NORMAL;
+import static com.ning.arecibo.alert.manage.AlertActivationType.ON_FRESH_TO_STALE;
+import static com.ning.arecibo.alert.manage.AlertActivationType.ON_STALE_TO_FRESH;
+import static com.ning.arecibo.alert.manage.AlertFreshnessStatus.FRESH;
+import static com.ning.arecibo.alert.manage.AlertFreshnessStatus.STALE;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.Set;
-
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.client.AlertActivationStatus;
-import com.ning.arecibo.alert.guice.ConfigUpdateInterval;
+import com.ning.arecibo.alert.guice.AlertServiceConfig;
 import com.ning.arecibo.alert.objects.AlertIncidentLog;
 import com.ning.arecibo.alert.objects.ThresholdConfig;
 import com.ning.arecibo.client.AggregatorService;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.lang.Aggregator;
 import com.ning.arecibo.lang.ExternalPublisher;
-
 import com.ning.arecibo.util.Logger;
-
-import static com.ning.arecibo.alert.client.AlertActivationStatus.*;
-import static com.ning.arecibo.alert.manage.AlertActivationType.*;
-import static com.ning.arecibo.alert.manage.AlertFreshnessStatus.*;
 
 /*
 ** This class contains management semantics for managing alert "activation" based on the "freshness" of recently handled
@@ -47,19 +47,16 @@ public class AlertManager
     private final ScheduledThreadPoolExecutor executor;
     private final ConcurrentHashMap<Long,ThresholdConfig> thresholdConfigs;
     private final ConcurrentHashMap<Long,ConcurrentHashMap<String,ScheduledFuture<?>>> schedFutures;
-    private final int leaseExpirationInterval;
+    private final AlertServiceConfig alertServiceConfig;
 
     @Inject
 	public AlertManager(AggregatorService aggService,
-                        @ConfigUpdateInterval int configUpdateInterval) {
-	    
+	                    AlertServiceConfig alertServiceConfig) {
+        this.alertServiceConfig = alertServiceConfig;
 	    this.aggService = aggService;
         this.executor = new ScheduledThreadPoolExecutor(THREAD_COUNT);
         this.thresholdConfigs = new ConcurrentHashMap<Long,ThresholdConfig>();
         this.schedFutures = new ConcurrentHashMap<Long,ConcurrentHashMap<String,ScheduledFuture<?>>>();
-
-        // set the lease time to twice the configUpdateInterval
-        this.leaseExpirationInterval = 2*configUpdateInterval;
 	}
 
     public Set<Long> getActiveThresholdConfigIds() {
@@ -76,7 +73,9 @@ public class AlertManager
             Aggregator agg = getAggregator(config);
 
             try {
-                aggService.getAggregatorService().register(agg,this.leaseExpirationInterval,TimeUnit.SECONDS);
+                aggService.getAggregatorService().register(agg,
+                                                           2 * alertServiceConfig.getConfigUpdateInterval().getPeriod(),
+                                                           alertServiceConfig.getConfigUpdateInterval().getUnit());
                 return true;
             }
             catch(Exception ex) {
@@ -95,7 +94,9 @@ public class AlertManager
             Aggregator agg = getAggregator(config);
 
             try {
-                aggService.getAggregatorService().register(agg,this.leaseExpirationInterval,TimeUnit.SECONDS);
+                aggService.getAggregatorService().register(agg,
+                                                           2 * alertServiceConfig.getConfigUpdateInterval().getPeriod(),
+                                                           alertServiceConfig.getConfigUpdateInterval().getUnit());
                 return true;
             }
             catch(Exception ex) {

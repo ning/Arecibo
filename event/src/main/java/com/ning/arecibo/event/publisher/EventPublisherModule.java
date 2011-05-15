@@ -3,6 +3,7 @@ package com.ning.arecibo.event.publisher;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.skife.config.ConfigurationObjectFactory;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
@@ -10,11 +11,11 @@ import com.ning.arecibo.eventlogger.EventPublisher;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.cron.JMXCronScheduler;
+import com.ning.arecibo.util.service.ConsistentHashingConfig;
 import com.ning.arecibo.util.service.ConsistentHashingSelector;
 import com.ning.arecibo.util.service.ConsistentHashingServiceChooser;
 import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceSelector;
-import com.ning.arecibo.util.service.VirtualNodes;
 
 public class EventPublisherModule extends AbstractModule
 {
@@ -30,27 +31,22 @@ public class EventPublisherModule extends AbstractModule
 	@Override
 	public void configure()
 	{
-	    bindConstant().annotatedWith(VirtualNodes.class).to(Integer.getInteger("arecibo.consistent.hash.nodes", VirtualNodes.DEFAULT));
-        bindConstant().annotatedWith(MaxEventBufferSize.class).to(Integer.getInteger("arecibo.event.maxBufferSize", MaxEventBufferSize.DEFAULT));
-        bindConstant().annotatedWith(MaxEventDispatchers.class).to(Integer.getInteger("arecibo.event.maxDispatchers", MaxEventDispatchers.DEFAULT));
-        bindConstant().annotatedWith(MaxDrainDelayInMS.class).to(Long.getLong("arecibo.event.maxDrainDelayInMS", MaxDrainDelayInMS.DEFAULT));
-        bindConstant().annotatedWith(SpooledEventExpirationInMS.class).to(Long.getLong("arecibo.event.spool.expirationInMS", SpooledEventExpirationInMS.DEFAULT));
-        bindConstant().annotatedWith(LocalSpoolRoot.class).to(System.getProperty("arecibo.event.spool.path", LocalSpoolRoot.DEFAULT));
-        bindConstant().annotatedWith(EventServiceName.class).to(System.getProperty("arecibo.event.eventServiceName"));
+	    ConfigurationObjectFactory configFactory = new ConfigurationObjectFactory(System.getProperties());
+	    ConsistentHashingConfig consistentHashingConfig = configFactory.build(ConsistentHashingConfig.class);
+	    EventPublisherConfig eventPublisherConfig = configFactory.build(EventPublisherConfig.class);
 
-        // need a local instance here
-        final String eventServiceName = System.getProperty("arecibo.event.eventServiceName");
-
+        bind(ConsistentHashingConfig.class).toInstance(consistentHashingConfig);
+	    bind(EventPublisherConfig.class).toInstance(eventPublisherConfig);
         bind(ExecutorService.class).annotatedWith(PublisherExecutor.class).toInstance(				
 				Executors.newFixedThreadPool(50, new NamedThreadFactory("EventPublisher"))
 		);
 
         bind(Selector.class)
 		    .annotatedWith(PublisherSelector.class)
-		    .toInstance(new ServiceSelector(eventServiceName));
+		    .toInstance(new ServiceSelector(eventPublisherConfig.getEventServiceName()));
         bind(Selector.class)
             .annotatedWith(ConsistentHashingSelector.class)
-            .toInstance(new ServiceSelector(eventServiceName));
+            .toInstance(new ServiceSelector(eventPublisherConfig.getEventServiceName()));
 
 		bind(ConsistentHashingServiceChooser.class).asEagerSingleton();
 		bind(ScheduledExecutorService.class).annotatedWith(JMXCronScheduler.class).toInstance(Executors.newScheduledThreadPool(1));

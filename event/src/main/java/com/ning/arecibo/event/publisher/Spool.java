@@ -9,6 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.skife.config.TimeSpan;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.Pair;
@@ -26,7 +27,7 @@ public abstract class Spool implements ServiceListener
 	private BDBQueue<EventItem> spoolQueue;
 	private BDBQueue<EventItem> retryQueue;
 	private final ExecutorService globalExecutor;
-	private final long spoolExpiration;
+	private final TimeSpan spoolExpiration;
 	private final String clusterName;
 	private final ServiceLocator serviceLocator;
 	private final AtomicInteger serviceCount = new AtomicInteger(0);
@@ -45,7 +46,12 @@ public abstract class Spool implements ServiceListener
 		return retryQueue.getNumQueued();
 	}
 
-	public Spool(String clusterName, File spoolRoot, ServiceLocator serviceLocator, Selector selector, ExecutorService globalExecutor, long spoolExpiration)
+	public Spool(String clusterName,
+	             File spoolRoot,
+	             ServiceLocator serviceLocator,
+	             Selector selector,
+	             ExecutorService globalExecutor,
+	             TimeSpan spoolExpiration)
 	{
 		this.clusterName = clusterName;
 		this.serviceLocator = serviceLocator;
@@ -185,7 +191,7 @@ public abstract class Spool implements ServiceListener
 					spoolQueue.remove(p.getFirst());
 
 					Event evt = p.getSecond().getEvent();
-					if (p.getSecond().getTimestamp() + spoolExpiration > System.currentTimeMillis()) {
+					if (p.getSecond().getTimestamp() + spoolExpiration.getMillis() > System.currentTimeMillis()) {
 						try {
 							sendViaREST(evt);
 						}

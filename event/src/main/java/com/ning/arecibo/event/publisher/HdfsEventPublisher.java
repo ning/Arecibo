@@ -24,19 +24,22 @@ public class HdfsEventPublisher extends AbstractEventPublisher
 	private final AtomicLong restEventsDelivered = new AtomicLong(0);
 
     @Inject
-	public HdfsEventPublisher(EventServiceChooser chooser,
+	public HdfsEventPublisher(EventPublisherConfig config,
+	                          EventServiceChooser chooser,
 							  ServiceLocator cluster,
 							  @RandomSelector Selector selector,
-							  @LocalSpoolRoot String localSpoolPath,
-							  @SpooledEventExpirationInMS long spoolExpiration,
 							  @PublisherExecutor ExecutorService globalExecutor
 	)
 	{
 		this.chooser = chooser;
-		File spoolRoot = new File(localSpoolPath).getAbsoluteFile();
+		File spoolRoot = config.getLocalSpoolRoot().getAbsoluteFile();
 		File publisherRoot = new File(spoolRoot, "publisher");
-		this.spool = new Spool("hdfs-collector", publisherRoot, cluster, selector, globalExecutor, spoolExpiration)
-		{
+		this.spool = new Spool("hdfs-collector",
+		                       publisherRoot,
+		                       cluster,
+		                       selector,
+		                       globalExecutor,
+		                       config.getSpooledEventExpiration()) {
 			protected void sendViaREST(Event evt) throws IOException
 			{
 				sendREST(evt);
