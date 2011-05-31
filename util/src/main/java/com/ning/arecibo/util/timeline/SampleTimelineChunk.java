@@ -8,7 +8,9 @@ import com.ning.arecibo.util.Logger;
 
 /**
  * This class represents a sequence of values for a single attribute,
- * e.g., "TP99 Response Time", for one host and one specific time range.
+ * e.g., "TP99 Response Time", for one host and one specific time range,
+ * as the object is being accumulated.  It is not used to represent
+ * past timeline sequences; they are held in TimelineChunk objects.
  * <p>
  * It accumulates samples in a byte array object
  */
@@ -48,8 +50,9 @@ public class SampleTimelineChunk {
     }
 
     /**
-     * The log scanner can safely call this method, and will always end in a complete sample
-     * @return
+     * The log scanner can safely call this method, and know that the byte
+     * array will always end in a complete sample
+     * @return an instalce containing the bytes and the counts of samples
      */
     public synchronized EncodedBytesAndSampleCount getEncodedSamples() {
         if (lastSample != null) {

@@ -13,7 +13,7 @@ import com.ning.arecibo.util.Logger;
 
 
 /**
- * This class represent collection of timelines, one
+ * This class represent collection of timeline chunks, one
  * for each sample kind, each over a specific time period,
  * from a single host.  This class is used to accumulate samples
  * to be written to the database; a separate streaming class with
@@ -30,6 +30,7 @@ public class SampleSetTimelineChunk {
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
 
     private final String hostName;
+    private final String category;
     private final DateTime startTime;
     private final Map<String, SampleTimelineChunk> timelines;
 
@@ -43,6 +44,7 @@ public class SampleSetTimelineChunk {
      */
     public SampleSetTimelineChunk(HostSamplesForTimestamp samples) {
         this.hostName = samples.getHostName();
+        this.category = samples.getCategory();
         final DateTime timestamp = samples.getTimestamp();
         this.startTime = timestamp;
         this.endTime = timestamp;
@@ -134,6 +136,11 @@ public class SampleSetTimelineChunk {
 
     public String getHostName() {
         return hostName;
+    }
+
+
+    public String getCategory() {
+        return category;
     }
 
     public DateTime getStartTime() {
