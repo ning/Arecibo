@@ -1,6 +1,11 @@
 package com.ning.arecibo.util.timeline;
 
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import com.ning.arecibo.util.LRUCache;
 
@@ -64,6 +69,32 @@ public class CacheManager {
         else {
             return null;
         }
+    }
+
+    /**
+     * This method is intentionally not synchronized, because
+     * (I think) it's better to let other threads in, since
+     * we will look up anything we didn't get this way via a db
+     * query.
+     * <p>
+     * The caller will call this function to get the timelines he needs for
+     * his query.  Some won't be in the cache, and for these he'll issue one
+     * or more db queries.
+     * @param objectIds a collection of longs representing the object ids of
+     * for which a response from the cache is requested.
+     * @return a map from objectId to CachedObjects found in the cache.
+     */
+    public Map<Long, CachedObject> findObjects(final Collection<Long> objectIds) {
+        final Map<Long, CachedObject> objects = new HashMap<Long, CachedObject>();
+        final Iterator<Long> idIterator = objectIds.iterator();
+        while (idIterator.hasNext()) {
+            final long id = idIterator.next();
+            final CachedObject cachedObject = findObject(id);
+            if (cachedObject != null) {
+                objects.put(id, cachedObject);
+            }
+        }
+        return objects;
     }
 
     public synchronized CachedObject insertObject(final CachedObject cachableObject) {

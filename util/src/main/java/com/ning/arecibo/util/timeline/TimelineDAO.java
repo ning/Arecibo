@@ -18,6 +18,25 @@ import com.google.inject.Inject;
 
 public class TimelineDAO {
     private static final String PACKAGE = TimelineDAO.class.getName();
+    private static final Folder2<List<TimelineChunk>> timelineFolder = new Folder2<List<TimelineChunk>>() {
+
+        @Override
+        public List<TimelineChunk> fold(List<TimelineChunk>  accumulator, ResultSet rs, StatementContext ctx) throws SQLException {
+            accumulator.add(TimelineChunk.mapper.map(0, rs, ctx));
+            return accumulator;
+        }
+
+    };
+
+    private static final Folder2<List<TimelineTimes>> timelineTimesFolder = new Folder2<List<TimelineTimes>>() {
+
+        @Override
+        public List<TimelineTimes> fold(List<TimelineTimes>  accumulator, ResultSet rs, StatementContext ctx) throws SQLException {
+            accumulator.add(TimelineTimes.mapper.map(0, rs, ctx));
+            return accumulator;
+        }
+
+    };
 
     private final IDBI dbi;
 
@@ -89,15 +108,20 @@ public class TimelineDAO {
                 .bind("sample_kind_id", sampleKindId)
                 .bind("start_time", TimelineTimes.unixSeconds(startTime))
                 .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                .fold(makeTimelineChunkList(), new Folder2<List<TimelineChunk>>() {
+                .fold(makeTimelineChunkList(), timelineFolder);
+            }
+        });
 
-                    @Override
-                    public List<TimelineChunk> fold(List<TimelineChunk>  accumulator, ResultSet rs, StatementContext ctx) throws SQLException {
-                        accumulator.add(TimelineChunk.mapper.map(0, rs, ctx));
-                        return accumulator;
-                    }
+    }
 
-                });
+    public List<TimelineChunk> getSampleKindTimelinesById(final List<Long> objectIds) {
+        return dbi.withHandle(new HandleCallback<List<TimelineChunk>>() {
+
+            @Override
+            public List<TimelineChunk> withHandle(Handle handle) throws Exception {
+                return handle.createQuery(PACKAGE + ":getSampleKindTimelinesById")
+                .define("object_ids", objectIds)
+                .fold(makeTimelineChunkList(), timelineFolder);
             }
         });
 
@@ -113,15 +137,20 @@ public class TimelineDAO {
                 .bind("sample_kind_id", sampleKindId)
                 .bind("start_time", TimelineTimes.unixSeconds(startTime))
                 .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                .fold(makeTimestampsList(), new Folder2<List<TimelineTimes>>() {
+                .fold(makeTimestampsList(), timelineTimesFolder);
+            }
+        });
 
-                    @Override
-                    public List<TimelineTimes> fold(List<TimelineTimes>  accumulator, ResultSet rs, StatementContext ctx) throws SQLException {
-                        accumulator.add(TimelineTimes.mapper.map(0, rs, ctx));
-                        return accumulator;
-                    }
+    }
 
-                });
+    public List<TimelineTimes> getTimelineTimesById(final List<Long> objectIds) {
+        return dbi.withHandle(new HandleCallback<List<TimelineTimes>>() {
+
+            @Override
+            public List<TimelineTimes> withHandle(Handle handle) throws Exception {
+                return handle.createQuery(PACKAGE + ":getSampleKindTimelinesById")
+                .define("object_ids", objectIds)
+                .fold(makeTimestampsList(), timelineTimesFolder);
             }
         });
 
