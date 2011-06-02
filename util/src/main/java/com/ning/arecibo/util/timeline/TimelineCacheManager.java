@@ -1,12 +1,12 @@
 package com.ning.arecibo.util.timeline;
 
 public class TimelineCacheManager {
-    private final CacheManager timelineTimesCache;
-    private final CacheManager timelineCache;
+    private final LRUObjectCache timelineTimesCache;
+    private final LRUObjectCache timelineCache;
 
     public TimelineCacheManager(int maxTimelineTimes, int maxTimelines) {
-        this.timelineTimesCache = new CacheManager(maxTimelineTimes);
-        this.timelineCache = new CacheManager(maxTimelines);
+        this.timelineTimesCache = new LRUObjectCache(maxTimelineTimes);
+        this.timelineCache = new LRUObjectCache(maxTimelines);
     }
 
     public TimelineChunk getTimelineChunk(final long objectId) {

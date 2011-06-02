@@ -14,30 +14,31 @@ import com.ning.arecibo.util.Logger;
  * <p>
  * It accumulates samples in a byte array object
  */
-public class SampleTimelineChunk {
+public class TimelineChunkAccumulator {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private static final int DEFAULT_CHUNK_BYTE_ARRAY_SIZE = 300;
-
-    // TODO: the HostTimeLines member isn't referenced here.
-    // Figure out if we really need the backpointer.
-    private final SampleSetTimelineChunk timelines;
-    private final String sampleKind;
-    private final ByteArrayOutputStream byteStream;
+    private final int hostId;
+    private final int sampleKindId;
+    private ByteArrayOutputStream byteStream;
     /**
      * Any operation that writes to the outputStream must synchronize on it!
      */
-    private final DataOutputStream outputStream;
+    private DataOutputStream outputStream;
 
     private int sampleCount;
     private SampleBase lastSample;
 
-    public SampleTimelineChunk(SampleSetTimelineChunk timelines, String sampleKind) {
-        this.timelines = timelines;
-        this.sampleKind = sampleKind;
-        this.byteStream = new ByteArrayOutputStream(DEFAULT_CHUNK_BYTE_ARRAY_SIZE);
-        this.outputStream = new DataOutputStream(byteStream);
+    public TimelineChunkAccumulator(int hostId, int sampleKindId) {
+        this.hostId = hostId;
+        this.sampleKindId = sampleKindId;
+        reset();
+    }
+
+    private void reset() {
+        byteStream = new ByteArrayOutputStream(DEFAULT_CHUNK_BYTE_ARRAY_SIZE);
+        outputStream = new DataOutputStream(byteStream);
         lastSample = null;
-        this.sampleCount = 0;
+        sampleCount = 0;
     }
 
     @SuppressWarnings("unchecked")
@@ -52,7 +53,7 @@ public class SampleTimelineChunk {
     /**
      * The log scanner can safely call this method, and know that the byte
      * array will always end in a complete sample
-     * @return an instalce containing the bytes and the counts of samples
+     * @return an instance containing the bytes and the counts of samples
      */
     public synchronized EncodedBytesAndSampleCount getEncodedSamples() {
         if (lastSample != null) {
@@ -67,6 +68,15 @@ public class SampleTimelineChunk {
             // Do no harm - - this at least won't corrupt the encoding
             return new EncodedBytesAndSampleCount(new byte[0], 0);
         }
+    }
+
+    /**
+     * This method grabs the current encoded form, and resets the accumulator
+     */
+    public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId) {
+        final byte[] bytes = getEncodedSamples().getEncodedBytes();
+        reset();
+        return new TimelineChunk(hostId, sampleKindId, timelineTimesId, bytes, sampleCount);
     }
 
     private synchronized void addLastSample() {
@@ -115,12 +125,12 @@ public class SampleTimelineChunk {
         sampleCount++;
     }
 
-    public SampleSetTimelineChunk getTimelines() {
-        return timelines;
+    public int getHostId() {
+        return hostId;
     }
 
-    public String getSampleKind() {
-        return sampleKind;
+    public int getSampleKindId() {
+        return sampleKindId;
     }
 
     public synchronized int getSampleCount() {

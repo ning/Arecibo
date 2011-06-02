@@ -11,6 +11,8 @@ import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.HandleCallback;
+import org.skife.jdbi.v2.util.IntegerMapper;
+import org.skife.jdbi.v2.util.LongMapper;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -70,6 +72,38 @@ public class TimelineDAO {
             }
         });
 
+    }
+
+    public int addHost(final String host) {
+        return dbi.withHandle(new HandleCallback<Integer>() {
+
+            @Override
+            public Integer withHandle(Handle handle) throws Exception {
+                handle.createStatement(PACKAGE + ":addHost")
+                    .bind("host_name", host)
+                    .execute();
+                return handle.createQuery(PACKAGE + ":getLastInsertedId")
+                    .map(IntegerMapper.FIRST)
+                    .first();
+            }
+
+        });
+    }
+
+    public int addSampleKind(final String sampleKind) {
+        return dbi.withHandle(new HandleCallback<Integer>() {
+
+            @Override
+            public Integer withHandle(Handle handle) throws Exception {
+                handle.createStatement(PACKAGE + ":addSampleKind")
+                    .bind("sample_kind", sampleKind)
+                    .execute();
+                return handle.createQuery(PACKAGE + ":getLastInsertedId")
+                    .map(IntegerMapper.FIRST)
+                    .first();
+            }
+
+        });
     }
 
     private BiMap<Integer, String> makeBiMap() {
@@ -138,6 +172,46 @@ public class TimelineDAO {
                 .bind("start_time", TimelineTimes.unixSeconds(startTime))
                 .bind("end_time", TimelineTimes.unixSeconds(endTime))
                 .fold(makeTimestampsList(), timelineTimesFolder);
+            }
+        });
+
+    }
+
+    public int insertTimelineTimes(final TimelineTimes timelineTimes) {
+        return dbi.withHandle(new HandleCallback<Integer>() {
+
+            @Override
+            public Integer withHandle(Handle handle) throws Exception {
+                handle.createStatement(PACKAGE + ":insertTimelineTimes")
+                    .bind("host_id", timelineTimes.getHostId())
+                    .bind("start_time", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
+                    .bind("end_time", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
+                    .bind("count", timelineTimes.getSampleCount())
+                    .bind("times", timelineTimes.getIntTimeArray())
+                    .execute();
+                return handle.createQuery(PACKAGE + ":getLastInsertedId")
+                    .map(IntegerMapper.FIRST)
+                    .first();
+            }
+        });
+
+    }
+
+    public int insertTimelineChunk(final TimelineChunk timelineChunk) {
+        return dbi.withHandle(new HandleCallback<Integer>() {
+
+            @Override
+            public Integer withHandle(Handle handle) throws Exception {
+                handle.createStatement(PACKAGE + ":insertTimelineTimes")
+                    .bind("host_id", timelineChunk.getHostId())
+                    .bind("sample_kind_id", timelineChunk.getSampleKindId())
+                    .bind("timeline_times_id", timelineChunk.getTimelineTimesId())
+                    .bind("count", timelineChunk.getSampleCount())
+                    .bind("times", timelineChunk.getSamples())
+                    .execute();
+                return handle.createQuery(PACKAGE + ":getLastInsertedId")
+                    .map(IntegerMapper.FIRST)
+                    .first();
             }
         });
 

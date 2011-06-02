@@ -85,6 +85,15 @@ public class TimelineTimes extends CachedObject {
         throw new IllegalArgumentException("NYI");
     }
 
+    public int[] getIntTimeArray() {
+        final int[] unixTimes = new int[times.size()];
+        int i = 0;
+        for (DateTime dateTime : times) {
+            unixTimes[i] = unixSeconds(dateTime);
+        }
+        return unixTimes;
+    }
+
     public static DateTime dateTimeFromUnixSeconds(final int unixTime) {
         return new DateTime(((long)unixTime) * 1000L);
     }

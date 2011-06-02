@@ -4,8 +4,32 @@ getHosts() ::= <<
     select host_name, id from hosts;
 >>
 
+addHost() ::= <<
+    insert into hosts (host_name, created_dt)
+               values (:host_name, unix_timestamp())
+>>
+
 getSampleKinds() ::= <<
     select sample_kind, id from sample_kinds;
+>>
+
+addSampleKind() ::= <<
+    insert into sample_kinds (sample_kind, created_dt)
+                      values (:sample_kind, unix_timestamp())
+>>
+
+getLastInsertedId() ::= <<
+    select last_insert_id()
+>>
+
+insertTimelineTimes() ::= <<
+    insert into timeline_times (host_id, start_time, end_time, count, times)
+                        values (:host_id, :start_time, :end_time, :count, :times)
+>>
+
+insert TimelineChunk() ::= <<
+    insert into timeline_chunks (sample_kind, sample_count, timeline_times_id, sample_bytes)
+                         values (:sample_kind, :sample_count, :timeline_times_id, :sample_bytes)
 >>
 
 getSampleKindTimelinesForHostIds(host_ids) ::= <<

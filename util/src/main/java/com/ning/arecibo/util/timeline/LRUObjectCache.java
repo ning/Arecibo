@@ -5,16 +5,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 import com.ning.arecibo.util.LRUCache;
 
 /**
- * This class manages a collection of timelines for one or more hosts that
- * extends into the indefinite past.  It encaches the bytes for SampleTimelineChunks
- * stored in the db in response to requests, and keeps track of the total memory
- * space used.
- * <p>
  * Our theory of synchronized access is as follows.
  * The cache is built of two kinds of elements:
  * <ul>
@@ -33,7 +27,7 @@ import com.ning.arecibo.util.LRUCache;
  * referenced; and removing them from the end of the list when newer ones
  * are referenced.
  */
-public class CacheManager {
+public class LRUObjectCache {
     @SuppressWarnings("unused")
     private static Comparator<CachedObject> comparer = new Comparator<CachedObject>() {
 
@@ -55,10 +49,17 @@ public class CacheManager {
 
     private final LRUCache<Long, CachedObject> cacheMap;
 
-    public CacheManager(int maxObjects) {
+    public LRUObjectCache(int maxObjects) {
         this.cacheMap = new LRUCache<Long, CachedObject>(maxObjects);
     }
 
+    /**
+     * Get the CachedObject with the given objectId, or null if there is none.
+     * If one is found, remove it then re-insert it in the LRUCache, which makes
+     * it most-recently used.
+     * @param objectId the id of a CachedObject
+     * @return the CachedObject with that id, or null if there is none.
+     */
     public synchronized CachedObject findObject(final long objectId) {
         CachedObject cachedObject = cacheMap.remove(objectId);
         if (cachedObject != null) {

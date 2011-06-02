@@ -1,6 +1,8 @@
 package com.ning.arecibo.util.timeline;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -23,7 +25,7 @@ import com.ning.arecibo.util.Logger;
  * All subordinate timelines contain the same number of samples,
  * but repeat opcodes may collapse adjacent identical values.
  */
-public class SampleSetTimelineChunk {
+public class TimelineSetAccumulator {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
@@ -32,24 +34,31 @@ public class SampleSetTimelineChunk {
     private final String hostName;
     private final String category;
     private final DateTime startTime;
-    private final Map<String, SampleTimelineChunk> timelines;
-
     private int sampleCount;
-
     private DateTime endTime;
 
     /**
-     * A SampleSetTimelineChunk object is born the first time the manager receives set of samples from a host
+     * Maps the sample kind to the accumulator for that sample kind
+     */
+    private final Map<String, TimelineChunkAccumulator> timelines;
+    /**
+     * Holds the unix time of the samples
+     */
+    private final List<DateTime> times;
+
+    /**
+     * A TimelineSetAccumulator object is born the first time the manager receives set of samples from a host
      * @param samples a set of samples representing on transmission from the host.
      */
-    public SampleSetTimelineChunk(HostSamplesForTimestamp samples) {
+    public TimelineSetAccumulator(HostSamplesForTimestamp samples) {
         this.hostName = samples.getHostName();
         this.category = samples.getCategory();
         final DateTime timestamp = samples.getTimestamp();
         this.startTime = timestamp;
         this.endTime = timestamp;
         this.sampleCount = 0;
-        this.timelines = new HashMap<String, SampleTimelineChunk>();
+        this.timelines = new HashMap<String, TimelineChunkAccumulator>();
+        this.times = new ArrayList<DateTime>();
         addHostSamples(samples);
     }
 
@@ -72,9 +81,9 @@ public class SampleSetTimelineChunk {
             final String sampleKind = entry.getKey();
             currentKinds.remove(sampleKind);
             final ScalarSample sample = entry.getValue();
-            SampleTimelineChunk timeline = timelines.get(samples.getHostName());
+            TimelineChunkAccumulator timeline = timelines.get(samples.getHostName());
             if (timeline == null) {
-                timeline = new SampleTimelineChunk(this, sampleKind);
+                timeline = new TimelineChunkAccumulator(this, sampleKind);
                 if (sampleCount > 0) {
                     addPlaceholders(timeline, sampleCount);
                 }
@@ -85,11 +94,12 @@ public class SampleSetTimelineChunk {
         // Now make sure to advance the timelines we haven't added samples to,
         // since the samples for a given sample kind can come and go
         for (String sampleKind : currentKinds) {
-            final SampleTimelineChunk timeline = timelines.get(sampleKind);
+            final TimelineChunkAccumulator timeline = timelines.get(sampleKind);
             timeline.addSample(nullSample);
         }
         // Now we can update the state
         endTime = timestamp;
+        times.add(timestamp);
         sampleCount++;
 
         if (checkEveryAccess) {
@@ -97,7 +107,7 @@ public class SampleSetTimelineChunk {
         }
     }
 
-    private void addPlaceholders(final SampleTimelineChunk timeline, int countToAdd) {
+    private void addPlaceholders(final TimelineChunkAccumulator timeline, int countToAdd) {
         final int maxRepeatSamples = RepeatedSample.MAX_REPEAT_COUNT;
         while (countToAdd >= maxRepeatSamples) {
             timeline.addPlaceholder((byte)maxRepeatSamples);
@@ -106,6 +116,28 @@ public class SampleSetTimelineChunk {
         if (countToAdd > 0) {
             timeline.addPlaceholder((byte)countToAdd);
         }
+    }
+
+    public static class TimesAndTimelineChunks {
+        private final List<DateTime> times;
+        private final List<TimelineChunk> timelines;
+
+        public TimesAndTimelineChunks(List<DateTime> times, List<TimelineChunk> timelines) {
+            this.times = times;
+            this.timelines = timelines;
+        }
+
+        public List<DateTime> getTimes() {
+            return times;
+        }
+
+        public List<TimelineChunk> getTimelines() {
+            return timelines;
+        }
+    }
+
+    public TimesAndTimelineChunks extractTimelineChunks() {
+
     }
 
     /**
@@ -121,9 +153,9 @@ public class SampleSetTimelineChunk {
                     hostName, dateFormatter.print(startTime), sampleCount, assertedCount);
             success = false;
         }
-        for (Map.Entry<String, SampleTimelineChunk> entry : timelines.entrySet()) {
+        for (Map.Entry<String, TimelineChunkAccumulator> entry : timelines.entrySet()) {
             final String sampleKind = entry.getKey();
-            final SampleTimelineChunk timeline = entry.getValue();
+            final TimelineChunkAccumulator timeline = entry.getValue();
             final int lineSampleCount = timeline.getSampleCount();
             if (lineSampleCount != assertedCount) {
                 log.error("For host %d, start time %s, timeline %s, the sampleCount %d is not equal to the assertedCount %d",
@@ -151,7 +183,7 @@ public class SampleSetTimelineChunk {
         return endTime;
     }
 
-    public Map<String, SampleTimelineChunk> getTimelines() {
+    public Map<String, TimelineChunkAccumulator> getTimelines() {
         return timelines;
     }
 }
