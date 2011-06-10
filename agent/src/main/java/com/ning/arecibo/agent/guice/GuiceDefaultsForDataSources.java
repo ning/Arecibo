@@ -1,12 +1,13 @@
 package com.ning.arecibo.agent.guice;
 
+import com.google.inject.Inject;
+import com.ning.arecibo.agent.config.AgentConfig;
+import com.ning.arecibo.agent.config.ConfigType;
+
+import java.util.List;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.List;
 import java.util.concurrent.ConcurrentSkipListSet;
-
-import com.google.inject.Inject;
-import com.ning.arecibo.agent.config.ConfigType;
 
 public class GuiceDefaultsForDataSources
 {
@@ -18,15 +19,10 @@ public class GuiceDefaultsForDataSources
     private final boolean JMXMonitoringProfilePollingEnabled;
 
     @Inject
-	public GuiceDefaultsForDataSources(@ConfigTypesEnabled String configTypesEnabledString,
-                                        @DefaultPollingIntervalSeconds int defaultPollingIntervalSeconds,
-                                        @JMXMonitoringProfilePollingEnabled boolean JMXMonitoringProfilePollingEnabled,
-                                        @JMXPort int jmxPort,
-	                                    @SNMPCommunity String snmpCommunity,
-	                                    @SNMPPort int snmpPort)
+	public GuiceDefaultsForDataSources(AgentConfig config)
 	{
         this.configTypesEnabled = new ConcurrentSkipListSet<ConfigType>();
-        StringTokenizer st = new StringTokenizer(configTypesEnabledString,",");
+        StringTokenizer st = new StringTokenizer(config.getMonitorConfigTypesEnabled(),",");
         while(st.hasMoreTokens()) {
             ConfigType configType = ConfigType.valueOf(st.nextToken().toUpperCase());
 
@@ -39,14 +35,14 @@ public class GuiceDefaultsForDataSources
         }
 
         if(this.configTypesEnabled.contains(ConfigType.JMX))
-            this.JMXMonitoringProfilePollingEnabled = JMXMonitoringProfilePollingEnabled;
+            this.JMXMonitoringProfilePollingEnabled = config.isMonitorJmxMonitoringProfilePollingEnabled();
         else
             this.JMXMonitoringProfilePollingEnabled = false;
 
-        this.jmxPort = jmxPort;
-        this.defaultPollingIntervalSeconds = defaultPollingIntervalSeconds;
-        this.snmpCommunity = snmpCommunity;
-        this.snmpPort = snmpPort;
+        this.jmxPort = config.getMonitorJmxPort();
+        this.defaultPollingIntervalSeconds = config.getMonitorDefaultPollingIntervalSeconds();
+        this.snmpCommunity = config.getMonitorSnmpCommunity();
+        this.snmpPort = config.getMonitorSnmpPort();
     }
 
     public boolean isConfigTypeEnabled(ConfigType cType)

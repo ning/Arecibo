@@ -1,17 +1,15 @@
 package com.ning.arecibo.agent.config.snmp;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.inject.Inject;
+import com.ning.arecibo.agent.config.AgentConfig;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigIterator;
 import com.ning.arecibo.agent.config.ConfigIteratorFactory;
 import com.ning.arecibo.agent.datasource.DataSourceException;
 import com.ning.arecibo.agent.datasource.snmp.SNMPDataSource;
-import com.ning.arecibo.agent.guice.ConnectionTimeoutInitial;
-import com.ning.arecibo.agent.guice.SNMPCompiledMibDir;
-
 import com.ning.arecibo.util.Logger;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SNMPConfigIteratorFactory implements ConfigIteratorFactory {
 	private static final Logger log = Logger.getLogger(SNMPConfigIteratorFactory.class);
@@ -25,10 +23,9 @@ public class SNMPConfigIteratorFactory implements ConfigIteratorFactory {
 	private final ConcurrentHashMap<String, SNMPDataSource> dataSourceCache;
 	
 	@Inject
-	public SNMPConfigIteratorFactory(@ConnectionTimeoutInitial int timeout, 
-									 @SNMPCompiledMibDir String snmpCompiledMibDir) {
-		this.timeout = timeout;
-		this.snmpCompiledMibDir = snmpCompiledMibDir;
+	public SNMPConfigIteratorFactory(AgentConfig config) {
+		this.timeout = config.getMonitorConnectionTimeoutInitial();
+		this.snmpCompiledMibDir = config.getMonitorSnmpCompiledMibDir();
 		this.dataSourceCache = new ConcurrentHashMap<String,SNMPDataSource>();
 	}
 	

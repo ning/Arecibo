@@ -6,10 +6,6 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 import org.testng.annotations.Test;
-import com.ning.arecibo.agent.config.ConfigException;
-import com.ning.arecibo.agent.config.ConfigFileUtils;
-import com.ning.arecibo.agent.config.ConfigStreamReader;
-import com.ning.arecibo.agent.config.ConfigType;
 import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
 import com.ning.arecibo.util.Logger;
 
@@ -39,7 +35,7 @@ public class ConfigStreamReaderTest {
 
                 String monitoringType = fileName.substring(0,suffixIndex);
 
-                GuiceDefaultsForDataSources defaults = new GuiceDefaultsForDataSources(ConfigType.ALL.toString() + "," + ConfigType.EXCLUSION.toString(),-1,false,-1,"",-1);
+                GuiceDefaultsForDataSources defaults = new GuiceDefaultsForDataSources(ConfigType.ALL.toString() + "," + ConfigType.EXCLUSION.toString());
                 ConfigFileUtils configFileUtils = new ConfigFileUtils(defaults);
 
                 List<InputStream> configStreams = configFileUtils.getMonitoringTypeConfigStreamList(monitoringType,monitoringType,false);

@@ -1,24 +1,7 @@
 package com.ning.arecibo.agent;
 
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Collection;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import org.weakref.jmx.Managed;
-
 import com.google.inject.Inject;
+import com.ning.arecibo.agent.config.AgentConfig;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.config.ConfigInitializer;
@@ -29,25 +12,32 @@ import com.ning.arecibo.agent.datasource.DataSource;
 import com.ning.arecibo.agent.datasource.DataSourceException;
 import com.ning.arecibo.agent.datasource.DataSourceType;
 import com.ning.arecibo.agent.datasource.DataSourceUtils;
-import com.ning.arecibo.agent.guice.ConfigUpdateInitialDelayRange;
-import com.ning.arecibo.agent.guice.ConfigUpdateInterval;
-import com.ning.arecibo.agent.guice.MaxActiveConfigs;
-import com.ning.arecibo.agent.guice.MaxPollingRetryDelay;
-import com.ning.arecibo.agent.guice.PerHostSemaphoreConcurrency;
-import com.ning.arecibo.agent.guice.PerHostSemaphoreMaxWaitMillis;
-import com.ning.arecibo.agent.guice.PerHostSemaphoreRetryMillis;
-import com.ning.arecibo.agent.guice.PublishedHostSuffix;
-import com.ning.arecibo.agent.guice.PublishedPathSuffix;
-import com.ning.arecibo.agent.guice.ThreadpoolSize;
 import com.ning.arecibo.agent.status.Status;
 import com.ning.arecibo.agent.status.StatusSummary;
 import com.ning.arecibo.agent.status.StatusType;
 import com.ning.arecibo.eventlogger.EventPublisher;
-
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.UUIDUtil;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
+import org.weakref.jmx.Managed;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class AgentDataCollectorManager
 {
@@ -93,30 +83,21 @@ public final class AgentDataCollectorManager
 
 
     @Inject
-	public AgentDataCollectorManager(@ThreadpoolSize int numThreads,
-									 @MaxActiveConfigs int maxActiveConfigs,
-	                                 @ConfigUpdateInterval int configUpdateInterval,
-	                                 @ConfigUpdateInitialDelayRange int configUpdateInitialDelayRange,
-	                                 @MaxPollingRetryDelay int maxPollingRetryDelay,
-                                     @PerHostSemaphoreConcurrency int perHostSemaphoreConcurrency,
-                                     @PerHostSemaphoreMaxWaitMillis long perHostSemaphoreMaxWaitMillis,
-                                     @PerHostSemaphoreRetryMillis long perHostSemaphoreRetryMillis,
-                                     @PublishedHostSuffix String publishedHostSuffix,
-                                     @PublishedPathSuffix String publishedPathSuffix,
-	                                 EventPublisher eventPublisher,
-	                                 ConfigInitializer initializer,
-	                                 DataSourceUtils dataSourceUtils)
+	public AgentDataCollectorManager(AgentConfig config,
+                                     EventPublisher eventPublisher,
+                                     ConfigInitializer initializer,
+                                     DataSourceUtils dataSourceUtils)
 	{
-		this.numThreads = numThreads;
-		this.maxActiveConfigs = maxActiveConfigs;
-		this.configUpdateInterval = configUpdateInterval;
-		this.configUpdateInitialDelayRange = configUpdateInitialDelayRange;
-		this.maxPollingRetryDelay = maxPollingRetryDelay;
-        this.perHostSemaphoreConcurrency = perHostSemaphoreConcurrency;
-        this.perHostSemaphoreMaxWaitMillis = perHostSemaphoreMaxWaitMillis;
-        this.perHostSemaphoreRetryMillis = perHostSemaphoreRetryMillis;
-        this.publishedHostSuffix = publishedHostSuffix;
-        this.publishedPathSuffix = publishedPathSuffix;
+		this.numThreads = config.getMonitorThreadPoolSize();
+		this.maxActiveConfigs = config.getMonitorMaxActiveConfigs();
+		this.configUpdateInterval = config.getMonitorConfigUpdateInterval();
+		this.configUpdateInitialDelayRange = config.getMonitorConfigUpdateInitialDelayRange();
+		this.maxPollingRetryDelay = config.getMonitorMaxPollingRetryDelay();
+        this.perHostSemaphoreConcurrency = config.getMonitorPerHostSemaphoreConcurrency();
+        this.perHostSemaphoreMaxWaitMillis = config.getMonitorPerHostSemaphoreMaxWaitMillis();
+        this.perHostSemaphoreRetryMillis = config.getMonitorPerHostSemaphoreRetryMillis();
+        this.publishedHostSuffix = config.getMonitorPublishedHostSuffix();
+        this.publishedPathSuffix = config.getMonitorPublishedPathSuffix();
 
 		this.eventPublisher = eventPublisher;
 		this.initializer = initializer;

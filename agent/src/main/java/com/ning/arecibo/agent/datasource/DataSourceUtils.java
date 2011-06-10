@@ -1,6 +1,7 @@
 package com.ning.arecibo.agent.datasource;
 
 import com.google.inject.Inject;
+import com.ning.arecibo.agent.config.AgentConfig;
 import com.ning.arecibo.agent.config.Config;
 import com.ning.arecibo.agent.config.ConfigIteratorFactory;
 import com.ning.arecibo.agent.config.jmx.JMXConfigIteratorFactory;
@@ -15,11 +16,6 @@ import com.ning.arecibo.agent.datasource.jmx.JMXParserManager;
 import com.ning.arecibo.agent.datasource.snmp.SNMPDataSource;
 import com.ning.arecibo.agent.datasource.tcp.TCPConnectCheckDataSource;
 import com.ning.arecibo.agent.datasource.tracer.TracerDataSource;
-import com.ning.arecibo.agent.guice.ConnectionTimeout;
-import com.ning.arecibo.agent.guice.HTTPProxyHost;
-import com.ning.arecibo.agent.guice.HTTPProxyPort;
-import com.ning.arecibo.agent.guice.HTTPUserAgent;
-import com.ning.arecibo.agent.guice.SNMPCompiledMibDir;
 
 
 //TODO: This whole business of recognizing a config type by scanning for delimiters needs to be overhauled
@@ -39,29 +35,25 @@ public class DataSourceUtils {
     private final int httpProxyPort;
 
     @Inject
-	public DataSourceUtils(@ConnectionTimeout int timeout,
-            				@SNMPCompiledMibDir String snmpCompiledMibDir,
-                            SNMPConfigIteratorFactory snmpConfigIteratorFactory,
-            				JMXClientCache jmxClientCache,
-            				JMXDynamicUtils jmxDynamicUtils,
-                            JMXParserManager jmxParserManager,
-							JMXConfigIteratorFactory jmxConfigIteratorFactory,
-                            IdentityConfigIteratorFactory identityConfigIteratorFactory,
-							@HTTPUserAgent String httpUserAgentString,
-                            @HTTPProxyHost String httpProxyHost,
-                            @HTTPProxyPort int httpProxyPort) {
+	public DataSourceUtils(AgentConfig config,
+                           SNMPConfigIteratorFactory snmpConfigIteratorFactory,
+                           JMXClientCache jmxClientCache,
+                           JMXDynamicUtils jmxDynamicUtils,
+                           JMXParserManager jmxParserManager,
+                           JMXConfigIteratorFactory jmxConfigIteratorFactory,
+                           IdentityConfigIteratorFactory identityConfigIteratorFactory) {
 		
-		this.timeout = timeout;
-		this.snmpCompiledMibDir = snmpCompiledMibDir;
+		this.timeout = config.getMonitorConnectionTimeout();
+		this.snmpCompiledMibDir = config.getMonitorSnmpCompiledMibDir();
         this.jmxConfigIteratorFactory = jmxConfigIteratorFactory;
 		this.jmxClientCache = jmxClientCache;
 		this.jmxDynamicUtils = jmxDynamicUtils;
         this.jmxParserManager = jmxParserManager;
 		this.identityConfigIteratorFactory = identityConfigIteratorFactory;
 		this.snmpConfigIteratorFactory = snmpConfigIteratorFactory;
-        this.httpUserAgentString = httpUserAgentString;
-        this.httpProxyHost = httpProxyHost;
-        this.httpProxyPort = httpProxyPort;
+        this.httpUserAgentString = config.getMonitorHttpUserAgent();
+        this.httpProxyHost = config.getMonitorHttpProxyHost();
+        this.httpProxyPort = config.getMonitorHttpProxyPort();
 	}
 	
 	public DataSourceType getDataSourceType(Config config) throws DataSourceException {

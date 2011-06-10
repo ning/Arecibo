@@ -1,5 +1,12 @@
 package com.ning.arecibo.agent.config;
 
+import com.google.inject.Inject;
+import com.ning.arecibo.agent.config.jmx.JMXMonitoringProfilePoller;
+import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
+import com.ning.arecibo.agent.guice.GuicePropsForExplicitMode;
+import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.galaxy.GalaxyCorePicker;
+
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,13 +15,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Iterator;
 import java.util.List;
-import com.google.inject.Inject;
-import com.ning.arecibo.agent.config.jmx.JMXMonitoringProfilePoller;
-import com.ning.arecibo.agent.guice.ConfigInitTypeParam;
-import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
-import com.ning.arecibo.agent.guice.GuicePropsForExplicitMode;
-import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.galaxy.GalaxyCorePicker;
 
 public class ConfigInitializer
 {
@@ -27,13 +27,13 @@ public class ConfigInitializer
     private final ConfigFileUtils configFileUtils;
 
     @Inject
-	public ConfigInitializer(@ConfigInitTypeParam ConfigInitType configInitType,
-							GalaxyCorePicker galaxyCorePicker,
-                            ConfigFileUtils configFileUtils,
-							GuiceDefaultsForDataSources guiceDefaultsForDataSources,
-							GuicePropsForExplicitMode guicePropsForExplicitMode)
+	public ConfigInitializer(AgentConfig config,
+                             GalaxyCorePicker galaxyCorePicker,
+                             ConfigFileUtils configFileUtils,
+                             GuiceDefaultsForDataSources guiceDefaultsForDataSources,
+                             GuicePropsForExplicitMode guicePropsForExplicitMode)
 	{
-		this.configInitType = configInitType;
+		this.configInitType = config.getMonitorConfigType();
 		this.galaxyCorePicker = galaxyCorePicker;
         this.configFileUtils = configFileUtils;
 		this.guiceDefaultsForDataSources = guiceDefaultsForDataSources;

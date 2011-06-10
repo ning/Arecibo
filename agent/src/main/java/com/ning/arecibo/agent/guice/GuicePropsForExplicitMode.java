@@ -1,10 +1,11 @@
 package com.ning.arecibo.agent.guice;
 
+import com.google.inject.Inject;
+import com.ning.arecibo.agent.config.AgentConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-
-import com.google.inject.Inject;
 
 public class GuicePropsForExplicitMode
 {
@@ -14,13 +15,10 @@ public class GuicePropsForExplicitMode
 	private final List<String> explicitTypeList;
 
 	@Inject
-	public GuicePropsForExplicitMode(@ExplicitConfigFiles String configFiles,
-	                                 @ExplicitHosts String hosts,
-	                                 @ExplicitPaths String paths,
-	                                 @ExplicitTypes String types)
+	public GuicePropsForExplicitMode(AgentConfig config)
 	{
 	    // need to have all three for it to be usable
-	    if(configFiles == null || hosts == null || paths == null || types == null) {
+	    if(config.getMonitorExplicitModeConfigFileList() == null || config.getMonitorExplicitModeHostList() == null || config.getMonitorExplicitModePathList() == null || config.getMonitorExplicitModeTypeList() == null) {
 	        explicitConfigFileList = null;
 	        explicitHostList = null;
 	        explicitPathList = null;
@@ -28,10 +26,10 @@ public class GuicePropsForExplicitMode
 	        return;
 	    }
 	     
-	    StringTokenizer configFilesST = new StringTokenizer(configFiles, ",");
-        StringTokenizer hostsST = new StringTokenizer(hosts, ",");
-        StringTokenizer pathsST = new StringTokenizer(paths, ",");
-        StringTokenizer typesST = new StringTokenizer(types, ",");
+	    StringTokenizer configFilesST = new StringTokenizer(config.getMonitorExplicitModeConfigFileList(), ",");
+        StringTokenizer hostsST = new StringTokenizer(config.getMonitorExplicitModeHostList(), ",");
+        StringTokenizer pathsST = new StringTokenizer(config.getMonitorExplicitModePathList(), ",");
+        StringTokenizer typesST = new StringTokenizer(config.getMonitorExplicitModeTypeList(), ",");
         
         // make sure we have at least one of each
         if(hostsST.countTokens() == 0 || pathsST.countTokens() == 0 || typesST.countTokens() == 0) {

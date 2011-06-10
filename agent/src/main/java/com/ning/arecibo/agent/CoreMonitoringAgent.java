@@ -1,26 +1,15 @@
 package com.ning.arecibo.agent;
 
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.management.MBeanServer;
-
-import org.mortbay.jetty.Server;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.google.inject.name.Named;
+import com.ning.arecibo.agent.config.AgentConfig;
 import com.ning.arecibo.agent.config.ConfigException;
 import com.ning.arecibo.agent.eventapireceiver.EventProcessorImpl;
-import com.ning.arecibo.agent.guice.AdvertiseReceiverOnBeacon;
 import com.ning.arecibo.agent.guice.AgentModule;
-import com.ning.arecibo.agent.guice.RelayServiceName;
 import com.ning.arecibo.agent.status.StatusPageHandler;
 import com.ning.arecibo.event.publisher.EventPublisherModule;
 import com.ning.arecibo.event.publisher.EventSenderType;
@@ -37,6 +26,14 @@ import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
+import org.mortbay.jetty.Server;
+
+import javax.management.MBeanServer;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class CoreMonitoringAgent
 {
@@ -53,10 +50,8 @@ public class CoreMonitoringAgent
     private final String relayServiceName;
 
 	@Inject
-	private CoreMonitoringAgent(EmbeddedJettyConfig jettyConfig,
+	private CoreMonitoringAgent(AgentConfig config, EmbeddedJettyConfig jettyConfig,
                                 @Named("UDPServerPort") int udpPort,
-                                @AdvertiseReceiverOnBeacon boolean advertiseReceiverOnBeacon,
-                                @RelayServiceName String relayServiceName,
                                 Lifecycle lifecycle,
                                 ServiceLocator serviceLocator,
                                 Server server,
@@ -70,8 +65,8 @@ public class CoreMonitoringAgent
 		this.dataCollector = dataCollector;
         this.jettyConfig = jettyConfig;
         this.udpPort = udpPort;
-        this.advertiseReceiverOnBeacon = advertiseReceiverOnBeacon;
-        this.relayServiceName = relayServiceName;
+        this.advertiseReceiverOnBeacon = config.getMonitorAdvertiseReceiverOnBeacon();
+        this.relayServiceName = config.getMonitorRelayServiceName();
 	}
 
 	private void run()
