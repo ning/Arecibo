@@ -11,24 +11,25 @@ import org.joda.time.DateTime;
  */
 @SuppressWarnings("unchecked")
 public class HostSamplesForTimestamp {
-    private final String hostName;
+    private final int hostId;
     private final String category;
     private final DateTime timestamp;
-    private final Map<String, ScalarSample> samples;
+    // A map from sample id to sample value for that timestamp
+    private final Map<Integer, ScalarSample> samples;
 
-    public HostSamplesForTimestamp(String hostName, String category, DateTime timestamp) {
-        this(hostName, category, timestamp, new HashMap<String, ScalarSample>());
+    public HostSamplesForTimestamp(int hostId, String category, DateTime timestamp) {
+        this(hostId, category, timestamp, new HashMap<Integer, ScalarSample>());
     }
 
-    public HostSamplesForTimestamp(String hostName, String category, DateTime timestamp, Map<String, ScalarSample> samples) {
-        this.hostName = hostName;
+    public HostSamplesForTimestamp(int hostId, String category, DateTime timestamp, Map<Integer, ScalarSample> samples) {
+        this.hostId = hostId;
         this.category = category;
         this.timestamp = timestamp;
         this.samples = samples;
     }
 
-    public String getHostName() {
-        return hostName;
+    public int getHostId() {
+        return hostId;
     }
 
     public String getCategory() {
@@ -39,7 +40,7 @@ public class HostSamplesForTimestamp {
         return timestamp;
     }
 
-    public Map<String, ScalarSample> getSamples() {
+    public Map<Integer, ScalarSample> getSamples() {
         return samples;
     }
 }

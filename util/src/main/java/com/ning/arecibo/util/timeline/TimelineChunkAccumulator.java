@@ -12,7 +12,8 @@ import com.ning.arecibo.util.Logger;
  * as the object is being accumulated.  It is not used to represent
  * past timeline sequences; they are held in TimelineChunk objects.
  * <p>
- * It accumulates samples in a byte array object
+ * It accumulates samples in a byte array object. Readers can call 
+ * getEncodedSamples() at any time to get the latest data.
  */
 public class TimelineChunkAccumulator {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();

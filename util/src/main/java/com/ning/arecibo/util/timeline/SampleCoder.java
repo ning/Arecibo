@@ -8,6 +8,10 @@ import java.io.IOException;
 
 import com.ning.arecibo.util.Logger;
 
+/**
+ * This class contains a collection of static methods used to encode samples, and also
+ * play back streams of samples
+ */
 public class SampleCoder {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
 

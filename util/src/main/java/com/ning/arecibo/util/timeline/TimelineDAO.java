@@ -12,7 +12,6 @@ import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.util.IntegerMapper;
-import org.skife.jdbi.v2.util.LongMapper;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;

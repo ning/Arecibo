@@ -15,7 +15,7 @@ import com.ning.arecibo.util.Logger;
 
 
 /**
- * This class represent collection of timeline chunks, one
+ * This class represents a collection of timeline chunks, one
  * for each sample kind, each over a specific time period,
  * from a single host.  This class is used to accumulate samples
  * to be written to the database; a separate streaming class with
@@ -31,16 +31,17 @@ public class TimelineSetAccumulator {
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
 
-    private final String hostName;
+    private final TimelineDAO dao;
+    private final int hostId;
     private final String category;
     private final DateTime startTime;
     private int sampleCount;
     private DateTime endTime;
 
     /**
-     * Maps the sample kind to the accumulator for that sample kind
+     * Maps the sample kind id to the accumulator for that sample kind
      */
-    private final Map<String, TimelineChunkAccumulator> timelines;
+    private final Map<Integer, TimelineChunkAccumulator> timelines;
     /**
      * Holds the unix time of the samples
      */
@@ -50,14 +51,15 @@ public class TimelineSetAccumulator {
      * A TimelineSetAccumulator object is born the first time the manager receives set of samples from a host
      * @param samples a set of samples representing on transmission from the host.
      */
-    public TimelineSetAccumulator(HostSamplesForTimestamp samples) {
-        this.hostName = samples.getHostName();
+    public TimelineSetAccumulator(TimelineDAO dao, HostSamplesForTimestamp samples) {
+        this.dao = dao;
+        this.hostId = samples.getHostId();
         this.category = samples.getCategory();
         final DateTime timestamp = samples.getTimestamp();
         this.startTime = timestamp;
         this.endTime = timestamp;
         this.sampleCount = 0;
-        this.timelines = new HashMap<String, TimelineChunkAccumulator>();
+        this.timelines = new HashMap<Integer, TimelineChunkAccumulator>();
         this.times = new ArrayList<DateTime>();
         addHostSamples(samples);
     }
@@ -72,29 +74,29 @@ public class TimelineSetAccumulator {
         // so we shouldn't get essentially simultaneous adds
         final DateTime timestamp = samples.getTimestamp();
         if (timestamp.isBefore(endTime)) {
-            log.warn("Adding samples for host %s, timestamp %s is earlier than the end time %s; ignored",
-                    hostName, dateFormatter.print(timestamp), dateFormatter.print(endTime));
+            log.warn("Adding samples for host %d, timestamp %s is earlier than the end time %s; ignored",
+                    hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime));
             return;
         }
-        final Set<String> currentKinds = Sets.newHashSet(timelines.keySet());
-        for (Map.Entry<String, ScalarSample> entry : samples.getSamples().entrySet()) {
-            final String sampleKind = entry.getKey();
-            currentKinds.remove(sampleKind);
+        final Set<Integer> currentKinds = Sets.newHashSet(timelines.keySet());
+        for (Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
+            final Integer sampleKindId = entry.getKey();
+            currentKinds.remove(sampleKindId);
             final ScalarSample sample = entry.getValue();
-            TimelineChunkAccumulator timeline = timelines.get(samples.getHostName());
+            TimelineChunkAccumulator timeline = timelines.get(samples.getHostId());
             if (timeline == null) {
-                timeline = new TimelineChunkAccumulator(this, sampleKind);
+                timeline = new TimelineChunkAccumulator(hostId, sampleKindId);
                 if (sampleCount > 0) {
                     addPlaceholders(timeline, sampleCount);
                 }
-                timelines.put(sampleKind, timeline);
+                timelines.put(sampleKindId, timeline);
             }
             timeline.addSample(sample);
         }
         // Now make sure to advance the timelines we haven't added samples to,
         // since the samples for a given sample kind can come and go
-        for (String sampleKind : currentKinds) {
-            final TimelineChunkAccumulator timeline = timelines.get(sampleKind);
+        for (Integer sampleKindId : currentKinds) {
+            final TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
             timeline.addSample(nullSample);
         }
         // Now we can update the state
@@ -119,15 +121,15 @@ public class TimelineSetAccumulator {
     }
 
     public static class TimesAndTimelineChunks {
-        private final List<DateTime> times;
+        private final TimelineTimes times;
         private final List<TimelineChunk> timelines;
 
-        public TimesAndTimelineChunks(List<DateTime> times, List<TimelineChunk> timelines) {
+        public TimesAndTimelineChunks(TimelineTimes times, List<TimelineChunk> timelines) {
             this.times = times;
             this.timelines = timelines;
         }
 
-        public List<DateTime> getTimes() {
+        public TimelineTimes getTimes() {
             return times;
         }
 
@@ -136,8 +138,19 @@ public class TimelineSetAccumulator {
         }
     }
 
-    public TimesAndTimelineChunks extractTimelineChunks() {
-
+    /**
+     * This method "rotates" the accumulators in this set, creating and saving the
+     * db representation of the timelines, and clearing the accumulators so they
+     * have no samples in them.
+     * TODO: I'm not clear on the synchronization paradigm.  Is it reasonable to
+     * have just one thread adding samples, and writing stuff to the db?
+     */
+    public void extractAndSaveTimelineChunks() {
+        final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, startTime, endTime, times);
+        final int timelineTimesId = dao.insertTimelineTimes(dbTimelineTimes);
+        for (TimelineChunkAccumulator accumulator : timelines.values()) {
+            dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId));
+        }
     }
 
     /**
@@ -150,24 +163,24 @@ public class TimelineSetAccumulator {
         boolean success = true;
         if (assertedCount != sampleCount) {
             log.error("For host %d, start time %s, the HostTimeLines sampleCount %d is not equal to the assertedCount %d",
-                    hostName, dateFormatter.print(startTime), sampleCount, assertedCount);
+                    hostId, dateFormatter.print(startTime), sampleCount, assertedCount);
             success = false;
         }
-        for (Map.Entry<String, TimelineChunkAccumulator> entry : timelines.entrySet()) {
-            final String sampleKind = entry.getKey();
+        for (Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
+            final int sampleKindId = entry.getKey();
             final TimelineChunkAccumulator timeline = entry.getValue();
             final int lineSampleCount = timeline.getSampleCount();
             if (lineSampleCount != assertedCount) {
-                log.error("For host %d, start time %s, timeline %s, the sampleCount %d is not equal to the assertedCount %d",
-                        hostName, dateFormatter.print(startTime), sampleKind, lineSampleCount, assertedCount);
+                log.error("For host %d, start time %s, sample kind id %s, the sampleCount %d is not equal to the assertedCount %d",
+                        hostId, dateFormatter.print(startTime), sampleKindId, lineSampleCount, assertedCount);
                 success = false;
             }
         }
         return success;
     }
 
-    public String getHostName() {
-        return hostName;
+    public int getHostId() {
+        return hostId;
     }
 
 
@@ -183,7 +196,7 @@ public class TimelineSetAccumulator {
         return endTime;
     }
 
-    public Map<String, TimelineChunkAccumulator> getTimelines() {
+    public Map<Integer, TimelineChunkAccumulator> getTimelines() {
         return timelines;
     }
 }
