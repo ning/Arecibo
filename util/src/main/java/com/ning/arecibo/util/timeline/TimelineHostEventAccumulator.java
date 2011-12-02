@@ -25,7 +25,7 @@ import com.ning.arecibo.util.Logger;
  * All subordinate timelines contain the same number of samples,
  * but repeat opcodes may collapse adjacent identical values.
  */
-public class TimelineSetAccumulator {
+public class TimelineHostEventAccumulator {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
@@ -51,7 +51,7 @@ public class TimelineSetAccumulator {
      * A TimelineSetAccumulator object is born the first time the manager receives set of samples from a host
      * @param samples a set of samples representing on transmission from the host.
      */
-    public TimelineSetAccumulator(TimelineDAO dao, HostSamplesForTimestamp samples) {
+    public TimelineHostEventAccumulator(TimelineDAO dao, HostSamplesForTimestamp samples) {
         this.dao = dao;
         this.hostId = samples.getHostId();
         this.category = samples.getCategory();

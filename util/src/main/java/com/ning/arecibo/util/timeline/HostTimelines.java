@@ -18,9 +18,9 @@ public class HostTimelines {
      *  back at the SampleSetTimelineChunk; that's how we get the
      *  timeline times instance.
      */
-    private final Map<String, TreeMap<Integer, TimelineSetAccumulator>> sampleKindTimelines;
+    private final Map<String, TreeMap<Integer, TimelineHostEventAccumulator>> sampleKindTimelines;
 
     private HostTimelines() {
-        sampleKindTimelines = new HashMap<String, TreeMap<Integer, TimelineSetAccumulator>>();
+        sampleKindTimelines = new HashMap<String, TreeMap<Integer, TimelineHostEventAccumulator>>();
     }
 }
