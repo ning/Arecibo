@@ -3,6 +3,7 @@ package com.ning.arecibo.util.timeline;
 import com.google.common.collect.BiMap;
 import com.google.inject.Inject;
 
+// TODO: There is no synchronization: Either prove caller is single-threaded or add synchronization.
 public class TimelineRegistry {
 
     private final TimelineDAO dao;

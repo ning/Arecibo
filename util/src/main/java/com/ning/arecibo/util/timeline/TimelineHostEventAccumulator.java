@@ -22,6 +22,9 @@ import com.ning.arecibo.util.Logger;
  * much less overhead is used to "play back" the samples read from
  * the db in response to dashboard queries.
  * <p>
+ * TODO: There is no synchronization in this class, so either prove that
+ * the caller is single-threaded or add it.
+ * <p>
  * All subordinate timelines contain the same number of samples,
  * but repeat opcodes may collapse adjacent identical values.
  */
@@ -43,7 +46,7 @@ public class TimelineHostEventAccumulator {
      */
     private final Map<Integer, TimelineChunkAccumulator> timelines;
     /**
-     * Holds the unix time of the samples
+     * Holds the time of the samples
      */
     private final List<DateTime> times;
 
