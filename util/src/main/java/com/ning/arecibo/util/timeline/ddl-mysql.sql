@@ -31,10 +31,9 @@ create table timeline_chunks (
    sample_timeline_id bigint not null auto_increment primary key,
    host_id int not null,
    sample_kind_id int not null,
-   sample_count int not null,SW
+   sample_count int not null,
    timeline_times_id bigint not null,
    sample_bytes mediumblob not null,
-   key idx_timeline_interval (host_id, timeline_interval_id, sample_kind_id)
-   key idx_timeline_interval (host_id, sample_kind_id)
+   key idx_timeline_interval (host_id, sample_timeline_id, sample_kind_id)
 )
 ENGINE=InnoDB DEFAULT CHARSET=latin1;
