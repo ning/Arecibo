@@ -26,10 +26,8 @@ public abstract class EmbeddedJettyConfig
     public abstract int getMaxThreads();
 
     @Config("arecibo.jetty.accept-queue")
-    public int getAcceptQueueSize()
-    {
-        return getMaxThreads();
-    }
+    @Default("200")
+    public abstract int getAcceptQueueSize();
 
     @Config("arecibo.jetty.requestLog.logDir")
     @Default("logs")
