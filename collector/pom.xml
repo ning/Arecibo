@@ -14,6 +14,11 @@
     <version>1.0.0-SNAPSHOT</version>
     <dependencies>
         <dependency>
+            <groupId>com.jolbox</groupId>
+            <artifactId>bonecp</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>com.ning.arecibo</groupId>
             <artifactId>arecibo-util</artifactId>
             <version>${project.version}</version>
