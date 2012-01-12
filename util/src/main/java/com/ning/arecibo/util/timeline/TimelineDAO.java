@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.google.inject.name.Named;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.Handle;
@@ -42,7 +43,7 @@ public class TimelineDAO {
     private final IDBI dbi;
 
     @Inject
-    public TimelineDAO(IDBI dbi) {
+    public TimelineDAO(@Named("collector_db") IDBI dbi) {
         this.dbi = dbi;
     }
 

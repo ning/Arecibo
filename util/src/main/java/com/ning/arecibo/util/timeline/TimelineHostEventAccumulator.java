@@ -51,7 +51,7 @@ public class TimelineHostEventAccumulator {
     private final List<DateTime> times;
 
     /**
-     * A TimelineSetAccumulator object is born the first time the manager receives set of samples from a host
+     * A TimelineHostEventAccumulator object is born the first time the manager receives set of samples from a host
      * @param samples a set of samples representing on transmission from the host.
      */
     public TimelineHostEventAccumulator(TimelineDAO dao, HostSamplesForTimestamp samples) {

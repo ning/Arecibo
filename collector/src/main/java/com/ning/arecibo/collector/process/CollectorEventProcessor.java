@@ -1,106 +1,127 @@
 package com.ning.arecibo.collector.process;
 
 import com.google.inject.Inject;
-import com.ning.arecibo.collector.dao.CollectorDAO;
 import com.ning.arecibo.event.BatchedEvent;
 import com.ning.arecibo.event.MapEvent;
+import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.event.receiver.EventProcessor;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.esper.MiniEsperEngine;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
+import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+import com.ning.arecibo.util.timeline.SampleOpcode;
+import com.ning.arecibo.util.timeline.ScalarSample;
+import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
+import com.ning.arecibo.util.timeline.TimelineRegistry;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CollectorEventProcessor implements EventProcessor
 {
     private final static Logger log = Logger.getLogger(CollectorEventProcessor.class);
 
-    private final CollectorDAO collectorDAO;
-    private final AtomicLong eventsReceived = new AtomicLong(0L);
-    private final AtomicLong eventBatchesReceived = new AtomicLong(0L);
-    private final AtomicLong invalidEventsDiscarded = new AtomicLong(0L);
-    private final AtomicLong eventsDiscarded = new AtomicLong(0L);
-    private final AtomicLong eventBatchesDiscarded = new AtomicLong(0L);
+    private final TimelineRegistry timelineRegistry;
+    private final TimelineDAO timelineDAO;
 
-    private final MiniEsperEngine<Integer> eventsPerBatchStats;
+    private final AtomicLong eventsReceived = new AtomicLong(0L);
+    private final AtomicLong eventsDiscarded = new AtomicLong(0L);
 
     @Inject
-    public CollectorEventProcessor(CollectorDAO collectorDAO)
+    public CollectorEventProcessor(TimelineDAO timelineDAO)
     {
-        this.collectorDAO = collectorDAO;
-        this.eventsPerBatchStats = new MiniEsperEngine<Integer>("EventsPerBatchStats", Integer.class);
+        this.timelineDAO = timelineDAO;
+        this.timelineRegistry = new TimelineRegistry(timelineDAO);
     }
 
     public void processEvent(Event evt)
     {
-        //log.debug("Received Event : %s", evt);
-
         try {
-
-            if (evt instanceof MapEvent) {
-                if (!validateEvent((MapEvent) evt)) {
-                    eventsReceived.getAndIncrement();
-                    eventsPerBatchStats.send(1);
-                    invalidEventsDiscarded.getAndIncrement();
-                    eventsDiscarded.getAndIncrement();
-                    eventBatchesDiscarded.getAndIncrement();
-                    return;
-                }
-            }
-
-            eventBatchesReceived.getAndIncrement();
+            final List<Event> events = new ArrayList<Event>();
             if (evt instanceof BatchedEvent) {
-                int eventsPerBatch = ((BatchedEvent) evt).getEvents().size();
-                eventsReceived.getAndAdd(eventsPerBatch);
-                eventsPerBatchStats.send(eventsPerBatch);
-
-                if (collectorDAO.getOkToProcessEvents()) {
-                    collectorDAO.insertBuffered(((BatchedEvent) evt).getEvents());
-                }
-                else {
-                    eventsDiscarded.getAndAdd(eventsPerBatch);
-                    eventBatchesDiscarded.getAndIncrement();
-                }
+                events.addAll(((BatchedEvent) evt).getEvents());
             }
             else {
-                eventsReceived.getAndIncrement();
-                eventsPerBatchStats.send(1);
+                events.add(evt);
+            }
+            // Update stats
+            eventsReceived.getAndAdd(events.size());
 
-                if (collectorDAO.getOkToProcessEvents()) {
-                    collectorDAO.insertBuffered(evt);
+            // Lookup the host id
+            final int hostId = getHostIdFromEvent(evt);
+
+            // Extract input samples
+            final Map<Integer, ScalarSample> scalarSamples = new LinkedHashMap<Integer, ScalarSample>();
+            for (final Event event : events) {
+                if (event instanceof MapEvent) {
+                    final Map<String, Object> samplesMap = ((MapEvent) evt).getMap();
+                    convertSamplesToScalarSamples(samplesMap, scalarSamples);
+                }
+                else if (event instanceof MonitoringEvent) {
+                    final Map<String, Object> samplesMap = ((MonitoringEvent) evt).getMap();
+                    convertSamplesToScalarSamples(samplesMap, scalarSamples);
                 }
                 else {
+                    log.warn("I don't understand event: " + event);
                     eventsDiscarded.getAndIncrement();
-                    eventBatchesDiscarded.getAndIncrement();
                 }
             }
+
+            // In case of batched events, use the timestmap of the first event
+            final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
+            final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostSamples);
         }
         catch (RuntimeException ruEx) {
             log.warn(ruEx);
         }
     }
 
-    private boolean validateEvent(MapEvent mEvt)
+    private int getHostIdFromEvent(Event evt)
     {
-        // we don't want to insert MapEvents with no data
-        Object datapointsObj = mEvt.getValue("datapoints");
-        if (datapointsObj == null) {
-            return false;
+        String hostUUID = evt.getSourceUUID().toString();
+        if (evt instanceof MonitoringEvent) {
+            hostUUID = ((MonitoringEvent) evt).getHostName();
         }
+        return timelineRegistry.getOrAddHost(hostUUID);
+    }
 
-        try {
-            Number datapoints = (Number) datapointsObj;
-            if (datapoints.intValue() > 0) {
-                return true;
+    private void convertSamplesToScalarSamples(Map<String, Object> inputSamples, Map<Integer, ScalarSample> outputSamples)
+    {
+        for (final String sampleKind : inputSamples.keySet()) {
+            final int sampleKindId = timelineRegistry.getOrAddSampleKind(sampleKind);
+            final Object sample = inputSamples.get(sampleKind);
+
+            if (sample == null) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.NULL, sample));
+            }
+            else if (sample instanceof Byte) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.BYTE, sample));
+            }
+            else if (sample instanceof Short) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.SHORT, sample));
+            }
+            else if (sample instanceof Integer) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.INT, sample));
+            }
+            else if (sample instanceof Long) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.LONG, sample));
+            }
+            else if (sample instanceof Float) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.FLOAT, sample));
+            }
+            else if (sample instanceof Double) {
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.DOUBLE, sample));
             }
             else {
-                return false;
+                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.STRING, sample.toString()));
             }
-        }
-        catch (ClassCastException ccEx) {
-            return false;
         }
     }
 
@@ -111,32 +132,8 @@ public class CollectorEventProcessor implements EventProcessor
     }
 
     @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
-    public long getEventBatchesReceived()
-    {
-        return eventBatchesReceived.get();
-    }
-
-    @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getEventsDiscarded()
     {
         return eventsDiscarded.get();
-    }
-
-    @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
-    public long getEventBatchesDiscarded()
-    {
-        return eventBatchesDiscarded.get();
-    }
-
-    @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
-    public long getInvalidEventsDiscarded()
-    {
-        return invalidEventsDiscarded.get();
-    }
-
-    @MonitorableManaged(monitored = true)
-    public double getEventsPerBatchReceived()
-    {
-        return eventsPerBatchStats.getAverage();
     }
 }

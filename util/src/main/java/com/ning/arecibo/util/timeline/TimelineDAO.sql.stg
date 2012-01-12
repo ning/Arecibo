@@ -1,4 +1,4 @@
-group sql;
+group com.ning.arecibo.util.timeline.TimelineDAO;
 
 getHosts() ::= <<
     select host_name, id from hosts;
@@ -27,7 +27,7 @@ insertTimelineTimes() ::= <<
                         values (:host_id, :start_time, :end_time, :count, :times)
 >>
 
-insert TimelineChunk() ::= <<
+insertTimelineChunk() ::= <<
     insert into timeline_chunks (sample_kind, sample_count, timeline_times_id, sample_bytes)
                          values (:sample_kind, :sample_count, :timeline_times_id, :sample_bytes)
 >>

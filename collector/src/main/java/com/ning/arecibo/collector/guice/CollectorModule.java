@@ -11,6 +11,7 @@ import com.ning.arecibo.collector.dao.CollectorDAO;
 import com.ning.arecibo.collector.dao.EventTableDescriptor;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
+import com.ning.arecibo.util.timeline.TimelineDAO;
 import org.skife.config.ConfigurationObjectFactory;
 import org.skife.config.TimeSpan;
 import org.skife.jdbi.v2.DBI;
@@ -43,14 +44,14 @@ public class CollectorModule extends AbstractModule
         final Named moduleName = Names.named(CollectorConstants.COLLECTOR_DB);
 
         bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.events.collector.db")).asEagerSingleton();
-        bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName));
-        bind(CollectorDAO.class).asEagerSingleton();
+        bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName)).asEagerSingleton();
+        bind(TimelineDAO.class).asEagerSingleton();
 
         bind(ResolutionUtils.class).toInstance(resUtils);
 
         ExportBuilder builder = MBeanModule.newExporter(binder());
 
-        builder.export(CollectorDAO.class).as("arecibo.collector:name=CollectorDAO");
+        builder.export(TimelineDAO.class).as("arecibo.collector:name=TimelineDAO");
     }
 
     private Map<String, EventTableDescriptor> getEventTableDescriptors(ResolutionUtils resUtils,
