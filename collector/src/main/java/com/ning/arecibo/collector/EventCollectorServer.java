@@ -1,10 +1,5 @@
 package com.ning.arecibo.collector;
 
-import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.Map;
-import javax.management.MBeanServer;
-import org.mortbay.jetty.Server;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -27,112 +22,120 @@ import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.rmi.RMIRegistryConfig;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
+import org.mortbay.jetty.Server;
+
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EventCollectorServer
 {
-	private static final Logger log = Logger.getLogger(EventCollectorServer.class);
-	private final Server server;
-	private final Lifecycle lifecycle;
-	private final ServiceLocator serviceLocator;
+    private static final Logger log = Logger.getLogger(EventCollectorServer.class);
+    private final Server server;
+    private final Lifecycle lifecycle;
+    private final ServiceLocator serviceLocator;
     private final CollectorConfig collectorConfig;
-	private final EmbeddedJettyConfig jettyConfig;
-	private final UDPEventReceiverConfig udpConfig;
-	private final RMIRegistryConfig rmiConfig;
-	
+    private final EmbeddedJettyConfig jettyConfig;
+    private final UDPEventReceiverConfig udpConfig;
+    private final RMIRegistryConfig rmiConfig;
+
     public static final String NAME = EventCollectorServer.class.getSimpleName();
 
-	@Inject
-	public EventCollectorServer(CollectorConfig collectorConfig,
+    @Inject
+    public EventCollectorServer(CollectorConfig collectorConfig,
                                 EmbeddedJettyConfig config,
                                 UDPEventReceiverConfig udpConfig,
                                 RMIRegistryConfig rmiConfig,
-	                            Server server,
-	                            Lifecycle lifecycle,
-	                            ServiceLocator serviceLocator)
-	{
-	    this.collectorConfig = collectorConfig;
-	    this.jettyConfig = config;
-	    this.udpConfig = udpConfig;
-	    this.rmiConfig = rmiConfig;
-		this.server = server;
-		this.lifecycle = lifecycle;
-		this.serviceLocator = serviceLocator;
-	}
+                                Server server,
+                                Lifecycle lifecycle,
+                                ServiceLocator serviceLocator)
+    {
+        this.collectorConfig = collectorConfig;
+        this.jettyConfig = config;
+        this.udpConfig = udpConfig;
+        this.rmiConfig = rmiConfig;
+        this.server = server;
+        this.lifecycle = lifecycle;
+        this.serviceLocator = serviceLocator;
+    }
 
-	public void run() throws Exception
-	{
-		// advertise event endpoints
-		Map<String, String> map = new HashMap<String, String>();
-		map.put(EventService.HOST, jettyConfig.getHost());
-		map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
-		map.put(EventService.UDP_PORT, String.valueOf(udpConfig.getPort()));
-		map.put(EventService.RMI_PORT, String.valueOf(rmiConfig.getPort()));
-		ServiceDescriptor self=new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
+    public void run() throws Exception
+    {
+        // advertise event endpoints
+        Map<String, String> map = new HashMap<String, String>();
+        map.put(EventService.HOST, jettyConfig.getHost());
+        map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
+        map.put(EventService.UDP_PORT, String.valueOf(udpConfig.getPort()));
+        map.put(EventService.RMI_PORT, String.valueOf(rmiConfig.getPort()));
+        ServiceDescriptor self = new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
 
-		// advertise on beacon
-		serviceLocator.advertiseLocalService(self);
-		
-		
-		String name = getClass().getSimpleName();
-		final long startTime = System.currentTimeMillis();
-		log.info("Starting up %s on port %d", name, jettyConfig.getPort());
+        // advertise on beacon
+        serviceLocator.advertiseLocalService(self);
 
-		lifecycle.fire(LifecycleEvent.START);
 
-		final long secondsToStart = (System.currentTimeMillis() - startTime) / 1000;
-		log.info("STARTUP COMPLETE: server started in %d:%02d", secondsToStart / 60, secondsToStart % 60);
+        String name = getClass().getSimpleName();
+        final long startTime = System.currentTimeMillis();
+        log.info("Starting up %s on port %d", name, jettyConfig.getPort());
 
-		final Thread t = Thread.currentThread();
-		Runtime.getRuntime().addShutdownHook(new Thread()
-		{
-			public void run()
-			{
-				t.interrupt();
-			}
-		});
-		server.start();
+        lifecycle.fire(LifecycleEvent.START);
 
-		try {
-			Thread.currentThread().join();
-		}
-		catch(InterruptedException e) {
-			// continue
-		}
-		
-		try {
-			log.info("Shutting down %s", name);
+        final long secondsToStart = (System.currentTimeMillis() - startTime) / 1000;
+        log.info("STARTUP COMPLETE: server started in %d:%02d", secondsToStart / 60, secondsToStart % 60);
 
-			log.info("Stopping lifecycle");
-			lifecycle.fire(LifecycleEvent.STOP);
+        final Thread t = Thread.currentThread();
+        Runtime.getRuntime().addShutdownHook(new Thread()
+        {
+            public void run()
+            {
+                t.interrupt();
+            }
+        });
+        server.start();
 
-			log.info("Stopping jetty server");
+        try {
+            Thread.currentThread().join();
+        }
+        catch (InterruptedException e) {
+            // continue
+        }
+
+        try {
+            log.info("Shutting down %s", name);
+
+            log.info("Stopping lifecycle");
+            lifecycle.fire(LifecycleEvent.STOP);
+
+            log.info("Stopping jetty server");
             server.stop();
-			
-			log.info("Shutdown completed");
-		}
-		catch(Exception e) {
-			log.warn(e);
-		}
-	}
-	
-	public static void main(String[] args) throws Exception
-	{
-		Injector injector = Guice.createInjector(Stage.PRODUCTION,
+
+            log.info("Shutdown completed");
+        }
+        catch (Exception e) {
+            log.warn(e);
+        }
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(),
             // TODO: need to bind an implementation of ServiceLocator
             new EmbeddedJettyJerseyModule(),
-			new RESTEventReceiverModule(CollectorEventProcessor.class, "arecibo.collector:name=CollectorEventProcessor"),
+            new RESTEventReceiverModule(CollectorEventProcessor.class, "arecibo.collector:name=CollectorEventProcessor"),
             new UDPEventReceiverModule(),
-            new AbstractModule() {
+            new AbstractModule()
+            {
                 @Override
-                protected void configure() {
+                protected void configure()
+                {
                     bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
                 }
             },
-			new RMIModule(),
-		    new CollectorModule());
+            new RMIModule(),
+            new CollectorModule());
 
-		EventCollectorServer server = injector.getInstance(EventCollectorServer.class);
-		server.run();
-	}	
+        EventCollectorServer server = injector.getInstance(EventCollectorServer.class);
+        server.run();
+    }
 }
