@@ -19,7 +19,6 @@ import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.rmi.RMIRegistryConfig;
-import com.ning.arecibo.util.service.DummyServiceLocatorModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import org.eclipse.jetty.server.Server;
@@ -65,15 +64,15 @@ public class EventCollectorServer
 
     public void run() throws Exception
     {
-        // advertise event endpoints
+        serviceLocator.startReadOnly();
+
+        // Advertise event endpoints
         Map<String, String> map = new HashMap<String, String>();
         map.put(EventService.HOST, jettyConfig.getHost());
         map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
         map.put(EventService.UDP_PORT, String.valueOf(udpConfig.getPort()));
         map.put(EventService.RMI_PORT, String.valueOf(rmiConfig.getPort()));
         ServiceDescriptor self = new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
-
-        // advertise on beacon
         serviceLocator.advertiseLocalService(self);
 
         String name = getClass().getSimpleName();
