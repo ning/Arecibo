@@ -1,5 +1,6 @@
 package com.ning.arecibo.collector;
 
+import com.google.common.collect.BiMap;
 import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.event.MapEvent;
@@ -10,12 +11,12 @@ import com.ning.arecibo.event.transport.EventSerializer;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.JsonEventSerializer;
-import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.EmbeddedJettyJerseyModule;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.service.DummyServiceLocatorModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
+import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.commons.io.IOUtils;
 import org.testng.Assert;
@@ -49,6 +50,9 @@ public class TestEventCollectorServer
 
     @Inject
     CollectorEventProcessor processor;
+
+    @Inject
+    TimelineDAO timelineDAO;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
@@ -88,15 +92,27 @@ public class TestEventCollectorServer
     public void testJsonClientIntegration() throws Exception
     {
         final RESTEventService service = createService(new JsonEventSerializer());
-        final Event event = createEvent();
 
         Assert.assertEquals(processor.getEventsReceived(), 0);
         Assert.assertEquals(processor.getEventsDiscarded(), 0);
 
+        final UUID hostId = UUID.randomUUID();
         for (int i = 1; i < 5; i++) {
+            final MapEvent event = createEvent(hostId);
             service.sendREST(event);
+
             Assert.assertEquals(processor.getEventsReceived(), i);
             Assert.assertEquals(processor.getEventsDiscarded(), 0);
+
+            // Make sure we don't create dups
+            BiMap<Integer, String> hosts = timelineDAO.getHosts();
+            Assert.assertEquals(hosts.values().size(), 1);
+            Assert.assertEquals(hosts.values().toArray()[0], hostId.toString());
+
+            // Make sure we saw all sample kinds
+            BiMap<Integer, String> sampleKinds = timelineDAO.getSampleKinds();
+            Assert.assertEquals(sampleKinds.values().size(), event.getKeys().size());
+            Assert.assertTrue(sampleKinds.values().containsAll(event.getKeys()));
         }
     }
 
@@ -113,12 +129,12 @@ public class TestEventCollectorServer
         return new RESTEventService(new MockEventServiceChooser(), localServiceDescriptor, restClient);
     }
 
-    private Event createEvent()
+    private MapEvent createEvent(UUID hostId)
     {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("min_heapUsed", Double.valueOf("1.515698888E9"));
         data.put("max_heapUsed", Double.valueOf("1.835511784E9"));
 
-        return new MapEvent(System.currentTimeMillis(), "myType", UUID.randomUUID(), data);
+        return new MapEvent(System.currentTimeMillis(), "myType", hostId, data);
     }
 }

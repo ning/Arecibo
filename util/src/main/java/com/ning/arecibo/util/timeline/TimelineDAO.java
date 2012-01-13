@@ -107,12 +107,11 @@ public class TimelineDAO
                     .createQuery("select sample_kind_id, sample_kind from sample_kinds")
                     .fold(makeBiMap(), new Folder2<BiMap<Integer, String>>()
                     {
-
                         @Override
                         public BiMap<Integer, String> fold(BiMap<Integer, String> accumulator, ResultSet rs, StatementContext ctx) throws SQLException
                         {
-                            final int sampleKindId = rs.getInt(0);
-                            final String sampleKind = rs.getString(1);
+                            final int sampleKindId = rs.getInt(1);
+                            final String sampleKind = rs.getString(2);
                             accumulator.put(sampleKindId, sampleKind);
                             return accumulator;
                         }
