@@ -166,38 +166,4 @@ public class MapEvent extends Event implements TransformableEvent
 	    map.put(MapEvent.KEY_EVENT_NAME, eventName);
         return new MapEvent(map);
     }
-
-	public static MapEvent fromJSON(JSONObject json) throws JSONException
-	{
-        Map<String, Object> map = new HashMap<String, Object>();
-
-        Iterator i = json.keys();
-        while (i.hasNext()) {
-            String key =  i.next().toString();
-            map.put(key, json.get(key));
-        }
-
-        try {
-            long timestamp = json.getLong(KEY_TIMESTAMP);
-            map.put(KEY_TIMESTAMP, timestamp);
-        }
-        catch(JSONException jsonEx) {
-            // this can be null
-        }
-
-
-        try {
-            String uuidString = json.getString(KEY_UUID);
-            UUID uuid;
-            if(uuidString != null) {
-                uuid = UUID.fromString(uuidString);
-                map.put(KEY_UUID, uuid);
-            }
-        }
-        catch(JSONException jsonEx) {
-            // this can be null
-        }
-
-        return new MapEvent(map);
-	}
 }

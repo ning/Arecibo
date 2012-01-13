@@ -7,6 +7,7 @@ import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.guice.CollectorModule;
+import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.event.receiver.RESTEventReceiverModule;
 import com.ning.arecibo.event.receiver.UDPEventReceiverConfig;
@@ -100,8 +101,13 @@ public class EventCollectorServer
             // continue
         }
 
+        stop();
+    }
+
+    public void stop()
+    {
         try {
-            log.info("Shutting down %s", name);
+            log.info("Shutting down %s", getClass().getSimpleName());
 
             log.info("Stopping lifecycle");
             lifecycle.fire(LifecycleEvent.STOP);
@@ -123,7 +129,7 @@ public class EventCollectorServer
             // TODO: need to bind an implementation of ServiceLocator
             new DummyServiceLocatorModule(),
             new EmbeddedJettyJerseyModule(),
-            new RESTEventReceiverModule(CollectorEventProcessor.class, "arecibo.collector:name=CollectorEventProcessor"),
+            new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),
             new AbstractModule()
             {

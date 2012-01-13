@@ -28,8 +28,8 @@ public class CollectorEventProcessor implements EventProcessor
 {
     private final static Logger log = Logger.getLogger(CollectorEventProcessor.class);
 
-    private final TimelineRegistry timelineRegistry;
     private final TimelineDAO timelineDAO;
+    private TimelineRegistry timelineRegistry = null;
 
     private final AtomicLong eventsReceived = new AtomicLong(0L);
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
@@ -38,11 +38,14 @@ public class CollectorEventProcessor implements EventProcessor
     public CollectorEventProcessor(TimelineDAO timelineDAO)
     {
         this.timelineDAO = timelineDAO;
-        this.timelineRegistry = new TimelineRegistry(timelineDAO);
     }
 
     public void processEvent(Event evt)
     {
+        if (timelineRegistry == null) {
+            timelineRegistry = new TimelineRegistry(timelineDAO);
+        }
+
         try {
             final List<Event> events = new ArrayList<Event>();
             if (evt instanceof BatchedEvent) {
@@ -77,6 +80,7 @@ public class CollectorEventProcessor implements EventProcessor
             // In case of batched events, use the timestmap of the first event
             final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
             final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostSamples);
+            accumulator.addHostSamples(hostSamples);
         }
         catch (RuntimeException ruEx) {
             log.warn(ruEx);

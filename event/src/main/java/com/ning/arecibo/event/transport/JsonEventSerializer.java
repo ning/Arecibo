@@ -1,6 +1,7 @@
 package com.ning.arecibo.event.transport;
 
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.ning.arecibo.event.MapEvent;
@@ -12,6 +13,7 @@ import java.io.*;
 public class JsonEventSerializer implements EventSerializer
 {
 	public static final String CONTENT_TYPE = "application/json";
+	public static final ObjectMapper mapper = new ObjectMapper();
 
 	public void serialize(Event event, OutputStream stream) throws IOException
 	{
@@ -38,14 +40,8 @@ public class JsonEventSerializer implements EventSerializer
         while((line = br.readLine()) != null) {
             sb.append(line);
         }
-        
-		try {
-			JSONObject json = new JSONObject(sb.toString());
-			return MapEvent.fromJSON(json);
-		}
-		catch (JSONException e) {
-			throw new IOException(e);
-		}
+
+		return mapper.convertValue(sb.toString(), MapEvent.class);
 	}
 
 	public String getContentType()
