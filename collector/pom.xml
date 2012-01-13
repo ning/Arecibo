@@ -13,6 +13,10 @@
     <name>arecibo-collector</name>
     <version>1.0.0-SNAPSHOT</version>
     <dependencies>
+       <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+       </dependency>
         <dependency>
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp</artifactId>

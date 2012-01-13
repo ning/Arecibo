@@ -1,6 +1,12 @@
 package com.ning.arecibo.collector.process;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import com.google.inject.Inject;
+import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.event.BatchedEvent;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
@@ -22,12 +28,15 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CollectorEventProcessor implements EventProcessor
 {
     private final static Logger log = Logger.getLogger(CollectorEventProcessor.class);
 
+    private final Cache<Integer, TimelineHostEventAccumulator> accumulators;
     private final TimelineDAO timelineDAO;
     private TimelineRegistry timelineRegistry = null;
 
@@ -35,9 +44,45 @@ public class CollectorEventProcessor implements EventProcessor
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
 
     @Inject
-    public CollectorEventProcessor(TimelineDAO timelineDAO)
+    public CollectorEventProcessor(final CollectorConfig config, final TimelineDAO timelineDAO)
     {
         this.timelineDAO = timelineDAO;
+
+        accumulators = CacheBuilder.newBuilder()
+            .concurrencyLevel(4)
+            .maximumSize(config.getMaxHosts())
+            .expireAfterWrite(config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS)
+            .removalListener(new RemovalListener<Integer, TimelineHostEventAccumulator>()
+            {
+                @Override
+                public void onRemoval(RemovalNotification<Integer, TimelineHostEventAccumulator> removedObjectNotification)
+                {
+                    TimelineHostEventAccumulator accumulator = removedObjectNotification.getValue();
+                    if (accumulator == null) {
+                        // TODO How often will that happen?
+                        log.error("Accumulator already GCed - data lost!");
+                    }
+                    else {
+                        final Integer hostId = removedObjectNotification.getKey();
+                        if (hostId == null) {
+                            log.info("Saving Timeline");
+                        }
+                        else {
+                            log.info("Saving Timeline for hostId: " + hostId);
+                        }
+                        accumulator.extractAndSaveTimelineChunks();
+                    }
+                }
+            })
+            .build(new CacheLoader<Integer, TimelineHostEventAccumulator>()
+            {
+                @Override
+                public TimelineHostEventAccumulator load(Integer hostId) throws Exception
+                {
+                    log.info("Creating new Timeline for hostId: " + hostId);
+                    return new TimelineHostEventAccumulator(timelineDAO, hostId);
+                }
+            });
     }
 
     public void processEvent(Event evt)
@@ -79,11 +124,14 @@ public class CollectorEventProcessor implements EventProcessor
 
             // In case of batched events, use the timestmap of the first event
             final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
-            final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostSamples);
+            final TimelineHostEventAccumulator accumulator = accumulators.get(hostId);
             accumulator.addHostSamples(hostSamples);
         }
         catch (RuntimeException ruEx) {
             log.warn(ruEx);
+        }
+        catch (ExecutionException e) {
+            log.warn(e);
         }
     }
 

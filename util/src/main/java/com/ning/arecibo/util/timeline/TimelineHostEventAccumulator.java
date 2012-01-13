@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
@@ -36,19 +37,18 @@ public class TimelineHostEventAccumulator {
 
     private final TimelineDAO dao;
     private final int hostId;
-    private final String category;
-    private final DateTime startTime;
-    private int sampleCount;
-    private DateTime endTime;
+    private DateTime startTime = null;
+    private DateTime endTime = null;
+    private int sampleCount = 0;
 
     /**
      * Maps the sample kind id to the accumulator for that sample kind
      */
-    private final Map<Integer, TimelineChunkAccumulator> timelines;
+    private final Map<Integer, TimelineChunkAccumulator> timelines = new HashMap<Integer, TimelineChunkAccumulator>();
     /**
      * Holds the time of the samples
      */
-    private final List<DateTime> times;
+    private final List<DateTime> times = new ArrayList<DateTime>();
 
     /**
      * A TimelineHostEventAccumulator object is born the first time the manager receives set of samples from a host
@@ -57,14 +57,16 @@ public class TimelineHostEventAccumulator {
     public TimelineHostEventAccumulator(TimelineDAO dao, HostSamplesForTimestamp samples) {
         this.dao = dao;
         this.hostId = samples.getHostId();
-        this.category = samples.getCategory();
         final DateTime timestamp = samples.getTimestamp();
         this.startTime = timestamp;
         this.endTime = timestamp;
-        this.sampleCount = 0;
-        this.timelines = new HashMap<Integer, TimelineChunkAccumulator>();
-        this.times = new ArrayList<DateTime>();
         addHostSamples(samples);
+    }
+
+    public TimelineHostEventAccumulator(TimelineDAO dao, int hostId)
+    {
+        this.dao = dao;
+        this.hostId = hostId;
     }
 
     @SuppressWarnings("unchecked")
@@ -76,6 +78,14 @@ public class TimelineHostEventAccumulator {
         // The reasoning is that these samples only apply to this host,
         // so we shouldn't get essentially simultaneous adds
         final DateTime timestamp = samples.getTimestamp();
+
+        if (startTime == null) {
+            startTime = timestamp;
+        }
+        if (endTime == null){
+            endTime = timestamp;
+        }
+
         if (timestamp.isBefore(endTime)) {
             log.warn("Adding samples for host %d, timestamp %s is earlier than the end time %s; ignored",
                     hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime));
@@ -184,11 +194,6 @@ public class TimelineHostEventAccumulator {
 
     public int getHostId() {
         return hostId;
-    }
-
-
-    public String getCategory() {
-        return category;
     }
 
     public DateTime getStartTime() {

@@ -107,4 +107,12 @@ public interface CollectorConfig
     @Config("arecibo.events.collector.numPartitionsToSplitAheadList")
     @Default("2")
     int[] getNumPartitionsToSplitAhead();
+
+    @Config("arecibo.events.collector.timelines.maxHosts")
+    @Default("10000")
+    int getMaxHosts();
+
+    @Config("arecibo.events.collector.timelines.length")
+    @Default("10m")
+    TimeSpan getTimelineLength();
 }
