@@ -16,18 +16,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-import org.json.JSONObject;
 import com.espertech.esper.client.EventBean;
 import com.espertech.esper.client.UpdateListener;
 import com.ning.arecibo.aggregator.rest.EventStreamEndPoint.EPStatementQuery;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.util.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 
 @Provider
 @Produces(MediaType.TEXT_PLAIN)
 public class EsperStatementRenderer implements MessageBodyWriter<EventStreamEndPoint.EPStatementQuery>
 {
 	private static final Logger log = Logger.getLogger(EsperStatementRenderer.class);
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static final long MAX_QUIET_TIME = 60000L;
     private static final long MAX_POLL_TIME = 5000L;
 
@@ -140,8 +141,12 @@ public class EsperStatementRenderer implements MessageBodyWriter<EventStreamEndP
 
     private void printBean(PrintWriter pw, EventBean bean)
     {
-	    pw.println(new JSONObject(MapEvent.fromEventBean(bean, bean.getEventType().getName()).toMap()));
-	    pw.flush();
+        try {
+            pw.println(mapper.writeValueAsString(bean));
+            pw.flush();
+        }
+        catch (IOException ignored) {
+        }
     }
 
     private void printEllipsis(PrintWriter pw) {

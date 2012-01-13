@@ -8,8 +8,6 @@ import com.google.inject.Stage;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.guice.CollectorModule;
 import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
-import com.ning.arecibo.collector.process.CollectorEventProcessor;
-import com.ning.arecibo.event.receiver.RESTEventReceiverModule;
 import com.ning.arecibo.event.receiver.UDPEventReceiverConfig;
 import com.ning.arecibo.event.receiver.UDPEventReceiverModule;
 import com.ning.arecibo.event.transport.EventService;
@@ -30,6 +28,7 @@ import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EventCollectorServer
 {
@@ -43,6 +42,8 @@ public class EventCollectorServer
     private final RMIRegistryConfig rmiConfig;
 
     public static final String NAME = EventCollectorServer.class.getSimpleName();
+
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     @Inject
     public EventCollectorServer(CollectorConfig collectorConfig,
@@ -92,7 +93,9 @@ public class EventCollectorServer
                 t.interrupt();
             }
         });
+
         server.start();
+        isRunning.set(true);
 
         try {
             Thread.currentThread().join();
@@ -114,12 +117,18 @@ public class EventCollectorServer
 
             log.info("Stopping jetty server");
             server.stop();
+            isRunning.set(false);
 
             log.info("Shutdown completed");
         }
         catch (Exception e) {
             log.warn(e);
         }
+    }
+
+    public boolean isRunning()
+    {
+        return isRunning.get();
     }
 
     public static void main(String[] args) throws Exception

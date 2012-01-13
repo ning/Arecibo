@@ -80,10 +80,11 @@ public class TimelineDAO
             public Integer withHandle(Handle handle) throws Exception
             {
                 handle
-                    .createStatement("insert into sample_kinds (sample_kind, created_dt) values (:sample_kind, unix_timestamp())")
+                    .createStatement("insert into sample_kinds (sample_kind) values (:sample_kind)")
                     .bind("sample_kind", sampleKind)
                     .execute();
-                return handle.createQuery("select last_insert_id()")
+                return handle
+                        .createQuery("select last_insert_id()")
                     .map(IntegerMapper.FIRST)
                     .first();
             }

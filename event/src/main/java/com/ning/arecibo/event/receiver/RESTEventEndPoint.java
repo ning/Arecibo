@@ -14,7 +14,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Response;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Path("/")
+@Path("/xn/rest")
 public class RESTEventEndPoint
 {
     private static final ObjectMapper mapper = new ObjectMapper();

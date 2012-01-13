@@ -28,6 +28,7 @@ import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 @Guice(modules = {
     LifecycleModule.class,
@@ -57,7 +58,7 @@ public class TestEventCollectorServer
         helper.startMysql();
         helper.initDb(ddl);
 
-        new Thread()
+        Executors.newFixedThreadPool(1).submit(new Runnable()
         {
             @Override
             public void run()
@@ -69,7 +70,11 @@ public class TestEventCollectorServer
                     Assert.fail();
                 }
             }
-        };
+        });
+
+        while (!server.isRunning()) {
+            Thread.sleep(1000);
+        }
     }
 
     @AfterMethod(alwaysRun = true)
@@ -98,7 +103,7 @@ public class TestEventCollectorServer
     private RESTEventService createService(final EventSerializer serializer)
     {
         final Map<String, String> properties = new HashMap<String, String>();
-        properties.put(EventService.HOST, "127.0.0.1");
+        properties.put(EventService.HOST, "0.0.0.0");
         properties.put(EventService.JETTY_PORT, "8088");
         final ServiceDescriptor localServiceDescriptor = new ServiceDescriptor("testing", properties);
 

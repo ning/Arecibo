@@ -4,148 +4,140 @@ import com.espertech.esper.client.EventBean;
 import com.ning.arecibo.eventlogger.Event;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.codehaus.jackson.annotate.JsonValue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
-/**
- * 
- */
 public class MapEvent extends Event implements TransformableEvent
 {
-	static final long serialVersionUID = 2908927541122355973L;
-	
-	public static final UUID FAKE_UUID = UUID.randomUUID() ;
-	public static final String KEY_EVENT_NAME = "eventType";
-	public static final String KEY_UUID = "sourceUUID" ;
-	public static final String KEY_TIMESTAMP = "timestamp" ;
+    static final long serialVersionUID = 2908927541122355973L;
 
-	private long ts;
-	private String type;
-	private UUID uuid;
-	private HashMap<String, Object> map ;
+    public static final UUID FAKE_UUID = UUID.randomUUID();
+    public static final String KEY_EVENT_NAME = "eventType";
+    public static final String KEY_UUID = "sourceUUID";
+    public static final String KEY_TIMESTAMP = "timestamp";
 
-    @JsonCreator
-    public MapEvent(@JsonProperty(KEY_TIMESTAMP) long timestamp, @JsonProperty(KEY_EVENT_NAME) String eventType, @JsonProperty(KEY_UUID) String sourceUUID)
-    {
-        super(timestamp, eventType, UUID.fromString(sourceUUID));
-        ts = timestamp;
-        type = eventType;
-        uuid = UUID.fromString(sourceUUID);
-    }
+    private long ts;
+    private String type;
+    private UUID uuid;
+    private HashMap<String, Object> map;
 
     public MapEvent(Event event)
-	{
-		super(event.getTimestamp(), event.getEventType(), event.getSourceUUID());
-		this.type = event.getEventType() ;
-		this.uuid = event.getSourceUUID() ;
-		this.ts = event.getTimestamp() ;
-		this.map = new HashMap<String, Object>();
-		copyEvent(event);
-	}
-
-	private void copyEvent(Event event)
-	{
-		Method[] methods = event.getClass().getMethods() ;
-		Object[] args =  new Object[0] ;
-		for ( Method m : methods ) {
-			if ( m.getName().startsWith("get") ) {
-				String field = m.getName().substring(3);
-				field = field.substring(0, 1).toLowerCase() + field.substring(1);
-				if ( !(field.equals(KEY_TIMESTAMP) || field.equals(KEY_UUID) || field.equals(KEY_EVENT_NAME)) ) {
-					try {
-						map.put(field, m.invoke(event, args));
-					}
-					catch (IllegalAccessException e) {
-					}
-					catch (InvocationTargetException e) {
-					}
-				}
-			}
-		}
-	}
-
-	public MapEvent(long ts, String type, UUID uuid, Map<String, Object> map)
-	{
-		super(-1, MapEvent.class.getSimpleName(), FAKE_UUID);
-		this.type = type ;
-		this.uuid = uuid ;
-		this.ts = ts ;
-		this.map = new HashMap<String, Object>(map) ;
-	}
-
-	public MapEvent(Map<String, Object> map)
-	{
-		super(-1, MapEvent.class.getSimpleName(), FAKE_UUID);
-		this.map = new HashMap<String, Object>(map) ;
-		this.type = (String) map.get(KEY_EVENT_NAME);
-		this.uuid = (UUID) map.get(KEY_UUID);
-        Long time = (Long) map.get(KEY_TIMESTAMP);
-        if ( time == null ) {
-            this.ts = System.currentTimeMillis() ;
-        }
-        else {
-            this.ts = time ;
-        }
-		this.map.remove(KEY_UUID);
-		this.map.remove(KEY_EVENT_NAME);
-		this.map.remove(KEY_TIMESTAMP);
+    {
+        super(event.getTimestamp(), event.getEventType(), event.getSourceUUID());
+        this.type = event.getEventType();
+        this.uuid = event.getSourceUUID();
+        this.ts = event.getTimestamp();
+        this.map = new HashMap<String, Object>();
+        copyEvent(event);
     }
 
-	public void setUuid(UUID uuid)
-	{
-		this.uuid = uuid;
-	}
+    private void copyEvent(Event event)
+    {
+        Method[] methods = event.getClass().getMethods();
+        Object[] args = new Object[0];
+        for (Method m : methods) {
+            if (m.getName().startsWith("get")) {
+                String field = m.getName().substring(3);
+                field = field.substring(0, 1).toLowerCase() + field.substring(1);
+                if (!(field.equals(KEY_TIMESTAMP) || field.equals(KEY_UUID) || field.equals(KEY_EVENT_NAME))) {
+                    try {
+                        map.put(field, m.invoke(event, args));
+                    }
+                    catch (IllegalAccessException e) {
+                    }
+                    catch (InvocationTargetException e) {
+                    }
+                }
+            }
+        }
+    }
 
-	public String getEventType()
-	{
-		return type ;
-	}
+    public MapEvent(long ts, String type, UUID uuid, Map<String, Object> map)
+    {
+        super(-1, MapEvent.class.getSimpleName(), FAKE_UUID);
+        this.type = type;
+        this.uuid = uuid;
+        this.ts = ts;
+        this.map = new HashMap<String, Object>(map);
+    }
 
-	public UUID getSourceUUID()
-	{
-		return uuid ;
-	}
+    @JsonCreator
+    public MapEvent(Map<String, Object> map)
+    {
+        super(-1, MapEvent.class.getSimpleName(), FAKE_UUID);
+        this.map = new HashMap<String, Object>(map);
+        this.type = (String) map.get(KEY_EVENT_NAME);
+        this.uuid = UUID.fromString((String) map.get(KEY_UUID));
+        Long time = (Long) map.get(KEY_TIMESTAMP);
+        if (time == null) {
+            this.ts = System.currentTimeMillis();
+        }
+        else {
+            this.ts = time;
+        }
+        this.map.remove(KEY_UUID);
+        this.map.remove(KEY_EVENT_NAME);
+        this.map.remove(KEY_TIMESTAMP);
+    }
 
-	public long getTimestamp()
-	{
-		return ts ;
-	}
+    public void setUuid(UUID uuid)
+    {
+        this.uuid = uuid;
+    }
 
-	public Object getValue(String key)
-	{
-		return map.get(key);
-	}
+    public String getEventType()
+    {
+        return type;
+    }
+
+    public UUID getSourceUUID()
+    {
+        return uuid;
+    }
+
+    public long getTimestamp()
+    {
+        return ts;
+    }
+
+    public Object getValue(String key)
+    {
+        return map.get(key);
+    }
 
     public Set<String> getKeys()
-	{
-		return map.keySet();
-	}
+    {
+        return map.keySet();
+    }
 
     public Object getObject(String name)
     {
         return map.get(name);
     }
 
-	public Map<String, Object> toMap()
-	{
-		HashMap<String, Object> clone = (HashMap<String, Object>) map.clone();
-		clone.put(KEY_EVENT_NAME, this.getEventType());
-		clone.put(KEY_TIMESTAMP, this.getTimestamp());
-		clone.put(KEY_UUID, this.getSourceUUID());
-		return clone ;
-	}
+    @JsonValue
+    public Map<String, Object> toMap()
+    {
+        HashMap<String, Object> clone = (HashMap<String, Object>) map.clone();
+        clone.put(KEY_EVENT_NAME, this.getEventType());
+        clone.put(KEY_TIMESTAMP, this.getTimestamp());
+        clone.put(KEY_UUID, this.getSourceUUID());
+        return clone;
+    }
 
-	public Map<String, Object> getMap()
-	{
-		return map;
-	}
+    public Map<String, Object> getMap()
+    {
+        return map;
+    }
 
     public String toString()
-	{
+    {
         if (map == null) {
             return "";
         }
@@ -157,13 +149,13 @@ public class MapEvent extends Event implements TransformableEvent
         return sb.toString();
     }
 
-	public static MapEvent fromEventBean(EventBean event, String eventName)
+    public static MapEvent fromEventBean(EventBean event, String eventName)
     {
-	    Map<String, Object> map = new HashMap<String, Object>();
-	    for ( String name : event.getEventType().getPropertyNames() ) {
-		    map.put(name, event.get(name));
-	    }
-	    map.put(MapEvent.KEY_EVENT_NAME, eventName);
+        Map<String, Object> map = new HashMap<String, Object>();
+        for (String name : event.getEventType().getPropertyNames()) {
+            map.put(name, event.get(name));
+        }
+        map.put(MapEvent.KEY_EVENT_NAME, eventName);
         return new MapEvent(map);
     }
 }

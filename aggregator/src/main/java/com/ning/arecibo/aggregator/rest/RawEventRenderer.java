@@ -16,18 +16,19 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
-import org.json.JSONObject;
 import com.google.inject.Inject;
 import com.ning.arecibo.aggregator.impl.EventProcessorImpl;
 import com.ning.arecibo.aggregator.listeners.EventProcessorListener;
 import com.ning.arecibo.aggregator.rest.EventStreamEndPoint.StreamQuery;
 import com.ning.arecibo.util.Logger;
+import org.codehaus.jackson.map.ObjectMapper;
 
 @Provider
 @Produces("text/plain+rawEvt")
 public class RawEventRenderer implements MessageBodyWriter<EventStreamEndPoint.StreamQuery>
 {
 	private static final Logger log = Logger.getLogger(EsperStatementRenderer.class);
+    private static final ObjectMapper mapper = new ObjectMapper();
     private final EventProcessorImpl eventProcessor;
     private static final long MAX_QUIET_TIME = 60000L;
     private static final long MAX_POLL_TIME = 5000L;
@@ -132,8 +133,12 @@ public class RawEventRenderer implements MessageBodyWriter<EventStreamEndPoint.S
 
     private void printEvent(PrintWriter pw, Map<String, Object> map)
     {
-	    pw.println(new JSONObject(map));
-	    pw.flush();
+        try {
+            pw.println(mapper.writeValueAsString(map));
+            pw.flush();
+        }
+        catch (IOException ignored) {
+        }
     }
 
     private void printEllipsis(PrintWriter pw) {
