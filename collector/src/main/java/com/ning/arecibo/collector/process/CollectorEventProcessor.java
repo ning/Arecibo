@@ -94,6 +94,10 @@ public class CollectorEventProcessor implements EventProcessor
 
     private void convertSamplesToScalarSamples(Map<String, Object> inputSamples, Map<Integer, ScalarSample> outputSamples)
     {
+        if (inputSamples == null) {
+            return;
+        }
+
         for (final String sampleKind : inputSamples.keySet()) {
             final int sampleKindId = timelineRegistry.getOrAddSampleKind(sampleKind);
             final Object sample = inputSamples.get(sampleKind);
