@@ -74,12 +74,12 @@ public class MapEvent extends Event implements TransformableEvent
         this.map = new HashMap<String, Object>(map);
         this.type = (String) map.get(KEY_EVENT_NAME);
         this.uuid = UUID.fromString((String) map.get(KEY_UUID));
-        Long time = (Long) map.get(KEY_TIMESTAMP);
+        Integer time = (Integer) map.get(KEY_TIMESTAMP);
         if (time == null) {
             this.ts = System.currentTimeMillis();
         }
         else {
-            this.ts = time;
+            this.ts = Long.valueOf(time.toString());
         }
         this.map.remove(KEY_UUID);
         this.map.remove(KEY_EVENT_NAME);
