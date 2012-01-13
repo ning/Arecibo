@@ -7,7 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.mortbay.jetty.Server;
+
+import org.eclipse.jetty.server.Server;
 import org.weakref.jmx.Managed;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;

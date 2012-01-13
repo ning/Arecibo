@@ -6,7 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.management.MBeanServer;
-import org.mortbay.jetty.Server;
+
+import org.eclipse.jetty.server.Server;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;

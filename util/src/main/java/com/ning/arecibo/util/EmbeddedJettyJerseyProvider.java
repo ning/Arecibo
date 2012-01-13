@@ -1,16 +1,21 @@
 package com.ning.arecibo.util;
 
-import org.mortbay.jetty.Connector;
-import org.mortbay.jetty.Server;
-import org.mortbay.jetty.nio.SelectChannelConnector;
-import org.mortbay.jetty.servlet.Context;
-import org.mortbay.jetty.servlet.DefaultServlet;
-import org.mortbay.thread.QueuedThreadPool;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
 import com.google.inject.servlet.GuiceFilter;
 import com.google.inject.servlet.GuiceServletContextListener;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+
+import javax.servlet.DispatcherType;
+import java.util.EnumSet;
 
 public class EmbeddedJettyJerseyProvider implements Provider<Server>
 {
@@ -31,8 +36,7 @@ public class EmbeddedJettyJerseyProvider implements Provider<Server>
 
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setMaxThreads(config.getMaxThreads());
-        threadPool.setLowThreads(config.getLowThreads());
-        threadPool.setSpawnOrShrinkAt(2);
+        threadPool.setMinThreads(config.getLowThreads());
 
         SelectChannelConnector connector = new SelectChannelConnector();
 
@@ -51,9 +55,15 @@ public class EmbeddedJettyJerseyProvider implements Provider<Server>
         server.setConnectors(new Connector[] { connector });
         server.setGracefulShutdown(1000);
 
-        Context root = new Context(server, "/", Context.SESSIONS);
+        ServletContextHandler root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
 
-        root.addFilter(GuiceFilter.class, "/*", 0);
+        // Make sure Guice filter all requests
+        final FilterHolder filterHolder = new FilterHolder(GuiceFilter.class);
+        root.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
+        // Backend servlet for Guice - never used
+        final ServletHolder sh = new ServletHolder(DefaultServlet.class);
+        root.addServlet(sh, "/*");
         root.addEventListener(new GuiceServletContextListener() {
             @Override
             protected Injector getInjector()

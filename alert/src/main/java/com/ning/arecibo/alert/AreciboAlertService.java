@@ -7,8 +7,6 @@ import java.util.UUID;
 
 import javax.management.MBeanServer;
 
-import org.mortbay.jetty.Server;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -32,6 +30,7 @@ import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
+import org.eclipse.jetty.server.Server;
 
 public class AreciboAlertService
 {

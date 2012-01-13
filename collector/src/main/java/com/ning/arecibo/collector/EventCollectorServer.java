@@ -23,7 +23,7 @@ import com.ning.arecibo.util.rmi.RMIRegistryConfig;
 import com.ning.arecibo.util.service.DummyServiceLocatorModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Server;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;

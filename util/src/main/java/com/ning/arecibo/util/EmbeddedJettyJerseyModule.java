@@ -4,7 +4,7 @@ import com.google.inject.servlet.ServletModule;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
-import org.mortbay.jetty.Server;
+import org.eclipse.jetty.server.Server;
 import org.skife.config.ConfigurationObjectFactory;
 
 import java.util.HashMap;
