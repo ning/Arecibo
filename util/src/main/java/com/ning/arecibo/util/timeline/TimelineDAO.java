@@ -65,7 +65,7 @@ public class TimelineDAO
                     .createStatement("insert into hosts (host_name, created_dt) values (:host_name, unix_timestamp())")
                     .bind("host_name", host)
                     .execute();
-                return handle.createQuery(PACKAGE + ":getLastInsertedId")
+                return handle.createQuery("select last_insert_id()")
                     .map(IntegerMapper.FIRST)
                     .first();
             }
