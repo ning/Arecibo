@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
 
 @Guice(modules = {
     LifecycleModule.class,
-    DummyServiceLocatorModule.class,
     EmbeddedJettyJerseyModule.class,
     UDPEventReceiverModule.class,
     RMIModule.class,

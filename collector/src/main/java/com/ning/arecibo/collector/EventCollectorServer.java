@@ -135,8 +135,6 @@ public class EventCollectorServer
     {
         Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(),
-            // TODO: need to bind an implementation of ServiceLocator
-            new DummyServiceLocatorModule(),
             new EmbeddedJettyJerseyModule(),
             new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),

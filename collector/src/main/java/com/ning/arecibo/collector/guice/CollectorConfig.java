@@ -115,4 +115,12 @@ public interface CollectorConfig
     @Config("arecibo.events.collector.timelines.length")
     @Default("10m")
     TimeSpan getTimelineLength();
+
+    @Config("arecibo.events.collector.serviceLocatorKlass")
+    @Default("com.ning.arecibo.util.service.DummyServiceLocator")
+    String getServiceLocatorClass();
+
+    @Config("arecibo.events.collector.extraGuiceModules")
+    @Default("")
+    String getExtraGuiceModules();
 }
