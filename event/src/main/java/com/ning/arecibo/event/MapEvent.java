@@ -32,6 +32,9 @@ public class MapEvent extends Event implements TransformableEvent
     public MapEvent(@JsonProperty(KEY_TIMESTAMP) long timestamp, @JsonProperty(KEY_EVENT_NAME) String eventType, @JsonProperty(KEY_UUID) String sourceUUID)
     {
         super(timestamp, eventType, UUID.fromString(sourceUUID));
+        ts = timestamp;
+        type = eventType;
+        uuid = UUID.fromString(sourceUUID);
     }
 
     public MapEvent(Event event)
@@ -143,6 +146,10 @@ public class MapEvent extends Event implements TransformableEvent
 
     public String toString()
 	{
+        if (map == null) {
+            return "";
+        }
+
         StringBuffer sb = new StringBuffer();
         for (Object o : map.values()) {
             sb.append(o).append(", ");
