@@ -49,19 +49,18 @@ public class RESTEventEndPoint
         // TODO : handle forwarding by reading just the header and proxy the payload over without parsing
         if (log.isDebugEnabled()) {
             count.incrementAndGet();
-            //log.debug("Event received : %s %s %s %s count = %d", e.getSourceUUID(), e.getEventType(), e.getTimestamp(), e, count.get());
+            log.debug("Event received : %s %s %s %s count = %d", e.getSourceUUID(), e.getEventType(), e.getTimestamp(), e, count.get());
         }
 
         if (processor instanceof EventProcessor) {
-            //((EventProcessor)processor).processEvent(e);
+            ((EventProcessor)processor).processEvent(e);
             return Response.ok().build();
         }
         else if (processor instanceof RESTEventProcessor) {
-            //return ((RESTEventProcessor)processor).processEvent(e);
+            return ((RESTEventProcessor)processor).processEvent(e);
         }
         else {
             throw new IllegalStateException("Unsupported EventProcessor class: " + processor.getClass().getName());
         }
-        return null;
     }
 }
