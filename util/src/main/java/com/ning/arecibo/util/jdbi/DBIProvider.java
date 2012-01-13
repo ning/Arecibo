@@ -3,8 +3,6 @@ package com.ning.arecibo.util.jdbi;
 import java.util.Properties;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.logging.Log4JLog;
-import org.skife.jdbi.v2.unstable.stringtemplate.ClasspathGroupLoader;
-import org.skife.jdbi.v2.unstable.stringtemplate.StringTemplateStatementLocator;
 import com.google.inject.Provider;
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
@@ -34,7 +32,6 @@ public class DBIProvider implements Provider<DBI>
 
         final DBI dbi = new DBI(new BoneCPDataSource(dbConfig));
 
-        dbi.setStatementLocator(new StringTemplateStatementLocator(new ClasspathGroupLoader()));
         dbi.setSQLLog(new Log4JLog());
         return dbi;
     }

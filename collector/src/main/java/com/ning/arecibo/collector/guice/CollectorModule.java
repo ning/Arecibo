@@ -7,7 +7,6 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.ning.arecibo.collector.ResolutionUtils;
 import com.ning.arecibo.collector.dao.AggregationType;
-import com.ning.arecibo.collector.dao.CollectorDAO;
 import com.ning.arecibo.collector.dao.EventTableDescriptor;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;

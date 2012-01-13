@@ -3,8 +3,8 @@ create table hosts (
    host_id int not null auto_increment primary key,
    host_name varchar(256) not null,
    created_dt int not null,
-   key idx_host(host),
-   key idx_created_dt_host(created_dt, host, id)
+   key idx_host(host_id),
+   key idx_created_dt_host(created_dt, host_id)
 )
 ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
