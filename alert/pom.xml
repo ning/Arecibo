@@ -39,11 +39,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.code.guice</groupId>
+      <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.code.guice</groupId>
+      <groupId>com.google.inject.extensions</groupId>
       <artifactId>guice-servlet</artifactId>
     </dependency>
     <dependency>

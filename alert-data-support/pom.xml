@@ -23,7 +23,7 @@
       <artifactId>joda-time</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.code.guice</groupId>
+      <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
     </dependency>
     <dependency>
@@ -36,6 +36,6 @@
       <artifactId>testng</artifactId>
       <scope>test</scope>
       <classifier>jdk15</classifier>
-    </dependency>  
+    </dependency>
   </dependencies>
 </project>

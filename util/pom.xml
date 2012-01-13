@@ -23,11 +23,6 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>com.google.code.guice</groupId>
-      <artifactId>guice</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
       <optional>true</optional>
@@ -88,12 +83,12 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>com.google.code.guice</groupId>
+      <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>com.google.code.guice</groupId>
+      <groupId>com.google.inject.extensions</groupId>
       <artifactId>guice-servlet</artifactId>
       <optional>true</optional>
     </dependency>
