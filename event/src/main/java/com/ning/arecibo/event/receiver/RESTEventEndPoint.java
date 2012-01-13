@@ -8,6 +8,7 @@ import com.ning.arecibo.util.Logger;
 import com.google.inject.Inject;
 import com.ning.arecibo.eventlogger.Event;
 
+@Path("/")
 public class RESTEventEndPoint
 {
 	private static final Logger log = Logger.getLogger(RESTEventEndPoint.class) ;

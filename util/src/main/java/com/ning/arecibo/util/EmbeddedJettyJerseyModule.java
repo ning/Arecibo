@@ -1,9 +1,13 @@
 package com.ning.arecibo.util;
 
+import com.google.inject.servlet.ServletModule;
+import com.sun.jersey.api.core.PackagesResourceConfig;
+import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.mortbay.jetty.Server;
 import org.skife.config.ConfigurationObjectFactory;
-import com.google.inject.servlet.ServletModule;
-import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
+
+import java.util.HashMap;
 
 public class EmbeddedJettyJerseyModule extends ServletModule
 {
@@ -14,6 +18,13 @@ public class EmbeddedJettyJerseyModule extends ServletModule
 
         bind(EmbeddedJettyConfig.class).toInstance(config);
         bind(Server.class).toProvider(EmbeddedJettyJerseyProvider.class).asEagerSingleton();
-        serve("*").with(GuiceContainer.class);
+        bind(JacksonJsonProvider.class).asEagerSingleton();
+
+        serve("*").with(GuiceContainer.class, new HashMap<String, String>()
+        {
+            {
+                put(PackagesResourceConfig.PROPERTY_PACKAGES, "com.ning.arecibo.event.receiver");
+            }
+        });
     }
 }

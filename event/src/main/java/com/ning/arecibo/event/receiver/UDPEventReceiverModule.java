@@ -22,6 +22,7 @@ public class UDPEventReceiverModule extends AbstractModule
         bind(UDPEventReceiverConfig.class).toInstance(config);
         bind(DatagramSocket.class).annotatedWith(Names.named("UDPSocket")).toProvider(DatagramSocketProvider.class);
         bind(ExecutorService.class).annotatedWith(Names.named("DatagramDispatcher")).toInstance(Executors.newFixedThreadPool(config.getNumUDPThreads()));
+        bind(Integer.class).annotatedWith(Names.named("UDPServerPort")).toInstance(config.getPort());
         bind(UDPEventHandler.class).asEagerSingleton();
 
         LifecycledProvider<UDPServer> lifecycledProvider = new LifecycledProvider<UDPServer>(binder(), UDPServer.class);

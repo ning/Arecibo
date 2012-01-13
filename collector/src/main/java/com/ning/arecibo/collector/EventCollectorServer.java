@@ -20,6 +20,7 @@ import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.rmi.RMIRegistryConfig;
+import com.ning.arecibo.util.service.DummyServiceLocatorModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import org.mortbay.jetty.Server;
@@ -73,7 +74,6 @@ public class EventCollectorServer
         // advertise on beacon
         serviceLocator.advertiseLocalService(self);
 
-
         String name = getClass().getSimpleName();
         final long startTime = System.currentTimeMillis();
         log.info("Starting up %s on port %d", name, jettyConfig.getPort());
@@ -121,6 +121,7 @@ public class EventCollectorServer
         Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(),
             // TODO: need to bind an implementation of ServiceLocator
+            new DummyServiceLocatorModule(),
             new EmbeddedJettyJerseyModule(),
             new RESTEventReceiverModule(CollectorEventProcessor.class, "arecibo.collector:name=CollectorEventProcessor"),
             new UDPEventReceiverModule(),

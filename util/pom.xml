@@ -68,6 +68,10 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-jaxrs</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.espertech</groupId>
       <artifactId>esper</artifactId>
       <optional>true</optional>
