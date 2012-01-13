@@ -9,13 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import com.mogwee.executors.NamedThreadFactory;
 import org.weakref.jmx.Managed;
 import com.google.inject.Inject;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.EventServiceUDPClient;
 import com.ning.arecibo.event.transport.JavaEventSerializer;
-import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.UUIDUtil;
 import com.ning.arecibo.util.cron.CronJob;
 import com.ning.arecibo.util.cron.JMXCronTaskMaster;

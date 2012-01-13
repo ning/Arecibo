@@ -4,8 +4,9 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import com.mogwee.executors.NamedThreadFactory;
 import org.skife.config.TimeSpan;
-import com.ning.arecibo.util.NamedThreadFactory;
 
 public class AsynchronousSender
 {

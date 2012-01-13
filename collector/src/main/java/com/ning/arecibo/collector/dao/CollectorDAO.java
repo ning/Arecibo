@@ -2,6 +2,7 @@ package com.ning.arecibo.collector.dao;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.mogwee.executors.NamedThreadFactory;
 import com.ning.arecibo.collector.RemoteCollector;
 import com.ning.arecibo.collector.ResolutionTagGenerator;
 import com.ning.arecibo.collector.ResolutionUtils;
@@ -13,7 +14,6 @@ import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.esper.MiniEsperEngine;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;

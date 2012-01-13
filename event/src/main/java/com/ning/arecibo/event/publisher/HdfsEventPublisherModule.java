@@ -1,14 +1,15 @@
 package com.ning.arecibo.event.publisher;
 
 import java.util.concurrent.ExecutorService;
+
+import com.mogwee.executors.FailsafeScheduledExecutor;
+import com.mogwee.executors.NamedThreadFactory;
 import org.skife.config.ConfigurationObjectFactory;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
 import com.ning.arecibo.eventlogger.EventPublisher;
-import com.ning.arecibo.util.FailsafeScheduledExecutor;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.service.RandomSelector;
 import com.ning.arecibo.util.service.Selector;
 import com.ning.arecibo.util.service.ServiceSelector;
@@ -30,7 +31,7 @@ public class HdfsEventPublisherModule extends AbstractModule
 	public void configure()
 	{
 		bind(ExecutorService.class).annotatedWith(PublisherExecutor.class).toInstance(
-			new FailsafeScheduledExecutor(50, new NamedThreadFactory("EventPublisher"))
+			new FailsafeScheduledExecutor(50, "EventPublisher")
 		);
 
         bind(Selector.class).annotatedWith(RandomSelector.class).toInstance(new ServiceSelector(serviceName));

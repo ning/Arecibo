@@ -13,9 +13,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.mogwee.executors.NamedThreadFactory;
 import org.apache.commons.codec.binary.Hex;
 import com.google.inject.Inject;
-import com.ning.arecibo.util.NamedThreadFactory;
 
 /**
  * Chooses a service based on a consistent hashing algorithm. For a given key, the same server will be chosen

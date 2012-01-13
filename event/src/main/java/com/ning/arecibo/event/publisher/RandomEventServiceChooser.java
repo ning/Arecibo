@@ -5,11 +5,11 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.google.inject.Inject;
+import com.mogwee.executors.FailsafeScheduledExecutor;
+import com.mogwee.executors.NamedThreadFactory;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.JavaEventSerializer;
-import com.ning.arecibo.util.FailsafeScheduledExecutor;
-import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.service.RandomSelector;
 import com.ning.arecibo.util.service.RandomServiceChooser;
 import com.ning.arecibo.util.service.Selector;
@@ -25,7 +25,7 @@ public class RandomEventServiceChooser implements EventServiceChooser
 	private final Selector selector;
 	private final RandomServiceChooser chooser;
 	private final AtomicInteger serviceUseCount = new AtomicInteger(0);
-	private final ExecutorService executor = new FailsafeScheduledExecutor(10, new NamedThreadFactory("EventServiceChooser"));
+	private final ExecutorService executor = new FailsafeScheduledExecutor(10, "EventServiceChooser");
 	private volatile EventService eventService;
 
 	@Inject

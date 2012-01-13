@@ -19,6 +19,10 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
+            <groupId>com.mogwee</groupId>
+            <artifactId>mogwee-executors</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.ning.arecibo</groupId>
             <artifactId>arecibo-util</artifactId>
             <version>${project.version}</version>

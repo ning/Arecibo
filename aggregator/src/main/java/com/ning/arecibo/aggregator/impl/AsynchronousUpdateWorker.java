@@ -5,11 +5,12 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import com.mogwee.executors.NamedThreadFactory;
 import org.weakref.jmx.Managed;
 import com.google.inject.Inject;
 import com.ning.arecibo.aggregator.guice.AggregatorConfig;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
 

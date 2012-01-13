@@ -3,13 +3,14 @@ package com.ning.arecibo.event.publisher;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+
+import com.mogwee.executors.NamedThreadFactory;
 import org.skife.config.ConfigurationObjectFactory;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
 import com.ning.arecibo.eventlogger.EventPublisher;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.NamedThreadFactory;
 import com.ning.arecibo.util.cron.JMXCronScheduler;
 import com.ning.arecibo.util.service.ConsistentHashingConfig;
 import com.ning.arecibo.util.service.ConsistentHashingSelector;

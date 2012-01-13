@@ -18,6 +18,10 @@
   <description />
   <dependencies>
     <dependency>
+      <groupId>com.mogwee</groupId>
+      <artifactId>mogwee-executors</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.ning</groupId>
       <artifactId>async-http-client</artifactId>
       <optional>true</optional>
