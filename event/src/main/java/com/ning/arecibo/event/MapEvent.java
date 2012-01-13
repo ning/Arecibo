@@ -2,8 +2,8 @@ package com.ning.arecibo.event;
 
 import com.espertech.esper.client.EventBean;
 import com.ning.arecibo.eventlogger.Event;
-
-
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -28,7 +28,13 @@ public class MapEvent extends Event implements TransformableEvent
 	private UUID uuid;
 	private HashMap<String, Object> map ;
 
-	public MapEvent(Event event)
+    @JsonCreator
+    public MapEvent(@JsonProperty(KEY_TIMESTAMP) long timestamp, @JsonProperty(KEY_EVENT_NAME) String eventType, @JsonProperty(KEY_UUID) String sourceUUID)
+    {
+        super(timestamp, eventType, UUID.fromString(sourceUUID));
+    }
+
+    public MapEvent(Event event)
 	{
 		super(event.getTimestamp(), event.getEventType(), event.getSourceUUID());
 		this.type = event.getEventType() ;
