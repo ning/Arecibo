@@ -96,7 +96,7 @@ public class TimelineHostEventAccumulator {
             final Integer sampleKindId = entry.getKey();
             currentKinds.remove(sampleKindId);
             final ScalarSample sample = entry.getValue();
-            TimelineChunkAccumulator timeline = timelines.get(samples.getHostId());
+            TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
             if (timeline == null) {
                 timeline = new TimelineChunkAccumulator(hostId, sampleKindId);
                 if (sampleCount > 0) {

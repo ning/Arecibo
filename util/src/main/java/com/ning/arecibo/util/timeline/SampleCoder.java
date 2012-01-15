@@ -56,6 +56,9 @@ public class SampleCoder {
         try {
             outputStream.write(opcode.getOpcodeIndex());
             switch (opcode) {
+             case NULL:
+                // Placeholder
+                break;
             case BYTE:
                 outputStream.write((Byte)value);
                 break;

@@ -19,9 +19,9 @@ public class TimelineChunk extends CachedObject {
         public TimelineChunk map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
             final int hostId = rs.getInt("host_id");
             final int sampleKindId = rs.getInt("sample_kind_id");
-            final int timelineIntervalId = rs.getInt("timeline_interval_id");
+            final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
-            final Blob blobSamples = rs.getBlob("timeline_times");
+            final Blob blobSamples = rs.getBlob("sample_bytes");
             final byte[] samples = blobSamples.getBytes(0, (int)blobSamples.length());
             return new TimelineChunk(hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
         }
