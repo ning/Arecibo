@@ -72,7 +72,7 @@ public class TimelineTimes extends CachedObject {
     }
 
     public DateTime getSampleTimestamp(final int sampleNumber) {
-        if (sampleNumber < 0 || sampleNumber > times.size()) {
+        if (sampleNumber < 0 || sampleNumber >= times.size()) {
             return null;
         }
         else {
