@@ -4,20 +4,23 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.HandleCallback;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.skife.jdbi.v2.util.IntegerMapper;
 
+import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TimelineDAO
 {
-    private static final String PACKAGE = TimelineDAO.class.getName();
     private final IDBI dbi;
 
     @Inject
@@ -84,7 +87,7 @@ public class TimelineDAO
                     .bind("sample_kind", sampleKind)
                     .execute();
                 return handle
-                        .createQuery("select last_insert_id()")
+                    .createQuery("select last_insert_id()")
                     .map(IntegerMapper.FIRST)
                     .first();
             }
@@ -164,6 +167,43 @@ public class TimelineDAO
                     .createQuery("select last_insert_id()")
                     .map(IntegerMapper.FIRST)
                     .first();
+            }
+        });
+    }
+
+    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime)
+    {
+        return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
+        {
+            @Override
+            public List<TimelineChunkAndTimes> withHandle(final Handle handle) throws Exception
+            {
+                return handle
+                    .createQuery(
+                        "select\n" +
+                            "  h.host_id\n" +
+                            ", h.host_name\n" +
+                            ", k.sample_kind_id\n" +
+                            ", k.sample_kind\n" +
+                            ", c.timeline_times_id\n" +
+                            ", c.sample_count\n" +
+                            ", c.sample_bytes\n" +
+                            ", t.start_time\n" +
+                            ", t.end_time\n" +
+                            ", t.count\n" +
+                            ", t.times\n" +
+                            "from timeline_chunks c\n" +
+                            "join hosts h using (host_id)\n" +
+                            "join sample_kinds k using (sample_kind_id)\n" +
+                            "join timeline_times t using (timeline_times_id)\n" +
+                            "where t.start_time >= :start_time\n" +
+                            "and t.end_time <= :end_time\n" +
+                            "and h.host_name = :host_name\n" +
+                            ";")
+                    .bind("host_name", hostName)
+                    .bind("start_time", TimelineTimes.unixSeconds(startTime))
+                    .bind("end_time", TimelineTimes.unixSeconds(endTime))
+                    .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
             }
         });
     }
