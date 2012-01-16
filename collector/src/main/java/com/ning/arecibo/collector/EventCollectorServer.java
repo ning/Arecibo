@@ -1,5 +1,6 @@
 package com.ning.arecibo.collector;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -130,11 +131,11 @@ public class EventCollectorServer
         return isRunning.get();
     }
 
-    public static void main(String[] args) throws Exception
+    public static void main(final String[] args) throws Exception
     {
-        Injector injector = Guice.createInjector(Stage.PRODUCTION,
+        final Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(),
-            new EmbeddedJettyJerseyModule(),
+            new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.collector.resources")),
             new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),
             new AbstractModule()
@@ -148,7 +149,7 @@ public class EventCollectorServer
             new RMIModule(),
             new CollectorModule());
 
-        EventCollectorServer server = injector.getInstance(EventCollectorServer.class);
+        final EventCollectorServer server = injector.getInstance(EventCollectorServer.class);
         server.run();
     }
 }
