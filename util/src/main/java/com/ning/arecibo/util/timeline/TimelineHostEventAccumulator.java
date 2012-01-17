@@ -70,7 +70,8 @@ public class TimelineHostEventAccumulator {
     }
 
     @SuppressWarnings("unchecked")
-    public void addHostSamples(final HostSamplesForTimestamp samples) {
+    // TODO - we can probably do better than synchronize the whole method
+    public synchronized void addHostSamples(final HostSamplesForTimestamp samples) {
         // You can only add samples at the end of a timeline;
         // If sample time is not >= endtime, log a warning
         // TODO: Figure out if this constraint is realistic, or if
@@ -158,10 +159,11 @@ public class TimelineHostEventAccumulator {
      * TODO: I'm not clear on the synchronization paradigm.  Is it reasonable to
      * have just one thread adding samples, and writing stuff to the db?
      */
-    public void extractAndSaveTimelineChunks() {
+    public void extractAndSaveTimelineChunks()
+    {
         final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, startTime, endTime, times);
         final int timelineTimesId = dao.insertTimelineTimes(dbTimelineTimes);
-        for (TimelineChunkAccumulator accumulator : timelines.values()) {
+        for (final TimelineChunkAccumulator accumulator : timelines.values()) {
             dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId));
         }
     }
@@ -192,19 +194,23 @@ public class TimelineHostEventAccumulator {
         return success;
     }
 
-    public int getHostId() {
+    public int getHostId()
+    {
         return hostId;
     }
 
-    public DateTime getStartTime() {
+    public DateTime getStartTime()
+    {
         return startTime;
     }
 
-    public DateTime getEndTime() {
+    public DateTime getEndTime()
+    {
         return endTime;
     }
 
-    public Map<Integer, TimelineChunkAccumulator> getTimelines() {
+    public Map<Integer, TimelineChunkAccumulator> getTimelines()
+    {
         return timelines;
     }
 }
