@@ -1,11 +1,12 @@
 package com.ning.arecibo.collector.process;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.inject.Inject;
+import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.event.BatchedEvent;
 import com.ning.arecibo.event.MapEvent;
@@ -34,9 +35,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class CollectorEventProcessor implements EventProcessor
 {
-    private final static Logger log = Logger.getLogger(CollectorEventProcessor.class);
+    private static final Logger log = Logger.getLogger(CollectorEventProcessor.class);
 
-    private final Cache<Integer, TimelineHostEventAccumulator> accumulators;
+    private final LoadingCache<Integer, TimelineHostEventAccumulator> accumulators;
     private final TimelineDAO timelineDAO;
     private TimelineRegistry timelineRegistry = null;
 
@@ -51,13 +52,12 @@ public class CollectorEventProcessor implements EventProcessor
         accumulators = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
             .maximumSize(config.getMaxHosts())
-            .expireAfterWrite(config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS)
             .removalListener(new RemovalListener<Integer, TimelineHostEventAccumulator>()
             {
                 @Override
-                public void onRemoval(RemovalNotification<Integer, TimelineHostEventAccumulator> removedObjectNotification)
+                public void onRemoval(final RemovalNotification<Integer, TimelineHostEventAccumulator> removedObjectNotification)
                 {
-                    TimelineHostEventAccumulator accumulator = removedObjectNotification.getValue();
+                    final TimelineHostEventAccumulator accumulator = removedObjectNotification.getValue();
                     if (accumulator == null) {
                         // TODO How often will that happen?
                         log.error("Accumulator already GCed - data lost!");
@@ -77,15 +77,27 @@ public class CollectorEventProcessor implements EventProcessor
             .build(new CacheLoader<Integer, TimelineHostEventAccumulator>()
             {
                 @Override
-                public TimelineHostEventAccumulator load(Integer hostId) throws Exception
+                public TimelineHostEventAccumulator load(final Integer hostId) throws Exception
                 {
                     log.info("Creating new Timeline for hostId: " + hostId);
                     return new TimelineHostEventAccumulator(timelineDAO, hostId);
                 }
             });
+
+        Executors.newSingleThreadScheduledExecutor("TimelinesCommiter").scheduleWithFixedDelay(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // Ideally we would use the CachBuilder and do:
+                //  .expireAfterWrite(config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS)
+                // Unfortunately, this is won't work as eviction only occurs at access time.
+                accumulators.invalidateAll();
+            }
+        }, config.getTimelineLength().getMillis(), config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS);
     }
 
-    public void processEvent(Event evt)
+    public void processEvent(final Event evt)
     {
         if (timelineRegistry == null) {
             timelineRegistry = new TimelineRegistry(timelineDAO);
@@ -102,12 +114,15 @@ public class CollectorEventProcessor implements EventProcessor
             // Update stats
             eventsReceived.getAndAdd(events.size());
 
-            // Lookup the host id
-            final int hostId = getHostIdFromEvent(evt);
-
             // Extract input samples
             final Map<Integer, ScalarSample> scalarSamples = new LinkedHashMap<Integer, ScalarSample>();
             for (final Event event : events) {
+                scalarSamples.clear();
+
+                // Lookup the host id
+                final int hostId = getHostIdFromEvent(event);
+
+                // Extract samples
                 if (event instanceof MapEvent) {
                     final Map<String, Object> samplesMap = ((MapEvent) evt).getMap();
                     convertSamplesToScalarSamples(samplesMap, scalarSamples);
@@ -119,13 +134,14 @@ public class CollectorEventProcessor implements EventProcessor
                 else {
                     log.warn("I don't understand event: " + event);
                     eventsDiscarded.getAndIncrement();
+                    continue;
                 }
-            }
 
-            // In case of batched events, use the timestmap of the first event
-            final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
-            final TimelineHostEventAccumulator accumulator = accumulators.get(hostId);
-            accumulator.addHostSamples(hostSamples);
+                // In case of batched events, use the timestamp of the first event
+                final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
+                final TimelineHostEventAccumulator accumulator = accumulators.get(hostId);
+                accumulator.addHostSamples(hostSamples);
+            }
         }
         catch (RuntimeException ruEx) {
             log.warn(ruEx);
@@ -144,7 +160,7 @@ public class CollectorEventProcessor implements EventProcessor
         return timelineRegistry.getOrAddHost(hostUUID);
     }
 
-    private void convertSamplesToScalarSamples(Map<String, Object> inputSamples, Map<Integer, ScalarSample> outputSamples)
+    private void convertSamplesToScalarSamples(final Map<String, Object> inputSamples, final Map<Integer, ScalarSample> outputSamples)
     {
         if (inputSamples == null) {
             return;
@@ -155,28 +171,28 @@ public class CollectorEventProcessor implements EventProcessor
             final Object sample = inputSamples.get(sampleKind);
 
             if (sample == null) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.NULL, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Void>(SampleOpcode.NULL, null));
             }
             else if (sample instanceof Byte) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.BYTE, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Byte>(SampleOpcode.BYTE, (Byte) sample));
             }
             else if (sample instanceof Short) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.SHORT, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Short>(SampleOpcode.SHORT, (Short) sample));
             }
             else if (sample instanceof Integer) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.INT, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Integer>(SampleOpcode.INT, (Integer) sample));
             }
             else if (sample instanceof Long) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.LONG, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Long>(SampleOpcode.LONG, (Long) sample));
             }
             else if (sample instanceof Float) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.FLOAT, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Float>(SampleOpcode.FLOAT, (Float) sample));
             }
             else if (sample instanceof Double) {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.DOUBLE, sample));
+                outputSamples.put(sampleKindId, new ScalarSample<Double>(SampleOpcode.DOUBLE, (Double) sample));
             }
             else {
-                outputSamples.put(sampleKindId, new ScalarSample(SampleOpcode.STRING, sample.toString()));
+                outputSamples.put(sampleKindId, new ScalarSample<String>(SampleOpcode.STRING, sample.toString()));
             }
         }
     }
@@ -191,5 +207,11 @@ public class CollectorEventProcessor implements EventProcessor
     public long getEventsDiscarded()
     {
         return eventsDiscarded.get();
+    }
+
+    @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getInMemoryTimelines()
+    {
+        return accumulators.size();
     }
 }

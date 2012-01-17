@@ -18,15 +18,7 @@ public class TestTimelineHostEventAccumulator
 {
     private static final int HOST_ID = 1;
 
-    private static final class MockTimelineDAO extends TimelineDAO
-    {
-        public MockTimelineDAO(final IDBI dbi)
-        {
-            super(dbi);
-        }
-    }
-
-    private static final MockTimelineDAO dao = new MockTimelineDAO(null);
+    private static final MockTimelineDAO dao = new MockTimelineDAO();
 
     @Test(groups = "fast")
     public void testSimpleAggregate()
