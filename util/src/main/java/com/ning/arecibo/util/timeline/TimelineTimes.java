@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -95,11 +96,11 @@ public class TimelineTimes extends CachedObject {
     }
 
     public static DateTime dateTimeFromUnixSeconds(final int unixTime) {
-        return new DateTime(((long)unixTime) * 1000L);
+        return new DateTime(((long)unixTime) * 1000L, DateTimeZone.UTC);
     }
 
     public static int unixSeconds(final DateTime dateTime) {
-        final long millis = dateTime.getMillis();
+        final long millis = dateTime.toDateTime(DateTimeZone.UTC).getMillis();
         return (int)(millis / 1000L);
     }
 }

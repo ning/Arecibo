@@ -24,6 +24,7 @@ import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.TimelineRegistry;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.weakref.jmx.Managed;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -92,7 +93,7 @@ public class CollectorEventProcessor implements EventProcessor
                 // Ideally we would use the CachBuilder and do:
                 //  .expireAfterWrite(config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS)
                 // Unfortunately, this is won't work as eviction only occurs at access time.
-                accumulators.invalidateAll();
+                forceCommit();
             }
         }, config.getTimelineLength().getMillis(), config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS);
     }
@@ -213,5 +214,11 @@ public class CollectorEventProcessor implements EventProcessor
     public long getInMemoryTimelines()
     {
         return accumulators.size();
+    }
+
+    @Managed
+    public void forceCommit()
+    {
+        accumulators.invalidateAll();
     }
 }

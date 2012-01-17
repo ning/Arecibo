@@ -14,11 +14,13 @@ import com.ning.arecibo.event.transport.JsonEventSerializer;
 import com.ning.arecibo.util.EmbeddedJettyJerseyModule;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
-import com.ning.arecibo.util.service.DummyServiceLocatorModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.http.client.AsyncHttpClient;
 import org.apache.commons.io.IOUtils;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -27,6 +29,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -96,23 +99,67 @@ public class TestEventCollectorServer
         Assert.assertEquals(processor.getEventsDiscarded(), 0);
 
         final UUID hostId = UUID.randomUUID();
-        for (int i = 1; i < 5; i++) {
-            final MapEvent event = createEvent(hostId);
+        final DateTime startTime = new DateTime(DateTimeZone.UTC);
+        DateTime endTime = startTime;
+        final int sampleCount = 10;
+        for (int i = 0; i < sampleCount; i++) {
+            endTime = startTime.plusMinutes(i);
+            final MapEvent event = createEvent(hostId, endTime.getMillis());
             service.sendREST(event);
 
-            Assert.assertEquals(processor.getEventsReceived(), i);
+            Assert.assertEquals(processor.getEventsReceived(), 1 + i);
             Assert.assertEquals(processor.getEventsDiscarded(), 0);
 
             // Make sure we don't create dups
-            BiMap<Integer, String> hosts = timelineDAO.getHosts();
+            final BiMap<Integer, String> hosts = timelineDAO.getHosts();
             Assert.assertEquals(hosts.values().size(), 1);
             Assert.assertEquals(hosts.values().toArray()[0], hostId.toString());
 
             // Make sure we saw all sample kinds
-            BiMap<Integer, String> sampleKinds = timelineDAO.getSampleKinds();
+            final BiMap<Integer, String> sampleKinds = timelineDAO.getSampleKinds();
             Assert.assertEquals(sampleKinds.values().size(), event.getKeys().size());
             Assert.assertTrue(sampleKinds.values().containsAll(event.getKeys()));
         }
+
+        processor.forceCommit();
+        // Might take a while
+        Thread.sleep(100);
+
+        final List<TimelineChunkAndTimes> chunkAndTimes = timelineDAO.getSamplesByHostName(hostId.toString(), startTime, endTime);
+        // 1 host x 2 sample kinds
+        Assert.assertEquals(chunkAndTimes.size(), 2);
+        // Only one
+        Assert.assertEquals(chunkAndTimes.get(0).getHostName(), hostId.toString());
+        Assert.assertEquals(chunkAndTimes.get(1).getHostName(), hostId.toString());
+        // Two types
+        Assert.assertEquals(chunkAndTimes.get(0).getSampleKind(), "min_heapUsed");
+        Assert.assertEquals(chunkAndTimes.get(1).getSampleKind(), "max_heapUsed");
+
+        // Only one
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getHostId(), 1);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getHostId(), 1);
+        // Two types
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getSampleKindId(), 1);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getSampleKindId(), 2);
+        // Only one
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getTimelineTimesId(), 1);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getTimelineTimesId(), 1);
+        // Number of events sent
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getSampleCount(), sampleCount);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getSampleCount(), sampleCount);
+
+        // Only one
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getHostId(), 1);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getHostId(), 1);
+        // When we started sending events (we store seconds granularity)
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
+        // When we finished sending events (we store seconds granularity)
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getEndTime().getMillis() / 1000, endTime.getMillis() / 1000);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getEndTime().getMillis() / 1000, endTime.getMillis() / 1000);
+        // Each event was sent at a separate time
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getSampleCount(), sampleCount);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getSampleCount(), sampleCount);
     }
 
     private RESTEventService createService(final EventSerializer serializer)
@@ -128,12 +175,12 @@ public class TestEventCollectorServer
         return new RESTEventService(new MockEventServiceChooser(), localServiceDescriptor, restClient);
     }
 
-    private MapEvent createEvent(UUID hostId)
+    private MapEvent createEvent(final UUID hostId, final long ts)
     {
         final Map<String, Object> data = new HashMap<String, Object>();
         data.put("min_heapUsed", Double.valueOf("1.515698888E9"));
         data.put("max_heapUsed", Double.valueOf("1.835511784E9"));
 
-        return new MapEvent(System.currentTimeMillis(), "myType", hostId, data);
+        return new MapEvent(ts, "myType", hostId, data);
     }
 }
