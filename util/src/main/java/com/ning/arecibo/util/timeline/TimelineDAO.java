@@ -9,6 +9,8 @@ import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.TransactionCallback;
+import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.skife.jdbi.v2.util.IntegerMapper;
@@ -125,10 +127,10 @@ public class TimelineDAO
 
     public int insertTimelineTimes(final TimelineTimes timelineTimes)
     {
-        return dbi.withHandle(new HandleCallback<Integer>()
+        return dbi.inTransaction(new TransactionCallback<Integer>()
         {
             @Override
-            public Integer withHandle(Handle handle) throws Exception
+            public Integer inTransaction(Handle handle, TransactionStatus status) throws Exception
             {
                 handle
                     .createStatement("insert into timeline_times (host_id, start_time, end_time, count, times)" +
@@ -149,10 +151,10 @@ public class TimelineDAO
 
     public int insertTimelineChunk(final TimelineChunk timelineChunk)
     {
-        return dbi.withHandle(new HandleCallback<Integer>()
+        return dbi.inTransaction(new TransactionCallback<Integer>()
         {
             @Override
-            public Integer withHandle(Handle handle) throws Exception
+            public Integer inTransaction(Handle handle, TransactionStatus status) throws Exception
             {
                 handle
                     .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, sample_bytes)" +
