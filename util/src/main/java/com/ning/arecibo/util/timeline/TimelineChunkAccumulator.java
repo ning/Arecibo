@@ -77,7 +77,7 @@ public class TimelineChunkAccumulator {
     public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId) {
         final byte[] bytes = getEncodedSamples().getEncodedBytes();
         reset();
-        return new TimelineChunk(hostId, sampleKindId, timelineTimesId, bytes, sampleCount);
+        return new TimelineChunk(0, hostId, sampleKindId, timelineTimesId, bytes, sampleCount);
     }
 
     private synchronized void addLastSample() {

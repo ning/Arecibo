@@ -45,13 +45,14 @@ public class TimelineChunkAndTimes
         {
             try {
                 // Construct the TimelineChunk
+                final int sampleTimelineId = rs.getInt("sample_timeline_id");
                 final int hostId = rs.getInt("host_id");
                 final int sampleKindId = rs.getInt("sample_kind_id");
                 final int timelineIntervalId = rs.getInt("timeline_times_id");
                 final int sampleCount = rs.getInt("sample_count");
                 final Blob blobSamples = rs.getBlob("sample_bytes");
                 final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
-                final TimelineChunk timelineChunk = new TimelineChunk(hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
+                final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
 
                 // Construct the TimelineTimes
                 final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
@@ -164,7 +165,8 @@ public class TimelineChunkAndTimes
             for (int i = 0; i < sampleCount; i++) {
                 if (!firstSamples) {
                     builder.append(",");
-                } else {
+                }
+                else {
                     firstSamples = false;
                 }
 

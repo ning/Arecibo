@@ -22,6 +22,7 @@ public class TestTimelineChunkAndTimes
     private static final int HOST_ID = 1242;
     private static final String SAMPLE_KIND = "JVM_Heap_Used";
     private static final int SAMPLE_KIND_ID = 12;
+    private static final int SAMPLE_TIMELINE_ID = 30;
     private static final int TIMELINE_TIMES_ID = 11;
 
     @Test(groups = "fast")
@@ -40,7 +41,7 @@ public class TestTimelineChunkAndTimes
         }
 
         final TimelineTimes timelineTimes = new TimelineTimes(TIMELINE_TIMES_ID, HOST_ID, startTime, times.get(times.size() - 1), times);
-        final TimelineChunk timelineChunk = new TimelineChunk(HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, out.toByteArray(), sampleCount);
+        final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, out.toByteArray(), sampleCount);
 
         final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, timelineChunk, timelineTimes);
 
