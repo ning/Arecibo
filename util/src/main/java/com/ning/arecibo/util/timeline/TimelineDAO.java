@@ -187,6 +187,7 @@ public class TimelineDAO
                             ", h.host_name\n" +
                             ", k.sample_kind_id\n" +
                             ", k.sample_kind\n" +
+                            ", c.sample_timeline_id\n" +
                             ", c.timeline_times_id\n" +
                             ", c.sample_count\n" +
                             ", c.sample_bytes\n" +
