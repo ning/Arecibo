@@ -173,7 +173,7 @@ public class TimelineChunkAndTimes
                 builder
                     .append(timestamps.getSampleTimestamp(sampleNumber + i))
                     .append(",")
-                    .append(value.toString());
+                    .append(value == null ? 0 : value.toString());
             }
         }
 
