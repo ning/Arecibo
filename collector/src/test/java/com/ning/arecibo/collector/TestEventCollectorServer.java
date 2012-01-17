@@ -160,6 +160,11 @@ public class TestEventCollectorServer
         // Each event was sent at a separate time
         Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getSampleCount(), sampleCount);
         Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getSampleCount(), sampleCount);
+        // Check all the timelines events
+        for (int i = 0; i < sampleCount; i++) {
+            Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getSampleTimestamp(i).getMillis() / 1000, startTime.plusMinutes(i).getMillis() / 1000);
+            Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getSampleTimestamp(i).getMillis() / 1000, startTime.plusMinutes(i).getMillis() / 1000);
+        }
     }
 
     private RESTEventService createService(final EventSerializer serializer)

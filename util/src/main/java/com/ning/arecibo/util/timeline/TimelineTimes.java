@@ -1,44 +1,38 @@
 package com.ning.arecibo.util.timeline;
 
-import java.io.DataInputStream;
-import java.io.IOException;
+import com.ning.arecibo.util.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
+
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
+public class TimelineTimes extends CachedObject
+{
+    private static final Logger log = Logger.getLogger(TimelineTimes.class);
 
-import com.ning.arecibo.util.Logger;
-
-public class TimelineTimes extends CachedObject {
-    private static Logger log = Logger.getLogger(TimelineTimes.class);
-    public static final ResultSetMapper<TimelineTimes> mapper = new ResultSetMapper<TimelineTimes>() {
+    public static final ResultSetMapper<TimelineTimes> mapper = new ResultSetMapper<TimelineTimes>()
+    {
 
         @Override
-        public TimelineTimes map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
-            try {
-                final int timelineIntervalId = rs.getInt("timeline_interval_id");
-                final int hostId = rs.getInt("host_id");
-                final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
-                final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
-                final int count = rs.getInt("count");
-                final Blob blobTimes = rs.getBlob("timeline_times");
-                final DataInputStream stream = new DataInputStream(blobTimes.getBinaryStream());
-                final List<DateTime> timelineTimes = new ArrayList<DateTime>(count);
-                for (int i=0; i<count; i++) {
-                    timelineTimes.add(TimelineTimes.dateTimeFromUnixSeconds(stream.readInt()));
-                }
-                return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, timelineTimes);
-            }
-            catch (IOException e) {
-                log.error(e, "Exception in accumulateTimelines()");
-                return null;
-            }
+        public TimelineTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
+        {
+            final int timelineIntervalId = rs.getInt("timeline_interval_id");
+            final int hostId = rs.getInt("host_id");
+            final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
+            final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
+            final int count = rs.getInt("count");
+            final Blob blobTimes = rs.getBlob("timeline_times");
+            final byte[] samples = blobTimes.getBytes(1, (int) blobTimes.length());
+
+            return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, samples, count);
         }
     };
 
@@ -47,7 +41,8 @@ public class TimelineTimes extends CachedObject {
     private final DateTime endTime;
     private final List<DateTime> times;
 
-    public TimelineTimes(long timelineIntervalId, int hostId, DateTime startTime, DateTime endTime, List<DateTime> times) {
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final List<DateTime> times)
+    {
         super(timelineIntervalId);
         this.hostId = hostId;
         this.startTime = startTime;
@@ -55,24 +50,39 @@ public class TimelineTimes extends CachedObject {
         this.times = times;
     }
 
-    public int getHostId() {
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final byte[] times, final int count)
+    {
+        this(timelineIntervalId, hostId, startTime, endTime, new ArrayList<DateTime>());
+
+        final ByteBuffer byteBuffer = ByteBuffer.wrap(times);
+        final IntBuffer intBuffer = byteBuffer.asIntBuffer();
+        for (int i = 0; i < count; i++) {
+            this.times.add(TimelineTimes.dateTimeFromUnixSeconds(intBuffer.get(i)));
+        }
+    }
+
+    public int getHostId()
+    {
         return hostId;
     }
 
-    public DateTime getStartTime() {
+    public DateTime getStartTime()
+    {
         return startTime;
     }
 
-    public DateTime getEndTime() {
+    public DateTime getEndTime()
+    {
         return endTime;
     }
 
-
-    public int getSampleCount() {
+    public int getSampleCount()
+    {
         return times.size();
     }
 
-    public DateTime getSampleTimestamp(final int sampleNumber) {
+    public DateTime getSampleTimestamp(final int sampleNumber)
+    {
         if (sampleNumber < 0 || sampleNumber >= times.size()) {
             return null;
         }
@@ -81,26 +91,35 @@ public class TimelineTimes extends CachedObject {
         }
     }
 
-    public int getSampleNumberForTimestamp(final DateTime timestamp) {
+    public int getSampleNumberForTimestamp(final DateTime timestamp)
+    {
         // TODO: do the binary search
         throw new IllegalArgumentException("NYI");
     }
 
-    public int[] getIntTimeArray() {
+    public byte[] getTimeArray()
+    {
         final int[] unixTimes = new int[times.size()];
-        int i = 0;
-        for (DateTime dateTime : times) {
-            unixTimes[i] = unixSeconds(dateTime);
+
+        for (int i = 0; i < times.size(); i++) {
+            unixTimes[i] = unixSeconds(times.get(i));
         }
-        return unixTimes;
+
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(unixTimes.length * 4);
+        final IntBuffer intBuffer = byteBuffer.asIntBuffer();
+        intBuffer.put(unixTimes);
+
+        return byteBuffer.array();
     }
 
-    public static DateTime dateTimeFromUnixSeconds(final int unixTime) {
-        return new DateTime(((long)unixTime) * 1000L, DateTimeZone.UTC);
+    public static DateTime dateTimeFromUnixSeconds(final int unixTime)
+    {
+        return new DateTime(((long) unixTime) * 1000L, DateTimeZone.UTC);
     }
 
-    public static int unixSeconds(final DateTime dateTime) {
+    public static int unixSeconds(final DateTime dateTime)
+    {
         final long millis = dateTime.toDateTime(DateTimeZone.UTC).getMillis();
-        return (int)(millis / 1000L);
+        return (int) (millis / 1000L);
     }
 }

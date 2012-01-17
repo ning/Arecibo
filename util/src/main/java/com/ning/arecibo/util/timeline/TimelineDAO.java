@@ -12,10 +12,8 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.TransactionCallback;
 import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.tweak.HandleCallback;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.skife.jdbi.v2.util.IntegerMapper;
 
-import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -139,7 +137,7 @@ public class TimelineDAO
                     .bind("start_time", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
                     .bind("end_time", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
                     .bind("count", timelineTimes.getSampleCount())
-                    .bind("times", timelineTimes.getIntTimeArray())
+                    .bind("times", timelineTimes.getTimeArray())
                     .execute();
                 return handle
                     .createQuery("select last_insert_id()")

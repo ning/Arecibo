@@ -10,12 +10,10 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -43,38 +41,27 @@ public class TimelineChunkAndTimes
         @Override
         public TimelineChunkAndTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
         {
-            try {
-                // Construct the TimelineChunk
-                final int sampleTimelineId = rs.getInt("sample_timeline_id");
-                final int hostId = rs.getInt("host_id");
-                final int sampleKindId = rs.getInt("sample_kind_id");
-                final int timelineIntervalId = rs.getInt("timeline_times_id");
-                final int sampleCount = rs.getInt("sample_count");
-                final Blob blobSamples = rs.getBlob("sample_bytes");
-                final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
-                final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
+            // Construct the TimelineChunk
+            final int sampleTimelineId = rs.getInt("sample_timeline_id");
+            final int hostId = rs.getInt("host_id");
+            final int sampleKindId = rs.getInt("sample_kind_id");
+            final int timelineIntervalId = rs.getInt("timeline_times_id");
+            final int sampleCount = rs.getInt("sample_count");
+            final Blob blobSamples = rs.getBlob("sample_bytes");
+            final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
 
-                // Construct the TimelineTimes
-                final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
-                final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
-                final int count = rs.getInt("count");
-                final Blob blobTimes = rs.getBlob("times");
-                final DataInputStream stream = new DataInputStream(blobTimes.getBinaryStream());
-                final List<DateTime> timelineTimes = new ArrayList<DateTime>(count);
-                for (int i = 0; i < count; i++) {
-                    timelineTimes.add(TimelineTimes.dateTimeFromUnixSeconds(stream.readInt()));
-                }
-                final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, timelineTimes);
+            // Construct the TimelineTimes
+            final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
+            final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
+            final int count = rs.getInt("count");
+            final byte[] blobTimes = rs.getBytes("times");
+            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, blobTimes, count);
 
-                final String hostName = rs.getString("host_name");
-                final String sampleKind = rs.getString("sample_kind");
+            final String hostName = rs.getString("host_name");
+            final String sampleKind = rs.getString("sample_kind");
 
-                return new TimelineChunkAndTimes(hostName, sampleKind, timelineChunk, timelineTimesObject);
-            }
-            catch (IOException e) {
-                log.error(e, "Exception in TimelineChunkAndTimes mapper");
-                return null;
-            }
+            return new TimelineChunkAndTimes(hostName, sampleKind, timelineChunk, timelineTimesObject);
         }
     };
 
