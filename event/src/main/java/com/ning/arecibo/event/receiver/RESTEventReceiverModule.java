@@ -1,49 +1,57 @@
 package com.ning.arecibo.event.receiver;
 
-import java.util.List;
-import org.weakref.jmx.guice.ExportBuilder;
-import org.weakref.jmx.guice.MBeanModule;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.ning.arecibo.event.transport.EventSerializer;
 import com.ning.arecibo.event.transport.JavaEventSerializer;
 import com.ning.arecibo.event.transport.JsonEventSerializer;
 import com.ning.arecibo.event.transport.MapEventSerializer;
 import com.ning.arecibo.util.ArrayListProvider;
+import org.weakref.jmx.guice.ExportBuilder;
+import org.weakref.jmx.guice.MBeanModule;
+
+import java.util.List;
 
 public class RESTEventReceiverModule extends AbstractModule
 {
-    public static final String ENDPOINT_PREFIX = "/1.0";
-    public static final Named CONTAINER_ANNOTATION = Names.named(ENDPOINT_PREFIX);
+    private static final List<Class<? extends EventSerializer>> DEFAULT_SERIALIZERS = ImmutableList.of(JavaEventSerializer.class, JsonEventSerializer.class, MapEventSerializer.class);
 
     private final Class<? extends BaseEventProcessor> clazz;
-	private final String jmxObjectName;
+    private final String jmxObjectName;
+    private final List<Class<? extends EventSerializer>> serializers;
 
-	public RESTEventReceiverModule(Class<? extends BaseEventProcessor> clazz, String jmxObjectName)
-	{
-		this.clazz = clazz;
-		this.jmxObjectName = jmxObjectName;
-	}
+    public RESTEventReceiverModule(final Class<? extends BaseEventProcessor> clazz, final String jmxObjectName)
+    {
+        this(clazz, jmxObjectName, DEFAULT_SERIALIZERS);
+    }
 
-	@Override
-	public void configure()
-	{
-		bind(clazz).asEagerSingleton();
-		bind(BaseEventProcessor.class).to(clazz).asEagerSingleton();
+    public RESTEventReceiverModule(final Class<? extends BaseEventProcessor> clazz, final String jmxObjectName, final List<Class<? extends EventSerializer>> serializers)
+    {
+        this.clazz = clazz;
+        this.jmxObjectName = jmxObjectName;
+        this.serializers = serializers;
+    }
 
-		bind(new TypeLiteral<List<EventSerializer>>(){}).annotatedWith(EventSerializers.class)
-		    .toProvider(new ArrayListProvider<EventSerializer>()
-		                    .add(JavaEventSerializer.class)
-		                    .add(JsonEventSerializer.class)
-		                    .add(MapEventSerializer.class));
+    @Override
+    public void configure()
+    {
+        bind(clazz).asEagerSingleton();
+        bind(BaseEventProcessor.class).to(clazz).asEagerSingleton();
 
-		bind(EventParser.class).asEagerSingleton();
-		bind(RESTEventEndPoint.class).asEagerSingleton();
+        final ArrayListProvider<EventSerializer> eventSerializerProvider = new ArrayListProvider<EventSerializer>();
+        for (final Class<? extends EventSerializer> serializer : serializers) {
+            eventSerializerProvider.add(serializer);
+        }
 
-		ExportBuilder builder = MBeanModule.newExporter(binder());
+        bind(new TypeLiteral<List<EventSerializer>>()
+        {
+        }).annotatedWith(EventSerializers.class).toProvider(eventSerializerProvider);
 
+        bind(EventParser.class).asEagerSingleton();
+        bind(RESTEventEndPoint.class).asEagerSingleton();
+
+        final ExportBuilder builder = MBeanModule.newExporter(binder());
         builder.export(BaseEventProcessor.class).as(jmxObjectName);
-	}
+    }
 }
