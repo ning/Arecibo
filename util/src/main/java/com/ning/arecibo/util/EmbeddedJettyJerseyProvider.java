@@ -56,6 +56,7 @@ public class EmbeddedJettyJerseyProvider implements Provider<Server>
         server.setGracefulShutdown(1000);
 
         ServletContextHandler root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
+        root.setResourceBase(config.getResourceBase());
 
         // Make sure Guice filter all requests
         final FilterHolder filterHolder = new FilterHolder(GuiceFilter.class);

@@ -32,4 +32,8 @@ public abstract class EmbeddedJettyConfig
     @Config("arecibo.jetty.requestLog.logDir")
     @Default("logs")
     public abstract String getRequestLogPath();
+
+    @Config("arecibo.jetty.resourceBase")
+    @Default("src/main/webapp")
+    public abstract String getResourceBase();
 }
