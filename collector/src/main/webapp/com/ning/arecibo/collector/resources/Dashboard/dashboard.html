@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arecibo dashboard</title>
+    <link href="/static/bootstrap-v1.4.0.min.css" rel="stylesheet">
+    <style type="text/css">
+        /* D3 */
+        line {
+          stroke: black;
+        }
+
+        path {
+            fill: none;
+            stroke: green;
+        }
+
+        /* Misc. */
+        .show-grid {
+            text-align: center;
+        }
+
+        #graphs-grid {
+            margin-top: 50px;
+        }
+    </style>
+
+    <script type="text/javascript" src="/static/d3-v2.7.2.min.js"></script>
+    <script type="text/javascript" src="/static/d3-v2.7.2.time.min.js"></script>
+    <script type="text/javascript" src="/static/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="/static/bootstrap-dropdown-v1.4.0.js"></script>
+
+    <script type="text/javascript">
+        function findHosts() {
+            return ["apache1.company.com", "apache2.company.com", "ganglia1.company.com"];
+        }
+
+        function populateHosts() {
+            var hosts = findHosts();
+            for (var h = 0; h < hosts.length; h++) {
+                $("#dropdown-hosts").append("<li><a href=\"#\">" + hosts[h] + "</a></li>");
+            }
+        }
+
+        $(document).ready(function() {
+            populateHosts();
+
+            displayGraph(data, "#graphLeft", 300, 300);
+            displayGraph(data, "#graphMiddle", 300, 300);
+            displayGraph(data, "#graphRight", 300, 300);
+        });
+    </script>
+</head>
+<body>
+    <div class="topbar">
+      <div class="topbar-inner">
+        <div class="container-fluid">
+          <a class="brand" href="/">Arecibo</a>
+          <ul class="nav">
+            <li class="dropdown" data-dropdown="dropdown">
+                <a href="#" class="dropdown-toggle">Hosts</a>
+                <ul class="dropdown-menu" id="dropdown-hosts"></ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="graphs-grid">
+        <div class="row show-grid" title="Arecibo Graphs">
+            <div class="span-one-third" id="graphLeft"></div>
+            <div class="span-one-third" id="graphMiddle"></div>
+            <div class="span-one-third" id="graphRight"></div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+    input = "1326845486,1666666.6666666667,1326845486,0,1326845487,0,1326845489,0,1326845490,0,1326845493,0,1326845495,0,1326845498,0,1326845506,0,1326845508,0,1326845512,1000000.0,1326845513,0,1326845516,0,1326845516,0,1326845517,0,1326845519,0,1326845520,0,1326845523,0,1326845525,0,1326845528,0,1326845536,1333288.890370321,1326845538,0,1326845542,0,1326845543,0,1326845546,0,1326845546,0,1326845547,0,1326845549,0,1326845550,0,1326845553,0,1326845555,1333377.7792593087,1326845558,0,1326845566,0,1326845568,0,1326845572,0,1326845573,0,1326845576,0,1326845576,0,1326845577,0,1326845579,0,1326845580,1333333.3333333333,1326845583,0,1326845585,0,1326845588,0,1326845596,0,1326845598,0,1326845602,0,1326845603,0,1326845606,0,1326845606,0,1326845607,1666666.6666666667,1326845609,0,1326845610,0,1326845613,0,1326845615,0,1326845618,0,1326845626,0,1326845628,0,1326845632,0,1326845633,0,1326845636,1333333.3333333333,1326845636,0,1326845637,0,1326845639,0,1326845640,0,1326845643,0,1326845645,0,1326845648,0,1326845656,0,1326845658,0,1326845662,1333288.890370321,1326845663,0,1326845666,0,1326845666,0,1326845667,0,1326845669,0,1326845670,0,1326845673,0,1326845675,0,1326845678,0,1326845686,1333377.7792593087,1326845688,0,1326845692,0,1326845693,0,1326845696,0,1326845696,0,1326845697,0,1326845699,0,1326845700,0,1326845703,0,1326845705,1666611.1129629011,1326845708,0,1326845716,0,1326845718,0,1326845722,0,1326845723,0,1326845726,0,1326845726,0,1326845727,0,1326845729,0,1326845730,2000066.668888963";
+
+    csv = input.split(",");
+    var i;
+    var data = [];
+    for (i = 0; i < csv.length; i++) {
+        tmp = {x:0, y:0};
+        tmp.x = csv[i];
+        tmp.y = csv[i+1];
+        data.push(tmp);
+        i++;
+    }
+    
+    //console.log(data);
+
+// Data: [{x:, y:}, {}, ...]
+function displayGraph(data, id, width, height) {
+    // Create an SVG element inside the div that fills 100% of the div
+    var graph = d3.select(id).append("svg:svg").attr("width", "100%").attr("height", "100%");
+
+    // X scale
+    var x = d3.time.scale()
+            .domain([d3.min(data, function(d) { return getDate(d.x); }), d3.max(data, function(d) { return getDate(d.x); })]) // Data minimum and maximum
+            .range([0, width]); // The pixels to map to, e.g., the width of the diagram
+    // Y scale
+    var y = d3.scale.linear()
+            .domain([d3.min(data, function(d) { return d.y; }), d3.max(data, function(d) { return d.y; })]) // Data minimum and maximum
+            .range([0, height]); // The pixels to map to, e.g., the width of the diagram
+
+    // Create a line object
+    var line = d3.svg.line()
+        // assign the X function to plot our line as we wish
+        .x(function(d,i) { 
+            //console.log('Plotting X value for data point: ' + d.x + ' using index: ' + i + ' to be at: ' + x(d.x) + ' using our xScale.');
+            // return the X coordinate where we want to plot this datapoint
+            return x(getDate(d.x)); 
+        })
+        .y(function(d, i) { 
+            //console.log('Plotting Y value for data point: ' + d.y + ' using index: ' + i + ' to be at: ' + y(d.y) + ' using our yScale.');
+            // return the Y coordinate where we want to plot this datapoint
+            return height - y(d.y); 
+        });
+
+    // Create the graph with the line
+    graph.selectAll("path")
+        .data([data])
+        .enter()
+        .append("svg:path")
+        .attr("class", "line")
+        .attr("d", line);
+
+    var rules = graph.selectAll("path.rule")
+                 .data(x.ticks(3))
+                 .enter().append("svg:g")
+                 .attr("class", "rule");
+
+    // Draw horizontal grid lines
+    rules.append("svg:line")
+         .attr("class", function(d) { return d ? null : "axis"; })
+         .data(y.ticks(5))
+         .attr("y1", function(d) { return height - y(d); })
+         .attr("y2", function(d) { return height - y(d); })
+         .attr("x1", 0)
+         .attr("x2", width)
+         .style("stroke", "#ccc")
+         .style("stroke-width", 2);
+
+    // Place Y axis ticks labels
+    rules.append("svg:text")
+         .attr("x", 0)
+         .attr("y", function(d) { return height - y(d); })
+         .attr("dx", -1)
+         .attr("text-anchor", "end")
+         .text(String);
+
+    // Draw vertical grid lines
+    rules.append("svg:line")
+         .attr("x1", x)
+         .attr("x2", x)
+         .attr("y1", 0)
+         .attr("y2", height - 1)
+         .style("stroke", "#ccc")
+         .style("stroke-width", 2);
+
+    // Place X axis ticks labels
+    rules.append("svg:text")
+         .attr("x", x)
+         .attr("y", height + 3)
+         .attr("dy", ".71em")
+         .attr("text-anchor", "middle")
+         .text(x.tickFormat(10));
+
+}
+
+function getDate(d) {
+    return new Date(d * 1000);
+}
+    </script>
+</body>
+</html>
