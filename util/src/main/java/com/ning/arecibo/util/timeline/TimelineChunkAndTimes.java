@@ -158,7 +158,7 @@ public class TimelineChunkAndTimes
                 }
 
                 builder
-                    .append(timestamps.getSampleTimestamp(sampleNumber + i))
+                    .append(TimelineTimes.unixSeconds(timestamps.getSampleTimestamp(sampleNumber + i)))
                     .append(",")
                     .append(value == null ? 0 : value.toString());
             }

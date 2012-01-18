@@ -31,18 +31,42 @@
 
     <script type="text/javascript">
         function findHosts() {
-            return ["apache1.company.com", "apache2.company.com", "ganglia1.company.com"];
+            $.ajax({
+                url: "/rest/1.0/hosts",
+                dataType: "jsonp",
+                cache : false,
+                jsonp : "callback",
+                jsonpCallback: "populateHosts"
+            });
         }
 
-        function populateHosts() {
-            var hosts = findHosts();
-            for (var h = 0; h < hosts.length; h++) {
-                $("#dropdown-hosts").append("<li><a href=\"#\">" + hosts[h] + "</a></li>");
-            }
+        function populateHosts(hosts) {
+            //console.log(hosts);
+            $.each(hosts, function(id, host) {
+                $("#dropdown-hosts").append("<li><a href=\"#\" id=\"host_"+ id + "\">" + host + "</a></li>");
+            });
+        }
+
+        function findSampleKinds() {
+            $.ajax({
+                url: "/rest/1.0/sample_kinds",
+                dataType: "jsonp",
+                cache : false,
+                jsonp : "callback",
+                jsonpCallback: "populateSampleKinds"
+            });
+        }
+
+        function populateSampleKinds(sampleKinds) {
+            //console.log(sampleKinds);
+            $.each(sampleKinds, function(id, sampleKind) {
+                $("#dropdown-sampleKinds").append("<li><a href=\"#\" id=\"sample_kind_"+ id + "\">" + sampleKind + "</a></li>");
+            });
         }
 
         $(document).ready(function() {
-            populateHosts();
+            findHosts();
+            findSampleKinds();
 
             displayGraph(data, "#graphLeft", 300, 300);
             displayGraph(data, "#graphMiddle", 300, 300);
@@ -59,6 +83,10 @@
             <li class="dropdown" data-dropdown="dropdown">
                 <a href="#" class="dropdown-toggle">Hosts</a>
                 <ul class="dropdown-menu" id="dropdown-hosts"></ul>
+            </li>
+            <li class="dropdown" data-dropdown="dropdown">
+                <a href="#" class="dropdown-toggle">Sample kinds</a>
+                <ul class="dropdown-menu" id="dropdown-sampleKinds"></ul>
             </li>
           </ul>
         </div>

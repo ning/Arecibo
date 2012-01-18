@@ -1,11 +1,13 @@
 package com.ning.arecibo.collector.resources;
 
+import com.google.common.collect.BiMap;
 import com.google.inject.Singleton;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.util.JSONPObject;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -40,23 +42,28 @@ public class HostDataResource
     @GET
     @Path("/hosts")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getHosts()
+    public Response getHosts(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
-        return Response.ok(dao.getHosts()).build();
+        final BiMap<Integer, String> hosts = dao.getHosts();
+        final JSONPObject object = new JSONPObject(callback, hosts);
+        return Response.ok(object).build();
     }
 
     @GET
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getSampleKinds()
+    public Response getSampleKinds(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
-        return Response.ok(dao.getSampleKinds()).build();
+        final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
+        final JSONPObject object = new JSONPObject(callback, sampleKinds);
+        return Response.ok(object).build();
     }
 
     @GET
     @Path("/{host}/samples")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getSamplesByHostName(@PathParam("host") final String hostName,
+    public Response getSamplesByHostName(@QueryParam("callback") @DefaultValue("callback") final String callback,
+                                         @PathParam("host") final String hostName,
                                          @QueryParam("from") @DefaultValue("0") final String from,
                                          @QueryParam("to") @DefaultValue("") final String to)
     {
@@ -88,7 +95,8 @@ public class HostDataResource
             generator.writeEndObject();
             generator.close();
 
-            return Response.ok(out.toString()).build();
+            final JSONPObject object = new JSONPObject(callback, out.toString());
+            return Response.ok(object).build();
         }
         catch (IOException e) {
             log.error(e);
