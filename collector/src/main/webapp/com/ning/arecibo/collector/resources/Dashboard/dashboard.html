@@ -3,6 +3,8 @@
 <head>
     <title>Arecibo dashboard</title>
     <link href="/static/bootstrap-v1.4.0.min.css" rel="stylesheet">
+    <link href="/static/addyosmani-jquery-ui-1.8.16.custom-v0.23-2.css" rel="stylesheet">
+    <link href="/static/addyosmani-jquery-ui-bootstrap-daterangepicker-v0.23-2.css" rel="stylesheet">
     <style type="text/css">
         /* D3 */
         line {
@@ -13,6 +15,14 @@
             fill: none;
             stroke: green;
         }
+
+        /* DateTime picker */
+        .ui-div .ui-widget-header { margin-bottom: 8px; }
+        .ui-timepicker-div dl { text-align: left; }
+        .ui-timepicker-div dl dt { height: 25px; margin-bottom: -25px; }
+        .ui-timepicker-div dl dd { margin: 0 10px 10px 65px; }
+        .ui-timepicker-div td { font-size: 90%; }
+        .ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
 
         /* Misc. */
         .show-grid {
@@ -27,9 +37,13 @@
     <script type="text/javascript" src="/static/d3-v2.7.2.min.js"></script>
     <script type="text/javascript" src="/static/d3-v2.7.2.time.min.js"></script>
     <script type="text/javascript" src="/static/jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="/static/jquery-ui-1.8.17.custom.min.js"></script>
     <script type="text/javascript" src="/static/bootstrap-dropdown-v1.4.0.js"></script>
+    <script type="text/javascript" src="/static/jquery-ui-timepicker-addon-v0.9.8.js"></script>
 
     <script type="text/javascript">
+        /* Prepare the Hosts menu */
+
         function findHosts() {
             $.ajax({
                 url: "/rest/1.0/hosts",
@@ -46,6 +60,8 @@
                 $("#dropdown-hosts").append("<li><a href=\"#\" id=\"host_"+ id + "\">" + host + "</a></li>");
             });
         }
+
+        /* Prepare the Sample kinds menu */
 
         function findSampleKinds() {
             $.ajax({
@@ -64,9 +80,66 @@
             });
         }
 
+        /* Prepare the date time picker */
+
+        function setupDateTimePickers() {
+            $('#samples_start').datetimepicker({
+                hourGrid: 4,
+                minuteGrid: 10,
+                onClose: function(dateText, inst) {
+                    var endDateTextBox = $('#samples_end');
+                    if (endDateTextBox.val() != '') {
+                        var testStartDate = new Date(dateText);
+                        var testEndDate = new Date(endDateTextBox.val());
+                        if (testStartDate > testEndDate)
+                            endDateTextBox.val(dateText);
+                    }
+                    else {
+                        endDateTextBox.val(dateText);
+                    }
+                },
+                onSelect: function (selectedDateTime){
+                    var start = $(this).datetimepicker('getDate');
+                    $('#samples_end').datetimepicker('option', 'minDate', new Date(start.getTime()));
+                }
+            });
+
+            $('#samples_end').datetimepicker({
+                hourGrid: 4,
+                minuteGrid: 10,
+                onClose: function(dateText, inst) {
+                    var startDateTextBox = $('#samples_start');
+                    if (startDateTextBox.val() != '') {
+                        var testStartDate = new Date(startDateTextBox.val());
+                        var testEndDate = new Date(dateText);
+                        if (testStartDate > testEndDate)
+                            startDateTextBox.val(dateText);
+                    }
+                    else {
+                        startDateTextBox.val(dateText);
+                    }
+                },
+                onSelect: function (selectedDateTime){
+                    var end = $(this).datetimepicker('getDate');
+                    $('#samples_start').datetimepicker('option', 'maxDate', new Date(end.getTime()));
+                }
+            });
+        }
+
+        function getStartDate() {
+            return $('#samples_start').datetimepicker('getDate');
+        }
+
+        function getEndDate() {
+            return $('#samples_end').datetimepicker('getDate');
+        }
+
+        /* Initialize the page */
+
         $(document).ready(function() {
             findHosts();
             findSampleKinds();
+            setupDateTimePickers();
 
             displayGraph(data, "#graphLeft", 300, 300);
             displayGraph(data, "#graphMiddle", 300, 300);
@@ -89,15 +162,24 @@
                 <ul class="dropdown-menu" id="dropdown-sampleKinds"></ul>
             </li>
           </ul>
+          <form action="">
+              <input type="text" class="medium" name="samples_start" id="samples_start" value="" placeholder="Start time" />&nbsp;<input type="text" class="medium" name="samples_end" id="samples_end" value="" placeholder="End time" />
+          </form>
         </div>
       </div>
     </div>
 
     <div class="container" id="graphs-grid">
-        <div class="row show-grid" title="Arecibo Graphs">
-            <div class="span-one-third" id="graphLeft"></div>
-            <div class="span-one-third" id="graphMiddle"></div>
-            <div class="span-one-third" id="graphRight"></div>
+        <div class="content">
+            <div class="page-header">
+                <h1>Arecibo dashbord <small>prototype</small></h1>
+            </div>
+
+            <div class="row show-grid" title="Arecibo Graphs">
+                <div class="span-one-third" id="graphLeft"></div>
+                <div class="span-one-third" id="graphMiddle"></div>
+                <div class="span-one-third" id="graphRight"></div>
+            </div>
         </div>
     </div>
 
