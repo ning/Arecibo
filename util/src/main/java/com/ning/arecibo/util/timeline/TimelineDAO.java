@@ -180,7 +180,7 @@ public class TimelineDAO
             {
                 return handle
                     .createQuery(
-                        "select\n" +
+                        "select distinct\n" +
                             "  h.host_id\n" +
                             ", h.host_name\n" +
                             ", k.sample_kind_id\n" +
@@ -219,7 +219,7 @@ public class TimelineDAO
             {
                 return handle
                     .createQuery(
-                        "select\n" +
+                        "select distinct\n" +
                             "  h.host_id\n" +
                             ", h.host_name\n" +
                             ", k.sample_kind_id\n" +
