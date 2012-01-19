@@ -200,6 +200,7 @@ public class TimelineDAO
                             "where t.start_time >= :start_time\n" +
                             "and t.end_time <= :end_time\n" +
                             "and h.host_name = :host_name\n" +
+                            "order by start_time asc\n" +
                             ";")
                     .bind("host_name", hostName)
                     .bind("start_time", TimelineTimes.unixSeconds(startTime))
@@ -239,6 +240,7 @@ public class TimelineDAO
                             "and t.end_time <= :end_time\n" +
                             "and h.host_name = :host_name\n" +
                             "and k.sample_kind = :sample_kind\n" +
+                            "order by start_time asc\n" +
                             ";")
                     .bind("host_name", hostName)
                     .bind("sample_kind", sampleKind)

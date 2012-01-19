@@ -29,6 +29,10 @@
             text-align: center;
         }
 
+        input.ui-autocomplete-input {
+            color: white;
+        }
+
         #graphs-grid {
             margin-top: 50px;
         }
@@ -155,6 +159,7 @@
         }
 
         function populateSamples(payload) {
+            payload = $.parseJSON(payload);
             // samples is an array in the form {memoryPoolUsed: "0,1,1,10,..."}, {ProcessCpuTime: "0,1,1,10,..."}
             var samples = payload.samples;
             for (var sampleKind in samples) {
@@ -194,8 +199,20 @@
             findSampleKinds();
             setupDateTimePickers();
 
+            // Retrieve user's preferences
+            $("#host_name").val(localStorage.getItem("arecibo_latest_host_name_lookup"));
+            $("#sample_kind").val(localStorage.getItem("arecibo_latest_sample_kind_lookup"));
+
             $("#crunch").click(function () {
-                findSamples($("#host_name").val(), $("#sample_kind").val());
+                // Store locally the latest search
+                var host_name_lookup = $("#host_name").val();
+                var sample_kind_lookup = $("#sample_kind").val();
+                try {
+                    localStorage.setItem("arecibo_latest_host_name_lookup", host_name_lookup);
+                    localStorage.setItem("arecibo_latest_sample_kind_lookup", sample_kind_lookup);
+                } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
+
+                findSamples(host_name_lookup, sample_kind_lookup);
             });
         });
     </script>
@@ -212,7 +229,7 @@
           </ul>
           <ul class="nav">
             <form action="">
-                 <input type="text" class="medium" name="sample_kind" id="sample_kind" value="" placeholder="Sample kind" />
+                 <input type="text" class="xlarge" name="sample_kind" id="sample_kind" value="" placeholder="Sample kind" />
              </form>
           </ul>
           <ul class="nav">
@@ -331,7 +348,6 @@ function displayGraph(data, id, width, height) {
          .attr("dy", ".71em")
          .attr("text-anchor", "middle")
          .text(x.tickFormat(10));
-
 }
 
 function getDate(d) {
