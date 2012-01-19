@@ -100,6 +100,13 @@ public class TimelineChunkAndTimes
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    public String getSamplesAsCSV() throws IOException
+    {
+        final CSVOutputProcessor processor = new CSVOutputProcessor();
+        SampleCoder.scan(timelineChunk.getSamples(), timelineTimes, processor);
+        return processor.getSamplesCSV();
+    }
+
     @JsonValue
     @Override
     public String toString()
@@ -112,10 +119,8 @@ public class TimelineChunkAndTimes
             generator.writeFieldName("sampleKind");
             generator.writeString(sampleKind);
 
-            final CSVOutputProcessor processor = new CSVOutputProcessor();
-            SampleCoder.scan(timelineChunk.getSamples(), timelineTimes, processor);
             generator.writeFieldName("samples");
-            generator.writeString(processor.getSamplesCSV());
+            generator.writeString(getSamplesAsCSV());
 
             generator.writeEndObject();
             generator.close();

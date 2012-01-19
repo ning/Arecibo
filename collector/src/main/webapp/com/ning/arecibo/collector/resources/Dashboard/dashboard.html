@@ -42,12 +42,6 @@
     <script type="text/javascript" src="/static/jquery-ui-timepicker-addon-v0.9.8.js"></script>
 
     <script type="text/javascript">
-        function SortByName(a, b){
-            var aName = a.name.toLowerCase();
-            var bName = b.name.toLowerCase();
-            return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
-        }
-
         /* Prepare the Hosts menu */
 
         function findHosts() {
@@ -64,11 +58,10 @@
             //console.log(hosts);
             var hostsArray = [];
             $.each(hosts, function(id, host) {
-                hostsArray.push({name: host, id: id});
+                hostsArray.push(host);
             });
-
-            $.each(hostsArray.sort(SortByName), function(idx, host) {
-                $("#dropdown-hosts").append("<li><a href=\"#\" id=\"host_"+ host.id + "\">" + host.name + "</a></li>");
+            $("#host_name").autocomplete({
+                source: hostsArray
             });
         }
 
@@ -88,11 +81,10 @@
             //console.log(sampleKinds);
             var sampleKindsArray = [];
             $.each(sampleKinds, function(id, sampleKind) {
-                sampleKindsArray.push({name: sampleKind, id: id});
+                sampleKindsArray.push(sampleKind);
             });
-
-            $.each(sampleKindsArray.sort(SortByName), function(id, sampleKind) {
-                $("#dropdown-sampleKinds").append("<li><a href=\"#\" id=\"sample_kind_"+ sampleKind.id + "\">" + sampleKind.name + "</a></li>");
+            $("#sample_kind").autocomplete({
+                source: sampleKindsArray
             });
         }
 
@@ -150,16 +142,61 @@
             return $('#samples_end').datetimepicker('getDate');
         }
 
+        /* Get the samples */
+
+        function findSamples(host, sampleKind) {
+            $.ajax({
+                url: "/rest/1.0/" + host + "/" + sampleKind,
+                dataType: "jsonp",
+                cache : false,
+                jsonp : "callback",
+                jsonpCallback: "populateSamples"
+            });
+        }
+
+        function populateSamples(payload) {
+            // samples is an array in the form {memoryPoolUsed: "0,1,1,10,..."}, {ProcessCpuTime: "0,1,1,10,..."}
+            var samples = payload.samples;
+            for (var sampleKind in samples) {
+                var csv = samples[sampleKind].split(",");
+                // Build data in the form [{x:, y:}, {}, ...]
+                var data = [];
+                for (var i = 0; i < csv.length; i++) {
+                    tmp = {x:0, y:0};
+                    tmp.x = csv[i];
+                    tmp.y = csv[i+1];
+                    data.push(tmp);
+                    i++;
+                }
+                displayGraph(data, "#graphMiddle", 300, 300);
+            }
+        }
+
         /* Initialize the page */
 
         $(document).ready(function() {
+            $('#loadingDiv')
+                .hide()  // hide it initially
+                .ajaxStart(function() {
+                    $(this).show();
+                })
+                .ajaxStop(function() {
+                    $(this).hide();
+                });
+            $('#errorDiv')
+                .hide()  // hide it initially
+                .ajaxError(function(event, request, settings) {
+                    $(this).show();
+                    $(this).append("<p>Error requesting " + settings.url + ", error is:" + request.responseText + "<p>");
+                });
+
             findHosts();
             findSampleKinds();
             setupDateTimePickers();
 
-            displayGraph(data, "#graphLeft", 300, 300);
-            displayGraph(data, "#graphMiddle", 300, 300);
-            displayGraph(data, "#graphRight", 300, 300);
+            $("#crunch").click(function () {
+                findSamples($("#host_name").val(), $("#sample_kind").val());
+            });
         });
     </script>
 </head>
@@ -169,18 +206,30 @@
         <div class="container-fluid">
           <a class="brand" href="/">Arecibo</a>
           <ul class="nav">
-            <li class="dropdown" data-dropdown="dropdown">
-                <a href="#" class="dropdown-toggle">Hosts</a>
-                <ul class="dropdown-menu" id="dropdown-hosts"></ul>
-            </li>
-            <li class="dropdown" data-dropdown="dropdown">
-                <a href="#" class="dropdown-toggle">Sample kinds</a>
-                <ul class="dropdown-menu" id="dropdown-sampleKinds"></ul>
-            </li>
+            <form action="">
+                 <input type="text" class="medium" name="host_name" id="host_name" value="" placeholder="Hostname" />
+            </form>
           </ul>
-          <form action="">
-              <input type="text" class="medium" name="samples_start" id="samples_start" value="" placeholder="Start time" />&nbsp;<input type="text" class="medium" name="samples_end" id="samples_end" value="" placeholder="End time" />
-          </form>
+          <ul class="nav">
+            <form action="">
+                 <input type="text" class="medium" name="sample_kind" id="sample_kind" value="" placeholder="Sample kind" />
+             </form>
+          </ul>
+          <ul class="nav">
+            <form action="">
+                <input type="text" class="medium" name="samples_start" id="samples_start" value="" placeholder="Start time" />
+            </form>
+          </ul>
+          <ul class="nav">
+            <form action="">
+                <input type="text" class="medium" name="samples_end" id="samples_end" value="" placeholder="End time" />
+            </form>
+          </ul>
+          <ul class="nav">
+              <form action="">
+                  <button class="btn small" id="crunch">Crunch!</button>
+              </form>
+          </ul>
         </div>
       </div>
     </div>
@@ -188,7 +237,13 @@
     <div class="container" id="graphs-grid">
         <div class="content">
             <div class="page-header">
-                <h1>Arecibo dashbord <small>prototype</small></h1>
+                <h1>Arecibo dashboard <small>prototype</small></h1>
+                <div id="loadingDiv" class="alert-message info">
+                    <p><strong>Be patient!</strong> Your data is loading...</p>
+                </div>
+                <div id="errorDiv" class="alert-message error">
+                    <p><strong>Oh no!</strong></p>
+                </div>
             </div>
 
             <div class="row show-grid" title="Arecibo Graphs">
@@ -200,21 +255,6 @@
     </div>
 
     <script type="text/javascript">
-    input = "1326845486,1666666.6666666667,1326845486,0,1326845487,0,1326845489,0,1326845490,0,1326845493,0,1326845495,0,1326845498,0,1326845506,0,1326845508,0,1326845512,1000000.0,1326845513,0,1326845516,0,1326845516,0,1326845517,0,1326845519,0,1326845520,0,1326845523,0,1326845525,0,1326845528,0,1326845536,1333288.890370321,1326845538,0,1326845542,0,1326845543,0,1326845546,0,1326845546,0,1326845547,0,1326845549,0,1326845550,0,1326845553,0,1326845555,1333377.7792593087,1326845558,0,1326845566,0,1326845568,0,1326845572,0,1326845573,0,1326845576,0,1326845576,0,1326845577,0,1326845579,0,1326845580,1333333.3333333333,1326845583,0,1326845585,0,1326845588,0,1326845596,0,1326845598,0,1326845602,0,1326845603,0,1326845606,0,1326845606,0,1326845607,1666666.6666666667,1326845609,0,1326845610,0,1326845613,0,1326845615,0,1326845618,0,1326845626,0,1326845628,0,1326845632,0,1326845633,0,1326845636,1333333.3333333333,1326845636,0,1326845637,0,1326845639,0,1326845640,0,1326845643,0,1326845645,0,1326845648,0,1326845656,0,1326845658,0,1326845662,1333288.890370321,1326845663,0,1326845666,0,1326845666,0,1326845667,0,1326845669,0,1326845670,0,1326845673,0,1326845675,0,1326845678,0,1326845686,1333377.7792593087,1326845688,0,1326845692,0,1326845693,0,1326845696,0,1326845696,0,1326845697,0,1326845699,0,1326845700,0,1326845703,0,1326845705,1666611.1129629011,1326845708,0,1326845716,0,1326845718,0,1326845722,0,1326845723,0,1326845726,0,1326845726,0,1326845727,0,1326845729,0,1326845730,2000066.668888963";
-
-    csv = input.split(",");
-    var i;
-    var data = [];
-    for (i = 0; i < csv.length; i++) {
-        tmp = {x:0, y:0};
-        tmp.x = csv[i];
-        tmp.y = csv[i+1];
-        data.push(tmp);
-        i++;
-    }
-    
-    //console.log(data);
-
 // Data: [{x:, y:}, {}, ...]
 function displayGraph(data, id, width, height) {
     // Create an SVG element inside the div that fills 100% of the div
