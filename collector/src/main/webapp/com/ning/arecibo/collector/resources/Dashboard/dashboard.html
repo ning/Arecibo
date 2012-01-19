@@ -42,6 +42,12 @@
     <script type="text/javascript" src="/static/jquery-ui-timepicker-addon-v0.9.8.js"></script>
 
     <script type="text/javascript">
+        function SortByName(a, b){
+            var aName = a.name.toLowerCase();
+            var bName = b.name.toLowerCase();
+            return ((aName < bName) ? -1 : ((aName > bName) ? 1 : 0));
+        }
+
         /* Prepare the Hosts menu */
 
         function findHosts() {
@@ -56,8 +62,13 @@
 
         function populateHosts(hosts) {
             //console.log(hosts);
+            var hostsArray = [];
             $.each(hosts, function(id, host) {
-                $("#dropdown-hosts").append("<li><a href=\"#\" id=\"host_"+ id + "\">" + host + "</a></li>");
+                hostsArray.push({name: host, id: id});
+            });
+
+            $.each(hostsArray.sort(SortByName), function(idx, host) {
+                $("#dropdown-hosts").append("<li><a href=\"#\" id=\"host_"+ host.id + "\">" + host.name + "</a></li>");
             });
         }
 
@@ -75,8 +86,13 @@
 
         function populateSampleKinds(sampleKinds) {
             //console.log(sampleKinds);
+            var sampleKindsArray = [];
             $.each(sampleKinds, function(id, sampleKind) {
-                $("#dropdown-sampleKinds").append("<li><a href=\"#\" id=\"sample_kind_"+ id + "\">" + sampleKind + "</a></li>");
+                sampleKindsArray.push({name: sampleKind, id: id});
+            });
+
+            $.each(sampleKindsArray.sort(SortByName), function(id, sampleKind) {
+                $("#dropdown-sampleKinds").append("<li><a href=\"#\" id=\"sample_kind_"+ sampleKind.id + "\">" + sampleKind.name + "</a></li>");
             });
         }
 
