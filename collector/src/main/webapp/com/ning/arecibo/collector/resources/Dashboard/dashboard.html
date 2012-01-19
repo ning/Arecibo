@@ -214,6 +214,7 @@
                 .ajaxError(function(event, request, settings) {
                     $(this).show();
                     $(this).append("<p>Error requesting " + settings.url + ", error is:" + request.responseText + "<p>");
+                    event.preventDefault();
                 });
 
             findHosts();
@@ -228,7 +229,7 @@
                 $("#samples_end").val(localStorage.getItem("arecibo_latest_samples_end_lookup"));
             } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
 
-            $("#crunch").click(function () {
+            $("#crunch").click(function (event) {
                 // Store locally the latest search
                 var host_name_lookup = $("#host_name").val();
                 var sample_kind_lookup = $("#sample_kind").val();
@@ -242,6 +243,8 @@
                 } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
 
                 findSamples(host_name_lookup, sample_kind_lookup, samples_start_lookup, samples_end_lookup);
+                // Don't refresh the page
+                event.preventDefault();
             });
         });
     </script>
