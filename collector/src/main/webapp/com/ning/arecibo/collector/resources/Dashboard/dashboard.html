@@ -200,8 +200,10 @@
             setupDateTimePickers();
 
             // Retrieve user's preferences
-            $("#host_name").val(localStorage.getItem("arecibo_latest_host_name_lookup"));
-            $("#sample_kind").val(localStorage.getItem("arecibo_latest_sample_kind_lookup"));
+            try {
+                $("#host_name").val(localStorage.getItem("arecibo_latest_host_name_lookup"));
+                $("#sample_kind").val(localStorage.getItem("arecibo_latest_sample_kind_lookup"));
+            } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
 
             $("#crunch").click(function () {
                 // Store locally the latest search
