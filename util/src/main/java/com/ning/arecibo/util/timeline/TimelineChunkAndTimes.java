@@ -162,8 +162,14 @@ public class TimelineChunkAndTimes
                     firstSamples = false;
                 }
 
+                final DateTime sampleTimestamp = timestamps.getSampleTimestamp(sampleNumber + i);
+                if (sampleTimestamp == null) {
+                    // Invalid?
+                    continue;
+                }
+
                 builder
-                    .append(TimelineTimes.unixSeconds(timestamps.getSampleTimestamp(sampleNumber + i)))
+                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
                     .append(",")
                     .append(value == null ? 0 : value.toString());
             }

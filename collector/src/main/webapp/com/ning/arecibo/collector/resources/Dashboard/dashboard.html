@@ -174,7 +174,9 @@
                     tmp = {x:0, y:0};
                     tmp.x = csv[i];
                     tmp.y = csv[i+1];
-                    data.push(tmp);
+                    if (!isNaN(tmp.x) && !isNaN(tmp.y)) {
+                        data.push(tmp);
+                    }
                     i++;
                 }
                 displayGraph(data, "#graphMiddle", 300, 300);
