@@ -1,5 +1,20 @@
 package com.ning.arecibo.collector.resources;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import com.google.common.collect.BiMap;
 import com.google.inject.Singleton;
 import com.ning.arecibo.util.Logger;
@@ -10,21 +25,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.util.JSONPObject;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-
-import javax.inject.Inject;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Singleton
 @Path("/rest/1.0")
@@ -74,8 +74,7 @@ public class HostDataResource
         final DateTime startTime = new DateTime(from, DateTimeZone.UTC);
         if (to.isEmpty()) {
             samplesByHostName = dao.getSamplesByHostName(hostName, startTime, new DateTime(DateTimeZone.UTC));
-        }
-        else {
+        } else {
             samplesByHostName = dao.getSamplesByHostName(hostName, startTime, new DateTime(to, DateTimeZone.UTC));
         }
 
@@ -96,8 +95,7 @@ public class HostDataResource
         final DateTime startTime = new DateTime(from, DateTimeZone.UTC);
         if (to.isEmpty()) {
             samplesByHostName = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, new DateTime(DateTimeZone.UTC));
-        }
-        else {
+        } else {
             samplesByHostName = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, new DateTime(to, DateTimeZone.UTC));
         }
 
@@ -117,15 +115,7 @@ public class HostDataResource
             generator.writeFieldName("samples");
             generator.writeStartObject();
 
-            // We merge the list of samples by type to concatenate timelines
-            final Map<String, StringBuilder> samplesBySampleKind = new HashMap<String, StringBuilder>();
-            for (final TimelineChunkAndTimes timelineChunkAndTimes : samples) {
-                if (samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()) == null) {
-                    samplesBySampleKind.put(timelineChunkAndTimes.getSampleKind(), new StringBuilder());
-                }
-                samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(timelineChunkAndTimes.getSamplesAsCSV());
-            }
-
+            final Map<String, StringBuilder> samplesBySampleKind = buildSampleLists(samples);
             for (final String sampleKind : samplesBySampleKind.keySet()) {
                 generator.writeFieldName(sampleKind);
                 generator.writeString(samplesBySampleKind.get(sampleKind).toString());
@@ -137,10 +127,24 @@ public class HostDataResource
 
             final JSONPObject object = new JSONPObject(callback, out.toString());
             return Response.ok(object).build();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error(e);
             return Response.serverError().build();
         }
+    }
+
+    private Map<String, StringBuilder> buildSampleLists(final List<TimelineChunkAndTimes> samples) throws IOException
+    {
+        // We merge the list of samples by type to concatenate timelines
+        final Map<String, StringBuilder> samplesBySampleKind = new HashMap<String, StringBuilder>();
+        for (final TimelineChunkAndTimes timelineChunkAndTimes : samples) {
+            if (samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()) == null) {
+                samplesBySampleKind.put(timelineChunkAndTimes.getSampleKind(), new StringBuilder());
+            } else {
+                samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(",");
+            }
+            samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(timelineChunkAndTimes.getSamplesAsCSV());
+        }
+        return samplesBySampleKind;
     }
 }
