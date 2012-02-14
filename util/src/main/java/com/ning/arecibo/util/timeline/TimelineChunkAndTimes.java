@@ -137,6 +137,7 @@ public class TimelineChunkAndTimes
     {
         final StringBuilder builder = new StringBuilder();
         boolean firstSamples = true;
+        String lastValue = null;
 
         /**
          * Process sampleCount sequential samples with identical values.  sampleCount will usually be 1,
@@ -157,8 +158,7 @@ public class TimelineChunkAndTimes
             for (int i = 0; i < sampleCount; i++) {
                 if (!firstSamples) {
                     builder.append(",");
-                }
-                else {
+                } else {
                     firstSamples = false;
                 }
 
@@ -169,9 +169,16 @@ public class TimelineChunkAndTimes
                 }
 
                 builder
-                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
-                    .append(",")
-                    .append(value == null ? 0 : value.toString());
+                        .append(TimelineTimes.unixSeconds(sampleTimestamp))
+                        .append(",");
+
+                if (opcode.getRepeater()) {
+                    builder.append(lastValue);
+                } else {
+                    final String jsonValue = value == null ? "0" : value.toString();
+                    builder.append(jsonValue);
+                    lastValue = jsonValue;
+                }
             }
         }
 
