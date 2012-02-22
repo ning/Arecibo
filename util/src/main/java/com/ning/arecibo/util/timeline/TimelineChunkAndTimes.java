@@ -156,25 +156,27 @@ public class TimelineChunkAndTimes
         {
             // Create a CSV of: timestamp, sample value, timestamp, sample value, etc.
             for (int i = 0; i < sampleCount; i++) {
-                if (!firstSamples) {
-                    builder.append(",");
-                } else {
-                    firstSamples = false;
-                }
-
                 final DateTime sampleTimestamp = timestamps.getSampleTimestamp(sampleNumber + i);
                 if (sampleTimestamp == null) {
                     // Invalid?
                     continue;
                 }
 
+                if (!firstSamples) {
+                    builder.append(",");
+                }
+                else {
+                    firstSamples = false;
+                }
+
                 builder
-                        .append(TimelineTimes.unixSeconds(sampleTimestamp))
-                        .append(",");
+                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
+                    .append(",");
 
                 if (opcode.getRepeater()) {
                     builder.append(lastValue);
-                } else {
+                }
+                else {
                     final String jsonValue = value == null ? "0" : value.toString();
                     builder.append(jsonValue);
                     lastValue = jsonValue;
