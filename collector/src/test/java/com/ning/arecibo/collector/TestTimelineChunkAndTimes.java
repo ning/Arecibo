@@ -46,6 +46,6 @@ public class TestTimelineChunkAndTimes
         final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, timelineChunk, timelineTimes);
 
         Assert.assertEquals(timelineChunkAndTimes.toString(),
-            "{\"sampleKind\":\"JVM_Heap_Used\",\"samples\":\"2012-01-16T21:23:59.316Z,12345,2012-01-16T21:24:00.316Z,12346,2012-01-16T21:24:01.316Z,12347\"}");
+            "{\"sampleKind\":\"JVM_Heap_Used\",\"samples\":\"1326749039,12345,1326749040,12346,1326749041,12347\"}");
     }
 }
