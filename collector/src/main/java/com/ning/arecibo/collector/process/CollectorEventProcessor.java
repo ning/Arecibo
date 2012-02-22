@@ -19,13 +19,18 @@ import com.ning.arecibo.util.jmx.MonitoringType;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
+import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.TimelineRegistry;
+import com.ning.arecibo.util.timeline.TimelineTimes;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.weakref.jmx.Managed;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -150,6 +155,34 @@ public class CollectorEventProcessor implements EventProcessor
         catch (ExecutionException e) {
             log.warn(e);
         }
+    }
+
+    public List<TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes() throws IOException
+    {
+        final List<TimelineChunkAndTimes> samplesByHostName = new ArrayList<TimelineChunkAndTimes>();
+
+        for (final TimelineHostEventAccumulator hostEventAccumulator : accumulators.asMap().values()) {
+            final List<DateTime> timesForAccumulator = hostEventAccumulator.getTimes();
+            final DateTime startTime = hostEventAccumulator.getStartTime();
+            final DateTime endTime = hostEventAccumulator.getEndTime();
+
+            for (final TimelineChunkAccumulator chunkAccumulator : hostEventAccumulator.getTimelines().values()) {
+                // Extract the timeline for this chunk by copying it and reading encoded bytes
+                final TimelineChunkAccumulator accumulator = chunkAccumulator.deepCopy();
+                final TimelineChunk timelineChunk = accumulator.extractTimelineChunkAndReset(-1);
+                final int hostId = timelineChunk.getHostId();
+
+                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, startTime, endTime, timesForAccumulator);
+
+                // TODO: cache to optimize?
+                final String hostName = timelineDAO.getHosts().get(hostId);
+                final String sampleKind = timelineDAO.getSampleKinds().get(timelineChunk.getSampleKindId());
+
+                samplesByHostName.add(new TimelineChunkAndTimes(hostName, sampleKind, timelineChunk, timelineTimes));
+            }
+        }
+
+        return samplesByHostName;
     }
 
     private int getHostIdFromEvent(Event evt)

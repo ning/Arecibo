@@ -213,4 +213,9 @@ public class TimelineHostEventAccumulator {
     {
         return timelines;
     }
+
+    public List<DateTime> getTimes()
+    {
+        return times;
+    }
 }
