@@ -9,6 +9,7 @@ import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.Blob;
@@ -102,7 +103,12 @@ public class TimelineChunkAndTimes
 
     public String getSamplesAsCSV() throws IOException
     {
-        final CSVOutputProcessor processor = new CSVOutputProcessor();
+        return getSamplesAsCSV(null, null);
+    }
+
+    public String getSamplesAsCSV(@Nullable final DateTime startTime, @Nullable final DateTime endTime) throws IOException
+    {
+        final CSVOutputProcessor processor = new CSVOutputProcessor(startTime, endTime);
         SampleCoder.scan(timelineChunk.getSamples(), timelineTimes, processor);
         return processor.getSamplesCSV();
     }
@@ -135,9 +141,18 @@ public class TimelineChunkAndTimes
 
     private static final class CSVOutputProcessor implements SampleProcessor
     {
-        final StringBuilder builder = new StringBuilder();
-        boolean firstSamples = true;
-        String lastValue = null;
+        private final DateTime startTime;
+        private final DateTime endTime;
+
+        private final StringBuilder builder = new StringBuilder();
+        private boolean firstSamples = true;
+        private String lastValue = null;
+
+        public CSVOutputProcessor(@Nullable final DateTime startTime, @Nullable final DateTime endTime)
+        {
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
 
         /**
          * Process sampleCount sequential samples with identical values.  sampleCount will usually be 1,
@@ -162,24 +177,24 @@ public class TimelineChunkAndTimes
                     continue;
                 }
 
-                if (!firstSamples) {
-                    builder.append(",");
-                }
-                else {
-                    firstSamples = false;
+                // Save the current value for upcoming repeat opcodes
+                if (!opcode.getRepeater()) {
+                    lastValue = value == null ? "0" : value.toString();
                 }
 
-                builder
-                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
-                    .append(",");
+                // Check if the sample is in the right time range
+                if ((startTime == null || sampleTimestamp.equals(startTime) || sampleTimestamp.isAfter(startTime)) && (endTime == null || sampleTimestamp.equals(endTime) || sampleTimestamp.isBefore(endTime))) {
+                    if (!firstSamples) {
+                        builder.append(",");
+                    }
+                    else {
+                        firstSamples = false;
+                    }
 
-                if (opcode.getRepeater()) {
-                    builder.append(lastValue);
-                }
-                else {
-                    final String jsonValue = value == null ? "0" : value.toString();
-                    builder.append(jsonValue);
-                    lastValue = jsonValue;
+                    builder
+                        .append(TimelineTimes.unixSeconds(sampleTimestamp))
+                        .append(",")
+                        .append(lastValue);
                 }
             }
         }

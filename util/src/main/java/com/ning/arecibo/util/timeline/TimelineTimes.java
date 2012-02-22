@@ -20,7 +20,6 @@ public class TimelineTimes extends CachedObject
 
     public static final ResultSetMapper<TimelineTimes> mapper = new ResultSetMapper<TimelineTimes>()
     {
-
         @Override
         public TimelineTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
         {

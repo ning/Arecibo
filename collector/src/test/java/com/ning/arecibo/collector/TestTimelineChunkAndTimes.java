@@ -44,8 +44,21 @@ public class TestTimelineChunkAndTimes
         final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, out.toByteArray(), sampleCount);
 
         final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, timelineChunk, timelineTimes);
-
         Assert.assertEquals(timelineChunkAndTimes.toString(),
             "{\"sampleKind\":\"JVM_Heap_Used\",\"samples\":\"1326749039,12345,1326749040,12346,1326749041,12347\"}");
+
+        // Test CSV filtering
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(), "1326749039,12345,1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(null, null), "1326749039,12345,1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime, null), "1326749039,12345,1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(null, startTime.plusSeconds(sampleCount)), "1326749039,12345,1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(1), startTime.plusSeconds(sampleCount)), "1326749039,12345,1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(2), startTime.plusSeconds(sampleCount)), "1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(3), startTime.plusSeconds(sampleCount)), "1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(4), startTime.plusSeconds(sampleCount)), "");
+        // Buggy start date
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(10), startTime.plusSeconds(sampleCount)), "");
+        // Buggy end date
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime, startTime.minusSeconds(1)), "");
     }
 }

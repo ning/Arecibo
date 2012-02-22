@@ -1,22 +1,8 @@
 package com.ning.arecibo.collector.resources;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import javax.inject.Inject;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
 import com.google.common.collect.BiMap;
 import com.google.inject.Singleton;
+import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
@@ -26,6 +12,21 @@ import org.codehaus.jackson.map.util.JSONPObject;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import javax.inject.Inject;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Singleton
 @Path("/rest/1.0")
 public class HostDataResource
@@ -34,11 +35,13 @@ public class HostDataResource
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final TimelineDAO dao;
+    private final CollectorEventProcessor processor;
 
     @Inject
-    public HostDataResource(final TimelineDAO dao)
+    public HostDataResource(final TimelineDAO dao, final CollectorEventProcessor processor)
     {
         this.dao = dao;
+        this.processor = processor;
     }
 
     @GET
@@ -69,16 +72,25 @@ public class HostDataResource
                                          @QueryParam("from") @DefaultValue("0") final String from,
                                          @QueryParam("to") @DefaultValue("") final String to)
     {
-        final List<TimelineChunkAndTimes> samplesByHostName;
-
         final DateTime startTime = new DateTime(from, DateTimeZone.UTC);
+        final DateTime endTime;
         if (to.isEmpty()) {
-            samplesByHostName = dao.getSamplesByHostName(hostName, startTime, new DateTime(DateTimeZone.UTC));
-        } else {
-            samplesByHostName = dao.getSamplesByHostName(hostName, startTime, new DateTime(to, DateTimeZone.UTC));
+            endTime = new DateTime(DateTimeZone.UTC);
+        }
+        else {
+            endTime = new DateTime(to, DateTimeZone.UTC);
         }
 
-        return buildJsonpResponse(hostName, samplesByHostName, callback);
+        // Merge in-memory and persisted samples
+        final List<TimelineChunkAndTimes> samplesByHostName = dao.getSamplesByHostName(hostName, startTime, endTime);
+        try {
+            samplesByHostName.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, startTime, endTime));
+        }
+        catch (IOException e) {
+            return Response.serverError().header("Warning", "199 " + e.toString()).build();
+        }
+
+        return buildJsonpResponse(hostName, startTime, endTime, samplesByHostName, callback);
     }
 
     @GET
@@ -90,19 +102,28 @@ public class HostDataResource
                                                       @QueryParam("from") @DefaultValue("0") final String from,
                                                       @QueryParam("to") @DefaultValue("") final String to)
     {
-        final List<TimelineChunkAndTimes> samplesByHostName;
-
         final DateTime startTime = new DateTime(from, DateTimeZone.UTC);
+        final DateTime endTime;
         if (to.isEmpty()) {
-            samplesByHostName = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, new DateTime(DateTimeZone.UTC));
-        } else {
-            samplesByHostName = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, new DateTime(to, DateTimeZone.UTC));
+            endTime = new DateTime(DateTimeZone.UTC);
+        }
+        else {
+            endTime = new DateTime(to, DateTimeZone.UTC);
         }
 
-        return buildJsonpResponse(hostName, samplesByHostName, callback);
+        // Merge in-memory and persisted samples
+        final List<TimelineChunkAndTimes> samplesByHostNameAndSampleKind = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, endTime);
+        try {
+            samplesByHostNameAndSampleKind.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, sampleKind, startTime, endTime));
+        }
+        catch (IOException e) {
+            return Response.serverError().header("Warning", "199 " + e.toString()).build();
+        }
+
+        return buildJsonpResponse(hostName, startTime, endTime, samplesByHostNameAndSampleKind, callback);
     }
 
-    private Response buildJsonpResponse(final String hostName, final List<TimelineChunkAndTimes> samples, final String callback)
+    private Response buildJsonpResponse(final String hostName, final DateTime startTime, final DateTime endTime, final List<TimelineChunkAndTimes> samples, final String callback)
     {
         try {
             final ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -115,7 +136,7 @@ public class HostDataResource
             generator.writeFieldName("samples");
             generator.writeStartObject();
 
-            final Map<String, StringBuilder> samplesBySampleKind = buildSampleLists(samples);
+            final Map<String, StringBuilder> samplesBySampleKind = buildSampleLists(samples, startTime, endTime);
             for (final String sampleKind : samplesBySampleKind.keySet()) {
                 generator.writeFieldName(sampleKind);
                 generator.writeString(samplesBySampleKind.get(sampleKind).toString());
@@ -127,23 +148,25 @@ public class HostDataResource
 
             final JSONPObject object = new JSONPObject(callback, out.toString());
             return Response.ok(object).build();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             log.error(e);
             return Response.serverError().build();
         }
     }
 
-    private Map<String, StringBuilder> buildSampleLists(final List<TimelineChunkAndTimes> samples) throws IOException
+    private Map<String, StringBuilder> buildSampleLists(final List<TimelineChunkAndTimes> samples, final DateTime startTime, final DateTime endTime) throws IOException
     {
         // We merge the list of samples by type to concatenate timelines
         final Map<String, StringBuilder> samplesBySampleKind = new HashMap<String, StringBuilder>();
         for (final TimelineChunkAndTimes timelineChunkAndTimes : samples) {
             if (samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()) == null) {
                 samplesBySampleKind.put(timelineChunkAndTimes.getSampleKind(), new StringBuilder());
-            } else {
+            }
+            else {
                 samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(",");
             }
-            samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(timelineChunkAndTimes.getSamplesAsCSV());
+            samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(timelineChunkAndTimes.getSamplesAsCSV(startTime, endTime));
         }
         return samplesBySampleKind;
     }

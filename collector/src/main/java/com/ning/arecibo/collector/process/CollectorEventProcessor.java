@@ -30,11 +30,14 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -157,26 +160,45 @@ public class CollectorEventProcessor implements EventProcessor
         }
     }
 
-    public List<TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes() throws IOException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes() throws IOException
+    {
+        return getInMemoryTimelineChunkAndTimes(null, null, null);
+    }
+
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(@Nullable final String filterHostName, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException
+    {
+        return getInMemoryTimelineChunkAndTimes(filterHostName, null, filterStartTime, filterEndTime);
+    }
+
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(@Nullable final String filterHostName, @Nullable final String filterSampleKind, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException
     {
         final List<TimelineChunkAndTimes> samplesByHostName = new ArrayList<TimelineChunkAndTimes>();
 
-        for (final TimelineHostEventAccumulator hostEventAccumulator : accumulators.asMap().values()) {
+        final ConcurrentMap<Integer, TimelineHostEventAccumulator> accumulatorsMap = accumulators.asMap();
+        for (final int hostId : accumulatorsMap.keySet()) {
+            final TimelineHostEventAccumulator hostEventAccumulator = accumulatorsMap.get(hostId);
             final List<DateTime> timesForAccumulator = hostEventAccumulator.getTimes();
             final DateTime startTime = hostEventAccumulator.getStartTime();
             final DateTime endTime = hostEventAccumulator.getEndTime();
+            final String hostName = timelineDAO.getHosts().get(hostId);
+
+            if ((filterHostName != null && !filterHostName.equals(hostName)) || (filterStartTime != null && endTime.isBefore(filterStartTime)) || (filterStartTime != null && startTime.isAfter(filterEndTime))) {
+                // Ignore this accumulator
+                continue;
+            }
 
             for (final TimelineChunkAccumulator chunkAccumulator : hostEventAccumulator.getTimelines().values()) {
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
                 final TimelineChunkAccumulator accumulator = chunkAccumulator.deepCopy();
                 final TimelineChunk timelineChunk = accumulator.extractTimelineChunkAndReset(-1);
-                final int hostId = timelineChunk.getHostId();
-
+                // NOTE! Further filtering needs to be done in the processing function
                 final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, startTime, endTime, timesForAccumulator);
 
                 // TODO: cache to optimize?
-                final String hostName = timelineDAO.getHosts().get(hostId);
                 final String sampleKind = timelineDAO.getSampleKinds().get(timelineChunk.getSampleKindId());
+                if (filterSampleKind != null && !filterSampleKind.equals(sampleKind)) {
+                    continue;
+                }
 
                 samplesByHostName.add(new TimelineChunkAndTimes(hostName, sampleKind, timelineChunk, timelineTimes));
             }
