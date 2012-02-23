@@ -127,4 +127,8 @@ public interface CollectorConfig
     @Config("arecibo.events.collector.eventSerializersKlass")
     @Default("com.ning.arecibo.event.transport.JavaEventSerializer,com.ning.arecibo.event.transport.JsonEventSerializer,com.ning.arecibo.event.transport.MapEventSerializer")
     String getEventSerializers();
+
+    @Config("arecibo.events.collector.spoolDir")
+    @Default("/var/tmp/arecibo")
+    String getSpoolDir();
 }

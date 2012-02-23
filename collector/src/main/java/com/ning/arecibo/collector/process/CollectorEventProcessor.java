@@ -8,6 +8,7 @@ import com.google.common.cache.RemovalNotification;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.persistent.FileBackedBuffer;
 import com.ning.arecibo.event.BatchedEvent;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
@@ -48,15 +49,18 @@ public class CollectorEventProcessor implements EventProcessor
 
     private final LoadingCache<Integer, TimelineHostEventAccumulator> accumulators;
     private final TimelineDAO timelineDAO;
+    private final FileBackedBuffer buffer;
+
     private TimelineRegistry timelineRegistry = null;
 
     private final AtomicLong eventsReceived = new AtomicLong(0L);
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
 
     @Inject
-    public CollectorEventProcessor(final CollectorConfig config, final TimelineDAO timelineDAO)
+    public CollectorEventProcessor(final CollectorConfig config, final TimelineDAO timelineDAO) throws IOException
     {
         this.timelineDAO = timelineDAO;
+        this.buffer = new FileBackedBuffer(config.getSpoolDir());
 
         accumulators = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -150,6 +154,7 @@ public class CollectorEventProcessor implements EventProcessor
                 final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
                 final TimelineHostEventAccumulator accumulator = accumulators.get(hostId);
                 accumulator.addHostSamples(hostSamples);
+                buffer.append(hostSamples);
             }
         }
         catch (RuntimeException ruEx) {
@@ -251,6 +256,11 @@ public class CollectorEventProcessor implements EventProcessor
                 outputSamples.put(sampleKindId, new ScalarSample<String>(SampleOpcode.STRING, sample.toString()));
             }
         }
+    }
+
+    public FileBackedBuffer getBuffer()
+    {
+        return buffer;
     }
 
     @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

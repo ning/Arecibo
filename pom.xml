@@ -43,6 +43,11 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>com.fasterxml.util</groupId>
+        <artifactId>low-gc-membuffers</artifactId>
+        <version>0.9.0</version>
+      </dependency>
+      <dependency>
         <groupId>com.ning</groupId>
         <artifactId>async-http-client</artifactId>
         <version>1.4.0</version>
@@ -201,6 +206,11 @@
       <dependency>
         <groupId>org.codehaus.jackson</groupId>
         <artifactId>jackson-jaxrs</artifactId>
+        <version>1.9.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.jackson</groupId>
+        <artifactId>jackson-smile</artifactId>
         <version>1.9.2</version>
       </dependency>
       <dependency>
