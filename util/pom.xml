@@ -72,8 +72,16 @@
       <optional>true</optional>
     </dependency>
     <dependency>
+      <groupId>com.fasterxml.util</groupId>
+      <artifactId>low-gc-membuffers</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-jaxrs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-smile</artifactId>
     </dependency>
     <dependency>
       <groupId>com.espertech</groupId>

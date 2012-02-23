@@ -1,4 +1,4 @@
-package com.ning.arecibo.collector.persistent;
+package com.ning.arecibo.util.timeline.persistent;
 
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 import com.google.common.io.Files;
@@ -9,6 +9,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class StreamyBytesPersistentOutputStream extends OutputStream
 {
@@ -16,17 +18,18 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     private static final int BUF_SIZE = 0x1000; // 4K
 
     private final String basePath;
+    private final String prefix;
     private final StreamyBytesMemBuffer inputBuffer;
+    private final List<String> createdFiles = new ArrayList<String>();
 
-    private long flushCount = 0;
-
-    public StreamyBytesPersistentOutputStream(String basePath, final StreamyBytesMemBuffer inputBuffer)
+    public StreamyBytesPersistentOutputStream(String basePath, final String prefix, final StreamyBytesMemBuffer inputBuffer)
     {
         if (!basePath.endsWith("/")) {
             basePath += "/";
         }
         this.basePath = basePath;
 
+        this.prefix = prefix;
         this.inputBuffer = inputBuffer;
     }
 
@@ -53,7 +56,8 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     private void flushUnderlyingBufferAndReset()
     {
         synchronized (inputBuffer) {
-            final String pathname = basePath + "arecibo." + System.nanoTime() + ".bin";
+            final String pathname = basePath + "arecibo." + prefix + "." + System.nanoTime() + ".bin";
+            createdFiles.add(pathname);
             log.info("Flushing in-memory buffer to disk: {}", pathname);
 
             try {
@@ -65,7 +69,6 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
             }
             finally {
                 inputBuffer.clear();
-                flushCount++;
             }
         }
     }
@@ -93,8 +96,8 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
         }
     }
 
-    public long getFlushCount()
+    public List<String> getCreatedFiles()
     {
-        return flushCount;
+        return createdFiles;
     }
 }

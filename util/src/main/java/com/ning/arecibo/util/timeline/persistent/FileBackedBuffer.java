@@ -1,4 +1,4 @@
-package com.ning.arecibo.collector.persistent;
+package com.ning.arecibo.util.timeline.persistent;
 
 import com.fasterxml.util.membuf.MemBuffersForBytes;
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class FileBackedBuffer
 {
@@ -29,13 +31,13 @@ public class FileBackedBuffer
     private final StreamyBytesPersistentOutputStream out;
     private final SmileGenerator smileGenerator;
 
-    public FileBackedBuffer(final String basePath) throws IOException
+    public FileBackedBuffer(final String basePath, final String prefix) throws IOException
     {
         // This configuration creates ~60M files, this to stay below 64M default limit
         // that JVM has for direct buffers.
         final MemBuffersForBytes bufs = new MemBuffersForBytes(4 * 1024 * 1024, 1, 15);
         final StreamyBytesMemBuffer inputBuffer = bufs.createStreamyBuffer(8, 15);
-        out = new StreamyBytesPersistentOutputStream(basePath, inputBuffer);
+        out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
         smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);
     }
 
@@ -55,8 +57,21 @@ public class FileBackedBuffer
         }
     }
 
-    public long flushCount()
+    public void discard()
     {
-        return out.getFlushCount();
+        for (final String path : out.getCreatedFiles()) {
+            try {
+                log.info("Discarding file: {}", path);
+                Files.deleteIfExists(Paths.get(path));
+            }
+            catch (IOException e) {
+                log.warn("Unable to discard file: {}", path, e);
+            }
+        }
+    }
+
+    public long getFilesCreated()
+    {
+        return out.getCreatedFiles().size();
     }
 }

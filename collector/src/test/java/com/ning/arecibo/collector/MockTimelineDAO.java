@@ -12,10 +12,10 @@ import java.util.List;
 
 public final class MockTimelineDAO extends TimelineDAO
 {
-    private static final BiMap<Integer, String> hosts = HashBiMap.create();
-    private static final BiMap<Integer, String> sampleKinds = HashBiMap.create();
-    private static final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
-    private static final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
+    private final BiMap<Integer, String> hosts = HashBiMap.create();
+    private final BiMap<Integer, String> sampleKinds = HashBiMap.create();
+    private final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
+    private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
 
     public MockTimelineDAO()
     {

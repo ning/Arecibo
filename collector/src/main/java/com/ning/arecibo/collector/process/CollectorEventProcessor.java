@@ -1,5 +1,6 @@
 package com.ning.arecibo.collector.process;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -8,7 +9,6 @@ import com.google.common.cache.RemovalNotification;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
-import com.ning.arecibo.collector.persistent.FileBackedBuffer;
 import com.ning.arecibo.event.BatchedEvent;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
@@ -49,7 +49,6 @@ public class CollectorEventProcessor implements EventProcessor
 
     private final LoadingCache<Integer, TimelineHostEventAccumulator> accumulators;
     private final TimelineDAO timelineDAO;
-    private final FileBackedBuffer buffer;
 
     private TimelineRegistry timelineRegistry = null;
 
@@ -60,7 +59,6 @@ public class CollectorEventProcessor implements EventProcessor
     public CollectorEventProcessor(final CollectorConfig config, final TimelineDAO timelineDAO) throws IOException
     {
         this.timelineDAO = timelineDAO;
-        this.buffer = new FileBackedBuffer(config.getSpoolDir());
 
         accumulators = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -93,7 +91,7 @@ public class CollectorEventProcessor implements EventProcessor
                 public TimelineHostEventAccumulator load(final Integer hostId) throws Exception
                 {
                     log.info("Creating new Timeline for hostId: " + hostId);
-                    return new TimelineHostEventAccumulator(timelineDAO, hostId);
+                    return new TimelineHostEventAccumulator(config.getSpoolDir(), timelineDAO, hostId);
                 }
             });
 
@@ -154,7 +152,6 @@ public class CollectorEventProcessor implements EventProcessor
                 final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
                 final TimelineHostEventAccumulator accumulator = accumulators.get(hostId);
                 accumulator.addHostSamples(hostSamples);
-                buffer.append(hostSamples);
             }
         }
         catch (RuntimeException ruEx) {
@@ -258,11 +255,6 @@ public class CollectorEventProcessor implements EventProcessor
         }
     }
 
-    public FileBackedBuffer getBuffer()
-    {
-        return buffer;
-    }
-
     @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getEventsReceived()
     {
@@ -285,5 +277,11 @@ public class CollectorEventProcessor implements EventProcessor
     public void forceCommit()
     {
         accumulators.invalidateAll();
+    }
+
+    @VisibleForTesting
+    Collection<TimelineHostEventAccumulator> getAccumulators()
+    {
+        return accumulators.asMap().values();
     }
 }
