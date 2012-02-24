@@ -13,23 +13,25 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class FileBackedBuffer
 {
     private static final Logger log = LoggerFactory.getLogger(FileBackedBuffer.class);
 
     private static final SmileFactory smileFactory = new SmileFactory();
+    private static final ObjectMapper smileObjectMapper = new ObjectMapper(smileFactory);
 
     static {
-        // yes, full 'compression' by checking for repeating names, short string values:
-        smileFactory.configure(SmileGenerator.Feature.CHECK_SHARED_NAMES, true);
-        smileFactory.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, true);
+        // Disable all magic for now as we don't write the Smile header (we share the same smileGenerator
+        // across multiple backend files)
+        smileFactory.configure(SmileGenerator.Feature.CHECK_SHARED_NAMES, false);
+        smileFactory.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, false);
     }
-
-    private static final ObjectMapper smileObjectMapper = new ObjectMapper(smileFactory);
 
     private final StreamyBytesPersistentOutputStream out;
     private final SmileGenerator smileGenerator;
+    private final AtomicLong samplesforTimestampWritten = new AtomicLong();
 
     public FileBackedBuffer(final String basePath, final String prefix) throws IOException
     {
@@ -39,16 +41,16 @@ public class FileBackedBuffer
         final StreamyBytesMemBuffer inputBuffer = bufs.createStreamyBuffer(8, 15);
         out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
         smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);
+        // Drop the Smile header
+        smileGenerator.flush();
+        out.reset();
     }
 
     public boolean append(final HostSamplesForTimestamp hostSamplesForTimestamp)
     {
         try {
-            smileGenerator.writeStartObject();
-            smileGenerator.writeFieldName("event");
             smileObjectMapper.writeValue(smileGenerator, hostSamplesForTimestamp);
-            smileGenerator.writeEndObject();
-
+            samplesforTimestampWritten.incrementAndGet();
             return true;
         }
         catch (IOException e) {
@@ -68,10 +70,17 @@ public class FileBackedBuffer
                 log.warn("Unable to discard file: {}", path, e);
             }
         }
+
+        samplesforTimestampWritten.set(0);
     }
 
     public long getFilesCreated()
     {
         return out.getCreatedFiles().size();
+    }
+
+    public long getSamplesForTimestampWritten()
+    {
+        return samplesforTimestampWritten.get();
     }
 }

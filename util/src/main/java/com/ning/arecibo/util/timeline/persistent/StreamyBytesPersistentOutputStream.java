@@ -2,6 +2,7 @@ package com.ning.arecibo.util.timeline.persistent;
 
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 import com.google.common.io.Files;
+import org.codehaus.jackson.smile.SmileConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,11 +57,17 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     private void flushUnderlyingBufferAndReset()
     {
         synchronized (inputBuffer) {
+            if (inputBuffer.available() == 0) {
+                // Somebody beat you to it
+                return;
+            }
+
             final String pathname = basePath + "arecibo." + prefix + "." + System.nanoTime() + ".bin";
             createdFiles.add(pathname);
             log.info("Flushing in-memory buffer to disk: {}", pathname);
 
             try {
+                write(SmileConstants.TOKEN_LITERAL_END_ARRAY);
                 final File out = new File(pathname);
                 flushToFile(out);
             }
@@ -68,7 +75,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
                 log.warn("Error flushing data", e);
             }
             finally {
-                inputBuffer.clear();
+                reset();
             }
         }
     }
@@ -81,18 +88,33 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
         try {
             transfer = Files.newOutputStreamSupplier(out).getOutput();
 
+            int bytesTransferred = 0;
             while (true) {
                 final int r = inputBuffer.readIfAvailable(buf);
                 if (r == 0) {
                     break;
                 }
                 transfer.write(buf, 0, r);
+                bytesTransferred += r;
             }
+
+            log.info("Saved {} bytes to disk", bytesTransferred);
         }
         finally {
             if (transfer != null) {
                 transfer.flush();
             }
+        }
+    }
+
+    public void reset()
+    {
+        inputBuffer.clear();
+        try {
+            write(SmileConstants.TOKEN_LITERAL_START_ARRAY);
+        }
+        catch (IOException e) {
+            // Not sure how to recover?
         }
     }
 
