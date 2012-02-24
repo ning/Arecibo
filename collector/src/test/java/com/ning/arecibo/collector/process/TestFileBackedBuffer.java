@@ -18,8 +18,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,16 +31,15 @@ public class TestFileBackedBuffer
     private static final String KIND_B = "kindB";
     private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
     private static final int NB_EVENTS = 820491;
+    private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestFileBackedBuffer-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
-    private Path path;
     private CollectorEventProcessor processor;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
-        path = Files.createTempDirectory("TestFileBackedBuffer");
-        System.setProperty("arecibo.events.collector.spoolDir", path.toString());
+        System.setProperty("arecibo.events.collector.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.events.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         processor = new CollectorEventProcessor(config, dao);
@@ -57,7 +54,7 @@ public class TestFileBackedBuffer
         for (final TimelineHostEventAccumulator accumulator : processor.getAccumulators()) {
             Assert.assertEquals(accumulator.getBackingBuffer().getFilesCreated(), 0);
         }
-        Assert.assertEquals(FileUtils.listFiles(new File(path.toString()), new String[]{"bin"}, false).size(), 0);
+        Assert.assertEquals(FileUtils.listFiles(basePath, new String[]{"bin"}, false).size(), 0);
 
         // Send enough events to spill over to disk
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
@@ -71,11 +68,11 @@ public class TestFileBackedBuffer
         for (final TimelineHostEventAccumulator accumulator : processor.getAccumulators()) {
             Assert.assertTrue(accumulator.getBackingBuffer().getFilesCreated() > 0);
         }
-        final Collection<File> writtenFiles = FileUtils.listFiles(new File(path.toString()), new String[]{"bin"}, false);
+        final Collection<File> writtenFiles = FileUtils.listFiles(basePath, new String[]{"bin"}, false);
         Assert.assertTrue(writtenFiles.size() > 0);
 
         // Replay the events. Note that eventsSent != eventsReplayed as some of the ones sent are still in memory
-        final Replayer replayer = new Replayer(path.toString());
+        final Replayer replayer = new Replayer(basePath.getAbsolutePath());
         final List<HostSamplesForTimestamp> eventsReplayed = replayer.readAll();
         for (int i = 0; i < eventsReplayed.size(); i++) {
             Assert.assertEquals(eventsReplayed.get(i).getTimestamp().getMillis(), eventsSent.get(i).getTimestamp());
@@ -83,6 +80,6 @@ public class TestFileBackedBuffer
         }
 
         // Make sure files have been deleted
-        Assert.assertEquals(FileUtils.listFiles(new File(path.toString()), new String[]{"bin"}, false).size(), 0);
+        Assert.assertEquals(FileUtils.listFiles(basePath, new String[]{"bin"}, false).size(), 0);
     }
 }

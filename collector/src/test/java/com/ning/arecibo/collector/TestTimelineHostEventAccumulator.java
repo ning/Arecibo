@@ -11,23 +11,22 @@ import org.skife.jdbi.v2.IDBI;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TestTimelineHostEventAccumulator
 {
     private static final int HOST_ID = 1;
+    private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestTimelineHostEventAccumulator-" + System.currentTimeMillis());
 
     private static final MockTimelineDAO dao = new MockTimelineDAO();
 
     @Test(groups = "fast")
     public void testSimpleAggregate() throws IOException
     {
-        final Path path = Files.createTempDirectory("TestFileBackedBuffer");
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(path.toString(), dao, HOST_ID);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(basePath.getAbsolutePath(), dao, HOST_ID);
 
         // Send a first type of data
         final DateTime startTime = new DateTime(DateTimeZone.UTC);

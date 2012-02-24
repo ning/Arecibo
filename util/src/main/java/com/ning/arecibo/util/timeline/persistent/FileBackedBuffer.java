@@ -10,9 +10,8 @@ import org.codehaus.jackson.smile.SmileGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class FileBackedBuffer
@@ -62,12 +61,9 @@ public class FileBackedBuffer
     public void discard()
     {
         for (final String path : out.getCreatedFiles()) {
-            try {
-                log.info("Discarding file: {}", path);
-                Files.deleteIfExists(Paths.get(path));
-            }
-            catch (IOException e) {
-                log.warn("Unable to discard file: {}", path, e);
+            log.info("Discarding file: {}", path);
+            if (!new File(path).delete()) {
+                log.warn("Unable to discard file: {}", path);
             }
         }
 
