@@ -134,6 +134,11 @@
       </dependency>
       <dependency>
         <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-client</artifactId>
+        <version>1.10</version>
+      </dependency>
+      <dependency>
+        <groupId>com.sun.jersey</groupId>
         <artifactId>jersey-core</artifactId>
         <version>1.10</version>
       </dependency>
@@ -267,6 +272,16 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-log4j12</artifactId>
         <version>1.6.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>1.6.3</version>
+      </dependency>
+      <dependency>
+        <groupId>org.sonatype.spice</groupId>
+        <artifactId>jersey-ahc-client</artifactId>
+        <version>1.0.2</version>
       </dependency>
 
       <dependency>
