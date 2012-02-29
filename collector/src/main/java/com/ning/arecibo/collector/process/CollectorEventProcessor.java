@@ -1,6 +1,7 @@
 package com.ning.arecibo.collector.process;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -27,6 +28,7 @@ import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.TimelineRegistry;
 import com.ning.arecibo.util.timeline.TimelineTimes;
+import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.weakref.jmx.Managed;
@@ -106,6 +108,8 @@ public class CollectorEventProcessor implements EventProcessor
                 forceCommit();
             }
         }, config.getTimelineLength().getMillis(), config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS);
+
+        replay(config.getSpoolDir());
     }
 
     public void processEvent(final Event evt)
@@ -150,8 +154,7 @@ public class CollectorEventProcessor implements EventProcessor
 
                 // In case of batched events, use the timestamp of the first event
                 final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, evt.getEventType(), new DateTime(events.get(0).getTimestamp(), DateTimeZone.UTC), scalarSamples);
-                final TimelineHostEventAccumulator accumulator = accumulators.get(hostId);
-                accumulator.addHostSamples(hostSamples);
+                processSamples(hostSamples);
             }
         }
         catch (RuntimeException ruEx) {
@@ -160,6 +163,12 @@ public class CollectorEventProcessor implements EventProcessor
         catch (ExecutionException e) {
             log.warn(e);
         }
+    }
+
+    private void processSamples(final HostSamplesForTimestamp hostSamples) throws ExecutionException
+    {
+        final TimelineHostEventAccumulator accumulator = accumulators.get(hostSamples.getHostId());
+        accumulator.addHostSamples(hostSamples);
     }
 
     public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes() throws IOException
@@ -253,6 +262,33 @@ public class CollectorEventProcessor implements EventProcessor
                 outputSamples.put(sampleKindId, new ScalarSample<String>(SampleOpcode.STRING, sample.toString()));
             }
         }
+    }
+
+    private void replay(final String spoolDir)
+    {
+        log.info("Starting replay of files in {}", spoolDir);
+        final Replayer replayer = new Replayer(spoolDir);
+
+        // Read all files in the spool directory and delete them after process
+        replayer.readAll(new Function<HostSamplesForTimestamp, Void>()
+        {
+            @Override
+            public Void apply(@Nullable final HostSamplesForTimestamp input)
+            {
+                if (input != null) {
+                    try {
+                        processSamples(input);
+                    }
+                    catch (ExecutionException e) {
+                        log.warn("Got exception replaying sample, data potentially lost! {}", input.toString());
+                    }
+                }
+
+                return null;
+            }
+        });
+
+        log.info("Replay completed");
     }
 
     @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

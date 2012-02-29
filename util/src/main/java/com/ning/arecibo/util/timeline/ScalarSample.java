@@ -28,4 +28,10 @@ public class ScalarSample<T> extends SampleBase
     {
         return sampleValue;
     }
+
+    @Override
+    public String toString()
+    {
+        return sampleValue.toString();
+    }
 }

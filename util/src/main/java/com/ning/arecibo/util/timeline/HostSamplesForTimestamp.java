@@ -53,4 +53,18 @@ public class HostSamplesForTimestamp
     {
         return samples;
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("HostSamplesForTimestamp");
+        sb.append("{category='").append(category).append('\'');
+        sb.append(", hostId=").append(hostId);
+        sb.append(", timestamp=").append(timestamp);
+        sb.append(", samples=").append(samples);
+        sb.append('}');
+
+        return sb.toString();
+    }
 }
