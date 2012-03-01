@@ -32,6 +32,7 @@ public interface DashboardConfig
     boolean isAlertManagerEnabled();
 
     @Config("arecibo.dashboard.collector_host")
+    @Default("127.0.0.1")
     String getCollectorHost();
 
     @Config("arecibo.dashboard.dashboard_collector_keep_alive_host")
@@ -49,4 +50,8 @@ public interface DashboardConfig
     @Config("arecibo.dashboard.e2ez_time_range_map_cache_size")
     @Default("64")
     int getE2EZTimeRangeMapCacheSize();
+
+    @Config("arecibo.dashboard.serviceLocatorKlass")
+    @Default("com.ning.arecibo.util.service.DummyServiceLocator")
+    String getServiceLocatorClass();
 }

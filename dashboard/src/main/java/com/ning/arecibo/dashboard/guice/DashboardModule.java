@@ -1,9 +1,5 @@
 package com.ning.arecibo.dashboard.guice;
 
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.IDBI;
-import org.weakref.jmx.guice.ExportBuilder;
-import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.name.Named;
@@ -21,13 +17,28 @@ import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.dashboard.table.DashboardTableBeanFactory;
 import com.ning.arecibo.event.publisher.HdfsEventPublisher;
 import com.ning.arecibo.event.publisher.RandomEventServiceChooser;
+import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
+import com.ning.arecibo.util.service.DummyServiceLocator;
+import com.ning.arecibo.util.service.ServiceLocator;
+import org.skife.config.ConfigurationObjectFactory;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.IDBI;
+import org.weakref.jmx.guice.ExportBuilder;
+import org.weakref.jmx.guice.MBeanModule;
 
 public class DashboardModule extends AbstractModule
 {
+    private static final Logger log = Logger.getLogger(DashboardModule.class);
+
     @Override
-	public void configure()
-	{
+    public void configure()
+    {
+        final DashboardConfig config = new ConfigurationObjectFactory(System.getProperties()).build(DashboardConfig.class);
+        bind(DashboardConfig.class).toInstance(config);
+
+        configureServiceLocator(config);
+
         bind(DashboardFormatManager.class).asEagerSingleton();
         bind(GalaxyStatusManager.class).asEagerSingleton();
         bind(AlertStatusManager.class).asEagerSingleton();
@@ -55,5 +66,16 @@ public class DashboardModule extends AbstractModule
         builder.export(DashboardCollectorDAOKeepAliveManager.class).as("arecibo.dashboard:name=DAOKeepAliveManager");
         builder.export(DashboardTableBeanFactory.class).as("arecibo.dashboard:name=TableBeanFactory");
         builder.export(ContextMbeanManager.class).as("arecibo.dashboard:name=ContextMbeanManager");
-	}
+    }
+
+    private void configureServiceLocator(final DashboardConfig config)
+    {
+        try {
+            bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find ServiceLocator", e);
+            bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
+        }
+    }
 }

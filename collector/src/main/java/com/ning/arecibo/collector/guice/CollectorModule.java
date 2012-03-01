@@ -26,8 +26,7 @@ import java.util.Map;
 
 public class CollectorModule extends AbstractModule
 {
-
-    final static Logger log = Logger.getLogger(CollectorModule.class);
+    private static final Logger log = Logger.getLogger(CollectorModule.class);
 
     @Override
     public void configure()

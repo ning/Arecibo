@@ -15,6 +15,10 @@
   <packaging>war</packaging>
   <dependencies>
     <dependency>
+      <groupId>com.jolbox</groupId>
+      <artifactId>bonecp</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.ning.arecibo</groupId>
       <artifactId>arecibo-util</artifactId>
       <version>${project.version}</version>
