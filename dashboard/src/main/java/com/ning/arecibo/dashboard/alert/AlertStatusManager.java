@@ -1,8 +1,5 @@
 package com.ning.arecibo.dashboard.alert;
 
-import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_HOST_NAME;
-import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_PATH_NAME;
-import static com.ning.arecibo.dashboard.context.DashboardContextUtils.UNDEFINED_TYPE_NAME;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -18,7 +15,11 @@ import com.ning.arecibo.util.Logger;
 public class AlertStatusManager implements Runnable
 {
     private final static Logger log = Logger.getLogger(AlertStatusManager.class);
-    
+
+    public final static String UNDEFINED_HOST_NAME = "undefined";
+    public final static String UNDEFINED_TYPE_NAME = "undefined";
+    public final static String UNDEFINED_PATH_NAME = "undefined";
+
     public final static String HOST_ATTR = "hostName";
     public final static String TYPE_ATTR = "deployedType";
     public final static String PATH_ATTR = "deployedConfigSubPath";
@@ -115,7 +116,7 @@ public class AlertStatusManager implements Runnable
     }
 
     public boolean isMetricInAlert(String eventType,String attributeType,String typeName,String path,String hostName) {
-        
+
     	if(hostName != null && !hostName.equals(UNDEFINED_HOST_NAME)) {
     		return isHostMetricInAlert(eventType,attributeType,hostName);
     	}
@@ -131,7 +132,7 @@ public class AlertStatusManager implements Runnable
     		return isOverallMetricInAlert(eventType,attributeType);
     	}
     }
-    
+
     public List<DashboardAlertStatus> getMetricsInAlert() {
         
     	ArrayList<DashboardAlertStatus> retList = new ArrayList<DashboardAlertStatus>();
