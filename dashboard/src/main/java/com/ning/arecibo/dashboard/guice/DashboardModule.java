@@ -39,14 +39,7 @@ public class DashboardModule extends AbstractModule
         bind(ClusterAwareAlertClient.class).asEagerSingleton();
         bind(AlertRESTClient.class).asEagerSingleton();
 
-        // set up the database connection, with named statistics
-        final Named moduleName = Names.named(DashboardConstants.DASHBOARD_COLLECTOR_DB);
-
-        bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.events.collector.db")).asEagerSingleton();
-        bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName));
-
         final ExportBuilder builder = MBeanModule.newExporter(binder());
-
         builder.export(RandomEventServiceChooser.class).as("arecibo:type=HdfsEventServiceChooser");
         builder.export(HdfsEventPublisher.class).as("arecibo:name=HdfsEventPublisher");
     }

@@ -53,7 +53,7 @@ public class DashboardStartupContextListener implements ServletContextListener
         lc.fire(LifecycleEvent.START);
     }
 
-    public void contextDestroyed(ServletContextEvent sce)
+    public void contextDestroyed(final ServletContextEvent sce)
     {
     }
 }
