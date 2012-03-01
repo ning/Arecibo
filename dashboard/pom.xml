@@ -84,6 +84,16 @@
       <artifactId>jackson-mapper-asl</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <scope>provided</scope>
@@ -100,16 +110,39 @@
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty-plugin</artifactId>
-        <version>6.1.20</version>
+        <version>6.1.22</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.6.3</version>
+          </dependency>
+          <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.6.3</version>
+          </dependency>
+          <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.13</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <contextPath>/</contextPath>
+          <systemProperties>
+            <systemProperty>
+              <name>log4j.configuration</name>
+              <value>file:${basedir}/src/test/resources/log4j.xml</value>
+            </systemProperty>
+          </systemProperties>
           <webApp>${basedir}/target/${project.name}-${project.version}.war</webApp>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty-jspc-plugin</artifactId>
-        <version>6.1.20</version>
+        <version>6.1.22</version>
         <executions>
           <execution>
             <id>jspc</id>
