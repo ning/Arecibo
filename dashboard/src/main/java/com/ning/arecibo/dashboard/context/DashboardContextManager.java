@@ -5,8 +5,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.ServletContext;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
-import com.ning.arecibo.dashboard.alert.e2ez.E2EZConfigManager;
-import com.ning.arecibo.dashboard.alert.e2ez.E2EZStatusManager;
 import com.ning.arecibo.dashboard.dao.DashboardCollectorDAO;
 import com.ning.arecibo.dashboard.dao.DashboardCollectorDAOKeepAliveManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
@@ -157,22 +155,6 @@ public class DashboardContextManager
     
     public void setMbeanManager(ContextMbeanManager mbeanManager) {
         servletContext.setAttribute(CONTEXT_MBEAN_MANAGER,mbeanManager);
-    }
-
-    public E2EZConfigManager getE2EZConfigManager() {
-        return (E2EZConfigManager)servletContext.getAttribute(CONTEXT_E2EZ_CONFIG_MANAGER);
-    }
-
-    public void setE2EZConfigManager(E2EZConfigManager e2ezConfigManager) {
-        servletContext.setAttribute(CONTEXT_E2EZ_CONFIG_MANAGER,e2ezConfigManager);
-    }
-
-    public E2EZStatusManager getE2EZStatusManager() {
-        return (E2EZStatusManager)servletContext.getAttribute(CONTEXT_E2EZ_STATUS_MANAGER);
-    }
-
-    public void setE2EZStatusManager(E2EZStatusManager e2ezStatusManager) {
-        servletContext.setAttribute(CONTEXT_E2EZ_STATUS_MANAGER,e2ezStatusManager);
     }
 
     public boolean getShowDebugMode() {

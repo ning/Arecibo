@@ -13,8 +13,6 @@ import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.ning.arecibo.alert.confdata.guice.AlertDataModule;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
-import com.ning.arecibo.dashboard.alert.e2ez.E2EZConfigManager;
-import com.ning.arecibo.dashboard.alert.e2ez.E2EZStatusManager;
 import com.ning.arecibo.dashboard.dao.DashboardCollectorDAO;
 import com.ning.arecibo.dashboard.dao.DashboardCollectorDAOKeepAliveManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
@@ -64,11 +62,6 @@ public class DashboardStartupContextListener implements ServletContextListener
 		
 		DashboardTableBeanFactory tableBeanFactory = injector.getInstance(DashboardTableBeanFactory.class);
 
-        E2EZConfigManager e2ezConfigManager = injector.getInstance(E2EZConfigManager.class);
-        e2ezConfigManager.start();
-
-        E2EZStatusManager e2ezStatusManager = injector.getInstance(E2EZStatusManager.class);
-
 		// do this here for now, should really be part of better guiciness for servlet context
 		// lifecycle is needed, if for no other reason than to start the LoggingModule
 		Lifecycle lc = injector.getInstance(Lifecycle.class);
@@ -98,12 +91,6 @@ public class DashboardStartupContextListener implements ServletContextListener
 
         contextManager.setAlertStatusManager(alertStatusManager);
         log.info("Added alertStatusManager to ServletContext");
-
-        contextManager.setE2EZConfigManager(e2ezConfigManager);
-        log.info("Added e2ezConfigManager to ServletContext");
-
-		contextManager.setE2EZStatusManager(e2ezStatusManager);
-		log.info("Added e2ezStatusManager to ServletContext");
 	}
 
 	public void contextDestroyed(ServletContextEvent sce) {
@@ -124,11 +111,6 @@ public class DashboardStartupContextListener implements ServletContextListener
         AlertStatusManager alertStatusManager = contextManager.getAlertStatusManager();
         if(alertStatusManager != null) {
             alertStatusManager.stop();
-        }
-
-        E2EZConfigManager e2ezConfigManager = contextManager.getE2EZConfigManager();
-        if(e2ezConfigManager != null) {
-            e2ezConfigManager.stop();
         }
     }
 }

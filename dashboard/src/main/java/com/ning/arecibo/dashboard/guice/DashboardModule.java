@@ -7,8 +7,6 @@ import com.google.inject.name.Names;
 import com.ning.arecibo.dashboard.alert.AlertRESTClient;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.alert.ClusterAwareAlertClient;
-import com.ning.arecibo.dashboard.alert.e2ez.E2EZConfigManager;
-import com.ning.arecibo.dashboard.alert.e2ez.E2EZStatusManager;
 import com.ning.arecibo.dashboard.context.ContextMbeanManager;
 import com.ning.arecibo.dashboard.dao.DashboardCollectorDAO;
 import com.ning.arecibo.dashboard.dao.DashboardCollectorDAOKeepAliveManager;
@@ -44,8 +42,6 @@ public class DashboardModule extends AbstractModule
         bind(AlertStatusManager.class).asEagerSingleton();
         bind(ClusterAwareAlertClient.class).asEagerSingleton();
         bind(AlertRESTClient.class).asEagerSingleton();
-        bind(E2EZStatusManager.class).asEagerSingleton();
-        bind(E2EZConfigManager.class).asEagerSingleton();
 
         // set up the database connection, with named statistics
         final Named moduleName = Names.named(DashboardConstants.DASHBOARD_COLLECTOR_DB);
