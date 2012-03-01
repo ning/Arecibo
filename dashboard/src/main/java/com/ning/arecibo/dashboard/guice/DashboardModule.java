@@ -7,7 +7,6 @@ import com.google.inject.name.Names;
 import com.ning.arecibo.dashboard.alert.AlertRESTClient;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.alert.ClusterAwareAlertClient;
-import com.ning.arecibo.dashboard.context.ContextMbeanManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.event.publisher.HdfsEventPublisher;
@@ -45,14 +44,11 @@ public class DashboardModule extends AbstractModule
 
         bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.events.collector.db")).asEagerSingleton();
         bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName));
-        bind(ContextMbeanManager.class).asEagerSingleton();
 
-        ExportBuilder builder = MBeanModule.newExporter(binder());
+        final ExportBuilder builder = MBeanModule.newExporter(binder());
 
         builder.export(RandomEventServiceChooser.class).as("arecibo:type=HdfsEventServiceChooser");
         builder.export(HdfsEventPublisher.class).as("arecibo:name=HdfsEventPublisher");
-
-        builder.export(ContextMbeanManager.class).as("arecibo.dashboard:name=ContextMbeanManager");
     }
 
     private void configureServiceLocator(final DashboardConfig config)
