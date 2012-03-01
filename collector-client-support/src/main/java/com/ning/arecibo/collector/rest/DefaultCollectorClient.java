@@ -22,7 +22,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Default implementation of the Collector client.
@@ -56,7 +56,7 @@ public class DefaultCollectorClient implements CollectorClient
     @Override
     public Iterable<String> getHosts()
     {
-        final TypeReference<Iterable<String>> valueTypeRef = new TypeReference<Iterable<String>>()
+        final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
         {
         };
         final InputStream stream = getHostsAsStream();
@@ -73,7 +73,7 @@ public class DefaultCollectorClient implements CollectorClient
     @Override
     public Iterable<String> getSampleKinds()
     {
-        final TypeReference<Iterable<String>> valueTypeRef = new TypeReference<Iterable<String>>()
+        final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
         {
         };
         final InputStream stream = getSampleKindsAsStream();
@@ -88,7 +88,7 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Map<String, TimelineChunkAndTimes> getSamplesByHostName(final String hostName)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName)
     {
         return getSamplesByHostName(hostName, new DateTime("0"), new DateTime(DateTimeZone.UTC));
     }
@@ -100,7 +100,7 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Map<String, TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from)
     {
         return getSamplesByHostName(hostName, from, new DateTime(DateTimeZone.UTC));
     }
@@ -116,9 +116,9 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Map<String, TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to)
     {
-        final TypeReference<Map<String, TimelineChunkAndTimes>> valueTypeRef = new TypeReference<Map<String, TimelineChunkAndTimes>>()
+        final TypeReference<List<TimelineChunkAndTimes>> valueTypeRef = new TypeReference<List<TimelineChunkAndTimes>>()
         {
         };
         final InputStream stream = getSamplesByHostNameAsStream(hostName, from, to);
@@ -163,7 +163,7 @@ public class DefaultCollectorClient implements CollectorClient
     @Override
     public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from, final DateTime to)
     {
-        final TypeReference<Iterable<TimelineChunkAndTimes>> valueTypeRef = new TypeReference<Iterable<TimelineChunkAndTimes>>()
+        final TypeReference<List<TimelineChunkAndTimes>> valueTypeRef = new TypeReference<List<TimelineChunkAndTimes>>()
         {
         };
         final InputStream stream = getSamplesByHostNameAsStream(hostName, from, to);

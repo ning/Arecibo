@@ -18,15 +18,15 @@ public interface CollectorClient
 
     public InputStream getSamplesByHostNameAsStream(final String hostName);
 
-    public Map<String, TimelineChunkAndTimes> getSamplesByHostName(final String hostName);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName);
 
     public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from);
 
-    public Map<String, TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from);
 
     public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from, final DateTime to);
 
-    public Map<String, TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to);
 
     public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind);
 

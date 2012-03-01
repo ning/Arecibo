@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO Make queries stream-able
 public class TimelineDAO
 {
     private final IDBI dbi;

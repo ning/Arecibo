@@ -8,7 +8,6 @@ import org.codehaus.jackson.annotate.JsonProperty;
  */
 public class ScalarSample<T> extends SampleBase
 {
-
     private final T sampleValue;
 
     public ScalarSample(final SampleOpcode opcode, final T sampleValue)
