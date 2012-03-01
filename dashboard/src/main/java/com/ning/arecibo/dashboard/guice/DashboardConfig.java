@@ -18,4 +18,8 @@ public interface DashboardConfig
     @Config("arecibo.dashboard.serviceLocatorKlass")
     @Default("com.ning.arecibo.util.service.DummyServiceLocator")
     String getServiceLocatorClass();
+
+    @Config("arecibo.dashboard.galaxy.updateInterval")
+    @Default("5m")
+    TimeSpan getGalaxyUpdateInterval();
 }
