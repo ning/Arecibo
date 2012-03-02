@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
   <!--
-  ~ Copyright 2010-2011 Ning, Inc.
+  ~ Copyright 2010-2012 Ning, Inc.
   ~
   ~ Ning licenses this file to you under the Apache License, version 2.0
   ~ (the "License"); you may not use this file except in compliance with the
@@ -14,10 +14,6 @@
   ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
   ~ License for the specific language governing permissions and limitations
   ~ under the License.
-  ~
-  ~ Copied originally from the Jetty 8 tarball, see:
-  ~
-  ~     http://download.eclipse.org/jetty/8.0.4.v20111024/dist/
   -->
 
   <!-- ===================================================================== -->

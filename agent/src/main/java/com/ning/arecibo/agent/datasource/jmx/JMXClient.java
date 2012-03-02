@@ -1,3 +1,19 @@
+/*
+ * Copyright 2010-2012 Ning, Inc.
+ *
+ * Ning licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
 package com.ning.arecibo.agent.datasource.jmx;
 
 import javax.management.Attribute;
@@ -97,11 +113,6 @@ public class JMXClient
 
     /**
      * Timeout constructor. Use JMXTimeoutConnector.connectWithTimeout() instead of JMXConnectorFactory.connect()
-     *
-     * @param host
-     * @param timeout
-     * @param unit
-     * @throws IOException
      */
     public JMXClient(String host, long timeout, TimeUnit unit) throws IOException
     {
@@ -196,10 +207,9 @@ public class JMXClient
      *     MemoryMXBean mem = this.client.getMXBean("java.lang:type=Memory", MemoryMXBean.class);
      *     long used = mem.getHeapMemoryUsage().getUsed();
      *
-     * @param name, object name as string
-     * @param interfaceClass, interface
+     * @param name object name as string
+     * @param interfaceClass interface
      * @return instantiated proxy object
-     * @throws javax.management.MalformedObjectNameException
      */
     public <T> T getMXBean(String name, Class<T> interfaceClass) throws MalformedObjectNameException
     {
@@ -218,8 +228,8 @@ public class JMXClient
      *
      * See getMXbean for example usage.
      *
-     * @param name, object name
-     * @param interfaceClass, interface
+     * @param name object name
+     * @param interfaceClass interface
      * @return instantiated proxy object
      */
     public <T> T getMXBean(ObjectName name, Class<T> interfaceClass) {
@@ -234,10 +244,6 @@ public class JMXClient
      *  JMXClient.MBeanDescriptor clusterMBean = client.getMBean("java.lang:type=Memory");
      *  CompositeData memoryUsage = (CompositeData) client.getAttributeValue(clusterMBean, "HeapMemoryUsage");
      *  long used = (Long) memoryUsage.get("used");
-     *
-     * @param mbeanDesc
-     * @param attrName
-     * @return
      */
     public Object getAttributeValue(MBeanDescriptor mbeanDesc, String attrName)
     {
