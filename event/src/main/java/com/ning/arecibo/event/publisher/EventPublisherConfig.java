@@ -1,9 +1,10 @@
 package com.ning.arecibo.event.publisher;
 
-import java.io.File;
 import org.skife.config.Config;
 import org.skife.config.Default;
 import org.skife.config.TimeSpan;
+
+import java.io.File;
 
 public interface EventPublisherConfig
 {
@@ -32,5 +33,6 @@ public interface EventPublisherConfig
     File getLocalSpoolRoot();
 
     @Config("arecibo.event.eventServiceName")
+    @Default("arecibo-event-publisher")
     String getEventServiceName();
 }

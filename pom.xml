@@ -10,9 +10,11 @@
   <url>http://www.ning.com</url>
   <name>arecibo-parent</name>
 
-  <properties>
-    <scm.base.url>scm:git:git://github.com/ning/arecibo.git</scm.base.url>
-  </properties>
+    <properties>
+        <scm.base.url>scm:git:git://github.com/ning/arecibo.git</scm.base.url>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <skeleton.version>0.0.20</skeleton.version>
+    </properties>
 
     <repositories>
         <repository>
@@ -87,6 +89,18 @@
        <artifactId>mogwee-executors</artifactId>
        <version>1.1.0</version>
      </dependency>
+        <dependency>
+            <groupId>com.ning.jetty</groupId>
+            <artifactId>ning-service-skeleton-base</artifactId>
+            <version>${skeleton.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.ning.jetty</groupId>
+            <artifactId>ning-service-skeleton-log4j</artifactId>
+            <version>${skeleton.version}</version>
+            <classifier>selfcontained</classifier>
+            <scope>provided</scope>
+        </dependency>
       <dependency>
         <groupId>joda-time</groupId>
         <artifactId>joda-time</artifactId>

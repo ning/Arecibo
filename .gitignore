@@ -7,3 +7,6 @@ target
 .settings
 pom.xml.releaseBackup
 release.properties
+dashboard/logs
+dashboard/spool
+dev/

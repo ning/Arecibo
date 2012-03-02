@@ -1,9 +1,10 @@
 package com.ning.arecibo.dashboard.guice;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
+import com.ning.arecibo.collector.CollectorClient;
+import com.ning.arecibo.collector.discovery.CollectorFinder;
+import com.ning.arecibo.collector.discovery.DefaultCollectorFinder;
+import com.ning.arecibo.collector.rest.DefaultCollectorClient;
 import com.ning.arecibo.dashboard.alert.AlertRESTClient;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.alert.ClusterAwareAlertClient;
@@ -12,12 +13,9 @@ import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.event.publisher.HdfsEventPublisher;
 import com.ning.arecibo.event.publisher.RandomEventServiceChooser;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.jdbi.DBIProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
 import org.skife.config.ConfigurationObjectFactory;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.IDBI;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -33,6 +31,9 @@ public class DashboardModule extends AbstractModule
 
         configureServiceLocator(config);
 
+        bind(CollectorClient.class).to(DefaultCollectorClient.class).asEagerSingleton();
+        // TODO hook ServiceLocator
+        bind(CollectorFinder.class).to(DefaultCollectorFinder.class).asEagerSingleton();
         bind(DashboardFormatManager.class).asEagerSingleton();
         bind(GalaxyStatusManager.class).asEagerSingleton();
         bind(AlertStatusManager.class).asEagerSingleton();

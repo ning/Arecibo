@@ -1,42 +1,45 @@
 package com.ning.arecibo.dashboard.context;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Stage;
 import com.ning.arecibo.alert.confdata.guice.AlertDataModule;
+import com.ning.arecibo.collector.CollectorClientConfig;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.dashboard.guice.DashboardModule;
+import com.ning.arecibo.event.publisher.EventPublisherConfig;
+import com.ning.arecibo.event.publisher.HdfsEventPublisherModule;
 import com.ning.arecibo.util.galaxy.GalaxyModule;
 import com.ning.arecibo.util.lifecycle.Lifecycle;
 import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
+import com.ning.jetty.base.modules.ServerModuleBuilder;
+import com.ning.jetty.core.listeners.SetupServer;
 
-import javax.management.MBeanServer;
 import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import java.lang.management.ManagementFactory;
 
-public class DashboardStartupContextListener implements ServletContextListener
+public class DashboardStartupContextListener extends SetupServer
 {
-    public void contextInitialized(final ServletContextEvent sce)
+    @Override
+    public void contextInitialized(final ServletContextEvent event)
     {
-        final Injector injector = Guice.createInjector(Stage.PRODUCTION,
-            new LifecycleModule(),
-            new AbstractModule()
-            {
-                @Override
-                protected void configure()
-                {
-                    bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
-                }
-            },
-            new GalaxyModule(),
-            new DashboardModule(),
-            new AlertDataModule("arecibo.dashboard.alert.conf.db")
-        );
+        final ServerModuleBuilder builder = new ServerModuleBuilder()
+            .addConfig(CollectorClientConfig.class)
+            .setAreciboProfile(System.getProperty("action.arecibo.profile", "ning.jmx:name=MonitoringProfile"))
+            .addModule(new LifecycleModule())
+            .addModule(new GalaxyModule())
+            .addModule(new DashboardModule())
+            .addModule(new HdfsEventPublisherModule("server", "dashboard"))
+            .addModule(new AlertDataModule("arecibo.dashboard.alert.conf.db"))
+            .enableLog4J()
+            .addResource("com.ning.arecibo.dashboard.resources");
+
+        guiceModule = builder.build();
+
+        // Let Guice create the injector
+        super.contextInitialized(event);
+
+        final Injector injector = (Injector) event.getServletContext().getAttribute(Injector.class.getName());
 
         final GalaxyStatusManager galaxyStatusManager = injector.getInstance(GalaxyStatusManager.class);
         galaxyStatusManager.start();
@@ -51,9 +54,5 @@ public class DashboardStartupContextListener implements ServletContextListener
         // lifecycle is needed, if for no other reason than to start the LoggingModule
         final Lifecycle lc = injector.getInstance(Lifecycle.class);
         lc.fire(LifecycleEvent.START);
-    }
-
-    public void contextDestroyed(final ServletContextEvent sce)
-    {
     }
 }
