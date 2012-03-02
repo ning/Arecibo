@@ -200,13 +200,13 @@ public class DefaultCollectorClient implements CollectorClient
 
     private InputStream getPathAsStream(final String path, @Nullable final MultivaluedMap<String, String> queryParams)
     {
-        final WebResource resource = createWebResource();
+        WebResource resource = createWebResource().path(path);
         if (queryParams != null) {
-            return resource.path(path).queryParams(queryParams).get(InputStream.class);
+            resource = resource.queryParams(queryParams);
         }
-        else {
-            return resource.path(path).get(InputStream.class);
-        }
+
+        log.info("Calling: {}", resource.toString());
+        return resource.get(InputStream.class);
     }
 
     private WebResource createWebResource()
