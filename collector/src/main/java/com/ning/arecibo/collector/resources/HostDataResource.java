@@ -21,6 +21,7 @@ import com.google.inject.Singleton;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.jersey.metrics.TimedResource;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.util.DefaultPrettyPrinter;
@@ -60,6 +61,7 @@ public class HostDataResource
     @GET
     @Path("/hosts")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public StreamingOutput getHosts(@QueryParam("pretty") @DefaultValue("false") final boolean pretty)
     {
         final BiMap<Integer, String> hosts = dao.getHosts();
@@ -69,6 +71,7 @@ public class HostDataResource
     @GET
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public StreamingOutput getSampleKinds(@QueryParam("pretty") @DefaultValue("false") final boolean pretty)
     {
         final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
@@ -78,6 +81,7 @@ public class HostDataResource
     @GET
     @Path("/{host}")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public StreamingOutput getSamplesByHostName(
         @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
         @PathParam("host") final String hostName,
@@ -104,6 +108,7 @@ public class HostDataResource
     @GET
     @Path("/{host}/{sample_kind}")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public StreamingOutput getSamplesByHostNameAndSampleKind(
         @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
         @PathParam("host") final String hostName,

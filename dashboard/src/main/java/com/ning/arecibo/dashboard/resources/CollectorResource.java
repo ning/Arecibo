@@ -20,6 +20,7 @@ import com.google.inject.Singleton;
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.jersey.metrics.TimedResource;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.util.JSONPObject;
@@ -58,6 +59,7 @@ public class CollectorResource
     @GET
     @Path("/hosts")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public Response getHosts(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         final Iterable<String> hosts = client.getHosts();
@@ -68,6 +70,7 @@ public class CollectorResource
     @GET
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public Response getSampleKinds(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         final Iterable<String> sampleKinds = client.getSampleKinds();
@@ -78,6 +81,7 @@ public class CollectorResource
     @GET
     @Path("/{host}")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public Response getSamplesByHostName(@QueryParam("callback") @DefaultValue("callback") final String callback,
                                          @PathParam("host") final String hostName,
                                          @QueryParam("from") @DefaultValue("0") final String from,
@@ -99,6 +103,7 @@ public class CollectorResource
     @GET
     @Path("/{host}/{sample_kind}")
     @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
     public Response getSamplesByHostNameAndSampleKind(@QueryParam("callback") @DefaultValue("callback") final String callback,
                                                       @PathParam("host") final String hostName,
                                                       @PathParam("sample_kind") final String sampleKind,

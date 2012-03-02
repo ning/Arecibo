@@ -27,6 +27,7 @@ import com.ning.arecibo.util.jdbi.DBIProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.jersey.metrics.TimedResourceModule;
 import org.skife.config.ConfigurationObjectFactory;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
@@ -47,7 +48,7 @@ public class CollectorModule extends AbstractModule
         ResolutionUtils resUtils = new ResolutionUtils();
 
         configureDao();
-
+        configureStats();
         configureServiceLocator(config);
 
         bind(ResolutionUtils.class).toInstance(resUtils);
@@ -96,6 +97,11 @@ public class CollectorModule extends AbstractModule
         bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.events.collector.db")).asEagerSingleton();
         bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName)).asEagerSingleton();
         bind(TimelineDAO.class).asEagerSingleton();
+    }
+
+    protected void configureStats()
+    {
+        install(new TimedResourceModule());
     }
 }
 
