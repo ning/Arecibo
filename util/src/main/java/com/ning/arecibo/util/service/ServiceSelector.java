@@ -1,30 +1,27 @@
 package com.ning.arecibo.util.service;
 
-import java.io.Serializable;
-
 import org.apache.commons.lang.StringUtils;
 
-import com.ning.arecibo.util.service.Selector;
-import com.ning.arecibo.util.service.ServiceDescriptor;
+import java.io.Serializable;
 
 public class ServiceSelector implements Selector, Serializable
 {
-	static final long serialVersionUID = 6476522335558352705L;
+    static final long serialVersionUID = 6476522335558352705L;
 
-	private final String serviceName ;
+    private final String serviceName;
 
-	public ServiceSelector(String serviceName)
-	{
-		this.serviceName = serviceName;
-	}
+    public ServiceSelector(String serviceName)
+    {
+        this.serviceName = serviceName;
+    }
 
-	public String getServiceName()
-	{
-	    return serviceName;
-	}
+    public String getServiceName()
+    {
+        return serviceName;
+    }
 
-	public boolean match(ServiceDescriptor sd)
-	{
-		return StringUtils.equals(sd.getName(), serviceName);
-	}
+    public boolean match(ServiceDescriptor sd)
+    {
+        return StringUtils.equals(sd.getName(), serviceName);
+    }
 }
