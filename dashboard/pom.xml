@@ -25,11 +25,6 @@
         </dependency>
         <dependency>
             <groupId>com.ning.arecibo</groupId>
-            <artifactId>arecibo-dashboard-client-support</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.ning.arecibo</groupId>
             <artifactId>arecibo-collector-client-support</artifactId>
             <version>${project.version}</version>
         </dependency>
