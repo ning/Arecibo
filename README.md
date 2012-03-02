@@ -18,6 +18,7 @@ Before starting the collector, you need to create a database first, e.g.:
     ~ > cat collector/src/main/resources/collector.sql | mysql -u root -p arecibo
     Enter password:
 
+
 To start the collector, assuming MySQL is running locally:
 
     java \
@@ -25,6 +26,20 @@ To start the collector, assuming MySQL is running locally:
         -Darecibo.events.collector.db.user=root \
         -Darecibo.events.collector.db.password=root
         -jar target/arecibo-collector-*-jar-with-dependencies.jar
+
+
+To send data via the REST API, send JSON payloads to /xn/rest/1.0/event, e.g. (send 2 data points):
+
+    echo "
+    {
+        \"timestamp\": $(date +%s)000,
+        \"eventType\": \"testEvent\",
+        \"sourceUUID\": \"550e8400-e29b-41d4-a716-446655440000\",
+        \"min_heapUsed\": $RANDOM.515698888E9,
+        \"max_heapUsed\": $RANDOM.835511784E9
+    }" | \
+    curl -v -H'Content-Type: application/json' -XPOST -d@- http://127.0.0.1:8088/xn/rest/1.0/event
+
 
 Data is exposed in JSON format, e.g.:
 
