@@ -25,7 +25,6 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-@Test(groups = "integration,slow", enabled = false)
 public class TestDefaultCollectorClientIntegration
 {
     CollectorClient client;
@@ -39,14 +38,14 @@ public class TestDefaultCollectorClientIntegration
         client = new DefaultCollectorClient(finder);
     }
 
-    @Test
+    @Test(groups = "integration,slow", enabled = false)
     public void testGetHosts() throws Exception
     {
         Assert.assertNotNull(client.getHosts());
         Assert.assertTrue(client.getHosts().iterator().hasNext());
     }
 
-    @Test
+    @Test(groups = "integration,slow", enabled = false)
     public void testGetSampleKinds() throws Exception
     {
         Assert.assertNotNull(client.getSampleKinds());

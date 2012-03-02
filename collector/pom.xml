@@ -56,6 +56,10 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.ning.jaxrs</groupId>
+            <artifactId>jaxrs-metrics</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.ning</groupId>
             <artifactId>async-http-client</artifactId>
             <scope>test</scope>
