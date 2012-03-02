@@ -182,7 +182,7 @@ public class DefaultCollectorClient implements CollectorClient
         final TypeReference<List<TimelineChunkAndTimes>> valueTypeRef = new TypeReference<List<TimelineChunkAndTimes>>()
         {
         };
-        final InputStream stream = getSamplesByHostNameAsStream(hostName, from, to);
+        final InputStream stream = getSamplesByHostNameAndSampleKindAsStream(hostName, sampleKind, from, to);
 
         return readValue(stream, valueTypeRef);
     }
