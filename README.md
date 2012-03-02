@@ -22,6 +22,9 @@ Before starting the collector, you need to create a database first, e.g.:
 To start the collector, assuming MySQL is running locally:
 
     java \
+        -Dcom.sun.management.jmxremote.authenticate=false \
+        -Dcom.sun.management.jmxremote.port=8990 \
+        -Dcom.sun.management.jmxremote.ssl=false \
         -Darecibo.events.collector.db.url=jdbc:mysql://127.0.0.1:3306/arecibo \
         -Darecibo.events.collector.db.user=root \
         -Darecibo.events.collector.db.password=root
@@ -56,7 +59,12 @@ The dashboard module exposes graphs of collected metrics. It relies on a collect
 
 To start the dashboard, assuming the collector is at `http://127.0.0.1:8088`:
 
-    mvn -Darecibo.collectorClient.collectorUri=http://127.0.0.1:8088 jetty:run
+    mvn \
+        -Dcom.sun.management.jmxremote.authenticate=false \
+        -Dcom.sun.management.jmxremote.port=8989 \
+        -Dcom.sun.management.jmxremote.ssl=false \
+        -Darecibo.collectorClient.collectorUri=http://127.0.0.1:8088 \
+        jetty:run
 
 You can test it by hitting the dashboard's endpoints, e.g.:
 
