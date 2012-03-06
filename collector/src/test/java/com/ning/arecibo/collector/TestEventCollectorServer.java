@@ -18,6 +18,7 @@ package com.ning.arecibo.collector;
 
 import com.google.common.collect.BiMap;
 import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.publisher.EventSenderType;
@@ -70,6 +71,9 @@ public class TestEventCollectorServer
     CollectorEventProcessor processor;
 
     @Inject
+    TimelineEventHandler timelineEventHandler;
+
+    @Inject
     TimelineDAO timelineDAO;
 
     @BeforeMethod(alwaysRun = true)
@@ -112,7 +116,7 @@ public class TestEventCollectorServer
         final RESTEventService service = createService(new JsonEventSerializer());
 
         Assert.assertEquals(processor.getEventsReceived(), 0);
-        Assert.assertEquals(processor.getEventsDiscarded(), 0);
+        Assert.assertEquals(timelineEventHandler.getEventsDiscarded(), 0);
 
         final UUID hostId = UUID.randomUUID();
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
@@ -124,7 +128,7 @@ public class TestEventCollectorServer
             service.sendREST(event);
 
             Assert.assertEquals(processor.getEventsReceived(), 1 + i);
-            Assert.assertEquals(processor.getEventsDiscarded(), 0);
+            Assert.assertEquals(timelineEventHandler.getEventsDiscarded(), 0);
 
             // Make sure we don't create dups
             final BiMap<Integer, String> hosts = timelineDAO.getHosts();
@@ -137,7 +141,7 @@ public class TestEventCollectorServer
             Assert.assertTrue(sampleKinds.values().containsAll(event.getKeys()));
         }
 
-        processor.forceCommit();
+        timelineEventHandler.forceCommit();
         // Might take a while
         Thread.sleep(100);
 

@@ -16,9 +16,11 @@
 
 package com.ning.arecibo.collector.process;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
@@ -46,13 +48,15 @@ public class TestCollectorEventProcessor
 
     private final TimelineDAO dao = new MockTimelineDAO();
     private CollectorEventProcessor processor;
+    private TimelineEventHandler timelineEventHandler;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
         System.setProperty("arecibo.events.collector.timelines.length", "2s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        processor = new CollectorEventProcessor(config, dao);
+        timelineEventHandler = new TimelineEventHandler(config, dao);
+        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 
     @Test(groups = "fast")
@@ -66,29 +70,29 @@ public class TestCollectorEventProcessor
         final DateTime endTime = new DateTime(DateTimeZone.UTC);
 
         // One per host and type
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes().size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(null, null, null).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), null, null).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(null, startTime, null).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(null, null, endTime).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(null, startTime, endTime).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, null).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), null, endTime).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime).size(), 2);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, startTime, endTime).size(), 1);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime, endTime).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, null, null).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), null, null).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, startTime, null).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, null, endTime).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, startTime, endTime).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, null).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), null, endTime).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, startTime, endTime).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime, endTime).size(), 1);
         // Wider ranges should be supported
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime.minusSeconds(1), endTime).size(), 1);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime, endTime.plusSeconds(1)).size(), 1);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime.minusSeconds(1), endTime.plusSeconds(1)).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime.minusSeconds(1), endTime).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime, endTime.plusSeconds(1)).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime.minusSeconds(1), endTime.plusSeconds(1)).size(), 1);
         // Buggy kind
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), "kindC", startTime, endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), "kindC", startTime, endTime).size(), 0);
         // Buggy start date
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime.plusSeconds(1), endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime.plusSeconds(1), endTime).size(), 0);
         // Buggy end date
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime.minusSeconds(1)).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime.minusSeconds(1)).size(), 0);
         // Buggy host
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes(UUID.randomUUID().toString(), startTime, endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(UUID.randomUUID().toString(), startTime, endTime).size(), 0);
 
     }
 
@@ -97,8 +101,8 @@ public class TestCollectorEventProcessor
     {
         // Check initial state
         Assert.assertEquals(processor.getEventsReceived(), 0);
-        Assert.assertEquals(processor.getInMemoryTimelines(), 0);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes().size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 0);
         Assert.assertEquals(dao.getHosts().size(), 0);
         Assert.assertEquals(dao.getSampleKinds().size(), 0);
 
@@ -116,15 +120,15 @@ public class TestCollectorEventProcessor
             csvSamplesKindA = String.format("%s%d,%d", csvSamplesKindA, eventTs / 1000, 12);
             csvSamplesKindB = String.format("%s%d,%d", csvSamplesKindB, eventTs / 1000, 42);
 
-            checkProcessorState(processor, csvSamplesKindA, csvSamplesKindB, i + 1);
+            checkProcessorState(csvSamplesKindA, csvSamplesKindB, i + 1);
         }
 
         // Check the state before the flush to the db
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
         // One per host
-        Assert.assertEquals(processor.getInMemoryTimelines(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
         // One per host and type
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes().size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 2);
         Assert.assertEquals(dao.getHosts().size(), 1);
         Assert.assertEquals(dao.getSampleKinds().size(), 2);
         Assert.assertTrue(dao.getSampleKinds().values().contains(KIND_A));
@@ -135,17 +139,17 @@ public class TestCollectorEventProcessor
         // Check the state after the flush to the db
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
         // Should have been flushed
-        Assert.assertEquals(processor.getInMemoryTimelines(), 0);
-        Assert.assertEquals(processor.getInMemoryTimelineChunkAndTimes().size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 0);
     }
 
-    private void checkProcessorState(final CollectorEventProcessor processor, final String csvSamplesKindA, final String csvSamplesKindB, final int eventSent) throws IOException
+    private void checkProcessorState(final String csvSamplesKindA, final String csvSamplesKindB, final int eventSent) throws IOException
     {
-        Assert.assertEquals(processor.getInMemoryTimelines(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
         Assert.assertEquals(processor.getEventsReceived(), eventSent);
 
         // One per host and per type (two types here: kindA and kindB)
-        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimes = processor.getInMemoryTimelineChunkAndTimes();
+        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimes = timelineEventHandler.getInMemoryTimelineChunkAndTimes();
         Assert.assertEquals(inMemoryTimelineChunkAndTimes.size(), 2);
 
         checkInMemoryState(inMemoryTimelineChunkAndTimes, csvSamplesKindA, csvSamplesKindB);

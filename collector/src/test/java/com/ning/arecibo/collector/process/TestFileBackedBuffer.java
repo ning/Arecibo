@@ -16,9 +16,11 @@
 
 package com.ning.arecibo.collector.process;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
@@ -51,6 +53,7 @@ public class TestFileBackedBuffer
 
     private final TimelineDAO dao = new MockTimelineDAO();
     private CollectorEventProcessor processor;
+    private TimelineEventHandler timelineEventHandler;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
@@ -59,7 +62,8 @@ public class TestFileBackedBuffer
         System.setProperty("arecibo.events.collector.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.events.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        processor = new CollectorEventProcessor(config, dao);
+        timelineEventHandler = new TimelineEventHandler(config, dao);
+        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 
     @Test(groups = "slow")
@@ -68,7 +72,7 @@ public class TestFileBackedBuffer
         final List<Event> eventsSent = new ArrayList<Event>();
 
         // Sanity check before the tests
-        for (final TimelineHostEventAccumulator accumulator : processor.getAccumulators()) {
+        for (final TimelineHostEventAccumulator accumulator : timelineEventHandler.getAccumulators()) {
             Assert.assertEquals(accumulator.getBackingBuffer().getFilesCreated(), 0);
         }
         Assert.assertEquals(FileUtils.listFiles(basePath, new String[]{"bin"}, false).size(), 0);
@@ -82,7 +86,7 @@ public class TestFileBackedBuffer
         }
 
         // Check the files have been created (at least one per accumulator)
-        for (final TimelineHostEventAccumulator accumulator : processor.getAccumulators()) {
+        for (final TimelineHostEventAccumulator accumulator : timelineEventHandler.getAccumulators()) {
             Assert.assertTrue(accumulator.getBackingBuffer().getFilesCreated() > 0);
         }
         final Collection<File> writtenFiles = FileUtils.listFiles(basePath, new String[]{"bin"}, false);

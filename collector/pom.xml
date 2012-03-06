@@ -110,6 +110,12 @@
             <artifactId>jersey-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-core</artifactId>
+            <!-- See https://issues.apache.org/jira/browse/KAFKA-133 -->
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
         </dependency>

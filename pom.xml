@@ -116,6 +116,11 @@
                 <version>1.0.16</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-core</artifactId>
+                <version>0.7.0</version>
+            </dependency>
+            <dependency>
                 <groupId>org.easymock</groupId>
                 <artifactId>easymockclassextension</artifactId>
                 <version>2.4</version>

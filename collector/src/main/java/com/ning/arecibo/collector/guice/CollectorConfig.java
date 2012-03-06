@@ -147,4 +147,20 @@ public interface CollectorConfig
     @Config("arecibo.events.collector.spoolDir")
     @Default("/var/tmp/arecibo")
     String getSpoolDir();
+
+    @Config("arecibo.events.collector.rt.kafka.enabled")
+    @Default("false")
+    boolean isKafkaEnabled();
+
+    @Config("arecibo.events.collector.rt.kafka.zkConnect")
+    @Default("127.0.0.1:2181")
+    String getZkConnect();
+
+    @Config("arecibo.events.collector.rt.kafka.zkConnectionTimeout")
+    @Default("6s")
+    TimeSpan getZkConnectionTimeout();
+
+    @Config("arecibo.events.collector.rt.kafka.groupId")
+    @Default("arecibo")
+    String getKafkaGroupId();
 }

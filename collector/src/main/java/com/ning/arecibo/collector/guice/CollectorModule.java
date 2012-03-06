@@ -19,9 +19,14 @@ package com.ning.arecibo.collector.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.ning.arecibo.collector.ResolutionUtils;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.collector.process.EventHandler;
+import com.ning.arecibo.collector.rt.kafka.KafkaEventHandler;
+import com.ning.arecibo.util.ArrayListProvider;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
@@ -33,6 +38,8 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 import org.weakref.jmx.guice.ExportBuilder;
 import org.weakref.jmx.guice.MBeanModule;
+
+import java.util.List;
 
 public class CollectorModule extends AbstractModule
 {
@@ -50,6 +57,7 @@ public class CollectorModule extends AbstractModule
         configureDao();
         configureStats();
         configureServiceLocator(config);
+        configureEventHandlers(config);
 
         bind(ResolutionUtils.class).toInstance(resUtils);
 
@@ -76,6 +84,28 @@ public class CollectorModule extends AbstractModule
                 log.warn("Ignoring module: " + guiceModule, e);
             }
         }
+    }
+
+    private void configureEventHandlers(CollectorConfig config)
+    {
+        final ArrayListProvider<EventHandler> provider = new ArrayListProvider<EventHandler>();
+
+        // Hook the persistent handler by default
+        log.info("Persistent producer configured");
+        provider.add(TimelineEventHandler.class);
+
+        // Hook the real-time handler as needed
+        // TODO - do we want to turn it off/on at runtime?
+        if (config.isKafkaEnabled()) {
+            log.info("Kafka producer configured");
+            provider.add(KafkaEventHandler.class);
+        }
+
+        bind(new TypeLiteral<List<EventHandler>>()
+        {
+        })
+            .toProvider(provider)
+            .asEagerSingleton();
     }
 
     private void configureServiceLocator(CollectorConfig config)

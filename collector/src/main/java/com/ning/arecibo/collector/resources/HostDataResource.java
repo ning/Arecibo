@@ -18,6 +18,7 @@ package com.ning.arecibo.collector.resources;
 
 import com.google.common.collect.BiMap;
 import com.google.inject.Singleton;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
@@ -50,10 +51,10 @@ public class HostDataResource
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final TimelineDAO dao;
-    private final CollectorEventProcessor processor;
+    private final TimelineEventHandler processor;
 
     @Inject
-    public HostDataResource(final TimelineDAO dao, final CollectorEventProcessor processor)
+    public HostDataResource(final TimelineDAO dao, final TimelineEventHandler processor)
     {
         this.dao = dao;
         this.processor = processor;
