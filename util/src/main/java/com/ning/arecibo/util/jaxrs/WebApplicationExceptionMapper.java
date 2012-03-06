@@ -73,11 +73,16 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
             return buildWarningMessage(t.getCause(), newWarningMessage);
         }
         else {
-            // Truncate cause to avoid headers overflows
-            final char[] message = new char[100];
-            final char[] src = t.getMessage().toCharArray();
-            System.arraycopy(src, 0, message, 0, Math.min(src.length, message.length));
-            return newWarningMessage + ": " + new String(message);
+            if (t.getMessage() != null) {
+                // Truncate cause to avoid headers overflows
+                final char[] message = new char[100];
+                final char[] src = t.getMessage().toCharArray();
+                System.arraycopy(src, 0, message, 0, Math.min(src.length, message.length));
+                return newWarningMessage + ": " + new String(message);
+            }
+            else {
+                return newWarningMessage;
+            }
         }
     }
 }

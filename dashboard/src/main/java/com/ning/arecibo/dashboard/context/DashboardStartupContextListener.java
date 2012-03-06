@@ -48,7 +48,8 @@ public class DashboardStartupContextListener extends SetupServer
             .addModule(new HdfsEventPublisherModule("server", "dashboard"))
             .addModule(new AlertDataModule("arecibo.dashboard.alert.conf.db"))
             .enableLog4J()
-            .addResource("com.ning.arecibo.dashboard.resources");
+            .addResource("com.ning.arecibo.dashboard.resources")
+            .addResource("com.ning.arecibo.util.jaxrs");
 
         guiceModule = builder.build();
 

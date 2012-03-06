@@ -17,42 +17,42 @@
 package com.ning.arecibo.collector;
 
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.joda.time.DateTime;
 
 import java.io.InputStream;
-import java.util.Map;
 
 public interface CollectorClient
 {
-    public InputStream getHostsAsStream();
+    public InputStream getHostsAsStream() throws UniformInterfaceException;
 
-    public Iterable<String> getHosts();
+    public Iterable<String> getHosts() throws UniformInterfaceException;
 
-    public InputStream getSampleKindsAsStream();
+    public InputStream getSampleKindsAsStream() throws UniformInterfaceException;
 
-    public Iterable<String> getSampleKinds();
+    public Iterable<String> getSampleKinds() throws UniformInterfaceException;
 
-    public InputStream getSamplesByHostNameAsStream(final String hostName);
+    public InputStream getSamplesByHostNameAsStream(final String hostName) throws UniformInterfaceException;
 
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName) throws UniformInterfaceException;
 
-    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from);
+    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from) throws UniformInterfaceException;
 
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from) throws UniformInterfaceException;
 
-    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from, final DateTime to);
+    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from, final DateTime to) throws UniformInterfaceException;
 
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to) throws UniformInterfaceException;
 
-    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind);
+    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind) throws UniformInterfaceException;
 
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind) throws UniformInterfaceException;
 
-    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from);
+    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from) throws UniformInterfaceException;
 
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from) throws UniformInterfaceException;
 
-    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from, final DateTime to);
+    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from, final DateTime to) throws UniformInterfaceException;
 
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from, final DateTime to);
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from, final DateTime to) throws UniformInterfaceException;
 }

@@ -34,6 +34,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
@@ -62,9 +63,15 @@ public class CollectorResource
     @TimedResource
     public Response getHosts(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
-        final Iterable<String> hosts = client.getHosts();
-        final JSONPObject object = new JSONPObject(callback, hosts);
-        return Response.ok(object).build();
+        try {
+            final Iterable<String> hosts = client.getHosts();
+            final JSONPObject object = new JSONPObject(callback, hosts);
+            return Response.ok(object).build();
+        }
+        catch (Throwable t) {
+            // Likely UniformInterfaceException from the collector client library
+            throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -73,9 +80,15 @@ public class CollectorResource
     @TimedResource
     public Response getSampleKinds(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
-        final Iterable<String> sampleKinds = client.getSampleKinds();
-        final JSONPObject object = new JSONPObject(callback, sampleKinds);
-        return Response.ok(object).build();
+        try {
+            final Iterable<String> sampleKinds = client.getSampleKinds();
+            final JSONPObject object = new JSONPObject(callback, sampleKinds);
+            return Response.ok(object).build();
+        }
+        catch (Throwable t) {
+            // Likely UniformInterfaceException from the collector client library
+            throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -96,8 +109,14 @@ public class CollectorResource
             endTime = new DateTime(to, DateTimeZone.UTC);
         }
 
-        final Iterable<TimelineChunkAndTimes> samplesByHostName = client.getSamplesByHostName(hostName, startTime, endTime);
-        return buildJsonpResponse(hostName, startTime, endTime, samplesByHostName, callback);
+        try {
+            final Iterable<TimelineChunkAndTimes> samplesByHostName = client.getSamplesByHostName(hostName, startTime, endTime);
+            return buildJsonpResponse(hostName, startTime, endTime, samplesByHostName, callback);
+        }
+        catch (Throwable t) {
+            // Likely UniformInterfaceException from the collector client library
+            throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -119,8 +138,14 @@ public class CollectorResource
             endTime = new DateTime(to, DateTimeZone.UTC);
         }
 
-        final Iterable<TimelineChunkAndTimes> samplesByHostNameAndSampleKind = client.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, endTime);
-        return buildJsonpResponse(hostName, startTime, endTime, samplesByHostNameAndSampleKind, callback);
+        try {
+            final Iterable<TimelineChunkAndTimes> samplesByHostNameAndSampleKind = client.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, endTime);
+            return buildJsonpResponse(hostName, startTime, endTime, samplesByHostNameAndSampleKind, callback);
+        }
+        catch (Throwable t) {
+            // Likely UniformInterfaceException from the collector client library
+            throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     private Response buildJsonpResponse(final String hostName, final DateTime startTime, final DateTime endTime, final Iterable<TimelineChunkAndTimes> samples, final String callback)
@@ -169,5 +194,10 @@ public class CollectorResource
             samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(timelineChunkAndTimes.getSamplesAsCSV(startTime, endTime));
         }
         return samplesBySampleKind;
+    }
+
+    private Response buildServiceUnavailableResponse()
+    {
+        return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
     }
 }

@@ -21,6 +21,7 @@ import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.collector.discovery.CollectorFinder;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.codehaus.jackson.JsonParseException;
@@ -64,13 +65,13 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public InputStream getHostsAsStream()
+    public InputStream getHostsAsStream() throws UniformInterfaceException
     {
         return getPathAsStream("hosts");
     }
 
     @Override
-    public Iterable<String> getHosts()
+    public Iterable<String> getHosts() throws UniformInterfaceException
     {
         final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
         {
@@ -81,13 +82,13 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public InputStream getSampleKindsAsStream()
+    public InputStream getSampleKindsAsStream() throws UniformInterfaceException
     {
         return getPathAsStream("sample_kinds");
     }
 
     @Override
-    public Iterable<String> getSampleKinds()
+    public Iterable<String> getSampleKinds() throws UniformInterfaceException
     {
         final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
         {
@@ -98,31 +99,31 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public InputStream getSamplesByHostNameAsStream(final String hostName)
+    public InputStream getSamplesByHostNameAsStream(final String hostName) throws UniformInterfaceException
     {
         return getSamplesByHostNameAsStream(hostName, new DateTime("0"), new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName) throws UniformInterfaceException
     {
         return getSamplesByHostName(hostName, new DateTime("0"), new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from)
+    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from) throws UniformInterfaceException
     {
         return getSamplesByHostNameAsStream(hostName, from, new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from) throws UniformInterfaceException
     {
         return getSamplesByHostName(hostName, from, new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from, final DateTime to)
+    public InputStream getSamplesByHostNameAsStream(final String hostName, final DateTime from, final DateTime to) throws UniformInterfaceException
     {
         final MultivaluedMap<String, String> params = new MultivaluedMapImpl();
         params.add("from", from.toString());
@@ -132,7 +133,7 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime from, final DateTime to) throws UniformInterfaceException
     {
         final TypeReference<List<TimelineChunkAndTimes>> valueTypeRef = new TypeReference<List<TimelineChunkAndTimes>>()
         {
@@ -143,31 +144,31 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind)
+    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind) throws UniformInterfaceException
     {
         return getSamplesByHostNameAndSampleKindAsStream(hostName, sampleKind, new DateTime("0"), new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind) throws UniformInterfaceException
     {
         return getSamplesByHostNameAndSampleKind(hostName, sampleKind, new DateTime("0"), new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from)
+    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from) throws UniformInterfaceException
     {
         return getSamplesByHostNameAndSampleKindAsStream(hostName, sampleKind, from, new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from) throws UniformInterfaceException
     {
         return getSamplesByHostNameAndSampleKind(hostName, sampleKind, new DateTime("0"), new DateTime(DateTimeZone.UTC));
     }
 
     @Override
-    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from, final DateTime to)
+    public InputStream getSamplesByHostNameAndSampleKindAsStream(final String hostName, final String sampleKind, final DateTime from, final DateTime to) throws UniformInterfaceException
     {
         final MultivaluedMap<String, String> params = new MultivaluedMapImpl();
         params.add("from", from.toString());
@@ -177,7 +178,7 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from, final DateTime to)
+    public Iterable<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime from, final DateTime to) throws UniformInterfaceException
     {
         final TypeReference<List<TimelineChunkAndTimes>> valueTypeRef = new TypeReference<List<TimelineChunkAndTimes>>()
         {
@@ -193,12 +194,12 @@ public class DefaultCollectorClient implements CollectorClient
         client = Client.create(config);
     }
 
-    private InputStream getPathAsStream(final String path)
+    private InputStream getPathAsStream(final String path) throws UniformInterfaceException
     {
         return getPathAsStream(path, null);
     }
 
-    private InputStream getPathAsStream(final String path, @Nullable final MultivaluedMap<String, String> queryParams)
+    private InputStream getPathAsStream(final String path, @Nullable final MultivaluedMap<String, String> queryParams) throws UniformInterfaceException
     {
         WebResource resource = createWebResource().path(path);
         if (queryParams != null) {
