@@ -37,6 +37,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -64,8 +65,14 @@ public class HostDataResource
     @TimedResource
     public StreamingOutput getHosts(@QueryParam("pretty") @DefaultValue("false") final boolean pretty)
     {
-        final BiMap<Integer, String> hosts = dao.getHosts();
-        return streamResponse(hosts.values(), pretty);
+        try {
+            final BiMap<Integer, String> hosts = dao.getHosts();
+            return streamResponse(hosts.values(), pretty);
+        }
+        catch (Throwable e) {
+            // JDBI exception
+            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -74,8 +81,14 @@ public class HostDataResource
     @TimedResource
     public StreamingOutput getSampleKinds(@QueryParam("pretty") @DefaultValue("false") final boolean pretty)
     {
-        final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
-        return streamResponse(sampleKinds.values(), pretty);
+        try {
+            final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
+            return streamResponse(sampleKinds.values(), pretty);
+        }
+        catch (Throwable e) {
+            // JDBI exception
+            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -97,12 +110,18 @@ public class HostDataResource
             endTime = new DateTime(to, DateTimeZone.UTC);
         }
 
-        // Merge in-memory and persisted samples
-        final List<TimelineChunkAndTimes> samplesByHostName = dao.getSamplesByHostName(hostName, startTime, endTime);
-        samplesByHostName.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, startTime, endTime));
+        try {
+            // Merge in-memory and persisted samples
+            final List<TimelineChunkAndTimes> samplesByHostName = dao.getSamplesByHostName(hostName, startTime, endTime);
+            samplesByHostName.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, startTime, endTime));
 
-        // Stream the response out - the caller still needs to filter the samples by time range
-        return streamResponse(samplesByHostName, pretty);
+            // Stream the response out - the caller still needs to filter the samples by time range
+            return streamResponse(samplesByHostName, pretty);
+        }
+        catch (Throwable e) {
+            // JDBI exception
+            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -125,12 +144,18 @@ public class HostDataResource
             endTime = new DateTime(to, DateTimeZone.UTC);
         }
 
-        // Merge in-memory and persisted samples
-        final List<TimelineChunkAndTimes> samplesByHostNameAndSampleKind = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, endTime);
-        samplesByHostNameAndSampleKind.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, sampleKind, startTime, endTime));
+        try {
+            // Merge in-memory and persisted samples
+            final List<TimelineChunkAndTimes> samplesByHostNameAndSampleKind = dao.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, endTime);
+            samplesByHostNameAndSampleKind.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, sampleKind, startTime, endTime));
 
-        // Stream the response out - the caller still needs to filter the samples by time range
-        return streamResponse(samplesByHostNameAndSampleKind, pretty);
+            // Stream the response out - the caller still needs to filter the samples by time range
+            return streamResponse(samplesByHostNameAndSampleKind, pretty);
+        }
+        catch (Throwable e) {
+            // JDBI exception
+            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+        }
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)
@@ -155,5 +180,10 @@ public class HostDataResource
                 generator.close();
             }
         };
+    }
+
+    private Response buildServiceUnavailableResponse()
+    {
+        return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
     }
 }

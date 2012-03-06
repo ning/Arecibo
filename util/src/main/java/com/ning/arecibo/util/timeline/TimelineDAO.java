@@ -27,6 +27,8 @@ import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.TransactionCallback;
 import org.skife.jdbi.v2.TransactionStatus;
+import org.skife.jdbi.v2.exceptions.CallbackFailedException;
+import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.util.IntegerMapper;
 
@@ -50,7 +52,7 @@ public class TimelineDAO
      * Get the full collection of hosts, as a BiMap that lets us look up
      * by host id
      */
-    public BiMap<Integer, String> getHosts()
+    public BiMap<Integer, String> getHosts() throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<BiMap<Integer, String>>()
         {
@@ -74,7 +76,7 @@ public class TimelineDAO
         });
     }
 
-    public int addHost(final String host)
+    public int addHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<Integer>()
         {
@@ -92,7 +94,7 @@ public class TimelineDAO
         });
     }
 
-    public int addSampleKind(final String sampleKind)
+    public int addSampleKind(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<Integer>()
         {
@@ -116,7 +118,7 @@ public class TimelineDAO
         return HashBiMap.create();
     }
 
-    public BiMap<Integer, String> getSampleKinds()
+    public BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<BiMap<Integer, String>>()
         {
@@ -140,7 +142,7 @@ public class TimelineDAO
         });
     }
 
-    public int insertTimelineTimes(final TimelineTimes timelineTimes)
+    public int insertTimelineTimes(final TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.inTransaction(new TransactionCallback<Integer>()
         {
@@ -164,7 +166,7 @@ public class TimelineDAO
         });
     }
 
-    public int insertTimelineChunk(final TimelineChunk timelineChunk)
+    public int insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.inTransaction(new TransactionCallback<Integer>()
         {
@@ -188,7 +190,7 @@ public class TimelineDAO
         });
     }
 
-    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime)
+    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
         {
@@ -227,7 +229,7 @@ public class TimelineDAO
         });
     }
 
-    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime)
+    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
         {

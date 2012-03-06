@@ -151,7 +151,7 @@ public class EventCollectorServer
     {
         final Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(),
-            new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.collector.resources")),
+            new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.collector.resources", "com.ning.arecibo.util.jaxrs")),
             new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),
             new AbstractModule()
