@@ -147,7 +147,7 @@ public class TimelineDAO
         return dbi.inTransaction(new TransactionCallback<Integer>()
         {
             @Override
-            public Integer inTransaction(Handle handle, TransactionStatus status) throws Exception
+            public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
             {
                 handle
                     .createStatement("insert into timeline_times (host_id, start_time, end_time, count, times)" +
@@ -171,7 +171,7 @@ public class TimelineDAO
         return dbi.inTransaction(new TransactionCallback<Integer>()
         {
             @Override
-            public Integer inTransaction(Handle handle, TransactionStatus status) throws Exception
+            public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
             {
                 handle
                     .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, sample_bytes)" +

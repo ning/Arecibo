@@ -137,7 +137,7 @@ public class TimelineHostEventAccumulator
         }
         // Now make sure to advance the timelines we haven't added samples to,
         // since the samples for a given sample kind can come and go
-        for (Integer sampleKindId : currentKinds) {
+        for (final Integer sampleKindId : currentKinds) {
             final TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
             timeline.addSample(nullSample);
         }
