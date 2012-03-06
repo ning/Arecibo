@@ -40,9 +40,9 @@ public class MysqlTestingHelper
 {
     private static final Logger log = LoggerFactory.getLogger(MysqlTestingHelper.class);
 
-    private static final String DB_NAME = "test_killbill";
+    private static final String DB_NAME = "test_arecibo_collector";
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "";
+    private static final String PASSWORD = "root";
 
     private File dbDir;
     private MysqldResource mysqldResource;
@@ -81,6 +81,7 @@ public class MysqlTestingHelper
         }
         else {
             log.info("MySQL running on port " + mysqldResource.getPort());
+            log.info("To connect to it: mysql -u{} -p{} -P{} -S{}/data/mysql.sock {}", new Object[]{USERNAME, PASSWORD, port, dbDir, DB_NAME});
         }
     }
 
