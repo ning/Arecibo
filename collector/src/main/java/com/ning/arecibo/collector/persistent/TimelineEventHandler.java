@@ -213,11 +213,11 @@ public class TimelineEventHandler implements EventHandler
         return samplesByHostName;
     }
 
-    private int getHostIdFromEvent(Event evt)
+    private int getHostIdFromEvent(final Event event)
     {
-        String hostUUID = evt.getSourceUUID().toString();
-        if (evt instanceof MonitoringEvent) {
-            hostUUID = ((MonitoringEvent) evt).getHostName();
+        String hostUUID = event.getSourceUUID().toString();
+        if (event instanceof MonitoringEvent) {
+            hostUUID = ((MonitoringEvent) event).getHostName();
         }
         return timelineRegistry.getOrAddHost(hostUUID);
     }
