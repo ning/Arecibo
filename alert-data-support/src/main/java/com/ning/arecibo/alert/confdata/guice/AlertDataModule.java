@@ -16,10 +16,10 @@
 
 package com.ning.arecibo.alert.confdata.guice;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
+import com.google.inject.Provider;
 import com.ning.arecibo.alert.confdata.dao.ConfDataDAO;
 import com.ning.arecibo.util.jdbi.DBIProvider;
 import org.skife.jdbi.v2.DBI;
@@ -42,10 +42,22 @@ public class AlertDataModule extends AbstractModule
     @Override
     public void configure()
     {
-        final Named moduleName = Names.named(AlertDataConstants.ALERT_DATA_DB);
+        configureDBI();
 
-        bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), dbConfigPrefix)).asEagerSingleton();
-        bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName));
         bind(ConfDataDAO.class).asEagerSingleton();
+    }
+
+    @VisibleForTesting
+    protected void configureDBI()
+    {
+        final DBIProvider provider = new DBIProvider(System.getProperties(), dbConfigPrefix);
+        configureDBIFromProvider(provider);
+    }
+
+    @VisibleForTesting
+    protected void configureDBIFromProvider(final Provider<DBI> dbiProvider)
+    {
+        bind(DBI.class).toProvider(dbiProvider).asEagerSingleton();
+        bind(IDBI.class).to(Key.get(DBI.class));
     }
 }

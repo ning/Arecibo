@@ -14,7 +14,7 @@
  * under the License.
  */
 
-package com.ning.arecibo.collector;
+package com.ning.arecibo.dao;
 
 import com.mysql.management.MysqldResource;
 import com.mysql.management.MysqldResourceI;

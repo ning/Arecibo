@@ -14,11 +14,28 @@
  * under the License.
  */
 
-package com.ning.arecibo.alert.confdata.guice;
+package com.ning.arecibo.dao;
 
-public class AlertDataConstants
+import com.google.inject.Provider;
+import org.skife.jdbi.v2.DBI;
+
+public class MysqlTestingHelperProvider implements Provider<DBI>
 {
+    private final DBI dbi;
 
-    public static final String ALERT_DATA = "AlertData";
-    public static final String ALERT_DATA_DB = "alert_data_db";
+    public MysqlTestingHelperProvider()
+    {
+        this(new MysqlTestingHelper());
+    }
+
+    public MysqlTestingHelperProvider(final MysqlTestingHelper helper)
+    {
+        dbi = helper.getDBI();
+    }
+
+    @Override
+    public DBI get()
+    {
+        return dbi;
+    }
 }

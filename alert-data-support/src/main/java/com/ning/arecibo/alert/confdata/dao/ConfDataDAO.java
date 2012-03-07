@@ -17,8 +17,6 @@
 package com.ning.arecibo.alert.confdata.dao;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.ning.arecibo.alert.confdata.guice.AlertDataConstants;
 import com.ning.arecibo.alert.confdata.objects.ConfDataObject;
 import com.ning.arecibo.util.Logger;
 import org.skife.jdbi.v2.Handle;
@@ -48,7 +46,7 @@ public class ConfDataDAO
     private final IDBI dbi;
 
     @Inject
-    public ConfDataDAO(@Named(AlertDataConstants.ALERT_DATA_DB) final IDBI dbi)
+    public ConfDataDAO(final IDBI dbi)
     {
         this.dbi = dbi;
     }

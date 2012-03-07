@@ -20,6 +20,7 @@ import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.ning.arecibo.collector.guice.CollectorConstants;
 import com.ning.arecibo.collector.guice.CollectorModule;
+import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;

@@ -20,6 +20,7 @@ import com.google.common.collect.BiMap;
 import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
+import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.publisher.EventSenderType;
 import com.ning.arecibo.event.publisher.RESTEventService;

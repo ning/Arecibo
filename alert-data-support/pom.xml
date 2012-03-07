@@ -33,6 +33,13 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.ning.arecibo</groupId>
+            <artifactId>arecibo-util</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
         </dependency>
