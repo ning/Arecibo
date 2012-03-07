@@ -22,7 +22,6 @@ import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
-import com.ning.arecibo.collector.ResolutionUtils;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.rt.kafka.KafkaEventHandler;
@@ -52,14 +51,10 @@ public class CollectorModule extends AbstractModule
 
         bind(CollectorConfig.class).toInstance(config);
 
-        ResolutionUtils resUtils = new ResolutionUtils();
-
         configureDao();
         configureStats();
         configureServiceLocator(config);
         configureEventHandlers(config);
-
-        bind(ResolutionUtils.class).toInstance(resUtils);
 
         ExportBuilder builder = MBeanModule.newExporter(binder());
 
