@@ -16,8 +16,9 @@
 
 package com.ning.arecibo.alert.confdata.guice;
 
-public class AlertDataConstants {
+public class AlertDataConstants
+{
 
-    final public static String ALERT_DATA = "AlertData";
-    final public static String ALERT_DATA_DB = "alert_data_db";
+    public static final String ALERT_DATA = "AlertData";
+    public static final String ALERT_DATA_DB = "alert_data_db";
 }

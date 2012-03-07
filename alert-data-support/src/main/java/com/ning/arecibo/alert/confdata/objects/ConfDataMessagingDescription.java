@@ -16,77 +16,89 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import java.util.Map;
-
 import com.ning.arecibo.util.Logger;
+
+import java.util.Map;
 
 public class ConfDataMessagingDescription extends ConfDataObject
 {
-    private final static Logger log = Logger.getLogger(ConfDataMessagingDescription.class);
+    private static final Logger log = Logger.getLogger(ConfDataMessagingDescription.class);
 
-    public final static String TYPE_NAME = "messaging_description";
-    public final static String INSERT_TEMPLATE_NAME = ":insert_messaging_description";
-    public final static String UPDATE_TEMPLATE_NAME = ":update_messaging_description";
+    public static final String TYPE_NAME = "messaging_description";
+    public static final String INSERT_TEMPLATE_NAME = ":insert_messaging_description";
+    public static final String UPDATE_TEMPLATE_NAME = ":update_messaging_description";
 
-    private final static String MESSAGE_TYPE_FIELD = "message_type";
-    private final static String MESSAGE_TEXT_FIELD = "message_text";
+    private static final String MESSAGE_TYPE_FIELD = "message_type";
+    private static final String MESSAGE_TEXT_FIELD = "message_text";
 
     protected volatile String messageType = null;
     protected volatile String messageText = null;
 
-    public ConfDataMessagingDescription() {}
+    public ConfDataMessagingDescription()
+    {
+    }
 
     @Override
-    public String getTypeName() {
+    public String getTypeName()
+    {
         return TYPE_NAME;
     }
 
     @Override
-    public String getInsertSqlTemplateName() {
+    public String getInsertSqlTemplateName()
+    {
         return INSERT_TEMPLATE_NAME;
     }
 
     @Override
-    public String getUpdateSqlTemplateName() {
+    public String getUpdateSqlTemplateName()
+    {
         return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
-    public void setPropertiesFromMap(Map<String,Object> map) {
+    public void setPropertiesFromMap(final Map<String, Object> map)
+    {
         super.setPropertiesFromMap(map);
-        setMessageType(getString(map,MESSAGE_TYPE_FIELD));
-        setMessageText(getString(map,MESSAGE_TEXT_FIELD));
+        setMessageType(getString(map, MESSAGE_TYPE_FIELD));
+        setMessageText(getString(map, MESSAGE_TEXT_FIELD));
     }
 
     @Override
-    public Map<String,Object> toPropertiesMap() {
-        Map<String,Object> map = super.toPropertiesMap();
-        setString(map,MESSAGE_TYPE_FIELD,getMessageType());
-        setString(map,MESSAGE_TEXT_FIELD,getMessageText());
+    public Map<String, Object> toPropertiesMap()
+    {
+        final Map<String, Object> map = super.toPropertiesMap();
+        setString(map, MESSAGE_TYPE_FIELD, getMessageType());
+        setString(map, MESSAGE_TEXT_FIELD, getMessageText());
 
         return map;
     }
 
     @Override
-    public void toStringBuilder(StringBuilder sb) {
+    public void toStringBuilder(final StringBuilder sb)
+    {
         super.toStringBuilder(sb);
-        sb.append(String.format("   %s -> %s\n",MESSAGE_TYPE_FIELD,getMessageType()));
-        sb.append(String.format("   %s -> %s\n",MESSAGE_TEXT_FIELD,getMessageText()));
+        sb.append(String.format("   %s -> %s\n", MESSAGE_TYPE_FIELD, getMessageType()));
+        sb.append(String.format("   %s -> %s\n", MESSAGE_TEXT_FIELD, getMessageText()));
     }
 
-    public String getMessageType() {
+    public String getMessageType()
+    {
         return this.messageType;
     }
 
-    public void setMessageType(String messagingType) {
+    public void setMessageType(final String messagingType)
+    {
         this.messageType = messageType;
     }
 
-    public String getMessageText() {
+    public String getMessageText()
+    {
         return this.messageText;
     }
 
-    public void setMessageText(String messageText) {
+    public void setMessageText(final String messageText)
+    {
         this.messageText = messageText;
     }
 }

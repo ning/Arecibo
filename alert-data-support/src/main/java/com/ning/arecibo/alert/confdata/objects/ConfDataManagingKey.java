@@ -16,28 +16,28 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
+import com.ning.arecibo.alert.confdata.enums.ManagingKeyActionType;
+import com.ning.arecibo.util.Logger;
+
 import java.sql.Timestamp;
 import java.util.Map;
-import com.ning.arecibo.alert.confdata.enums.ManagingKeyActionType;
-
-import com.ning.arecibo.util.Logger;
 
 public class ConfDataManagingKey extends ConfDataObject
 {
-    private final static Logger log = Logger.getLogger(ConfDataManagingKey.class);
+    private static final Logger log = Logger.getLogger(ConfDataManagingKey.class);
 
-    public final static String TYPE_NAME = "managing_key";
-    public final static String INSERT_TEMPLATE_NAME = ":insert_managing_key";
-    public final static String UPDATE_TEMPLATE_NAME = ":update_managing_key";
+    public static final String TYPE_NAME = "managing_key";
+    public static final String INSERT_TEMPLATE_NAME = ":insert_managing_key";
+    public static final String UPDATE_TEMPLATE_NAME = ":update_managing_key";
 
-    private final static String KEY_FIELD = "key";
-    private final static String ACTION_FIELD = "action";
-    private final static String ACTIVATED_INDEFINITELY_FIELD = "activated_indefinitely";
-    private final static String ACTIVATED_UNTIL_TS_FIELD = "activated_until_ts";
-    private final static String AUTO_ACTIVATE_TOD_START_MS = "auto_activate_tod_start_ms";
-    private final static String AUTO_ACTIVATE_TOD_END_MS = "auto_activate_tod_end_ms";
-    private final static String AUTO_ACTIVATE_DOW_START = "auto_activate_dow_start";
-    private final static String AUTO_ACTIVATE_DOW_END = "auto_activate_dow_end";
+    private static final String KEY_FIELD = "key";
+    private static final String ACTION_FIELD = "action";
+    private static final String ACTIVATED_INDEFINITELY_FIELD = "activated_indefinitely";
+    private static final String ACTIVATED_UNTIL_TS_FIELD = "activated_until_ts";
+    private static final String AUTO_ACTIVATE_TOD_START_MS = "auto_activate_tod_start_ms";
+    private static final String AUTO_ACTIVATE_TOD_END_MS = "auto_activate_tod_end_ms";
+    private static final String AUTO_ACTIVATE_DOW_START = "auto_activate_dow_start";
+    private static final String AUTO_ACTIVATE_DOW_END = "auto_activate_dow_end";
 
     protected volatile String key = null;
     protected volatile ManagingKeyActionType action = null;
@@ -53,125 +53,149 @@ public class ConfDataManagingKey extends ConfDataObject
     protected volatile Long autoActivateDOWStart = null;
     protected volatile Long autoActivateDOWEnd = null;
 
-    public ConfDataManagingKey() {}
+    public ConfDataManagingKey()
+    {
+    }
 
     @Override
-    public String getTypeName() {
+    public String getTypeName()
+    {
         return TYPE_NAME;
     }
 
     @Override
-    public String getInsertSqlTemplateName() {
+    public String getInsertSqlTemplateName()
+    {
         return INSERT_TEMPLATE_NAME;
     }
 
     @Override
-    public String getUpdateSqlTemplateName() {
+    public String getUpdateSqlTemplateName()
+    {
         return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
-    public void setPropertiesFromMap(Map<String,Object> map) {
+    public void setPropertiesFromMap(final Map<String, Object> map)
+    {
         super.setPropertiesFromMap(map);
-        setKey(getString(map,KEY_FIELD));
-        setAction(getEnum(map,ACTION_FIELD,ManagingKeyActionType.class));
+        setKey(getString(map, KEY_FIELD));
+        setAction(getEnum(map, ACTION_FIELD, ManagingKeyActionType.class));
         setActivatedIndefinitely(getBoolean(map, ACTIVATED_INDEFINITELY_FIELD));
         setActivatedUntilTs(getTimestamp(map, ACTIVATED_UNTIL_TS_FIELD));
-        setAutoActivateTODStartMs(getLong(map,AUTO_ACTIVATE_TOD_START_MS));
-        setAutoActivateTODEndMs(getLong(map,AUTO_ACTIVATE_TOD_END_MS));
-        setAutoActivateDOWStart(getLong(map,AUTO_ACTIVATE_DOW_START));
-        setAutoActivateDOWEnd(getLong(map,AUTO_ACTIVATE_DOW_END));
+        setAutoActivateTODStartMs(getLong(map, AUTO_ACTIVATE_TOD_START_MS));
+        setAutoActivateTODEndMs(getLong(map, AUTO_ACTIVATE_TOD_END_MS));
+        setAutoActivateDOWStart(getLong(map, AUTO_ACTIVATE_DOW_START));
+        setAutoActivateDOWEnd(getLong(map, AUTO_ACTIVATE_DOW_END));
     }
 
     @Override
-    public Map<String,Object> toPropertiesMap() {
-        Map<String,Object> map = super.toPropertiesMap();
-        setString(map,KEY_FIELD,getKey());
-        setEnum(map,ACTION_FIELD,getAction());
-        setBoolean(map, ACTIVATED_INDEFINITELY_FIELD,getActivatedIndefinitely());
+    public Map<String, Object> toPropertiesMap()
+    {
+        final Map<String, Object> map = super.toPropertiesMap();
+        setString(map, KEY_FIELD, getKey());
+        setEnum(map, ACTION_FIELD, getAction());
+        setBoolean(map, ACTIVATED_INDEFINITELY_FIELD, getActivatedIndefinitely());
         setTimestamp(map, ACTIVATED_UNTIL_TS_FIELD, getActivatedUntilTs());
-        setLong(map,AUTO_ACTIVATE_TOD_START_MS,getAutoActivateTODStartMs());
-        setLong(map,AUTO_ACTIVATE_TOD_END_MS,getAutoActivateTODEndMs());
-        setLong(map,AUTO_ACTIVATE_DOW_START,getAutoActivateDOWStart());
-        setLong(map,AUTO_ACTIVATE_DOW_END,getAutoActivateDOWEnd());
+        setLong(map, AUTO_ACTIVATE_TOD_START_MS, getAutoActivateTODStartMs());
+        setLong(map, AUTO_ACTIVATE_TOD_END_MS, getAutoActivateTODEndMs());
+        setLong(map, AUTO_ACTIVATE_DOW_START, getAutoActivateDOWStart());
+        setLong(map, AUTO_ACTIVATE_DOW_END, getAutoActivateDOWEnd());
 
         return map;
     }
 
     @Override
-    public void toStringBuilder(StringBuilder sb) {
+    public void toStringBuilder(final StringBuilder sb)
+    {
         super.toStringBuilder(sb);
-        sb.append(String.format("   %s -> %s\n",KEY_FIELD,getKey()));
-        sb.append(String.format("   %s -> %s\n",ACTION_FIELD,getAction()));
-        sb.append(String.format("   %s -> %s\n", ACTIVATED_INDEFINITELY_FIELD,getActivatedIndefinitely()));
+        sb.append(String.format("   %s -> %s\n", KEY_FIELD, getKey()));
+        sb.append(String.format("   %s -> %s\n", ACTION_FIELD, getAction()));
+        sb.append(String.format("   %s -> %s\n", ACTIVATED_INDEFINITELY_FIELD, getActivatedIndefinitely()));
         sb.append(String.format("   %s -> %s\n", ACTIVATED_UNTIL_TS_FIELD, getActivatedUntilTs()));
-        sb.append(String.format("   %s -> %s\n",AUTO_ACTIVATE_TOD_START_MS,getAutoActivateTODStartMs()));
-        sb.append(String.format("   %s -> %s\n",AUTO_ACTIVATE_TOD_END_MS,getAutoActivateTODEndMs()));
-        sb.append(String.format("   %s -> %s\n",AUTO_ACTIVATE_DOW_START,getAutoActivateDOWStart()));
-        sb.append(String.format("   %s -> %s\n",AUTO_ACTIVATE_DOW_END,getAutoActivateDOWEnd()));
+        sb.append(String.format("   %s -> %s\n", AUTO_ACTIVATE_TOD_START_MS, getAutoActivateTODStartMs()));
+        sb.append(String.format("   %s -> %s\n", AUTO_ACTIVATE_TOD_END_MS, getAutoActivateTODEndMs()));
+        sb.append(String.format("   %s -> %s\n", AUTO_ACTIVATE_DOW_START, getAutoActivateDOWStart()));
+        sb.append(String.format("   %s -> %s\n", AUTO_ACTIVATE_DOW_END, getAutoActivateDOWEnd()));
     }
 
-    public String getKey() {
+    public String getKey()
+    {
         return this.key;
     }
 
-    public void setKey(String key) {
+    public void setKey(final String key)
+    {
         this.key = key;
     }
 
-    public ManagingKeyActionType getAction() {
+    public ManagingKeyActionType getAction()
+    {
         return this.action;
     }
 
-    public void setAction(ManagingKeyActionType action) {
+    public void setAction(final ManagingKeyActionType action)
+    {
         this.action = action;
     }
 
-    public Boolean getActivatedIndefinitely() {
+    public Boolean getActivatedIndefinitely()
+    {
         return activatedIndefinitely;
     }
 
-    public void setActivatedIndefinitely(Boolean activatedIndefinitely) {
+    public void setActivatedIndefinitely(final Boolean activatedIndefinitely)
+    {
         this.activatedIndefinitely = activatedIndefinitely;
     }
 
-    public Timestamp getActivatedUntilTs() {
+    public Timestamp getActivatedUntilTs()
+    {
         return this.activatedUntilTs;
     }
 
-    public void setActivatedUntilTs(Timestamp activatedUntilTs) {
+    public void setActivatedUntilTs(final Timestamp activatedUntilTs)
+    {
         this.activatedUntilTs = activatedUntilTs;
     }
 
-    public Long getAutoActivateTODStartMs() {
+    public Long getAutoActivateTODStartMs()
+    {
         return autoActivateTODStartMs;
     }
 
-    public void setAutoActivateTODStartMs(Long autoActivateTODStartMs) {
+    public void setAutoActivateTODStartMs(final Long autoActivateTODStartMs)
+    {
         this.autoActivateTODStartMs = autoActivateTODStartMs;
     }
 
-    public Long getAutoActivateTODEndMs() {
+    public Long getAutoActivateTODEndMs()
+    {
         return autoActivateTODEndMs;
     }
 
-    public void setAutoActivateTODEndMs(Long autoActivateTODEndMs) {
+    public void setAutoActivateTODEndMs(final Long autoActivateTODEndMs)
+    {
         this.autoActivateTODEndMs = autoActivateTODEndMs;
     }
 
-    public Long getAutoActivateDOWStart() {
+    public Long getAutoActivateDOWStart()
+    {
         return autoActivateDOWStart;
     }
 
-    public void setAutoActivateDOWStart(Long autoActivateDOWStart) {
+    public void setAutoActivateDOWStart(final Long autoActivateDOWStart)
+    {
         this.autoActivateDOWStart = autoActivateDOWStart;
     }
 
-    public Long getAutoActivateDOWEnd() {
+    public Long getAutoActivateDOWEnd()
+    {
         return autoActivateDOWEnd;
     }
 
-    public void setAutoActivateDOWEnd(Long autoActivateDOWEnd) {
+    public void setAutoActivateDOWEnd(final Long autoActivateDOWEnd)
+    {
         this.autoActivateDOWEnd = autoActivateDOWEnd;
     }
 }

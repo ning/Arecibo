@@ -16,58 +16,67 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import java.util.Map;
-
 import com.ning.arecibo.util.Logger;
+
+import java.util.Map;
 
 public class ConfDataNotifGroup extends ConfDataObject
 {
-    private final static Logger log = Logger.getLogger(ConfDataNotifGroup.class);
+    private static final Logger log = Logger.getLogger(ConfDataNotifGroup.class);
 
-    public final static String TYPE_NAME = "notif_group";
-    public final static String INSERT_TEMPLATE_NAME = ":insert_notif_group";
-    public final static String UPDATE_TEMPLATE_NAME = ":update_notif_group";
+    public static final String TYPE_NAME = "notif_group";
+    public static final String INSERT_TEMPLATE_NAME = ":insert_notif_group";
+    public static final String UPDATE_TEMPLATE_NAME = ":update_notif_group";
 
-    private final static String ENABLED_FIELD = "enabled";
+    private static final String ENABLED_FIELD = "enabled";
 
     protected volatile Boolean enabled = null;
 
-    public ConfDataNotifGroup() {}
+    public ConfDataNotifGroup()
+    {
+    }
 
     @Override
-    public String getTypeName() {
+    public String getTypeName()
+    {
         return TYPE_NAME;
     }
 
     @Override
-    public String getInsertSqlTemplateName() {
+    public String getInsertSqlTemplateName()
+    {
         return INSERT_TEMPLATE_NAME;
     }
 
     @Override
-    public String getUpdateSqlTemplateName() {
+    public String getUpdateSqlTemplateName()
+    {
         return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
-    public Map<String,Object> toPropertiesMap() {
-        Map<String,Object> map = super.toPropertiesMap();
-        setBoolean(map,ENABLED_FIELD,getEnabled());
+    public Map<String, Object> toPropertiesMap()
+    {
+        final Map<String, Object> map = super.toPropertiesMap();
+        setBoolean(map, ENABLED_FIELD, getEnabled());
 
         return map;
     }
 
     @Override
-    public void setPropertiesFromMap(Map<String,Object> map) {
+    public void setPropertiesFromMap(final Map<String, Object> map)
+    {
         super.setPropertiesFromMap(map);
-        setEnabled(getBoolean(map,ENABLED_FIELD));
+        setEnabled(getBoolean(map, ENABLED_FIELD));
     }
 
-    public Boolean getEnabled() {
+    public Boolean getEnabled()
+    {
         return this.enabled;
     }
 
-    public void setEnabled(Boolean enabled) {
+    public void setEnabled(final Boolean enabled)
+    {
         this.enabled = enabled;
     }
 }

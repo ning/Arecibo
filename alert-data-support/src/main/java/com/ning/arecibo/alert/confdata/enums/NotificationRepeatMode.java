@@ -16,7 +16,8 @@
 
 package com.ning.arecibo.alert.confdata.enums;
 
-public enum NotificationRepeatMode {
+public enum NotificationRepeatMode
+{
     NO_REPEAT,
     //UNTIL_ACK,
     UNTIL_CLEARED,

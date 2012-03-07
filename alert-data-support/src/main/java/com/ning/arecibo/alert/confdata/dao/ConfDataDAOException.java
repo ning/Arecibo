@@ -18,11 +18,13 @@ package com.ning.arecibo.alert.confdata.dao;
 
 public class ConfDataDAOException extends Exception
 {
-    public ConfDataDAOException(String msg) {
+    public ConfDataDAOException(final String msg)
+    {
         super(msg);
     }
-    
-    public ConfDataDAOException(String msg,Throwable t) {
-        super(msg,t);
+
+    public ConfDataDAOException(final String msg, final Throwable t)
+    {
+        super(msg, t);
     }
 }

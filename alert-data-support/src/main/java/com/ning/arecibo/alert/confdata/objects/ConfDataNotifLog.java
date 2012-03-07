@@ -16,91 +16,105 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import java.util.Map;
-import java.sql.Timestamp;
-
 import com.ning.arecibo.util.Logger;
+
+import java.sql.Timestamp;
+import java.util.Map;
 
 public class ConfDataNotifLog extends ConfDataObject
 {
-    private final static Logger log = Logger.getLogger(ConfDataNotifLog.class);
+    private static final Logger log = Logger.getLogger(ConfDataNotifLog.class);
 
-    public final static String TYPE_NAME = "notif_log";
-    public final static String INSERT_TEMPLATE_NAME = ":insert_notif_log";
-    public final static String UPDATE_TEMPLATE_NAME = ":update_notif_log";
+    public static final String TYPE_NAME = "notif_log";
+    public static final String INSERT_TEMPLATE_NAME = ":insert_notif_log";
+    public static final String UPDATE_TEMPLATE_NAME = ":update_notif_log";
 
-    private final static String ALERT_INCIDENT_ID_FIELD = "alert_incident_id";
-    private final static String ALERT_NOTIF_CONFIG_ID_FIELD = "alert_notif_config_id";
-    private final static String NOTIF_TIME_FIELD = "notif_time";
+    private static final String ALERT_INCIDENT_ID_FIELD = "alert_incident_id";
+    private static final String ALERT_NOTIF_CONFIG_ID_FIELD = "alert_notif_config_id";
+    private static final String NOTIF_TIME_FIELD = "notif_time";
 
     protected volatile Long alertIncidentId = null;
     protected volatile Long alertNotifConfigId = null;
     protected volatile Timestamp notifTime = null;
 
-    public ConfDataNotifLog() {}
+    public ConfDataNotifLog()
+    {
+    }
 
     @Override
-    public String getTypeName() {
+    public String getTypeName()
+    {
         return TYPE_NAME;
     }
 
     @Override
-    public String getInsertSqlTemplateName() {
+    public String getInsertSqlTemplateName()
+    {
         return INSERT_TEMPLATE_NAME;
     }
 
     @Override
-    public String getUpdateSqlTemplateName() {
+    public String getUpdateSqlTemplateName()
+    {
         return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
-    public void setPropertiesFromMap(Map<String,Object> map) {
+    public void setPropertiesFromMap(final Map<String, Object> map)
+    {
         super.setPropertiesFromMap(map);
-        setAlertIncidentId(getLong(map,ALERT_INCIDENT_ID_FIELD));
-        setAlertNotifConfigId(getLong(map,ALERT_NOTIF_CONFIG_ID_FIELD));
+        setAlertIncidentId(getLong(map, ALERT_INCIDENT_ID_FIELD));
+        setAlertNotifConfigId(getLong(map, ALERT_NOTIF_CONFIG_ID_FIELD));
         setNotifTime(getTimestamp(map, NOTIF_TIME_FIELD));
     }
 
     @Override
-    public Map<String,Object> toPropertiesMap() {
-        Map<String,Object> map = super.toPropertiesMap();
-        setLong(map,ALERT_INCIDENT_ID_FIELD,getAlertIncidentId());
-        setLong(map,ALERT_NOTIF_CONFIG_ID_FIELD,getAlertNotifConfigId());
+    public Map<String, Object> toPropertiesMap()
+    {
+        final Map<String, Object> map = super.toPropertiesMap();
+        setLong(map, ALERT_INCIDENT_ID_FIELD, getAlertIncidentId());
+        setLong(map, ALERT_NOTIF_CONFIG_ID_FIELD, getAlertNotifConfigId());
         setTimestamp(map, NOTIF_TIME_FIELD, getNotifTime());
 
         return map;
     }
 
     @Override
-    public void toStringBuilder(StringBuilder sb) {
+    public void toStringBuilder(final StringBuilder sb)
+    {
         super.toStringBuilder(sb);
-        sb.append(String.format("   %s -> %s\n",ALERT_INCIDENT_ID_FIELD,getAlertIncidentId()));
-        sb.append(String.format("   %s -> %s\n",ALERT_NOTIF_CONFIG_ID_FIELD,getAlertIncidentId()));
+        sb.append(String.format("   %s -> %s\n", ALERT_INCIDENT_ID_FIELD, getAlertIncidentId()));
+        sb.append(String.format("   %s -> %s\n", ALERT_NOTIF_CONFIG_ID_FIELD, getAlertIncidentId()));
         sb.append(String.format("   %s -> %s\n", NOTIF_TIME_FIELD, getNotifTime()));
     }
 
-    public Long getAlertIncidentId() {
+    public Long getAlertIncidentId()
+    {
         return alertIncidentId;
     }
 
-    public void setAlertIncidentId(Long alertIncidentId) {
+    public void setAlertIncidentId(final Long alertIncidentId)
+    {
         this.alertIncidentId = alertIncidentId;
     }
 
-    public Long getAlertNotifConfigId() {
+    public Long getAlertNotifConfigId()
+    {
         return alertNotifConfigId;
     }
 
-    public void setAlertNotifConfigId(Long alertNotifConfigId) {
+    public void setAlertNotifConfigId(final Long alertNotifConfigId)
+    {
         this.alertNotifConfigId = alertNotifConfigId;
     }
 
-    public Timestamp getNotifTime() {
+    public Timestamp getNotifTime()
+    {
         return notifTime;
     }
 
-    public void setNotifTime(Timestamp notifTime) {
+    public void setNotifTime(final Timestamp notifTime)
+    {
         this.notifTime = notifTime;
     }
 }

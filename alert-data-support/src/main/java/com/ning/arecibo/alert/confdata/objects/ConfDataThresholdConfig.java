@@ -16,26 +16,26 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import java.util.Map;
-
 import com.ning.arecibo.util.Logger;
+
+import java.util.Map;
 
 public class ConfDataThresholdConfig extends ConfDataObject
 {
-    private final static Logger log = Logger.getLogger(ConfDataThresholdConfig.class);
+    private static final Logger log = Logger.getLogger(ConfDataThresholdConfig.class);
 
-    public final static String TYPE_NAME = "threshold_config";
-    public final static String INSERT_TEMPLATE_NAME = ":insert_threshold_config";
-    public final static String UPDATE_TEMPLATE_NAME = ":update_threshold_config";
+    public static final String TYPE_NAME = "threshold_config";
+    public static final String INSERT_TEMPLATE_NAME = ":insert_threshold_config";
+    public static final String UPDATE_TEMPLATE_NAME = ":update_threshold_config";
 
-    private final static String ALERTING_CONFIG_ID_FIELD = "alerting_config_id";
-    private final static String MONITORED_EVENT_TYPE_FIELD = "monitored_event_type";
-    private final static String MONITORED_ATTRIBUTE_TYPE_FIELD = "monitored_attribute_type";
-    private final static String CLEARING_INTERVAL_MS_FIELD = "clearing_interval_ms";
-    private final static String MIN_THRESHOLD_VALUE_FIELD = "min_threshold_value";
-    private final static String MAX_THRESHOLD_VALUE_FIELD = "max_threshold_value";
-    private final static String MIN_THRESHOLD_SAMPLES_FIELD = "min_threshold_samples";
-    private final static String MAX_SAMPLE_WINDOW_MS_FIELD = "max_sample_window_ms";
+    private static final String ALERTING_CONFIG_ID_FIELD = "alerting_config_id";
+    private static final String MONITORED_EVENT_TYPE_FIELD = "monitored_event_type";
+    private static final String MONITORED_ATTRIBUTE_TYPE_FIELD = "monitored_attribute_type";
+    private static final String CLEARING_INTERVAL_MS_FIELD = "clearing_interval_ms";
+    private static final String MIN_THRESHOLD_VALUE_FIELD = "min_threshold_value";
+    private static final String MAX_THRESHOLD_VALUE_FIELD = "max_threshold_value";
+    private static final String MIN_THRESHOLD_SAMPLES_FIELD = "min_threshold_samples";
+    private static final String MAX_SAMPLE_WINDOW_MS_FIELD = "max_sample_window_ms";
 
     protected volatile Long alertingConfigId = null;
     protected volatile String monitoredEventType = null;
@@ -46,125 +46,149 @@ public class ConfDataThresholdConfig extends ConfDataObject
     protected volatile Long minThresholdSamples = null;
     protected volatile Long maxSampleWindowMs = null;
 
-    public ConfDataThresholdConfig() {}
+    public ConfDataThresholdConfig()
+    {
+    }
 
     @Override
-    public String getTypeName() {
+    public String getTypeName()
+    {
         return TYPE_NAME;
     }
 
     @Override
-    public String getInsertSqlTemplateName() {
+    public String getInsertSqlTemplateName()
+    {
         return INSERT_TEMPLATE_NAME;
     }
 
     @Override
-    public String getUpdateSqlTemplateName() {
+    public String getUpdateSqlTemplateName()
+    {
         return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
-    public void setPropertiesFromMap(Map<String,Object> map) {
+    public void setPropertiesFromMap(final Map<String, Object> map)
+    {
         super.setPropertiesFromMap(map);
         setAlertingConfigId(getLong(map, ALERTING_CONFIG_ID_FIELD));
-        setMonitoredEventType(getString(map,MONITORED_EVENT_TYPE_FIELD));
-        setMonitoredAttributeType(getString(map,MONITORED_ATTRIBUTE_TYPE_FIELD));
-        setClearingIntervalMs(getLong(map,CLEARING_INTERVAL_MS_FIELD));
-        setMinThresholdValue(getDouble(map,MIN_THRESHOLD_VALUE_FIELD));
-        setMaxThresholdValue(getDouble(map,MAX_THRESHOLD_VALUE_FIELD));
-        setMinThresholdSamples(getLong(map,MIN_THRESHOLD_SAMPLES_FIELD));
-        setMaxSampleWindowMs(getLong(map,MAX_SAMPLE_WINDOW_MS_FIELD));
+        setMonitoredEventType(getString(map, MONITORED_EVENT_TYPE_FIELD));
+        setMonitoredAttributeType(getString(map, MONITORED_ATTRIBUTE_TYPE_FIELD));
+        setClearingIntervalMs(getLong(map, CLEARING_INTERVAL_MS_FIELD));
+        setMinThresholdValue(getDouble(map, MIN_THRESHOLD_VALUE_FIELD));
+        setMaxThresholdValue(getDouble(map, MAX_THRESHOLD_VALUE_FIELD));
+        setMinThresholdSamples(getLong(map, MIN_THRESHOLD_SAMPLES_FIELD));
+        setMaxSampleWindowMs(getLong(map, MAX_SAMPLE_WINDOW_MS_FIELD));
     }
 
     @Override
-    public Map<String,Object> toPropertiesMap() {
-        Map<String,Object> map = super.toPropertiesMap();
+    public Map<String, Object> toPropertiesMap()
+    {
+        final Map<String, Object> map = super.toPropertiesMap();
         setLong(map, ALERTING_CONFIG_ID_FIELD, getAlertingConfigId());
-        setString(map,MONITORED_EVENT_TYPE_FIELD,getMonitoredEventType());
-        setString(map,MONITORED_ATTRIBUTE_TYPE_FIELD,getMonitoredAttributeType());
-        setLong(map,CLEARING_INTERVAL_MS_FIELD,getClearingIntervalMs());
-        setDouble(map,MIN_THRESHOLD_VALUE_FIELD,getMinThresholdValue());
-        setDouble(map,MAX_THRESHOLD_VALUE_FIELD,getMaxThresholdValue());
-        setLong(map,MIN_THRESHOLD_SAMPLES_FIELD,getMinThresholdSamples());
-        setLong(map,MAX_SAMPLE_WINDOW_MS_FIELD,getMaxSampleWindowMs());
+        setString(map, MONITORED_EVENT_TYPE_FIELD, getMonitoredEventType());
+        setString(map, MONITORED_ATTRIBUTE_TYPE_FIELD, getMonitoredAttributeType());
+        setLong(map, CLEARING_INTERVAL_MS_FIELD, getClearingIntervalMs());
+        setDouble(map, MIN_THRESHOLD_VALUE_FIELD, getMinThresholdValue());
+        setDouble(map, MAX_THRESHOLD_VALUE_FIELD, getMaxThresholdValue());
+        setLong(map, MIN_THRESHOLD_SAMPLES_FIELD, getMinThresholdSamples());
+        setLong(map, MAX_SAMPLE_WINDOW_MS_FIELD, getMaxSampleWindowMs());
 
         return map;
     }
 
     @Override
-    public void toStringBuilder(StringBuilder sb) {
+    public void toStringBuilder(final StringBuilder sb)
+    {
         super.toStringBuilder(sb);
         sb.append(String.format("   %s -> %s\n", ALERTING_CONFIG_ID_FIELD, getAlertingConfigId()));
-        sb.append(String.format("   %s -> %s\n",MONITORED_EVENT_TYPE_FIELD,getMonitoredEventType()));
-        sb.append(String.format("   %s -> %s\n",MONITORED_ATTRIBUTE_TYPE_FIELD,getMonitoredAttributeType()));
-        sb.append(String.format("   %s -> %s\n",CLEARING_INTERVAL_MS_FIELD,getClearingIntervalMs()));
-        sb.append(String.format("   %s -> %s\n",MIN_THRESHOLD_VALUE_FIELD,getMinThresholdValue()));
-        sb.append(String.format("   %s -> %s\n",MAX_THRESHOLD_VALUE_FIELD,getMaxThresholdValue()));
-        sb.append(String.format("   %s -> %s\n",MIN_THRESHOLD_SAMPLES_FIELD,getMinThresholdSamples()));
-        sb.append(String.format("   %s -> %s\n",MAX_SAMPLE_WINDOW_MS_FIELD,getMaxSampleWindowMs()));
+        sb.append(String.format("   %s -> %s\n", MONITORED_EVENT_TYPE_FIELD, getMonitoredEventType()));
+        sb.append(String.format("   %s -> %s\n", MONITORED_ATTRIBUTE_TYPE_FIELD, getMonitoredAttributeType()));
+        sb.append(String.format("   %s -> %s\n", CLEARING_INTERVAL_MS_FIELD, getClearingIntervalMs()));
+        sb.append(String.format("   %s -> %s\n", MIN_THRESHOLD_VALUE_FIELD, getMinThresholdValue()));
+        sb.append(String.format("   %s -> %s\n", MAX_THRESHOLD_VALUE_FIELD, getMaxThresholdValue()));
+        sb.append(String.format("   %s -> %s\n", MIN_THRESHOLD_SAMPLES_FIELD, getMinThresholdSamples()));
+        sb.append(String.format("   %s -> %s\n", MAX_SAMPLE_WINDOW_MS_FIELD, getMaxSampleWindowMs()));
     }
 
-    public Long getAlertingConfigId() {
+    public Long getAlertingConfigId()
+    {
         return alertingConfigId;
     }
 
-    public void setAlertingConfigId(Long alertingConfigId) {
+    public void setAlertingConfigId(final Long alertingConfigId)
+    {
         this.alertingConfigId = alertingConfigId;
     }
 
-    public String getMonitoredEventType() {
+    public String getMonitoredEventType()
+    {
         return monitoredEventType;
     }
 
-    public void setMonitoredEventType(String monitoredEventType) {
+    public void setMonitoredEventType(final String monitoredEventType)
+    {
         this.monitoredEventType = monitoredEventType;
     }
 
-    public String getMonitoredAttributeType() {
+    public String getMonitoredAttributeType()
+    {
         return monitoredAttributeType;
     }
 
-    public void setMonitoredAttributeType(String monitoredAttributeType) {
+    public void setMonitoredAttributeType(final String monitoredAttributeType)
+    {
         this.monitoredAttributeType = monitoredAttributeType;
     }
 
-    public Long getClearingIntervalMs() {
+    public Long getClearingIntervalMs()
+    {
         return clearingIntervalMs;
     }
 
-    public void setClearingIntervalMs(Long clearingIntervalMs) {
+    public void setClearingIntervalMs(final Long clearingIntervalMs)
+    {
         this.clearingIntervalMs = clearingIntervalMs;
     }
 
-    public Double getMinThresholdValue() {
+    public Double getMinThresholdValue()
+    {
         return minThresholdValue;
     }
 
-    public void setMinThresholdValue(Double minThresholdValue) {
+    public void setMinThresholdValue(final Double minThresholdValue)
+    {
         this.minThresholdValue = minThresholdValue;
     }
 
-    public Double getMaxThresholdValue() {
+    public Double getMaxThresholdValue()
+    {
         return maxThresholdValue;
     }
 
-    public void setMaxThresholdValue(Double maxThresholdValue) {
+    public void setMaxThresholdValue(final Double maxThresholdValue)
+    {
         this.maxThresholdValue = maxThresholdValue;
     }
 
-    public Long getMinThresholdSamples() {
+    public Long getMinThresholdSamples()
+    {
         return minThresholdSamples;
     }
 
-    public void setMinThresholdSamples(Long minThresholdSamples) {
+    public void setMinThresholdSamples(final Long minThresholdSamples)
+    {
         this.minThresholdSamples = minThresholdSamples;
     }
 
-    public Long getMaxSampleWindowMs() {
+    public Long getMaxSampleWindowMs()
+    {
         return maxSampleWindowMs;
     }
 
-    public void setMaxSampleWindowMs(Long maxSampleWindowMs) {
+    public void setMaxSampleWindowMs(final Long maxSampleWindowMs)
+    {
         this.maxSampleWindowMs = maxSampleWindowMs;
     }
 }

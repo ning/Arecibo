@@ -16,92 +16,106 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import java.util.Map;
 import com.ning.arecibo.alert.confdata.enums.NotificationType;
-
 import com.ning.arecibo.util.Logger;
+
+import java.util.Map;
 
 
 public class ConfDataNotifConfig extends ConfDataObject
 {
-    private final static Logger log = Logger.getLogger(ConfDataNotifConfig.class);
+    private static final Logger log = Logger.getLogger(ConfDataNotifConfig.class);
 
-    public final static String TYPE_NAME = "notif_config";
-    public final static String INSERT_TEMPLATE_NAME = ":insert_notif_config";
-    public final static String UPDATE_TEMPLATE_NAME = ":update_notif_config";
+    public static final String TYPE_NAME = "notif_config";
+    public static final String INSERT_TEMPLATE_NAME = ":insert_notif_config";
+    public static final String UPDATE_TEMPLATE_NAME = ":update_notif_config";
 
-    private final static String PERSON_ID_FIELD = "person_id";
-    private final static String NOTIF_TYPE_FIELD = "notif_type";
-    private final static String ADDRESS_FIELD = "address";
+    private static final String PERSON_ID_FIELD = "person_id";
+    private static final String NOTIF_TYPE_FIELD = "notif_type";
+    private static final String ADDRESS_FIELD = "address";
 
     protected volatile Long personId = null;
     protected volatile NotificationType notifType = null;
     protected volatile String address = null;
 
-    public ConfDataNotifConfig() {}
+    public ConfDataNotifConfig()
+    {
+    }
 
     @Override
-    public String getTypeName() {
+    public String getTypeName()
+    {
         return TYPE_NAME;
     }
 
     @Override
-    public String getInsertSqlTemplateName() {
+    public String getInsertSqlTemplateName()
+    {
         return INSERT_TEMPLATE_NAME;
     }
 
     @Override
-    public String getUpdateSqlTemplateName() {
+    public String getUpdateSqlTemplateName()
+    {
         return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
-    public void setPropertiesFromMap(Map<String,Object> map) {
+    public void setPropertiesFromMap(final Map<String, Object> map)
+    {
         super.setPropertiesFromMap(map);
-        setPersonId(getLong(map,PERSON_ID_FIELD));
-        setNotifType(getEnum(map,NOTIF_TYPE_FIELD,NotificationType.class));
-        setAddress(getString(map,ADDRESS_FIELD));
+        setPersonId(getLong(map, PERSON_ID_FIELD));
+        setNotifType(getEnum(map, NOTIF_TYPE_FIELD, NotificationType.class));
+        setAddress(getString(map, ADDRESS_FIELD));
     }
 
     @Override
-    public Map<String,Object> toPropertiesMap() {
-        Map<String,Object> map = super.toPropertiesMap();
-        setLong(map,PERSON_ID_FIELD,getPersonId());
-        setEnum(map,NOTIF_TYPE_FIELD,getNotifType());
-        setString(map,ADDRESS_FIELD,getAddress());
+    public Map<String, Object> toPropertiesMap()
+    {
+        final Map<String, Object> map = super.toPropertiesMap();
+        setLong(map, PERSON_ID_FIELD, getPersonId());
+        setEnum(map, NOTIF_TYPE_FIELD, getNotifType());
+        setString(map, ADDRESS_FIELD, getAddress());
 
         return map;
     }
 
     @Override
-    public void toStringBuilder(StringBuilder sb) {
+    public void toStringBuilder(final StringBuilder sb)
+    {
         super.toStringBuilder(sb);
-        sb.append(String.format("   %s -> %s\n",PERSON_ID_FIELD,getPersonId()));
-        sb.append(String.format("   %s -> %s\n",NOTIF_TYPE_FIELD,getNotifType()));
-        sb.append(String.format("   %s -> %s\n",ADDRESS_FIELD,getAddress()));
+        sb.append(String.format("   %s -> %s\n", PERSON_ID_FIELD, getPersonId()));
+        sb.append(String.format("   %s -> %s\n", NOTIF_TYPE_FIELD, getNotifType()));
+        sb.append(String.format("   %s -> %s\n", ADDRESS_FIELD, getAddress()));
     }
 
-    public Long getPersonId() {
+    public Long getPersonId()
+    {
         return personId;
     }
 
-    public void setPersonId(Long personId) {
+    public void setPersonId(final Long personId)
+    {
         this.personId = personId;
     }
-    
-    public NotificationType getNotifType() {
+
+    public NotificationType getNotifType()
+    {
         return notifType;
     }
 
-    public void setNotifType(NotificationType notifType) {
+    public void setNotifType(final NotificationType notifType)
+    {
         this.notifType = notifType;
     }
 
-    public String getAddress() {
+    public String getAddress()
+    {
         return address;
     }
 
-    public void setAddress(String address) {
+    public void setAddress(final String address)
+    {
         this.address = address;
     }
 }
