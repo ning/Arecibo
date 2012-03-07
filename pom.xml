@@ -44,6 +44,7 @@
         <module>alert-data-support</module>
         <module>alert-client-support</module>
         <module>alertmanager</module>
+        <module>collector-rt-support</module>
         <module>collector-client-support</module>
         <module>collector</module>
         <module>dashboard</module>
