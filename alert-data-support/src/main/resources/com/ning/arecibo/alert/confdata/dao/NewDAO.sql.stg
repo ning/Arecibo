@@ -1,6 +1,6 @@
 group sql;
 
-insertAcknowledgementLog() ::= <<
+insertConfDataAcknowledgementLog() ::= <<
     insert into acknowledgement_log (
         label,
         alert_incident_id,
@@ -16,7 +16,7 @@ insertAcknowledgementLog() ::= <<
     )
 >>
 
-updateAcknowledgementLog() ::= <<
+updateConfDataAcknowledgementLog() ::= <<
     update acknowledgement_log set
         label = :label,
         alert_incident_id = :alertIncidentId,
@@ -27,9 +27,11 @@ updateAcknowledgementLog() ::= <<
         id = :id
 >>
 
+deleteConfDataAcknowledgementLog() ::= <<
+    delete from acknowledgement_log where id = :id;
+>>
 
-
-insertAlertingConfig() ::= <<
+insertConfDataAlertingConfig() ::= <<
     insert into alerting_config (
         label,
         parent_config_id,
@@ -53,7 +55,7 @@ insertAlertingConfig() ::= <<
     )
 >>
 
-updateAlertingConfig() ::= <<
+updateConfDataAlertingConfig() ::= <<
     update alerting_config set
         label = :label,
         parent_config_id = :parentConfigId,
@@ -68,9 +70,11 @@ updateAlertingConfig() ::= <<
         id = :id
 >>
 
+deleteConfDataAlertingConfig() ::= <<
+    delete from alerting_config where id = :id;
+>>
 
-
-insertNotifGroupMapping() ::= <<
+insertConfDataNotifGroupMapping() ::= <<
     insert into notif_group_mapping (
         label,
         notif_group_id,
@@ -82,7 +86,7 @@ insertNotifGroupMapping() ::= <<
     )
 >>
 
-updateNotifGroupMapping() ::= <<
+updateConfDataNotifGroupMapping() ::= <<
     update notif_group_mapping set
         label = :label,
         notif_group_id = :notifGroupId,
@@ -91,9 +95,11 @@ updateNotifGroupMapping() ::= <<
         id = :id
 >>
 
+deleteConfDataNotifGroupMapping() ::= <<
+    delete from notif_group_mapping where id = :id;
+>>
 
-
-insertNotifGroup() ::= <<
+insertConfDataNotifGroup() ::= <<
     insert into notif_group (
         label,
         enabled
@@ -103,7 +109,7 @@ insertNotifGroup() ::= <<
     )
 >>
 
-updateNotifGroup() ::= <<
+updateConfDataNotifGroup() ::= <<
     update notif_group set
         label = :label,
         enabled = :enabled
@@ -111,9 +117,11 @@ updateNotifGroup() ::= <<
         id = :id
 >>
 
+deleteConfDataNotifGroup() ::= <<
+    delete from notif_group where id = :id;
+>>
 
-
-insertAlertIncidentLog() ::= <<
+insertConfDataAlertIncidentLog() ::= <<
     insert into alert_incident_log (
         label,
         threshold_config_id,
@@ -133,7 +141,7 @@ insertAlertIncidentLog() ::= <<
     )
 >>
 
-updateAlertIncidentLog() ::= <<
+updateConfDataAlertIncidentLog() ::= <<
     update alert_incident_log set
         label = :label,
         threshold_config_id = :thresholdConfigId,
@@ -146,9 +154,11 @@ updateAlertIncidentLog() ::= <<
         id = :id
 >>
 
+deleteConfDataAlertIncidentLog() ::= <<
+    delete from alert_incident_log where id = :id;
+>>
 
-
-insertManagingKeyMapping() ::= <<
+insertConfDataManagingKeyMapping() ::= <<
     insert into managing_key_mapping (
         label,
         alerting_config_id,
@@ -160,7 +170,7 @@ insertManagingKeyMapping() ::= <<
     )
 >>
 
-updateManagingKeyMapping() ::= <<
+updateConfDataManagingKeyMapping() ::= <<
     update managing_key_mapping set
         label = :label,
         alerting_config_id = :alertingConfigId,
@@ -169,9 +179,11 @@ updateManagingKeyMapping() ::= <<
         id = :id
 >>
 
+deleteConfDataManagingKeyMapping() ::= <<
+    delete from managing_key_mapping where id = :id;
+>>
 
-
-insertNotifConfig() ::= <<
+insertConfDataNotifConfig() ::= <<
     insert into notif_config (
         label,
         person_id,
@@ -185,7 +197,7 @@ insertNotifConfig() ::= <<
     )
 >>
 
-updateNotifConfig() ::= <<
+updateConfDataNotifConfig() ::= <<
     update notif_config set
         label = :label,
         person_id = :personId,
@@ -195,9 +207,11 @@ updateNotifConfig() ::= <<
         id = :id
 >>
 
+deleteConfDataNotifConfig() ::= <<
+    delete from notif_config where id = :id;
+>>
 
-
-insertNotifMapping() ::= <<
+insertConfDataNotifMapping() ::= <<
     insert into notif_mapping (
         label,
         notif_group_id,
@@ -209,7 +223,7 @@ insertNotifMapping() ::= <<
     )
 >>
 
-updateNotifMapping() ::= <<
+updateConfDataNotifMapping() ::= <<
     update notif_mapping set
         label = :label,
         notif_group_id = :notifGroupId,
@@ -218,9 +232,11 @@ updateNotifMapping() ::= <<
         id = :id
 >>
 
+deleteConfDataNotifMapping() ::= <<
+    delete from notif_mapping where id = :id;
+>>
 
-
-insertLevelConfig() ::= <<
+insertConfDataLevelConfig() ::= <<
     insert into level_config (
         label,
         color,
@@ -232,7 +248,7 @@ insertLevelConfig() ::= <<
     )
 >>
 
-updateLevelConfig() ::= <<
+updateConfDataLevelConfig() ::= <<
     update level_config set
         label = :label,
         color = :color,
@@ -241,9 +257,11 @@ updateLevelConfig() ::= <<
         id = :id
 >>
 
+deleteConfDataLevelConfig() ::= <<
+    delete from level_config where id = :id;
+>>
 
-
-insertManagingKeyLog() ::= <<
+insertConfDataManagingKeyLog() ::= <<
     insert into managing_key_log (
         label,
         managing_key_id,
@@ -259,7 +277,7 @@ insertManagingKeyLog() ::= <<
     )
 >>
 
-updateManagingKeyLog() ::= <<
+updateConfDataManagingKeyLog() ::= <<
     update managing_key_log set
         label = :label,
         managing_key_id = :managingKeyId,
@@ -270,9 +288,11 @@ updateManagingKeyLog() ::= <<
         id = :id
 >>
 
+deleteConfDataManagingKeyLog() ::= <<
+    delete from managing_key_log where id = :id;
+>>
 
-
-insertManagingKey() ::= <<
+insertConfDataManagingKey() ::= <<
     insert into managing_key (
         label,
         key,
@@ -296,7 +316,7 @@ insertManagingKey() ::= <<
     )
 >>
 
-updateManagingKey() ::= <<
+updateConfDataManagingKey() ::= <<
     update managing_key set
         label = :label,
         key = :key,
@@ -311,9 +331,11 @@ updateManagingKey() ::= <<
         id = :id
 >>
 
+deleteConfDataManagingKey() ::= <<
+    delete from managing_key where id = :id;
+>>
 
-
-insertMessagingDescription() ::= <<
+insertConfDataMessagingDescription() ::= <<
     insert into messaging_description (
         label,
         message_type,
@@ -325,7 +347,7 @@ insertMessagingDescription() ::= <<
     )
 >>
 
-updateMessagingDescription() ::= <<
+updateConfDataMessagingDescription() ::= <<
     update messaging_description set
         label = :label,
         message_type = :messagingType,
@@ -334,9 +356,11 @@ updateMessagingDescription() ::= <<
        id = :id
 >>
 
+deleteConfDataMessagingDescription() ::= <<
+    delete from messaging_description where id = :id;
+>>
 
-
-insertNotifLog() ::= <<
+insertConfDataNotifLog() ::= <<
     insert into notif_log (
         label,
         alert_incident_id,
@@ -351,7 +375,7 @@ insertNotifLog() ::= <<
     )
 >>
 
-updateNotifLog() ::= <<
+updateConfDataNotifLog() ::= <<
     update notif_log set
         label = :label,
         alert_incident_id = :alertIncidentId,
@@ -361,9 +385,11 @@ updateNotifLog() ::= <<
         id = :id
 >>
 
+deleteConfDataNotifLog() ::= <<
+    delete from notif_log where id = :id;
+>>
 
-
-insertPerson() ::= <<
+insertConfDataPerson() ::= <<
     insert into person (
         label,
         first_name,
@@ -377,7 +403,7 @@ insertPerson() ::= <<
     )
 >>
 
-updatePerson() ::= <<
+updateConfDataPerson() ::= <<
     update person set
         label = :label,
         first_name = :firstName,
@@ -387,9 +413,11 @@ updatePerson() ::= <<
         id = :id
 >>
 
+deleteConfDataPerson() ::= <<
+    delete from person where id = :id;
+>>
 
-
-insertThresholdConfig() ::= <<
+insertConfDataThresholdConfig() ::= <<
     insert into threshold_config (
         label,
         alerting_config_id,
@@ -413,7 +441,7 @@ insertThresholdConfig() ::= <<
     )
 >>
 
-updateThresholdConfig() ::= <<
+updateConfDataThresholdConfig() ::= <<
     update threshold_config set
         label = :label,
         alerting_config_id = :alertingConfigId,
@@ -428,9 +456,11 @@ updateThresholdConfig() ::= <<
         id = :id
 >>
 
+deleteConfDataThresholdConfig() ::= <<
+    delete from threshold_config where id = :id;
+>>
 
-
-insertThresholdContextAttr() ::= <<
+insertConfDataThresholdContextAttr() ::= <<
     insert into threshold_context_attr (
         label,
         threshold_config_id,
@@ -442,7 +472,7 @@ insertThresholdContextAttr() ::= <<
     )
 >>
 
-updateThresholdContextAttr() ::= <<
+updateConfDataThresholdContextAttr() ::= <<
     update threshold_context_attr set
         label = :label,
         threshold_config_id = :thresholdConfigId,
@@ -451,9 +481,11 @@ updateThresholdContextAttr() ::= <<
         id = :id
 >>
 
+deleteConfDataThresholdContextAttr() ::= <<
+    delete from threshold_context_attr where id = :id;
+>>
 
-
-insertThresholdQualifyingAttr() ::= <<
+insertConfDataThresholdQualifyingAttr() ::= <<
     insert into threshold_qualifying_attr (
         label,
         threshold_config_id,
@@ -467,7 +499,7 @@ insertThresholdQualifyingAttr() ::= <<
     )
 >>
 
-updateThresholdQualifyingAttr() ::= <<
+updateConfDataThresholdQualifyingAttr() ::= <<
     update threshold_qualifying_attr set
         label = :label,
         threshold_config_id = :thresholdConfigId,
@@ -475,4 +507,8 @@ updateThresholdQualifyingAttr() ::= <<
         attribute_value = :attributeValue
     where
         id = :id
+>>
+
+deleteConfDataThresholdQualifyingAttr() ::= <<
+    delete from threshold_qualifying_attr where id = :id;
 >>

@@ -8,7 +8,8 @@ create table person (
 , is_group_alias char(1) default '0' not null
 , unique index person_unq (label)
 ) engine = innodb;
-
+create trigger person_create_timestamp before insert on `person`
+for each row set new.create_timestamp = now();
 
 create table messaging_description (
   id integer not null auto_increment primary key
@@ -19,7 +20,8 @@ create table messaging_description (
 , message_text varchar(4000)
 , unique index messaging_desc_unq (label)
 ) engine = innodb;
-
+create trigger messaging_description_create_timestamp before insert on `messaging_description`
+for each row set new.create_timestamp = now();
 
 create table managing_key (
   id integer not null auto_increment primary key
@@ -36,7 +38,8 @@ create table managing_key (
 , auto_activate_dow_end integer
 , unique index managing_key_unq (label)
 ) engine = innodb;
-
+create trigger managing_key_create_timestamp before insert on `managing_key`
+for each row set new.create_timestamp = now();
 
 create table notif_group (
   id integer not null auto_increment primary key
@@ -46,7 +49,8 @@ create table notif_group (
 , enabled char(1) default '0' not null
 , unique index notif_group_unq (label)
 ) engine = innodb;
-
+create trigger notif_group_create_timestamp before insert on `notif_group`
+for each row set new.create_timestamp = now();
 
 create table level_config (
   id integer not null auto_increment primary key
@@ -59,7 +63,8 @@ create table level_config (
 , index notif_group_fklc_idx (default_notif_group_id)
 , foreign key (default_notif_group_id) references notif_group(id) on delete set null
 ) engine = innodb;
-
+create trigger level_config_create_timestamp before insert on `level_config`
+for each row set new.create_timestamp = now();
 
 create table alerting_config (
   id integer not null auto_increment primary key
@@ -80,7 +85,8 @@ create table alerting_config (
 , index level_config_fkac_idx (level_config_id)
 , foreign key (level_config_id) references level_config(id) on delete set null
 ) engine = innodb;
-
+create trigger alerting_config_create_timestamp before insert on `alerting_config`
+for each row set new.create_timestamp = now();
 
 create table threshold_config (
   id integer not null auto_increment primary key
@@ -99,7 +105,8 @@ create table threshold_config (
 , index alerting_config_fktc_idx (alerting_config_id)
 , foreign key (alerting_config_id) references alerting_config(id) on delete set null
 ) engine = innodb;
-
+create trigger threshold_config_create_timestamp before insert on `threshold_config`
+for each row set new.create_timestamp = now();
 
 create table threshold_qualifying_attr (
   id integer not null auto_increment primary key
@@ -113,7 +120,8 @@ create table threshold_qualifying_attr (
 , index threshold_config_fktqa_idx (threshold_config_id)
 , foreign key (threshold_config_id) references threshold_config(id) on delete cascade
 ) engine = innodb;
-
+create trigger threshold_qualifying_attr_create_timestamp before insert on `threshold_qualifying_attr`
+for each row set new.create_timestamp = now();
 
 create table threshold_context_attr (
   id integer not null auto_increment primary key
@@ -126,7 +134,8 @@ create table threshold_context_attr (
 , index threshold_config_fktca_idx (threshold_config_id)
 , foreign key (threshold_config_id) references threshold_config(id) on delete cascade
 ) engine = innodb;
-
+create trigger threshold_context_attr_create_timestamp before insert on `threshold_context_attr`
+for each row set new.create_timestamp = now();
 
 create table managing_key_mapping (
   id integer not null auto_increment primary key
@@ -141,7 +150,8 @@ create table managing_key_mapping (
 , index managing_key_fkmkm_idx (managing_key_id)
 , foreign key (managing_key_id) references managing_key(id) on delete cascade
 ) engine = innodb;
-
+create trigger managing_key_mapping_create_timestamp before insert on `managing_key_mapping`
+for each row set new.create_timestamp = now();
 
 create table notif_config (
   id integer not null auto_increment primary key
@@ -156,7 +166,8 @@ create table notif_config (
 , index person_fkanc_idx (person_id)
 , foreign key (person_id) references person(id) on delete cascade
 ) engine = innodb;
-
+create trigger notif_config_create_timestamp before insert on `notif_config`
+for each row set new.create_timestamp = now();
 
 create table notif_mapping (
   id integer not null auto_increment primary key
@@ -171,7 +182,8 @@ create table notif_mapping (
 , index notif_config_fkanm (notif_config_id)
 , foreign key (notif_config_id) references notif_config(id) on delete cascade
 ) engine = innodb;
-
+create trigger notif_mapping_create_timestamp before insert on `notif_mapping`
+for each row set new.create_timestamp = now();
 
 create table notif_group_mapping (
   id integer not null auto_increment primary key
@@ -186,7 +198,8 @@ create table notif_group_mapping (
 , index alerting_config_fkagm (alerting_config_id)
 , foreign key (alerting_config_id) references alerting_config(id) on delete cascade
 ) engine = innodb;
-
+create trigger notif_group_mapping_create_timestamp before insert on `notif_group_mapping`
+for each row set new.create_timestamp = now();
 
 create table alert_incident_log (
   id integer not null auto_increment primary key
@@ -203,7 +216,8 @@ create table alert_incident_log (
 , index threshold_config_fkail (threshold_config_id)
 , foreign key (threshold_config_id) references threshold_config(id) on delete set null
 ) engine = innodb;
-
+create trigger alert_incident_log_create_timestamp before insert on `alert_incident_log`
+for each row set new.create_timestamp = now();
 
 create table acknowledgement_log (
   id integer not null auto_increment primary key
@@ -220,7 +234,8 @@ create table acknowledgement_log (
 , index person_fkal (person_id)
 , foreign key (person_id) references person(id) on delete cascade
 ) engine = innodb;
-
+create trigger acknowledgement_log_create_timestamp before insert on `acknowledgement_log`
+for each row set new.create_timestamp = now();
 
 create table notif_log (
   id integer not null auto_increment primary key
@@ -236,7 +251,8 @@ create table notif_log (
 , index notif_config_fkanl (notif_config_id)
 , foreign key (notif_config_id) references notif_config(id) on delete cascade
 ) engine = innodb;
-
+create trigger notif_log_create_timestamp before insert on `notif_log`
+for each row set new.create_timestamp = now();
 
 create table managing_key_log (
   id integer not null auto_increment primary key
@@ -251,3 +267,5 @@ create table managing_key_log (
 , index managing_key_fkmkl (managing_key_id)
 , foreign key (managing_key_id) references managing_key(id) on delete cascade
 ) engine = innodb;
+create trigger managing_key_log_create_timestamp before insert on `managing_key_log`
+for each row set new.create_timestamp = now();
