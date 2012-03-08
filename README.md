@@ -5,6 +5,8 @@ Overview
 
     mvn clean install
 
+2. Detailed documentation: see https://github.com/ning/Arecibo/wiki
+
 
 Collector
 ---------
