@@ -70,9 +70,9 @@ public class ConfDataAlertingConfig extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setParentConfigId(getLong(map, PARENT_CONFIG_ID_FIELD));
         setLevelConfigId(getLong(map, LEVEL_CONFIG_ID_FIELD));
         setStatus(getString(map, STATUS_FIELD));

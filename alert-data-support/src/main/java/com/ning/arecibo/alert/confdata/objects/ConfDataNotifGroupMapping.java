@@ -57,9 +57,9 @@ public class ConfDataNotifGroupMapping extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setNotifGroupId(getLong(map, NOTIF_GROUP_ID_FIELD));
         setAlertingConfigId(getLong(map, ALERTING_CONFIG_ID_FIELD));
     }

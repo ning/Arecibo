@@ -17,18 +17,29 @@
 package com.ning.arecibo.alert.confdata.dao;
 
 import com.google.inject.Inject;
+import com.ning.arecibo.alert.confdata.objects.ConfDataAcknowledgementLog;
+import com.ning.arecibo.alert.confdata.objects.ConfDataAlertIncidentLog;
+import com.ning.arecibo.alert.confdata.objects.ConfDataPerson;
 import com.ning.arecibo.dao.MysqlTestingHelper;
 import org.apache.commons.io.IOUtils;
+import org.skife.jdbi.v2.DBI;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import java.util.UUID;
+
 @Guice(modules = AlertDataTestModule.class)
 public class TestConfDataDAO
 {
     @Inject
+    private DBI dbi;
+
+    @Inject
     private MysqlTestingHelper helper;
+
+    private NewDAO dao;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
@@ -37,6 +48,8 @@ public class TestConfDataDAO
 
         helper.startMysql();
         helper.initDb(ddl);
+
+        dao = dbi.onDemand(NewDAO.class);
     }
 
     @AfterMethod(alwaysRun = true)
@@ -48,5 +61,20 @@ public class TestConfDataDAO
     @Test(groups = "slow")
     public void testInsert() throws Exception
     {
+        final ConfDataAlertIncidentLog alertIncidentLog = new ConfDataAlertIncidentLog();
+        alertIncidentLog.setLabel(UUID.randomUUID().toString());
+        alertIncidentLog.setContextIdentifier(UUID.randomUUID().toString());
+        final long alertIncidentId = dao.insertAlertIncidentLog(alertIncidentLog);
+
+        final ConfDataPerson person = new ConfDataPerson();
+        person.setLabel(UUID.randomUUID().toString());
+        person.setIsGroupAlias(false);
+        final long personId = dao.insertPerson(person);
+
+        final ConfDataAcknowledgementLog acknowledgementLog = new ConfDataAcknowledgementLog();
+        acknowledgementLog.setLabel(UUID.randomUUID().toString());
+        acknowledgementLog.setAlertIncidentId(alertIncidentId);
+        acknowledgementLog.setPersonId(personId);
+        dao.insertAcknowledgementLog(acknowledgementLog);
     }
 }

@@ -1,0 +1,478 @@
+group sql;
+
+insertAcknowledgementLog() ::= <<
+    insert into acknowledgement_log (
+        label,
+        alert_incident_id,
+        person_id,
+        ack_time,
+        ack_comment
+    ) values (
+        :label,
+        :alertIncidentId,
+        :personId,
+        :ackTime,
+        :ackComment
+    )
+>>
+
+updateAcknowledgementLog() ::= <<
+    update acknowledgement_log set
+        label = :label,
+        alert_incident_id = :alertIncidentId,
+        person_id = :personId,
+        ack_time = :ackTime
+        ack_comment = :ackComment
+    where
+        id = :id
+>>
+
+
+
+insertAlertingConfig() ::= <<
+    insert into alerting_config (
+        label,
+        parent_config_id,
+        level_config_id,
+        status,
+        type,
+        enabled,
+        notif_repeat_mode,
+        notif_repeat_interval_ms,
+        notif_on_recovery
+    ) values (
+        :label,
+        :parentConfigId,
+        :levelConfigId,
+        :status,
+        :type,
+        :enabled,
+        :notifRepeatMode,
+        :notifRepeatIntervalMs,
+        :notifOnRecovery
+    )
+>>
+
+updateAlertingConfig() ::= <<
+    update alerting_config set
+        label = :label,
+        parent_config_id = :parentConfigId,
+        level_config_id = :levelConfigId,
+        status = :status,
+        type = :type,
+        enabled = :enabled,
+        notif_repeat_mode = :notifRepeatMode,
+        notif_repeat_interval_ms = :notifRepeatIntervalMs,
+        notif_on_recovery = :notifOnRecovery
+    where
+        id = :id
+>>
+
+
+
+insertNotifGroupMapping() ::= <<
+    insert into notif_group_mapping (
+        label,
+        notif_group_id,
+        alerting_config_id
+    ) values (
+        :label,
+        :notifGroupId,
+        :alertingConfigId
+    )
+>>
+
+updateNotifGroupMapping() ::= <<
+    update notif_group_mapping set
+        label = :label,
+        notif_group_id = :notifGroupId,
+        alerting_config_id = :alertingConfigId
+    where
+        id = :id
+>>
+
+
+
+insertNotifGroup() ::= <<
+    insert into notif_group (
+        label,
+        enabled
+    ) values (
+        :label,
+        :enabled
+    )
+>>
+
+updateNotifGroup() ::= <<
+    update notif_group set
+        label = :label,
+        enabled = :enabled
+    where
+        id = :id
+>>
+
+
+
+insertAlertIncidentLog() ::= <<
+    insert into alert_incident_log (
+        label,
+        threshold_config_id,
+        context_identifier,
+        short_description,
+        start_time,
+        clear_time,
+        initial_alert_event_value
+    ) values (
+        :label,
+        :thresholdConfigId,
+        :contextIdentifier,
+        :shortDescription,
+        :startTime,
+        :clearTime,
+        :initialAlertEventValue
+    )
+>>
+
+updateAlertIncidentLog() ::= <<
+    update alert_incident_log set
+        label = :label,
+        threshold_config_id = :thresholdConfigId,
+        context_identifier = :contextIdentifier,
+        short_description = :shortDescription,
+        start_time = :startTime,
+        clear_time = :clearTime,
+        initial_alert_event_value = :initialAlertEventValue
+    where
+        id = :id
+>>
+
+
+
+insertManagingKeyMapping() ::= <<
+    insert into managing_key_mapping (
+        label,
+        alerting_config_id,
+        managing_key_id
+    ) values (
+        :label,
+        :alertingConfigId,
+        :managingKeyId
+    )
+>>
+
+updateManagingKeyMapping() ::= <<
+    update managing_key_mapping set
+        label = :label,
+        alerting_config_id = :alertingConfigId,
+        managing_key_id = :managingKeyId
+    where
+        id = :id
+>>
+
+
+
+insertNotifConfig() ::= <<
+    insert into notif_config (
+        label,
+        person_id,
+        notif_type,
+        address
+    ) values (
+        :label,
+        :personId,
+        :notifType,
+        :address
+    )
+>>
+
+updateNotifConfig() ::= <<
+    update notif_config set
+        label = :label,
+        person_id = :personId,
+        notif_type = :notifType,
+        address = :address
+    where
+        id = :id
+>>
+
+
+
+insertNotifMapping() ::= <<
+    insert into notif_mapping (
+        label,
+        notif_group_id,
+        notif_config_id
+    ) values (
+        :label,
+        :notifGroupId,
+        :notifConfigId
+    )
+>>
+
+updateNotifMapping() ::= <<
+    update notif_mapping set
+        label = :label,
+        notif_group_id = :notifGroupId,
+        notif_config_id = :notifConfigId
+    where
+        id = :id
+>>
+
+
+
+insertLevelConfig() ::= <<
+    insert into level_config (
+        label,
+        color,
+        default_notif_group_id
+    ) values (
+        :label,
+        :color,
+        :defaultNotifGroupId
+    )
+>>
+
+updateLevelConfig() ::= <<
+    update level_config set
+        label = :label,
+        color = :color,
+        default_notif_group_id = :defaultNotifGroupId
+    where
+        id = :id
+>>
+
+
+
+insertManagingKeyLog() ::= <<
+    insert into managing_key_log (
+        label,
+        managing_key_id,
+        action,
+        start_time,
+        end_time
+    ) values (
+        :label,
+        :managingKeyId,
+        :action,
+        :startTime,
+        :endTime
+    )
+>>
+
+updateManagingKeyLog() ::= <<
+    update managing_key_log set
+        label = :label,
+        managing_key_id = :managingKeyId,
+        action = :action,
+        start_time = :startTime,
+        end_time = :endTime
+    where
+        id = :id
+>>
+
+
+
+insertManagingKey() ::= <<
+    insert into managing_key (
+        label,
+        key,
+        action,
+        activated_indefinitely,
+        activated_until_ts,
+        auto_activate_tod_start_ms,
+        auto_activate_tod_end_ms,
+        auto_activate_dow_start,
+        auto_activate_dow_end
+    ) values (
+        :label,
+        :key,
+        :action,
+        :activatedIndefinitely,
+        :activatedUntilTs,
+        :autoActivateTodStartMs,
+        :autoActivateTodEndMs,
+        :autoActivateDowStart,
+        :autoActivateDowEnd
+    )
+>>
+
+updateManagingKey() ::= <<
+    update managing_key set
+        label = :label,
+        key = :key,
+        action = :action,
+        activated_indefinitely = :activatedIndefinitely,
+        activated_until_ts = :activatedUntilTs,
+        auto_activate_tod_start_ms = :autoActivateTodStartMs,
+        auto_activate_tod_end_ms = :autoActivateTodEndMs,
+        auto_activate_dow_start = :autoActivateDowStart,
+        auto_activate_dow_end = :autoActivateDowEnd
+    where
+        id = :id
+>>
+
+
+
+insertMessagingDescription() ::= <<
+    insert into messaging_description (
+        label,
+        message_type,
+        message_text
+    ) values (
+        :label,
+        :messageType,
+        :messageText
+    )
+>>
+
+updateMessagingDescription() ::= <<
+    update messaging_description set
+        label = :label,
+        message_type = :messagingType,
+        message_text = :messageText
+    where
+       id = :id
+>>
+
+
+
+insertNotifLog() ::= <<
+    insert into notif_log (
+        label,
+        alert_incident_id,
+        notif_config_id,
+        notif_time
+    ) values (
+        :id,
+        :label,
+        :alertIncidentId,
+        :notifConfigId,
+        :notifTime
+    )
+>>
+
+updateNotifLog() ::= <<
+    update notif_log set
+        label = :label,
+        alert_incident_id = :alertIncidentId,
+        notif_config_id = :notifConfigId,
+        notif_time = :notifTime
+    where
+        id = :id
+>>
+
+
+
+insertPerson() ::= <<
+    insert into person (
+        label,
+        first_name,
+        last_name,
+        is_group_alias
+    ) values (
+        :label,
+        :firstName,
+        :lastName,
+        :isGroupAlias
+    )
+>>
+
+updatePerson() ::= <<
+    update person set
+        label = :label,
+        first_name = :firstName,
+        last_name = :lastName,
+        is_group_alias = :isGroupAlias
+    where
+        id = :id
+>>
+
+
+
+insertThresholdConfig() ::= <<
+    insert into threshold_config (
+        label,
+        alerting_config_id,
+        monitored_event_type,
+        monitored_attribute_type,
+        clearing_interval_ms,
+        min_threshold_value,
+        max_threshold_value,
+        min_threshold_samples,
+        max_sample_window_ms
+    ) values (
+        :label,
+        :alertingConfigId,
+        :monitoredEventType,
+        :monitoredAttributeType,
+        :clearingIntervalMs,
+        :minThresholdValue,
+        :maxThresholdValue,
+        :minThresholdSamples,
+        :maxSampleWindowMs
+    )
+>>
+
+updateThresholdConfig() ::= <<
+    update threshold_config set
+        label = :label,
+        alerting_config_id = :alertingConfigId,
+        monitored_event_type = :monitoredEventType,
+        monitored_attribute_type = :monitoredAttributeType,
+        clearing_interval_ms = :clearingIntervalMs,
+        min_threshold_value = :minThresholdValue,
+        max_threshold_value = :maxThresholdValue,
+        min_threshold_samples = :minThresholdSamples,
+        max_sample_window_ms = :maxSampleWindowMs
+    where
+        id = :id
+>>
+
+
+
+insertThresholdContextAttr() ::= <<
+    insert into threshold_context_attr (
+        label,
+        threshold_config_id,
+        attribute_type
+    ) values (
+        :label,
+        :thresholdConfigId,
+        :attributeType
+    )
+>>
+
+updateThresholdContextAttr() ::= <<
+    update threshold_context_attr set
+        label = :label,
+        threshold_config_id = :thresholdConfigId,
+        attribute_type = :attributeType
+    where
+        id = :id
+>>
+
+
+
+insertThresholdQualifyingAttr() ::= <<
+    insert into threshold_qualifying_attr (
+        label,
+        threshold_config_id,
+        attribute_type,
+        attribute_value
+    ) values (
+        :label,
+        :thresholdConfigId,
+        :attributeType,
+        :attributeValue
+    )
+>>
+
+updateThresholdQualifyingAttr() ::= <<
+    update threshold_qualifying_attr set
+        label = :label,
+        threshold_config_id = :thresholdConfigId,
+        attribute_type = :attributeType,
+        attribute_value = :attributeValue
+    where
+        id = :id
+>>

@@ -62,9 +62,9 @@ public class ConfDataAcknowledgementLog extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setAlertIncidentId(getLong(map, ALERT_INCIDENT_ID_FIELD));
         setPersonId(getLong(map, PERSON_ID_FIELD));
         setAckTime(getTimestamp(map, ACK_TIME_FIELD));

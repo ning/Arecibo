@@ -69,9 +69,9 @@ public class ConfDataThresholdConfig extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setAlertingConfigId(getLong(map, ALERTING_CONFIG_ID_FIELD));
         setMonitoredEventType(getString(map, MONITORED_EVENT_TYPE_FIELD));
         setMonitoredAttributeType(getString(map, MONITORED_ATTRIBUTE_TYPE_FIELD));

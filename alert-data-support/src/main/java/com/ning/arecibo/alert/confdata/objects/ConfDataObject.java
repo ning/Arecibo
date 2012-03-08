@@ -87,7 +87,7 @@ public abstract class ConfDataObject implements Serializable
         return getUpdateTimestamp();
     }
 
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
         // implementation classes should first call this via super(),
         // then add in their own fields
@@ -210,7 +210,7 @@ public abstract class ConfDataObject implements Serializable
 
     public void copyPropertiesMap(final ConfDataObject copyObj)
     {
-        this.setPropertiesFromMap(copyObj.toPropertiesMap());
+        this.populatePropertiesFromMap(copyObj.toPropertiesMap());
     }
 
     // protected util methods, which do conversions, and handle nulls

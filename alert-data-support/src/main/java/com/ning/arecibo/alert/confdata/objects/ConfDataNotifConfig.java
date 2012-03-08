@@ -61,9 +61,9 @@ public class ConfDataNotifConfig extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setPersonId(getLong(map, PERSON_ID_FIELD));
         setNotifType(getEnum(map, NOTIF_TYPE_FIELD, NotificationType.class));
         setAddress(getString(map, ADDRESS_FIELD));

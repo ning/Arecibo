@@ -59,9 +59,9 @@ public class ConfDataPerson extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setFirstName(getString(map, FIRST_NAME_FIELD));
         setLastName(getString(map, LAST_NAME_FIELD));
         setIsGroupAlias(getBoolean(map, IS_GROUP_ALIAS_FIELD));

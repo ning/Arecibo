@@ -76,9 +76,9 @@ public class ConfDataManagingKey extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setKey(getString(map, KEY_FIELD));
         setAction(getEnum(map, ACTION_FIELD, ManagingKeyActionType.class));
         setActivatedIndefinitely(getBoolean(map, ACTIVATED_INDEFINITELY_FIELD));

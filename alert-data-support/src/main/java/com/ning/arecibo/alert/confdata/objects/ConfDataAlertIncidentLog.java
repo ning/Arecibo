@@ -68,9 +68,9 @@ public class ConfDataAlertIncidentLog extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setThresholdConfigId(getLong(map, THRESHOLD_CONFIG_ID_FIELD));
         setContextIdentifier(getString(map, CONTEXT_IDENTIFIER_FIELD));
         setStartTime(getTimestamp(map, START_TIME_FIELD));

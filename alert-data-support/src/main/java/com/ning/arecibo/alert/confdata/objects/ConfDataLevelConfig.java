@@ -57,9 +57,9 @@ public class ConfDataLevelConfig extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setColor(getString(map, COLOR_FIELD));
         setDefaultNotifGroupId(getLong(map, DEFAULT_NOTIF_GROUP_ID_FIELD));
     }

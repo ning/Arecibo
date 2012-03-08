@@ -60,9 +60,9 @@ public class ConfDataNotifLog extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setAlertIncidentId(getLong(map, ALERT_INCIDENT_ID_FIELD));
         setAlertNotifConfigId(getLong(map, ALERT_NOTIF_CONFIG_ID_FIELD));
         setNotifTime(getTimestamp(map, NOTIF_TIME_FIELD));

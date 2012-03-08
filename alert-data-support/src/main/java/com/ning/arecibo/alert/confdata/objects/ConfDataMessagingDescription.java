@@ -57,9 +57,9 @@ public class ConfDataMessagingDescription extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setMessageType(getString(map, MESSAGE_TYPE_FIELD));
         setMessageText(getString(map, MESSAGE_TEXT_FIELD));
     }

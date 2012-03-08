@@ -64,9 +64,9 @@ public class ConfDataNotifGroup extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setEnabled(getBoolean(map, ENABLED_FIELD));
     }
 

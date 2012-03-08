@@ -568,7 +568,7 @@ public class ConfDataDAO
 
             try {
                 final T obj = type.newInstance();
-                obj.setPropertiesFromMap(resultMap);
+                obj.populatePropertiesFromMap(resultMap);
                 return obj;
             }
             catch (InstantiationException instEx) {

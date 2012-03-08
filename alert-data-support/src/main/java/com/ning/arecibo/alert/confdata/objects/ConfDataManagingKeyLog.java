@@ -62,9 +62,9 @@ public class ConfDataManagingKeyLog extends ConfDataObject
     }
 
     @Override
-    public void setPropertiesFromMap(final Map<String, Object> map)
+    public void populatePropertiesFromMap(final Map<String, Object> map)
     {
-        super.setPropertiesFromMap(map);
+        super.populatePropertiesFromMap(map);
         setManagingKeyId(getLong(map, MANAGING_KEY_ID_FIELD));
         setAction(getString(map, ACTION_FIELD));
         setStartTime(getTimestamp(map, START_TIME_FIELD));
