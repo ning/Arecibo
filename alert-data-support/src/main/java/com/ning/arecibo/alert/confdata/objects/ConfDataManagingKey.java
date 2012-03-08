@@ -17,18 +17,13 @@
 package com.ning.arecibo.alert.confdata.objects;
 
 import com.ning.arecibo.alert.confdata.enums.ManagingKeyActionType;
-import com.ning.arecibo.util.Logger;
 
 import java.sql.Timestamp;
 import java.util.Map;
 
 public class ConfDataManagingKey extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataManagingKey.class);
-
     public static final String TYPE_NAME = "managing_key";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_managing_key";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_managing_key";
 
     private static final String KEY_FIELD = "key";
     private static final String ACTION_FIELD = "action";
@@ -61,18 +56,6 @@ public class ConfDataManagingKey extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

@@ -16,18 +16,12 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.sql.Timestamp;
 import java.util.Map;
 
 public class ConfDataAcknowledgementLog extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataAcknowledgementLog.class);
-
     public static final String TYPE_NAME = "acknowledgement_log";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_acknowledgement_log";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_acknowledgement_log";
 
     private static final String ALERT_INCIDENT_ID_FIELD = "alert_incident_id";
     private static final String PERSON_ID_FIELD = "person_id";
@@ -47,18 +41,6 @@ public class ConfDataAcknowledgementLog extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

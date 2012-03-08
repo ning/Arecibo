@@ -16,17 +16,11 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.util.Map;
 
 public class ConfDataThresholdQualifyingAttr extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataThresholdQualifyingAttr.class);
-
     public static final String TYPE_NAME = "threshold_qualifying_attr";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_threshold_qualifying_attr";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_threshold_qualifying_attr";
 
     private static final String THRESHOLD_CONFIG_ID_FIELD = "threshold_config_id";
     private static final String ATTRIBUTE_TYPE_FIELD = "attribute_type";
@@ -44,18 +38,6 @@ public class ConfDataThresholdQualifyingAttr extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

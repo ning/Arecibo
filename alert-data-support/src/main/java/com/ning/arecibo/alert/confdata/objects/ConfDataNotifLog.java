@@ -16,18 +16,12 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.sql.Timestamp;
 import java.util.Map;
 
 public class ConfDataNotifLog extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataNotifLog.class);
-
     public static final String TYPE_NAME = "notif_log";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_notif_log";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_notif_log";
 
     private static final String ALERT_INCIDENT_ID_FIELD = "alert_incident_id";
     private static final String ALERT_NOTIF_CONFIG_ID_FIELD = "alert_notif_config_id";
@@ -45,18 +39,6 @@ public class ConfDataNotifLog extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

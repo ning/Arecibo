@@ -16,17 +16,11 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.util.Map;
 
 public class ConfDataNotifGroupMapping extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataNotifGroupMapping.class);
-
     public static final String TYPE_NAME = "notif_group_mapping";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_notif_group_mapping";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_notif_group_mapping";
 
     private static final String NOTIF_GROUP_ID_FIELD = "notif_group_id";
     private static final String ALERTING_CONFIG_ID_FIELD = "alerting_config_id";
@@ -42,18 +36,6 @@ public class ConfDataNotifGroupMapping extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

@@ -95,9 +95,13 @@
                         <configuration>
                             <excludes>
                                 <exclude>.gitignore</exclude>
-                                <exclude>src/main/sql/*.sql</exclude>
-                                <exclude>src/main/sql/*.txt</exclude>
-                                <exclude>src/main/java/com/ning/arecibo/alert/confdata/*/*.st</exclude>
+                                <exclude>src/main/resources/schema_notes.txt</exclude>
+                                <exclude>
+                                    src/main/resources/com/ning/arecibo/alert/confdata/dao/ConfDataQueries.sql.stg
+                                </exclude>
+                                <exclude>
+                                    src/main/resources/com/ning/arecibo/alert/confdata/create_alert_config_tables.sql
+                                </exclude>
                             </excludes>
                         </configuration>
                     </execution>

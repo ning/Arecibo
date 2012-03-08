@@ -17,17 +17,12 @@
 package com.ning.arecibo.alert.confdata.objects;
 
 import com.ning.arecibo.alert.confdata.enums.NotificationRepeatMode;
-import com.ning.arecibo.util.Logger;
 
 import java.util.Map;
 
 public class ConfDataAlertingConfig extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataAlertingConfig.class);
-
     public static final String TYPE_NAME = "alerting_config";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_alerting_config";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_alerting_config";
 
     private static final String PARENT_CONFIG_ID_FIELD = "parent_config_id";
     private static final String LEVEL_CONFIG_ID_FIELD = "level_config_id";
@@ -55,18 +50,6 @@ public class ConfDataAlertingConfig extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

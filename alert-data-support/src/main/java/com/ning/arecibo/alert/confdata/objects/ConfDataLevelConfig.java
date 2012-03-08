@@ -16,17 +16,11 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.util.Map;
 
 public class ConfDataLevelConfig extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataLevelConfig.class);
-
     public static final String TYPE_NAME = "level_config";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_level_config";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_level_config";
 
     private static final String COLOR_FIELD = "color";
     private static final String DEFAULT_NOTIF_GROUP_ID_FIELD = "default_notif_group_id";
@@ -42,18 +36,6 @@ public class ConfDataLevelConfig extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

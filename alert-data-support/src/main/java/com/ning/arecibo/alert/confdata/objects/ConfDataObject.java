@@ -23,19 +23,16 @@ import java.util.Map;
 
 public abstract class ConfDataObject implements Serializable
 {
-    // required methods to be implemented
+    /**
+     * @return table name for this object
+     */
     public abstract String getTypeName();
-
-    public abstract String getInsertSqlTemplateName();
-
-    public abstract String getUpdateSqlTemplateName();
 
     private static final String ID_FIELD = "id";
     private static final String LABEL_FIELD = "label";
     private static final String CREATE_TIMESTAMP_FIELD = "create_timestamp";
     private static final String UPDATE_TIMESTAMP_FIELD = "update_timestamp";
 
-    // instance variables
     protected volatile Long id = null;
     protected volatile String label = null;
     protected volatile Timestamp createTimestamp = null;
@@ -122,38 +119,7 @@ public abstract class ConfDataObject implements Serializable
 
     public boolean equals(final ConfDataObject compObj)
     {
-
-        if (compObj == null) {
-            return false;
-        }
-
-        if (compObj.getClass() != this.getClass()) {
-            return false;
-        }
-
-        return this.toPropertiesMap().equals(compObj.toPropertiesMap());
-    }
-
-    public boolean dataMatchesFilterObject(final ConfDataObject filterObj)
-    {
-        // should override if needed
-        // do an expensive default comparison
-        // compare all fields converted to String, case insensitive,
-        // compared on a substring matching basis only fields that
-        // are non-null in the filter matter
-
-        if (filterObj == null) {
-            return true;
-        }
-
-        final Map<String, Object> filterMap = filterObj.toPropertiesMap();
-        if (filterMap.size() == 0) {
-            return true;
-        }
-
-        final Map<String, Object> dataMap = this.toPropertiesMap();
-
-        return checkFilterMatch(dataMap, filterMap);
+        return compObj != null && compObj.getClass() == this.getClass() && this.toPropertiesMap().equals(compObj.toPropertiesMap());
     }
 
     public boolean filterMatchesDataObject(final ConfDataObject dataObject)
@@ -195,22 +161,7 @@ public abstract class ConfDataObject implements Serializable
 
     protected static boolean checkFilterMatch(final Object dataObject, final Object filterObject)
     {
-
-        if (filterObject != null) {
-            if (dataObject == null) {
-                return false;
-            }
-            else {
-                return dataObject.toString().toLowerCase().contains(filterObject.toString().toLowerCase());
-            }
-        }
-
-        return true;
-    }
-
-    public void copyPropertiesMap(final ConfDataObject copyObj)
-    {
-        this.populatePropertiesFromMap(copyObj.toPropertiesMap());
+        return filterObject == null || dataObject != null && dataObject.toString().toLowerCase().contains(filterObject.toString().toLowerCase());
     }
 
     // protected util methods, which do conversions, and handle nulls

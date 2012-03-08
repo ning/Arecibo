@@ -16,17 +16,11 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.util.Map;
 
 public class ConfDataMessagingDescription extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataMessagingDescription.class);
-
     public static final String TYPE_NAME = "messaging_description";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_messaging_description";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_messaging_description";
 
     private static final String MESSAGE_TYPE_FIELD = "message_type";
     private static final String MESSAGE_TEXT_FIELD = "message_text";
@@ -42,18 +36,6 @@ public class ConfDataMessagingDescription extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

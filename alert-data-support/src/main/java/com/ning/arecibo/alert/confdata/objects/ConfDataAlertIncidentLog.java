@@ -16,18 +16,12 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.sql.Timestamp;
 import java.util.Map;
 
 public class ConfDataAlertIncidentLog extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataAlertIncidentLog.class);
-
     public static final String TYPE_NAME = "alert_incident_log";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_alert_incident_log";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_alert_incident_log";
 
     private static final String THRESHOLD_CONFIG_ID_FIELD = "threshold_config_id";
     private static final String CONTEXT_IDENTIFIER_FIELD = "context_identifier";
@@ -53,18 +47,6 @@ public class ConfDataAlertIncidentLog extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override

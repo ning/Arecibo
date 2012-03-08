@@ -16,17 +16,11 @@
 
 package com.ning.arecibo.alert.confdata.objects;
 
-import com.ning.arecibo.util.Logger;
-
 import java.util.Map;
 
 public class ConfDataPerson extends ConfDataObject
 {
-    private static final Logger log = Logger.getLogger(ConfDataPerson.class);
-
     public static final String TYPE_NAME = "person";
-    public static final String INSERT_TEMPLATE_NAME = ":insert_person";
-    public static final String UPDATE_TEMPLATE_NAME = ":update_person";
 
     private static final String FIRST_NAME_FIELD = "first_name";
     private static final String LAST_NAME_FIELD = "last_name";
@@ -44,18 +38,6 @@ public class ConfDataPerson extends ConfDataObject
     public String getTypeName()
     {
         return TYPE_NAME;
-    }
-
-    @Override
-    public String getInsertSqlTemplateName()
-    {
-        return INSERT_TEMPLATE_NAME;
-    }
-
-    @Override
-    public String getUpdateSqlTemplateName()
-    {
-        return UPDATE_TEMPLATE_NAME;
     }
 
     @Override
