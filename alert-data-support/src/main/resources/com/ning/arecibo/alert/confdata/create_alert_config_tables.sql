@@ -45,7 +45,7 @@ create table notif_group (
 , update_timestamp timestamp default current_timestamp on update current_timestamp
 , enabled char(1) default '0' not null
 , unique index notif_group_unq (label)
-);
+) engine = innodb;
 
 
 create table level_config (
