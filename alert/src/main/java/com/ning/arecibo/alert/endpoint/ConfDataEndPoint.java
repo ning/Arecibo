@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -52,6 +53,26 @@ public abstract class ConfDataEndPoint<T extends ConfDataObject>
             }
             else {
                 return confDataObjectFound.toPropertiesMap();
+            }
+        }
+        catch (ConfDataDAOException e) {
+            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+        }
+    }
+
+    protected List<Map<String, Object>> findConfDataObjectById(final String columnName, final Object value)
+    {
+        try {
+            final List<T> confDataObjectsFound = dao.selectByColumn(columnName, value, table, type);
+            if (confDataObjectsFound == null) {
+                throw new WebApplicationException(buildNotFoundResponse());
+            }
+            else {
+                final List<Map<String, Object>> confDataObjects = new ArrayList<Map<String, Object>>();
+                for (final T confDataObject : confDataObjectsFound) {
+                    confDataObjects.add(confDataObject.toPropertiesMap());
+                }
+                return confDataObjects;
             }
         }
         catch (ConfDataDAOException e) {

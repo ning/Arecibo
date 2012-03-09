@@ -87,7 +87,7 @@ public class DefaultAlertClient implements AlertClient
     @Override
     public Map<String, Object> findPersonOrGroupById(final int id) throws UniformInterfaceException
     {
-        return doGet(PERSON_PATH + "/" + id);
+        return fetchOneObject(PERSON_PATH + "/" + id);
     }
 
     @Override
@@ -108,6 +108,24 @@ public class DefaultAlertClient implements AlertClient
         return createNotificationForPersonOrGroup(id, address, "SMS_VIA_EMAIL");
     }
 
+    @Override
+    public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException
+    {
+        return fetchOneObject(NOTIF_CONFIG_PATH + "/" + id);
+    }
+
+    @Override
+    public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(NOTIF_CONFIG_PATH + "/user/" + id);
+    }
+
+    @Override
+    public void deleteNotificationById(final int id)
+    {
+        doDelete(NOTIF_CONFIG_PATH + "/" + id);
+    }
+
     private int createNotificationForPersonOrGroup(final int id, final String address, final String notificationType)
     {
         //TODO for now just use a truncated version of the email address, need to devise something better
@@ -126,7 +144,21 @@ public class DefaultAlertClient implements AlertClient
         return extractIdFromURI(location);
     }
 
-    private Map<String, Object> doGet(final String path)
+    private Map<String, Object> fetchOneObject(final String path)
+    {
+        return fetchObject(path, new GenericType<Map<String, Object>>()
+        {
+        });
+    }
+
+    private Iterable<Map<String, Object>> fetchMultipleObjects(final String path)
+    {
+        return fetchObject(path, new GenericType<List<Map<String, Object>>>()
+        {
+        });
+    }
+
+    private <T> T fetchObject(final String path, final GenericType<T> genericType)
     {
         final WebResource resource = createWebResource().path(path);
 
@@ -141,9 +173,7 @@ public class DefaultAlertClient implements AlertClient
             throw new UniformInterfaceException(message, response);
         }
         else {
-            return response.getEntity(new GenericType<Map<String, Object>>()
-            {
-            });
+            return response.getEntity(genericType);
         }
     }
 

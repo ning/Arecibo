@@ -29,6 +29,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 
 @Path("/xn/rest/1.0/NotifConfig")
@@ -46,6 +47,14 @@ public class NotifConfigEndPoint extends ConfDataEndPoint<ConfDataNotifConfig>
     public Map<String, Object> getById(@PathParam("id") final Long id)
     {
         return findConfDataObjectById(id);
+    }
+
+    @GET
+    @Path("/user/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Map<String, Object>> getByPersonId(@PathParam("id") final Long personId)
+    {
+        return findConfDataObjectById("person_id", personId);
     }
 
     @POST

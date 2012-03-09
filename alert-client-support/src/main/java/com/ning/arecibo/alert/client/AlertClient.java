@@ -35,4 +35,10 @@ public interface AlertClient
 
     // SMS notifications limit the body to 140 characters
     public int createSmsNotificationForPersonOrGroup(final int id, final String address);
+
+    public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException;
+
+    public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException;
+
+    public void deleteNotificationById(int id);
 }

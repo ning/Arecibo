@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.alert.rest;
 
+import com.google.common.collect.ImmutableList;
 import com.ning.arecibo.alert.client.AlertClient;
 import com.ning.arecibo.alert.client.AlertClientConfig;
 import com.ning.arecibo.alert.client.discovery.AlertFinder;
@@ -26,6 +27,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -64,8 +66,17 @@ public class TestDefaultAlertClientIntegration
         Assert.assertTrue(emailNotificationId > 0);
         final int smsNotificationId = client.createSmsNotificationForPersonOrGroup(personId, UUID.randomUUID().toString());
         Assert.assertTrue(smsNotificationId > 0);
+        final Iterator<Map<String, Object>> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
+        final int notificationsFound = ImmutableList.copyOf(iterator).size();
+        Assert.assertEquals(notificationsFound, 2);
 
-        // Clean ourselves up
+        // Make sure we can delete one of the two
+        client.deleteNotificationById(emailNotificationId);
+        Assert.assertNull(client.findNotificationById(emailNotificationId));
+        // The second one should still be around though
+        Assert.assertNotNull(client.findNotificationById(smsNotificationId));
+
+        // Clean ourselves up (notifications are automatically deleted due to the fk constraint)
         client.deletePersonOrGroupById(personId);
         Assert.assertNull(client.findPersonOrGroupById(personId));
     }
