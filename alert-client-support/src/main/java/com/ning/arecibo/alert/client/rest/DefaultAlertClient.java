@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonatype.spice.jersey.client.ahc.config.DefaultAhcConfig;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -54,6 +55,7 @@ public class DefaultAlertClient implements AlertClient
     private static final String NOTIF_MAPPING_PATH = "NotifMapping";
     private static final String ALERTING_CONFIG_PATH = "AlertingConfig";
     private static final String NOTIF_GROUP_MAPPING_PATH = "NotifGroupMapping";
+    private static final String THRESHOLD_CONFIG_PATH = "ThresholdConfig";
 
     private final AlertFinder alertFinder;
 
@@ -175,12 +177,12 @@ public class DefaultAlertClient implements AlertClient
                                     final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException
     {
         // First, create the Alerting Config
-        final Map<String, ?> group = ImmutableMap.of(
+        final Map<String, ?> alertingConfig = ImmutableMap.of(
             "label", createLabel(name),
             "notifRepeatMode", repeatUntilCleared ? "UNTIL_CLEARED" : "NO_REPEAT",
             "notifOnRecovery", notifyOnRecovery,
             "enabled", enabled);
-        final URI location = doPost(ALERTING_CONFIG_PATH, group);
+        final URI location = doPost(ALERTING_CONFIG_PATH, alertingConfig);
         final int alertingConfigId = extractIdFromURI(location);
 
         // Now, create a Notification Group Mapping for each Notification Group
@@ -194,6 +196,33 @@ public class DefaultAlertClient implements AlertClient
         }
 
         return alertingConfigId;
+    }
+
+    @Override
+    public int createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
+                                     @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
+                                     final Long minThresholdSamples, final Long maxSampleWindowMs,
+                                     final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException
+    {
+        final ImmutableMap.Builder<String, Object> thresholdConfigBuilder = new ImmutableMap.Builder<String, Object>()
+            .put("label", createLabel(name))
+            .put("monitoredEventType", monitoredEventType)
+            .put("monitoredAttributeType", monitoredAttributeType)
+            .put("minThresholdSamples", minThresholdSamples)
+            .put("maxSampleWindowMs", maxSampleWindowMs)
+            .put("clearingIntervalMs", clearingIntervalMs)
+            .put("alertingConfigId", alertingConfigId);
+
+        if (minThresholdValue != null) {
+            thresholdConfigBuilder.put("minThresholdValue", minThresholdValue);
+        }
+        if (maxThresholdValue != null) {
+            thresholdConfigBuilder.put("maxThresholdValue", maxThresholdValue);
+        }
+
+        final Map<String, ?> thresholdConfig = thresholdConfigBuilder.build();
+        final URI location = doPost(THRESHOLD_CONFIG_PATH, thresholdConfig);
+        return extractIdFromURI(location);
     }
 
     // PRIVATE

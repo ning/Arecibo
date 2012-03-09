@@ -19,6 +19,7 @@ package com.ning.arecibo.alert.client;
 import com.google.common.collect.Multimap;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
 // TODO Consider extracting the POJO objects from alert-data-support to share them
@@ -59,4 +60,12 @@ public interface AlertClient
 
     public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
                                     final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException;
+
+
+    //  Threshold Definitions, which is where you define the rules that will trigger alerting.
+
+    public int createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
+                                     @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
+                                     final Long minThresholdSamples, final Long maxSampleWindowMs,
+                                     final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException;
 }

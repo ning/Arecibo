@@ -92,6 +92,11 @@ public class TestDefaultAlertClientIntegration
             true, true, true, ImmutableList.<Integer>of(groupId));
         Assert.assertTrue(alertingConfigurationId > 0);
 
+        // Create a Threshold Definition
+        final int thresholdDefinitionId = client.createThresholdConfig("jetty-connections-" + UUID.randomUUID().toString(),
+            "JettyServer", "connectionsOpen", null, 2000.0, 6L, 120000L, 300000L, alertingConfigurationId);
+        Assert.assertTrue(thresholdDefinitionId > 0);
+
         // Make sure we can delete one of the two notifications
         client.deleteNotificationById(emailNotificationId);
         Assert.assertNull(client.findNotificationById(emailNotificationId));
