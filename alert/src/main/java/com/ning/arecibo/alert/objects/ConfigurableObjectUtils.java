@@ -47,7 +47,8 @@ public class ConfigurableObjectUtils {
             return true;
         }
         else {
-            dstObj.copyPropertiesMap((ConfDataObject)copyObj);
+            // TODO
+            //dstObj.copyPropertiesMap((ConfDataObject)copyObj);
             log.info("Updating instance of '%s': (%d) %s",dstObj.getTypeName(),dstObj.getId(),dstObj.getLabel());
             return true;
         }

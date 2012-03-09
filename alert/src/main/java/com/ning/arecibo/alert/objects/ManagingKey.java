@@ -92,10 +92,6 @@ public class ManagingKey extends ConfDataManagingKey implements ConfigurableObje
         this.managingKeyMappings.remove(managingKeyMapping);
     }
 
-    public Set<ManagingKeyMapping> getManagingKeyMappings() {
-        return this.managingKeyMappings;
-    }
-
     private boolean testActivation() {
         return testActivation(System.currentTimeMillis());
     }

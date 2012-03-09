@@ -16,13 +16,6 @@
 
 package com.ning.arecibo.alert;
 
-import java.lang.management.ManagementFactory;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-import javax.management.MBeanServer;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -48,14 +41,20 @@ import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import org.eclipse.jetty.server.Server;
 
+import javax.management.MBeanServer;
+import java.lang.management.ManagementFactory;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class AreciboAlertService
 {
-    private final static Logger log = Logger.getLogger(AreciboAlertService.class);
-    
-    public static final String SERVICE_NAME = AreciboAlertService.class.getSimpleName();
-    public static final String SERVICE_HOST = "host";
-    public static final String SERVICE_PORT = "port"; 
-    
+    private static final Logger log = Logger.getLogger(AreciboAlertService.class);
+
+    private static final String SERVICE_NAME = AreciboAlertService.class.getSimpleName();
+    private static final String SERVICE_HOST = "host";
+    private static final String SERVICE_PORT = "port";
+
     private final Lifecycle lifecycle;
     private final Server server;
     private final ServiceLocator serviceLocator;
@@ -65,13 +64,14 @@ public class AreciboAlertService
     private final ConfigManager confStatusManager;
 
     @Inject
-    private AreciboAlertService(Lifecycle lifecycle,
-                                Server server,
-                                ServiceLocator serviceLocator,
-                                EmbeddedJettyConfig jettyConfig,
-                                @SelfUUID UUID selfUUID,
-                                @Named("UDPServerPort") int udpPort,
-                                ConfigManager confStatusManager) {
+    private AreciboAlertService(final Lifecycle lifecycle,
+                                final Server server,
+                                final ServiceLocator serviceLocator,
+                                final EmbeddedJettyConfig jettyConfig,
+                                @SelfUUID final UUID selfUUID,
+                                @Named("UDPServerPort") final int udpPort,
+                                final ConfigManager confStatusManager)
+    {
         this.lifecycle = lifecycle;
         this.server = server;
         this.serviceLocator = serviceLocator;
@@ -80,24 +80,25 @@ public class AreciboAlertService
         this.selfUUID = selfUUID;
         this.confStatusManager = confStatusManager;
     }
-    
-    private void run() {
+
+    private void run()
+    {
         final long startTime = System.currentTimeMillis();
         log.info("Starting up Alert Service on port %d", jettyConfig.getPort());
-        
-        
+
+
         // Start the confStatusManager
         confStatusManager.start();
-        
-        Map<String, String> map = new HashMap<String, String>();
+
+        final Map<String, String> map = new HashMap<String, String>();
         map.put(SERVICE_HOST, jettyConfig.getHost());
-        map.put(SERVICE_PORT, String.valueOf(jettyConfig.getPort())); 
+        map.put(SERVICE_PORT, String.valueOf(jettyConfig.getPort()));
         //map.put(EventService.HOST, localIp); // this is redundant
         map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
-        map.put(EventService.UDP_PORT, String.valueOf(udpPort)); 
-        ServiceDescriptor self=new ServiceDescriptor(selfUUID,SERVICE_NAME,map);
+        map.put(EventService.UDP_PORT, String.valueOf(udpPort));
+        final ServiceDescriptor self = new ServiceDescriptor(selfUUID, SERVICE_NAME, map);
         serviceLocator.advertiseLocalService(self);
-        
+
         try {
             lifecycle.fire(LifecycleEvent.START);
             server.start();
@@ -106,11 +107,11 @@ public class AreciboAlertService
             log.error(ex);
             return;
         }
-        
+
 
         final long secondsToStart = (System.currentTimeMillis() - startTime) / 1000;
         log.info("STARTUP COMPLETE: server started in %d:%02d", secondsToStart / 60, secondsToStart % 60);
- 
+
         final Thread t = Thread.currentThread();
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
@@ -126,7 +127,7 @@ public class AreciboAlertService
         catch (InterruptedException ex) {
             // continue;
         }
-        
+
         try {
             log.info("Shutting Down Alert Service");
 
@@ -138,34 +139,36 @@ public class AreciboAlertService
 
             log.info("Stopping jetty server");
             server.stop();
-            
+
             // never gets here for some reason
             log.info("Shutdown completed");
-        } 
+        }
         catch (Exception e) {
             log.warn(e);
         }
     }
-    
-    public static void main(String[] args)
-    {
-        Injector injector = Guice.createInjector(Stage.PRODUCTION, 
-                                                 new LifecycleModule(),
-                                                 new AbstractModule() {
-                                                     @Override
-                                                     protected void configure() {
-                                                         bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
-                                                     }
-                                                 },
-                                                 new AlertDataModule(),
-                                                 // TODO: need to bind an implementation of ServiceLocator
-                                                 new EmbeddedJettyJerseyModule(),
-                                                 new RESTEventReceiverModule(AlertEventProcessor.class, "arecibo.alert:name=AlertEventProcessor"),
-                                                 new UDPEventReceiverModule(),
-                                                 new AggregatorClientModule(),
-                                                 new AlertServiceModule());    
 
-        AreciboAlertService service = injector.getInstance(AreciboAlertService.class);
+    public static void main(final String[] args)
+    {
+        final Injector injector = Guice.createInjector(Stage.PRODUCTION,
+            new LifecycleModule(),
+            new AbstractModule()
+            {
+                @Override
+                protected void configure()
+                {
+                    bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
+                }
+            },
+            new AlertDataModule(),
+            // TODO: need to bind an implementation of ServiceLocator
+            new EmbeddedJettyJerseyModule(),
+            new RESTEventReceiverModule(AlertEventProcessor.class, "arecibo.alert:name=AlertEventProcessor"),
+            new UDPEventReceiverModule(),
+            new AggregatorClientModule(),
+            new AlertServiceModule());
+
+        final AreciboAlertService service = injector.getInstance(AreciboAlertService.class);
         try {
             service.run();
         }

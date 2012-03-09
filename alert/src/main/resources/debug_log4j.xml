@@ -18,22 +18,22 @@
 <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
 
 <log4j:configuration debug="false" xmlns:log4j='http://jakarta.apache.org/log4j/'>
-	<appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
-		<layout class="org.apache.log4j.PatternLayout">
-			<param name="ConversionPattern" value="%p	%X{trace}   %d{ISO8601}	%t	%c	%m%n"/>
-		</layout>
-	</appender>
+    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%p	%X{trace}   %d{ISO8601}	%t	%c	%m%n"/>
+        </layout>
+    </appender>
 
     <logger name="com.ning.arecibo">
         <level value="debug"/>
     </logger>
 
     <logger name="org.skife">
-         <level value="debug"/>
+        <level value="debug"/>
     </logger>
 
     <root>
-		<level value="info"/>
-		 <appender-ref ref="CONSOLE"/>
-	</root>
+        <level value="info"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
 </log4j:configuration>

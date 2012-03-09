@@ -16,10 +16,6 @@
 
 package com.ning.arecibo.alert.guice;
 
-import java.util.UUID;
-import org.skife.config.ConfigurationObjectFactory;
-import org.weakref.jmx.guice.ExportBuilder;
-import org.weakref.jmx.guice.MBeanModule;
 import com.google.inject.AbstractModule;
 import com.ning.arecibo.alert.conf.ConfigManager;
 import com.ning.arecibo.alert.email.EmailManager;
@@ -33,19 +29,30 @@ import com.ning.arecibo.alert.manage.AlertManager;
 import com.ning.arecibo.alert.manage.AsynchronousEventHandler;
 import com.ning.arecibo.event.publisher.EventPublisherConfig;
 import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.service.DummyServiceLocator;
+import com.ning.arecibo.util.service.ServiceLocator;
+import org.skife.config.ConfigurationObjectFactory;
+import org.weakref.jmx.guice.ExportBuilder;
+import org.weakref.jmx.guice.MBeanModule;
+
+import java.util.UUID;
 
 public class AlertServiceModule extends AbstractModule
 {
-    final static Logger log = Logger.getLogger(AlertServiceModule.class);
+    private static final Logger log = Logger.getLogger(AlertServiceModule.class);
 
     @Override
-	public void configure()
-	{
-        ConfigurationObjectFactory configFactory = new ConfigurationObjectFactory(System.getProperties());
-        EventPublisherConfig eventPublisherConfig = configFactory.build(EventPublisherConfig.class);
-
+    public void configure()
+    {
+        final ConfigurationObjectFactory configFactory = new ConfigurationObjectFactory(System.getProperties());
+        final AlertServiceConfig alertServiceConfig = configFactory.build(AlertServiceConfig.class);
+        bind(AlertServiceConfig.class).toInstance(alertServiceConfig);
+        final EventPublisherConfig eventPublisherConfig = configFactory.build(EventPublisherConfig.class);
         bind(EventPublisherConfig.class).toInstance(eventPublisherConfig);
-		bind(AsynchronousEventHandler.class).asEagerSingleton();	
+
+        configureServiceLocator(alertServiceConfig);
+
+        bind(AsynchronousEventHandler.class).asEagerSingleton();
 
         bind(ConfigManager.class).asEagerSingleton();
         bind(AlertManager.class).asEagerSingleton();
@@ -60,8 +67,19 @@ public class AlertServiceModule extends AbstractModule
 
         bind(UUID.class).annotatedWith(SelfUUID.class).toInstance(UUID.randomUUID());
 
-        ExportBuilder builder = MBeanModule.newExporter(binder());
+        final ExportBuilder builder = MBeanModule.newExporter(binder());
 
         builder.export(AsynchronousEventHandler.class).as("arecibo.alert:name=AsynchronousEventHandler");
-	}
+    }
+
+    private void configureServiceLocator(final AlertServiceConfig config)
+    {
+        try {
+            bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find ServiceLocator", e);
+            bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
+        }
+    }
 }

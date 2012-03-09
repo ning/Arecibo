@@ -41,4 +41,8 @@ public interface AlertServiceConfig
     @Config("arecibo.alert.from_email_address")
     @Default("arecibo_alerts@example.com")
     String getFromEmailAddress();
+
+    @Config("arecibo.alert.serviceLocatorKlass")
+    @Default("com.ning.arecibo.util.service.DummyServiceLocator")
+    String getServiceLocatorClass();
 }
