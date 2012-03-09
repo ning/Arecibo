@@ -18,7 +18,9 @@ package com.ning.arecibo.alert.endpoint;
 
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.conf.ConfigManager;
+import org.eclipse.jetty.util.MultiPartInputStream;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -37,7 +39,7 @@ public class ConfigUpdateEndPoint
 
     @POST
     @Produces(MediaType.TEXT_PLAIN)
-    public String update()
+    public String update(MultiPartInputStream.MultiPart mimeMultipartData)
     {
         confStatusManager.update();
         return "Config update submitted";

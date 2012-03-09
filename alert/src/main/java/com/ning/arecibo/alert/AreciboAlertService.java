@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.alert;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -161,8 +162,7 @@ public class AreciboAlertService
                 }
             },
             new AlertDataModule(),
-            // TODO: need to bind an implementation of ServiceLocator
-            new EmbeddedJettyJerseyModule(),
+            new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.util.jaxrs")),
             new RESTEventReceiverModule(AlertEventProcessor.class, "arecibo.alert:name=AlertEventProcessor"),
             new UDPEventReceiverModule(),
             new AggregatorClientModule(),
