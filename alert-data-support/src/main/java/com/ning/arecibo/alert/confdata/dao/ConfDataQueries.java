@@ -35,8 +35,10 @@ import com.ning.arecibo.alert.confdata.objects.ConfDataThresholdContextAttr;
 import com.ning.arecibo.alert.confdata.objects.ConfDataThresholdQualifyingAttr;
 import org.skife.jdbi.v2.sqlobject.BindBean;
 import org.skife.jdbi.v2.sqlobject.SqlUpdate;
+import org.skife.jdbi.v2.sqlobject.customizers.RegisterArgumentFactory;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.ExternalizedSqlViaStringTemplate3;
 
+@RegisterArgumentFactory(FixBrokenMySQLEnumSupportArgumentFactory.class)
 @ExternalizedSqlViaStringTemplate3()
 public interface ConfDataQueries
 {

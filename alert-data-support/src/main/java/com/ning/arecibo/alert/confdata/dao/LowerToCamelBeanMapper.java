@@ -25,6 +25,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -125,7 +126,15 @@ public class LowerToCamelBeanMapper<T> implements ResultSetMapper<T>
                 }
 
                 try {
-                    descriptor.getWriteMethod().invoke(bean, value);
+                    final Method writeMethod = descriptor.getWriteMethod();
+                    final Class<?> setterClass = writeMethod.getParameterTypes()[0];
+                    // Hack to support setters with Enums
+                    if (setterClass.isEnum()) {
+                        writeMethod.invoke(bean, Enum.valueOf((Class<Enum>) setterClass, value.toString()));
+                    }
+                    else {
+                        writeMethod.invoke(bean, value);
+                    }
                 }
                 catch (IllegalAccessException e) {
                     throw new IllegalArgumentException(String.format("Unable to access setter for " +

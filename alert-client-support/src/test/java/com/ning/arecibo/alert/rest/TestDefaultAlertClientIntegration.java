@@ -41,22 +41,31 @@ public class TestDefaultAlertClientIntegration
         client = new DefaultAlertClient(finder);
     }
 
-    @Test(groups = "integration,slow", enabled = false)
+    @Test(groups = "integration,slow", enabled = true)
     public void testPersonEndPoint() throws Exception
     {
         final String firstName = "Pierre";
         final String lastName = "Meyer";
         final String nickName = UUID.randomUUID().toString();
 
+        // Create a contact
         final int personId = client.createPerson(firstName, lastName, nickName);
         Assert.assertTrue(personId > 0);
 
+        // Make sure we can find it
         final Map<String, Object> personFound = client.findPersonOrGroupById(personId);
         Assert.assertEquals(personFound.get("first_name"), firstName);
         Assert.assertEquals(personFound.get("last_name"), lastName);
         Assert.assertEquals(personFound.get("label"), nickName);
         Assert.assertEquals(personFound.get("is_group_alias"), "0");
 
+        // Create some notifications mechanisms
+        final int emailNotificationId = client.createEmailNotificationForPersonOrGroup(personId, UUID.randomUUID().toString());
+        Assert.assertTrue(emailNotificationId > 0);
+        final int smsNotificationId = client.createSmsNotificationForPersonOrGroup(personId, UUID.randomUUID().toString());
+        Assert.assertTrue(smsNotificationId > 0);
+
+        // Clean ourselves up
         client.deletePersonOrGroupById(personId);
         Assert.assertNull(client.findPersonOrGroupById(personId));
     }

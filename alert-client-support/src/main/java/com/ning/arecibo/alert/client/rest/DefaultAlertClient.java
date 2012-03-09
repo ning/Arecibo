@@ -45,7 +45,9 @@ public class DefaultAlertClient implements AlertClient
     private static final String USER_AGENT = "NING-AlertClient/1.0";
     private static final String RESOURCE_PATH = "xn/rest/1.0";
     private static final Splitter PATH_SPLITTER = Splitter.on("/");
+
     private static final String PERSON_PATH = "Person";
+    private static final String NOTIF_CONFIG_PATH = "NotifConfig";
 
     private final AlertFinder alertFinder;
 
@@ -92,6 +94,36 @@ public class DefaultAlertClient implements AlertClient
     public void deletePersonOrGroupById(final int id) throws UniformInterfaceException
     {
         doDelete(PERSON_PATH + "/" + id);
+    }
+
+    @Override
+    public int createEmailNotificationForPersonOrGroup(final int id, final String address)
+    {
+        return createNotificationForPersonOrGroup(id, address, "REGULAR_EMAIL");
+    }
+
+    @Override
+    public int createSmsNotificationForPersonOrGroup(final int id, final String address)
+    {
+        return createNotificationForPersonOrGroup(id, address, "SMS_VIA_EMAIL");
+    }
+
+    private int createNotificationForPersonOrGroup(final int id, final String address, final String notificationType)
+    {
+        //TODO for now just use a truncated version of the email address, need to devise something better
+        String label = address;
+        if (label.length() > 32) {
+            label = label.substring(0, 31);
+        }
+
+        final Map<String, ?> group = ImmutableMap.of(
+            "personId", id,
+            "address", address,
+            "notifType", notificationType,
+            "label", label);
+
+        final URI location = doPost(NOTIF_CONFIG_PATH, group);
+        return extractIdFromURI(location);
     }
 
     private Map<String, Object> doGet(final String path)
