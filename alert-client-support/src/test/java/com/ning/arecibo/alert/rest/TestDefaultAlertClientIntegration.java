@@ -75,7 +75,8 @@ public class TestDefaultAlertClientIntegration
         Assert.assertEquals(notificationsFound, 2);
 
         // Create a group for these notifications
-        final int groupId = client.createNotificationGroup("page-pierre-" + UUID.randomUUID().toString(), true, ImmutableList.<Integer>of(emailNotificationId, smsNotificationId));
+        final int groupId = client.createNotificationGroup("page-pierre-" + UUID.randomUUID().toString(), true,
+            ImmutableList.<Integer>of(emailNotificationId, smsNotificationId));
         Assert.assertTrue(groupId > 0);
 
         // Make sure we can find it
@@ -85,6 +86,11 @@ public class TestDefaultAlertClientIntegration
         Assert.assertEquals(mappings.get(address).iterator().next(), "REGULAR_EMAIL");
         Assert.assertEquals(mappings.get(smsAddress).size(), 1);
         Assert.assertEquals(mappings.get(smsAddress).iterator().next(), "SMS_VIA_EMAIL");
+
+        // Create an Alerting Configuration for this group
+        final int alertingConfigurationId = client.createAlertingConfig("critical-alerts-" + UUID.randomUUID().toString(),
+            true, true, true, ImmutableList.<Integer>of(groupId));
+        Assert.assertTrue(alertingConfigurationId > 0);
 
         // Make sure we can delete one of the two notifications
         client.deleteNotificationById(emailNotificationId);

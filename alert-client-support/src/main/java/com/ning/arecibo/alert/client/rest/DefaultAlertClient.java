@@ -52,6 +52,8 @@ public class DefaultAlertClient implements AlertClient
     private static final String NOTIF_CONFIG_PATH = "NotifConfig";
     private static final String NOTIF_GROUP_PATH = "NotifGroup";
     private static final String NOTIF_MAPPING_PATH = "NotifMapping";
+    private static final String ALERTING_CONFIG_PATH = "AlertingConfig";
+    private static final String NOTIF_GROUP_MAPPING_PATH = "NotifGroupMapping";
 
     private final AlertFinder alertFinder;
 
@@ -166,6 +168,32 @@ public class DefaultAlertClient implements AlertClient
         }
 
         return emailsAndNotificationTypesForGroup;
+    }
+
+    @Override
+    public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
+                                    final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException
+    {
+        // First, create the Alerting Config
+        final Map<String, ?> group = ImmutableMap.of(
+            "label", createLabel(name),
+            "notifRepeatMode", repeatUntilCleared ? "UNTIL_CLEARED" : "NO_REPEAT",
+            "notifOnRecovery", notifyOnRecovery,
+            "enabled", enabled);
+        final URI location = doPost(ALERTING_CONFIG_PATH, group);
+        final int alertingConfigId = extractIdFromURI(location);
+
+        // Now, create a Notification Group Mapping for each Notification Group
+        // TODO should we consider a bulk resource?
+        for (final int notifGroupId : notificationGroupsIds) {
+            final Map<String, ?> mapping = ImmutableMap.of(
+                "label", createLabel(String.format("%d_to_%d", alertingConfigId, notifGroupId)),
+                "alertingConfigId", alertingConfigId,
+                "notifGroupId", notifGroupId);
+            doPost(NOTIF_GROUP_MAPPING_PATH, mapping);
+        }
+
+        return alertingConfigId;
     }
 
     // PRIVATE

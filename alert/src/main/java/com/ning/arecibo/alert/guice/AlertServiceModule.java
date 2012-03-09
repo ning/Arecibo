@@ -20,12 +20,14 @@ import com.google.inject.AbstractModule;
 import com.ning.arecibo.alert.conf.ConfigManager;
 import com.ning.arecibo.alert.email.EmailManager;
 import com.ning.arecibo.alert.endpoint.AlertStatusEndPoint;
+import com.ning.arecibo.alert.endpoint.AlertingConfigEndPoint;
 import com.ning.arecibo.alert.endpoint.ConfigEventSendEndPoint;
 import com.ning.arecibo.alert.endpoint.ConfigStatusEndPoint;
 import com.ning.arecibo.alert.endpoint.ConfigUpdateEndPoint;
 import com.ning.arecibo.alert.endpoint.JSONAlertStatusEndPoint;
 import com.ning.arecibo.alert.endpoint.NotifConfigEndPoint;
 import com.ning.arecibo.alert.endpoint.NotifGroupEndPoint;
+import com.ning.arecibo.alert.endpoint.NotifGroupMappingEndPoint;
 import com.ning.arecibo.alert.endpoint.NotifMappingEndPoint;
 import com.ning.arecibo.alert.endpoint.PersonEndPoint;
 import com.ning.arecibo.alert.logging.LoggingManager;
@@ -72,6 +74,8 @@ public class AlertServiceModule extends AbstractModule
         bind(NotifConfigEndPoint.class).asEagerSingleton();
         bind(NotifGroupEndPoint.class).asEagerSingleton();
         bind(NotifMappingEndPoint.class).asEagerSingleton();
+        bind(AlertingConfigEndPoint.class).asEagerSingleton();
+        bind(NotifGroupMappingEndPoint.class).asEagerSingleton();
 
         bind(UUID.class).annotatedWith(SelfUUID.class).toInstance(UUID.randomUUID());
 

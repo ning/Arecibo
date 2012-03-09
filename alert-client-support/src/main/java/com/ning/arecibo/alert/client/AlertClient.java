@@ -24,6 +24,8 @@ import java.util.Map;
 // TODO Consider extracting the POJO objects from alert-data-support to share them
 public interface AlertClient
 {
+    // People and Groups (Aliases)
+
     public int createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException;
 
     public int createGroup(final String name);
@@ -32,9 +34,11 @@ public interface AlertClient
 
     public void deletePersonOrGroupById(final int id) throws UniformInterfaceException;
 
+
+    // Associated email addresses to People and Groups (SMS notifications limit the body to 140 characters)
+
     public int createEmailNotificationForPersonOrGroup(final int id, final String address);
 
-    // SMS notifications limit the body to 140 characters
     public int createSmsNotificationForPersonOrGroup(final int id, final String address);
 
     public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException;
@@ -43,7 +47,16 @@ public interface AlertClient
 
     public void deleteNotificationById(int id) throws UniformInterfaceException;
 
-    public int createNotificationGroup(final String groupName, boolean enabled, Iterable<Integer> notificationsIds) throws UniformInterfaceException;
+
+    // Notification Groups, for creating groups of recipients for alert emails
+
+    public int createNotificationGroup(final String groupName, boolean enabled, final Iterable<Integer> notificationsIds) throws UniformInterfaceException;
 
     public Multimap<String, String> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException;
+
+
+    // Alerting Configurations, which allow you to associate notification options with threshold definitions
+
+    public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
+                                    final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException;
 }
