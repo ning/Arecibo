@@ -117,6 +117,14 @@ public abstract class ConfDataObject implements Serializable
         sb.append(String.format("   %s -> %s\n", UPDATE_TIMESTAMP_FIELD, getUpdateTimestamp()));
     }
 
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        toStringBuilder(sb);
+        return sb.toString();
+    }
+
     public boolean equals(final ConfDataObject compObj)
     {
         return compObj != null && compObj.getClass() == this.getClass() && this.toPropertiesMap().equals(compObj.toPropertiesMap());
