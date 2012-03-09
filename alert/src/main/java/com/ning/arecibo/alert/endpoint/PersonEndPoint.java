@@ -31,6 +31,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Map;
 
+/**
+ * There are 2 types of contacts that can receive emails, either an individual Person or an Email Group Alias.
+ * <p/>
+ * We want to know if a contact is a Person or not, since it will be used as part of the Alert Acknowledgement system.
+ * Only Persons will be allowed to acknowledge alerts. A Person or Alias can be associated with a Notification Group.
+ */
 @Path("/xn/rest/1.0/Person")
 public class PersonEndPoint extends ConfDataEndPoint<ConfDataPerson>
 {

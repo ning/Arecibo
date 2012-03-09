@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.alert.client;
 
+import com.google.common.collect.Multimap;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 import java.util.Map;
@@ -40,5 +41,9 @@ public interface AlertClient
 
     public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException;
 
-    public void deleteNotificationById(int id);
+    public void deleteNotificationById(int id) throws UniformInterfaceException;
+
+    public int createNotificationGroup(final String groupName, boolean enabled, Iterable<Integer> notificationsIds) throws UniformInterfaceException;
+
+    public Multimap<String, String> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException;
 }

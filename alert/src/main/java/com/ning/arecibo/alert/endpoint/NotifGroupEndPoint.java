@@ -18,7 +18,7 @@ package com.ning.arecibo.alert.endpoint;
 
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.confdata.dao.ConfDataDAO;
-import com.ning.arecibo.alert.confdata.objects.ConfDataNotifConfig;
+import com.ning.arecibo.alert.confdata.objects.ConfDataNotifGroup;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -29,21 +29,22 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.List;
 import java.util.Map;
 
 /**
- * There are 2 types of Notification Type, either by REGULAR_EMAIL or else by SMS_VIA_EMAIL.
- * The difference, is that for the SMS_VIA_EMAIL, a reduced version of the notification email will be sent, limited to
- * 140 characters, to conform to the limitation of SMS text messaging systems.
+ * A Notification Group is a way for grouping multiple recipients to receive the same alert notification.
+ * <p/>
+ * A Notification Group can be associated with one or more Alerting Configurations. A Notification Group must include at
+ * least one email contact, which can be for an individual person or an email alias. It may be necessary to set up a
+ * Person or Alias before creating a Threshold Definition.
  */
-@Path("/xn/rest/1.0/NotifConfig")
-public class NotifConfigEndPoint extends ConfDataEndPoint<ConfDataNotifConfig>
+@Path("/xn/rest/1.0/NotifGroup")
+public class NotifGroupEndPoint extends ConfDataEndPoint<ConfDataNotifGroup>
 {
     @Inject
-    public NotifConfigEndPoint(final ConfDataDAO dao)
+    public NotifGroupEndPoint(final ConfDataDAO dao)
     {
-        super(dao, ConfDataNotifConfig.TYPE_NAME, ConfDataNotifConfig.class);
+        super(dao, ConfDataNotifGroup.TYPE_NAME, ConfDataNotifGroup.class);
     }
 
     @GET
@@ -54,19 +55,11 @@ public class NotifConfigEndPoint extends ConfDataEndPoint<ConfDataNotifConfig>
         return findConfDataObjectById(id);
     }
 
-    @GET
-    @Path("/Person/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Map<String, Object>> getByPersonId(@PathParam("id") final Long personId)
-    {
-        return findConfDataObjectById("person_id", personId);
-    }
-
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response create(final ConfDataNotifConfig notifConfig)
+    public Response create(final ConfDataNotifGroup notifGroup)
     {
-        return createConfDataObject(notifConfig);
+        return createConfDataObject(notifGroup);
     }
 
     @DELETE

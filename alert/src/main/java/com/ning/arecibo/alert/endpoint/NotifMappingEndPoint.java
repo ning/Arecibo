@@ -18,7 +18,7 @@ package com.ning.arecibo.alert.endpoint;
 
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.confdata.dao.ConfDataDAO;
-import com.ning.arecibo.alert.confdata.objects.ConfDataNotifConfig;
+import com.ning.arecibo.alert.confdata.objects.ConfDataNotifMapping;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -33,17 +33,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * There are 2 types of Notification Type, either by REGULAR_EMAIL or else by SMS_VIA_EMAIL.
- * The difference, is that for the SMS_VIA_EMAIL, a reduced version of the notification email will be sent, limited to
- * 140 characters, to conform to the limitation of SMS text messaging systems.
+ * Mapping between Notification Groups and Notification Configs.
+ * <p/>
+ * From a database perspective, notif_mapping is a join table between notif_group and notif_config
  */
-@Path("/xn/rest/1.0/NotifConfig")
-public class NotifConfigEndPoint extends ConfDataEndPoint<ConfDataNotifConfig>
+@Path("/xn/rest/1.0/NotifMapping")
+public class NotifMappingEndPoint extends ConfDataEndPoint<ConfDataNotifMapping>
 {
     @Inject
-    public NotifConfigEndPoint(final ConfDataDAO dao)
+    public NotifMappingEndPoint(final ConfDataDAO dao)
     {
-        super(dao, ConfDataNotifConfig.TYPE_NAME, ConfDataNotifConfig.class);
+        super(dao, ConfDataNotifMapping.TYPE_NAME, ConfDataNotifMapping.class);
     }
 
     @GET
@@ -55,18 +55,18 @@ public class NotifConfigEndPoint extends ConfDataEndPoint<ConfDataNotifConfig>
     }
 
     @GET
-    @Path("/Person/{id}")
+    @Path("/NotifGroup/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Map<String, Object>> getByPersonId(@PathParam("id") final Long personId)
+    public List<Map<String, Object>> getAllByGroupId(@PathParam("id") final Long notifGroupId)
     {
-        return findConfDataObjectById("person_id", personId);
+        return findConfDataObjectById("notif_group_id", notifGroupId);
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response create(final ConfDataNotifConfig notifConfig)
+    public Response create(final ConfDataNotifMapping notifMapping)
     {
-        return createConfDataObject(notifConfig);
+        return createConfDataObject(notifMapping);
     }
 
     @DELETE

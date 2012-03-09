@@ -25,6 +25,8 @@ import com.ning.arecibo.alert.endpoint.ConfigStatusEndPoint;
 import com.ning.arecibo.alert.endpoint.ConfigUpdateEndPoint;
 import com.ning.arecibo.alert.endpoint.JSONAlertStatusEndPoint;
 import com.ning.arecibo.alert.endpoint.NotifConfigEndPoint;
+import com.ning.arecibo.alert.endpoint.NotifGroupEndPoint;
+import com.ning.arecibo.alert.endpoint.NotifMappingEndPoint;
 import com.ning.arecibo.alert.endpoint.PersonEndPoint;
 import com.ning.arecibo.alert.logging.LoggingManager;
 import com.ning.arecibo.alert.manage.AlertManager;
@@ -68,6 +70,8 @@ public class AlertServiceModule extends AbstractModule
         bind(ConfigEventSendEndPoint.class).asEagerSingleton();
         bind(PersonEndPoint.class).asEagerSingleton();
         bind(NotifConfigEndPoint.class).asEagerSingleton();
+        bind(NotifGroupEndPoint.class).asEagerSingleton();
+        bind(NotifMappingEndPoint.class).asEagerSingleton();
 
         bind(UUID.class).annotatedWith(SelfUUID.class).toInstance(UUID.randomUUID());
 

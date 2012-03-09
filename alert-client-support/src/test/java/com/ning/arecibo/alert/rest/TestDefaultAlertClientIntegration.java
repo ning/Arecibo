@@ -17,6 +17,7 @@
 package com.ning.arecibo.alert.rest;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import com.ning.arecibo.alert.client.AlertClient;
 import com.ning.arecibo.alert.client.AlertClientConfig;
 import com.ning.arecibo.alert.client.discovery.AlertFinder;
@@ -58,19 +59,34 @@ public class TestDefaultAlertClientIntegration
         final Map<String, Object> personFound = client.findPersonOrGroupById(personId);
         Assert.assertEquals(personFound.get("first_name"), firstName);
         Assert.assertEquals(personFound.get("last_name"), lastName);
-        Assert.assertEquals(personFound.get("label"), nickName);
         Assert.assertEquals(personFound.get("is_group_alias"), "0");
 
         // Create some notifications mechanisms
-        final int emailNotificationId = client.createEmailNotificationForPersonOrGroup(personId, UUID.randomUUID().toString());
+        final String address = UUID.randomUUID().toString();
+        final int emailNotificationId = client.createEmailNotificationForPersonOrGroup(personId, address);
         Assert.assertTrue(emailNotificationId > 0);
-        final int smsNotificationId = client.createSmsNotificationForPersonOrGroup(personId, UUID.randomUUID().toString());
+        final String smsAddress = UUID.randomUUID().toString();
+        final int smsNotificationId = client.createSmsNotificationForPersonOrGroup(personId, smsAddress);
         Assert.assertTrue(smsNotificationId > 0);
+
+        // Make sure we can find the notifications by user
         final Iterator<Map<String, Object>> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
         final int notificationsFound = ImmutableList.copyOf(iterator).size();
         Assert.assertEquals(notificationsFound, 2);
 
-        // Make sure we can delete one of the two
+        // Create a group for these notifications
+        final int groupId = client.createNotificationGroup("page-pierre-" + UUID.randomUUID().toString(), true, ImmutableList.<Integer>of(emailNotificationId, smsNotificationId));
+        Assert.assertTrue(groupId > 0);
+
+        // Make sure we can find it
+        final Multimap<String, String> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
+        Assert.assertEquals(mappings.keys().size(), 2);
+        Assert.assertEquals(mappings.get(address).size(), 1);
+        Assert.assertEquals(mappings.get(address).iterator().next(), "REGULAR_EMAIL");
+        Assert.assertEquals(mappings.get(smsAddress).size(), 1);
+        Assert.assertEquals(mappings.get(smsAddress).iterator().next(), "SMS_VIA_EMAIL");
+
+        // Make sure we can delete one of the two notifications
         client.deleteNotificationById(emailNotificationId);
         Assert.assertNull(client.findNotificationById(emailNotificationId));
         // The second one should still be around though

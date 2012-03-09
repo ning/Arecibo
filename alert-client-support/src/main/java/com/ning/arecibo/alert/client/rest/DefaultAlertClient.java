@@ -17,7 +17,9 @@
 package com.ning.arecibo.alert.client.rest;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.client.AlertClient;
 import com.ning.arecibo.alert.client.discovery.AlertFinder;
@@ -48,6 +50,8 @@ public class DefaultAlertClient implements AlertClient
 
     private static final String PERSON_PATH = "Person";
     private static final String NOTIF_CONFIG_PATH = "NotifConfig";
+    private static final String NOTIF_GROUP_PATH = "NotifGroup";
+    private static final String NOTIF_MAPPING_PATH = "NotifMapping";
 
     private final AlertFinder alertFinder;
 
@@ -66,7 +70,7 @@ public class DefaultAlertClient implements AlertClient
         final Map<String, String> person = ImmutableMap.of(
             "firstName", firstName,
             "lastName", lastName,
-            "label", nickName,
+            "label", createLabel(nickName),
             "isGroupAlias", "false");
 
         final URI location = doPost(PERSON_PATH, person);
@@ -77,7 +81,7 @@ public class DefaultAlertClient implements AlertClient
     public int createGroup(final String name)
     {
         final Map<String, ?> group = ImmutableMap.of(
-            "label", name,
+            "label", createLabel(name),
             "isGroupAlias", Boolean.TRUE);
 
         final URI location = doPost(PERSON_PATH, group);
@@ -117,7 +121,7 @@ public class DefaultAlertClient implements AlertClient
     @Override
     public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException
     {
-        return fetchMultipleObjects(NOTIF_CONFIG_PATH + "/user/" + id);
+        return fetchMultipleObjects(NOTIF_CONFIG_PATH + "/Person/" + id);
     }
 
     @Override
@@ -126,22 +130,66 @@ public class DefaultAlertClient implements AlertClient
         doDelete(NOTIF_CONFIG_PATH + "/" + id);
     }
 
+    @Override
+    public int createNotificationGroup(final String groupName, final boolean enabled, final Iterable<Integer> notificationsIds)
+    {
+        // First, create the Notification Group
+        final Map<String, ?> group = ImmutableMap.of(
+            "label", createLabel(groupName),
+            "enabled", enabled);
+        final URI location = doPost(NOTIF_GROUP_PATH, group);
+        final int notifGroupId = extractIdFromURI(location);
+
+        // Now, create a Notification Mapping for each Notification Config
+        // TODO should we consider a bulk resource?
+        for (final int notifConfigId : notificationsIds) {
+            final Map<String, ?> mapping = ImmutableMap.of(
+                "label", createLabel(String.format("%d_to_%d", notifGroupId, notifConfigId)),
+                "notifGroupId", notifGroupId,
+                "notifConfigId", notifConfigId);
+            doPost(NOTIF_MAPPING_PATH, mapping);
+        }
+
+        return notifGroupId;
+    }
+
+    @Override
+    public Multimap<String, String> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException
+    {
+        final List<Map<String, Object>> mappings = fetchMultipleObjects(NOTIF_MAPPING_PATH + "/NotifGroup/" + id);
+
+        // At most 2 notification types for now (email and sms via email)
+        final Multimap<String, String> emailsAndNotificationTypesForGroup = HashMultimap.create(mappings.size(), 2);
+        for (final Map<String, Object> mapping : mappings) {
+            final Map<String, Object> notification = findNotificationById((Integer) mapping.get("notif_config_id"));
+            emailsAndNotificationTypesForGroup.put((String) notification.get("address"), (String) notification.get("notif_type"));
+        }
+
+        return emailsAndNotificationTypesForGroup;
+    }
+
+    // PRIVATE
+
     private int createNotificationForPersonOrGroup(final int id, final String address, final String notificationType)
     {
         //TODO for now just use a truncated version of the email address, need to devise something better
-        String label = address;
-        if (label.length() > 32) {
-            label = label.substring(0, 31);
-        }
-
         final Map<String, ?> group = ImmutableMap.of(
             "personId", id,
             "address", address,
             "notifType", notificationType,
-            "label", label);
+            "label", createLabel(address));
 
         final URI location = doPost(NOTIF_CONFIG_PATH, group);
         return extractIdFromURI(location);
+    }
+
+    private String createLabel(final String address)
+    {
+        String label = address;
+        if (label.length() > 32) {
+            label = label.substring(0, 31);
+        }
+        return label;
     }
 
     private Map<String, Object> fetchOneObject(final String path)
@@ -151,7 +199,7 @@ public class DefaultAlertClient implements AlertClient
         });
     }
 
-    private Iterable<Map<String, Object>> fetchMultipleObjects(final String path)
+    private List<Map<String, Object>> fetchMultipleObjects(final String path)
     {
         return fetchObject(path, new GenericType<List<Map<String, Object>>>()
         {
