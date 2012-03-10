@@ -24,7 +24,6 @@ import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.CheckBox;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.markup.html.panel.Panel;
-import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.list.ListView;
@@ -119,7 +118,7 @@ public class NotificationGroupInputFormPanel extends Panel {
                             protected void onUpdate(AjaxRequestTarget target) {
                                 String selectedAddress = (String)notificationAddress.getModelObject();
                                 ConfDataNotifConfig notificationConfig = notifGroupFormModel.getNotificationConfigByAddress(selectedAddress);
-                                config.setPropertiesFromMap(notificationConfig.toPropertiesMap());
+                                config.populatePropertiesFromMap(notificationConfig.toPropertiesMap());
                             }
                         });
                         item.add(notificationAddress);
@@ -141,7 +140,7 @@ public class NotificationGroupInputFormPanel extends Panel {
                                 // if only one in list, pre-populate, otherwise force user to choose
                                 if (choices.size() == 1) {
                                     ConfDataNotifConfig notificationConfig = notifGroupFormModel.getNotificationConfigByAddress(choices.get(0));
-                                    config.setPropertiesFromMap(notificationConfig.toPropertiesMap());
+                                    config.populatePropertiesFromMap(notificationConfig.toPropertiesMap());
                                 }
                                 else
                                     config.setAddress(null);

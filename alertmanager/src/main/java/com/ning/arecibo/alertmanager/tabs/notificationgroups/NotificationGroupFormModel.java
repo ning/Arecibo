@@ -55,7 +55,7 @@ public class NotificationGroupFormModel extends ConfDataNotifGroup implements Co
     public NotificationGroupFormModel(ConfDataNotifGroup confDataNotifGroup) {
 
         if(confDataNotifGroup != null)
-            this.setPropertiesFromMap(confDataNotifGroup.toPropertiesMap());
+            this.populatePropertiesFromMap(confDataNotifGroup.toPropertiesMap());
 
         this.allPersonNickNames = new ArrayList<String>();
         this.allPersons = new ArrayList<ConfDataPerson>();

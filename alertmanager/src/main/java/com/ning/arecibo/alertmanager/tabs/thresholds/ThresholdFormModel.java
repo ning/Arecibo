@@ -53,7 +53,7 @@ public class ThresholdFormModel extends ConfDataThresholdConfig implements ConfD
     public ThresholdFormModel(ConfDataThresholdConfig confDataThresholdConfig) {
 
         if(confDataThresholdConfig != null)
-            this.setPropertiesFromMap(confDataThresholdConfig.toPropertiesMap());
+            this.populatePropertiesFromMap(confDataThresholdConfig.toPropertiesMap());
 
         this.allAlertingConfigNames = new ArrayList<String>();
         this.allAlertingConfigsByLabel = new ArrayList<ConfDataAlertingConfig>();

@@ -172,7 +172,7 @@ public class AlertingConfigInputFormPanel extends Panel {
                             protected void onUpdate(AjaxRequestTarget target) {
                                 String selectedGroupName = notificationGroup.getModelObject();
                                 ConfDataNotifGroup selectedGroup = alertingConfigFormModel.getNotificationGroupByGroupName(selectedGroupName);
-                                group.setPropertiesFromMap(selectedGroup.toPropertiesMap());
+                                group.populatePropertiesFromMap(selectedGroup.toPropertiesMap());
                                 target.addComponent(notificationGroup);
                             }
                         });
@@ -251,7 +251,7 @@ public class AlertingConfigInputFormPanel extends Panel {
                             protected void onUpdate(AjaxRequestTarget target) {
                                 String selectedKeyName = managingKey.getModelObject();
                                 ConfDataManagingKey selectedKey = alertingConfigFormModel.getManagingKeyByManagingKeyName(selectedKeyName);
-                                key.setPropertiesFromMap(selectedKey.toPropertiesMap());
+                                key.populatePropertiesFromMap(selectedKey.toPropertiesMap());
                                 target.addComponent(managingKey);
                             }
                         });

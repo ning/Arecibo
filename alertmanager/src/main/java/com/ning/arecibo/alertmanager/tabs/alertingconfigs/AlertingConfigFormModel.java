@@ -55,7 +55,7 @@ public class AlertingConfigFormModel extends ConfDataAlertingConfig implements C
     public AlertingConfigFormModel(ConfDataAlertingConfig confDataAlertingConfig) {
 
         if(confDataAlertingConfig != null) {
-            this.setPropertiesFromMap(confDataAlertingConfig.toPropertiesMap());
+            this.populatePropertiesFromMap(confDataAlertingConfig.toPropertiesMap());
         }
         else {
             // some defaults

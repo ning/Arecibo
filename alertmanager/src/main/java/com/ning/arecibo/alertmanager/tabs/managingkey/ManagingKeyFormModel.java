@@ -43,7 +43,7 @@ public class ManagingKeyFormModel extends ConfDataManagingKey implements ConfDat
     public ManagingKeyFormModel(ConfDataManagingKey confDataManagingKey) {
 
         if(confDataManagingKey != null)
-            this.setPropertiesFromMap(confDataManagingKey.toPropertiesMap());
+            this.populatePropertiesFromMap(confDataManagingKey.toPropertiesMap());
     }
 
     public Date getManualOverrideUntil() {

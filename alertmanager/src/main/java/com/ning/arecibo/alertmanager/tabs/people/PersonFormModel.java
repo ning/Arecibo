@@ -48,7 +48,7 @@ public class PersonFormModel extends ConfDataPerson implements ConfDataFormModel
     public PersonFormModel(ConfDataPerson confDataPerson, List<ConfDataNotifConfig> notificationConfigs) {
 
         if(confDataPerson != null)
-            this.setPropertiesFromMap(confDataPerson.toPropertiesMap());
+            this.populatePropertiesFromMap(confDataPerson.toPropertiesMap());
 
         if(notificationConfigs == null) {
             notificationConfigs = new ArrayList<ConfDataNotifConfig>();
