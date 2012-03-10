@@ -97,6 +97,12 @@ public class TestDefaultAlertClientIntegration
             "JettyServer", "connectionsOpen", null, 2000.0, 6L, 120000L, 300000L, alertingConfigurationId);
         Assert.assertTrue(thresholdDefinitionId > 0);
 
+        // Add a couple of Qualifying Attributes for this Threshold
+        int thresholdQualifyingAttrId = client.createThresholdQualifyingAttr(thresholdDefinitionId, "deployedType", "collector");
+        Assert.assertTrue(thresholdQualifyingAttrId > 0);
+        thresholdQualifyingAttrId = client.createThresholdQualifyingAttr(thresholdDefinitionId, "deployedVersion", "1.2.3");
+        Assert.assertTrue(thresholdQualifyingAttrId > 0);
+
         // Make sure we can delete one of the two notifications
         client.deleteNotificationById(emailNotificationId);
         Assert.assertNull(client.findNotificationById(emailNotificationId));
