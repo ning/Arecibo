@@ -103,6 +103,12 @@ public class TestDefaultAlertClientIntegration
         thresholdQualifyingAttrId = client.createThresholdQualifyingAttr(thresholdDefinitionId, "deployedVersion", "1.2.3");
         Assert.assertTrue(thresholdQualifyingAttrId > 0);
 
+        // Add a couple of Context Attributes for this Threshold
+        int thresholdContextAttrId = client.createThresholdContextAttr(thresholdDefinitionId, "deployedType");
+        Assert.assertTrue(thresholdContextAttrId > 0);
+        thresholdContextAttrId = client.createThresholdContextAttr(thresholdDefinitionId, "deployedVersion");
+        Assert.assertTrue(thresholdContextAttrId > 0);
+
         // Make sure we can delete one of the two notifications
         client.deleteNotificationById(emailNotificationId);
         Assert.assertNull(client.findNotificationById(emailNotificationId));

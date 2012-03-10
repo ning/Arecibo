@@ -70,4 +70,6 @@ public interface AlertClient
                                      final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException;
 
     public int createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue) throws UniformInterfaceException;
+
+    public int createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException;
 }

@@ -57,6 +57,7 @@ public class DefaultAlertClient implements AlertClient
     private static final String NOTIF_GROUP_MAPPING_PATH = "NotifGroupMapping";
     private static final String THRESHOLD_CONFIG_PATH = "ThresholdConfig";
     private static final String THRESHOLD_QUALIFYING_ATTR_PATH = "ThresholdQualifyingAttr";
+    private static final String THRESHOLD_CONTEXT_ATTR_PATH = "ThresholdContextAttr";
 
     private final AlertFinder alertFinder;
 
@@ -236,6 +237,17 @@ public class DefaultAlertClient implements AlertClient
             "attributeType", attributeType,
             "attributeValue", attributeValue);
         final URI location = doPost(THRESHOLD_QUALIFYING_ATTR_PATH, thresholdQualifyingAttr);
+        return extractIdFromURI(location);
+    }
+
+    @Override
+    public int createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException
+    {
+        final Map<String, ?> thresholdContextAttr = ImmutableMap.of(
+            "label", createLabel(String.format("%d: %s", thresholdConfigId, attributeType)),
+            "thresholdConfigId", thresholdConfigId,
+            "attributeType", attributeType);
+        final URI location = doPost(THRESHOLD_CONTEXT_ATTR_PATH, thresholdContextAttr);
         return extractIdFromURI(location);
     }
 

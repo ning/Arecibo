@@ -31,6 +31,7 @@ import com.ning.arecibo.alert.endpoint.NotifGroupMappingEndPoint;
 import com.ning.arecibo.alert.endpoint.NotifMappingEndPoint;
 import com.ning.arecibo.alert.endpoint.PersonEndPoint;
 import com.ning.arecibo.alert.endpoint.ThresholdConfigEndPoint;
+import com.ning.arecibo.alert.endpoint.ThresholdContextAttrEndPoint;
 import com.ning.arecibo.alert.endpoint.ThresholdQualifyingAttrEndPoint;
 import com.ning.arecibo.alert.logging.LoggingManager;
 import com.ning.arecibo.alert.manage.AlertManager;
@@ -80,6 +81,7 @@ public class AlertServiceModule extends AbstractModule
         bind(NotifGroupMappingEndPoint.class).asEagerSingleton();
         bind(ThresholdConfigEndPoint.class).asEagerSingleton();
         bind(ThresholdQualifyingAttrEndPoint.class).asEagerSingleton();
+        bind(ThresholdContextAttrEndPoint.class).asEagerSingleton();
 
         bind(UUID.class).annotatedWith(SelfUUID.class).toInstance(UUID.randomUUID());
 
