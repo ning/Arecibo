@@ -29,10 +29,10 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplicationException>
 {
-    private static Logger logger = LoggerFactory.getLogger(WebApplicationExceptionMapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(WebApplicationExceptionMapper.class);
 
     @Override
-    public Response toResponse(WebApplicationException ex)
+    public Response toResponse(final WebApplicationException ex)
     {
         final String warningMsg = buildWarningMessage(ex, "");
         final Response originalResponse = ex.getResponse();
@@ -65,7 +65,7 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
         return response;
     }
 
-    private String buildWarningMessage(Throwable t, String prevWarningMessage)
+    private String buildWarningMessage(final Throwable t, final String prevWarningMessage)
     {
         final String newWarningMessage = prevWarningMessage + ": " + t.getClass().toString();
 
