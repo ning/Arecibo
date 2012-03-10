@@ -108,7 +108,7 @@ public class TestKafkaEventHandler
         }
     }
 
-    @Test(groups = "slow,integration", enabled = false)
+    @Test(groups = "slow,integration")
     public void testHandle() throws Exception
     {
         Assert.assertEquals(processor.getEventsReceived(), 0);

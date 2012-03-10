@@ -44,7 +44,7 @@ public class TestDefaultAlertClientIntegration
         client = new DefaultAlertClient(finder);
     }
 
-    @Test(groups = "integration,slow", enabled = true)
+    @Test(groups = "integration,slow")
     public void testPersonEndPoint() throws Exception
     {
         final String firstName = "Pierre";

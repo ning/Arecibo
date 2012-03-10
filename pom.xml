@@ -180,6 +180,17 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <groups>fast,slow</groups>
+                    <systemPropertyVariables>
+                        <file.encoding>UTF-8</file.encoding>
+                        <user.timezone>GMT</user.timezone>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>com.ning.maven.plugins</groupId>
                 <artifactId>maven-dependency-versions-check-plugin</artifactId>
                 <configuration>
@@ -196,4 +207,25 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <!-- Runs integration tests -->
+            <id>all-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <forkMode>pertest</forkMode>
+                            <systemPropertyVariables>
+                                <file.encoding>UTF-8</file.encoding>
+                                <user.timezone>GMT</user.timezone>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

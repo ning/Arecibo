@@ -38,14 +38,14 @@ public class TestDefaultCollectorClientIntegration
         client = new DefaultCollectorClient(finder);
     }
 
-    @Test(groups = "integration,slow", enabled = false)
+    @Test(groups = "integration,slow")
     public void testGetHosts() throws Exception
     {
         Assert.assertNotNull(client.getHosts());
         Assert.assertTrue(client.getHosts().iterator().hasNext());
     }
 
-    @Test(groups = "integration,slow", enabled = false)
+    @Test(groups = "integration,slow")
     public void testGetSampleKinds() throws Exception
     {
         Assert.assertNotNull(client.getSampleKinds());
