@@ -16,24 +16,27 @@
 
 package com.ning.arecibo.alertmanager.utils;
 
-import org.joda.time.LocalTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormat;
 
-public class TimeOfDayUtils {
-    public final static String DEFAULT_TIME_FORMAT = "HH:mm";
+public class TimeOfDayUtils
+{
+    public static final String DEFAULT_TIME_FORMAT = "HH:mm";
 
-    public static String format(long millis) {
+    public static String format(final long millis)
+    {
         return format(millis, DEFAULT_TIME_FORMAT);
     }
 
-    public static String format(Long millis, String formatPattern) {
+    public static String format(final Long millis, final String formatPattern)
+    {
         if (millis != null) {
-            LocalTime lt = new LocalTime(millis, DateTimeZone.forOffsetHours(0));
-
+            final LocalTime lt = new LocalTime(millis, DateTimeZone.forOffsetHours(0));
             return DateTimeFormat.forPattern(formatPattern).print(lt);
         }
-        else
+        else {
             return null;
+        }
     }
 }

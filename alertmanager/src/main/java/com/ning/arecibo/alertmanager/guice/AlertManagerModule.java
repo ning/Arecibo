@@ -16,20 +16,26 @@
 
 package com.ning.arecibo.alertmanager.guice;
 
-import org.skife.config.ConfigurationObjectFactory;
 import com.google.inject.AbstractModule;
-import com.ning.arecibo.alertmanager.AreciboAlertManagerConfig;
-import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alert.client.AlertClientConfig;
+import com.ning.arecibo.alert.client.discovery.AlertFinder;
+import com.ning.arecibo.alert.client.discovery.DefaultAlertFinder;
+import com.ning.arecibo.alert.client.rest.DefaultAlertClient;
+import org.skife.config.ConfigurationObjectFactory;
 
 public class AlertManagerModule extends AbstractModule
 {
-    final static Logger log = Logger.getLogger(AlertManagerModule.class);
-
     @Override
-	public void configure()
-	{
-        AreciboAlertManagerConfig config = new ConfigurationObjectFactory(System.getProperties()).build(AreciboAlertManagerConfig.class);
+    public void configure()
+    {
+        final AlertClientConfig alertclientconfig = new ConfigurationObjectFactory(System.getProperties()).build(AlertClientConfig.class);
+        bind(AlertClientConfig.class).toInstance(alertclientconfig);
 
-        bind(AreciboAlertManagerConfig.class).toInstance(config);
-	}
+        // TODO hook ServiceLocator
+        final AlertFinder alertFinder = new DefaultAlertFinder(alertclientconfig);
+        bind(AlertFinder.class).toInstance(alertFinder);
+
+        bind(AlertClient.class).to(DefaultAlertClient.class).asEagerSingleton();
+    }
 }

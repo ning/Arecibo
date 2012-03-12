@@ -16,39 +16,33 @@
   -->
 
 <web-app xmlns="http://java.sun.com/xml/ns/j2ee"
-	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	 xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
-	 version="2.4">
-
-	<display-name>arecibo-alertmanager</display-name>
-
-	 <!--  
-	      There are three means to configure Wickets configuration mode and they are
-	      tested in the order given. 
-	      1) A system property: -Dwicket.configuration
-	      2) servlet specific <init-param>
-	      3) context specific <context-param>
-	      The value might be either "development" (reloading when templates change)
-	      or "deployment". If no configuration is found, "development" is the default.
-	-->
-
-	<filter>
-		<filter-name>wicket.arecibo-alertmanager</filter-name>
- 		<filter-class>org.apache.wicket.protocol.http.WicketFilter</filter-class>
-        <init-param>
-            <param-name>configuration</param-name>
-            <param-value>deployment</param-value>
-        </init-param>
-        <init-param>
-			<param-name>applicationClassName</param-name>
-			<param-value>com.ning.arecibo.alertmanager.AreciboAlertManager</param-value>
- 		</init-param>
- 	</filter>
-
- <filter-mapping>
-  <filter-name>wicket.arecibo-alertmanager</filter-name>
-	<url-pattern>/*</url-pattern>
- </filter-mapping>
-
-
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
+         version="2.4">
+    <display-name>arecibo-alertmanager</display-name>
+    <filter>
+        <!-- Guice emulates Servlet API with DI -->
+        <filter-name>guiceFilter</filter-name>
+        <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>guiceFilter</filter-name>
+        <url-pattern>/rest/*</url-pattern>
+    </filter-mapping>
+    <listener>
+        <!-- Jersey insists on using java.util.logging (JUL) -->
+        <listener-class>com.ning.jetty.core.listeners.SetupJULBridge</listener-class>
+    </listener>
+    <listener>
+        <!-- Context listener: called at startup time and creates the injector -->
+        <listener-class>com.ning.arecibo.alertmanager.context.AlertManagerStartupContextListener</listener-class>
+    </listener>
+    <servlet>
+        <servlet-name>staticServlet</servlet-name>
+        <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>staticServlet</servlet-name>
+        <url-pattern>/static/*</url-pattern>
+    </servlet-mapping>
 </web-app>
