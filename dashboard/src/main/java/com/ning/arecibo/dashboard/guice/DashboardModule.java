@@ -18,6 +18,7 @@ package com.ning.arecibo.dashboard.guice;
 
 import com.google.inject.AbstractModule;
 import com.ning.arecibo.collector.CollectorClient;
+import com.ning.arecibo.collector.CollectorClientConfig;
 import com.ning.arecibo.collector.discovery.CollectorFinder;
 import com.ning.arecibo.collector.discovery.DefaultCollectorFinder;
 import com.ning.arecibo.collector.rest.DefaultCollectorClient;
@@ -44,12 +45,15 @@ public class DashboardModule extends AbstractModule
     {
         final DashboardConfig config = new ConfigurationObjectFactory(System.getProperties()).build(DashboardConfig.class);
         bind(DashboardConfig.class).toInstance(config);
+        final CollectorClientConfig collectorClientConfig = new ConfigurationObjectFactory(System.getProperties()).build(CollectorClientConfig.class);
+        bind(CollectorClientConfig.class).toInstance(collectorClientConfig);
 
         configureServiceLocator(config);
 
         bind(CollectorClient.class).to(DefaultCollectorClient.class).asEagerSingleton();
         // TODO hook ServiceLocator
-        bind(CollectorFinder.class).to(DefaultCollectorFinder.class).asEagerSingleton();
+        final DefaultCollectorFinder defaultCollectorFinder = new DefaultCollectorFinder(collectorClientConfig);
+        bind(CollectorFinder.class).toInstance(defaultCollectorFinder);
         bind(DashboardFormatManager.class).asEagerSingleton();
         bind(GalaxyStatusManager.class).asEagerSingleton();
         bind(AlertStatusManager.class).asEagerSingleton();
