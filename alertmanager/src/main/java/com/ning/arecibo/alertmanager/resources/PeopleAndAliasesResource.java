@@ -105,6 +105,6 @@ public class PeopleAndAliasesResource
             log.info("Created person %s (id=%d) with sms notification %s (id=%d)", nickName, personId, email, smsNotificationId);
         }
 
-        return Response.seeOther(URI.create("/people.jsp")).entity("built yes").build();
+        return Response.seeOther(URI.create("/ui/people")).build();
     }
 }

@@ -52,7 +52,7 @@
 </div>
 
 <div class="container" id="people_form">
-  <form class="form-horizontal" action="/people" method="post" name="people_form">
+  <form class="form-horizontal" action="/ui/people" method="post" name="people_form">
     <fieldset>
       <legend>Add a Person or Alias</legend>
 
