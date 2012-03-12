@@ -9,19 +9,13 @@
 
     <!-- Le javascript -->
     <script src="/static/js/jquery-1.7.1.min.js"></script>
+    <script src="/static/js/jquery.dataTables-1.9.0.min.js"></script>
     <script src="/static/js/bootstrap-v2.0.0.min.js"></script>
+    <script src="/static/js/arecibo.js"></script>
 
     <!-- Le styles -->
     <link href="/static/css/bootstrap-v2.0.0.min.css" rel="stylesheet">
-    <style type="text/css">
-      body {
-        padding-top: 60px;
-        padding-bottom: 40px;
-      }
-      .sidebar-nav {
-        padding: 9px 0;
-      }
-    </style>
+    <link href="/static/css/arecibo.css" rel="stylesheet">
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>

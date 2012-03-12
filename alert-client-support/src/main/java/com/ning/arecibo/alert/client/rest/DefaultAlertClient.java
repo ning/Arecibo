@@ -95,6 +95,12 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
+    public Iterable<Map<String, Object>> findAllPeopleAndGroups() throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(PERSON_PATH);
+    }
+
+    @Override
     public Map<String, Object> findPersonOrGroupById(final int id) throws UniformInterfaceException
     {
         return fetchOneObject(PERSON_PATH + "/" + id);

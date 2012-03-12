@@ -27,7 +27,7 @@
     </filter>
     <filter-mapping>
         <filter-name>guiceFilter</filter-name>
-        <url-pattern>/rest/*</url-pattern>
+        <url-pattern>/ui/*</url-pattern>
     </filter-mapping>
     <listener>
         <!-- Jersey insists on using java.util.logging (JUL) -->

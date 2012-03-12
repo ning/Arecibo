@@ -29,6 +29,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -54,6 +55,8 @@ public class TestDefaultAlertClientIntegration
         // Create a contact
         final int personId = client.createPerson(firstName, lastName, nickName);
         Assert.assertTrue(personId > 0);
+        final Iterator<Map<String, Object>> peopleIterator = client.findAllPeopleAndGroups().iterator();
+        Assert.assertEquals(ImmutableList.copyOf(peopleIterator).size(), 1);
 
         // Make sure we can find it
         final Map<String, Object> personFound = client.findPersonOrGroupById(personId);

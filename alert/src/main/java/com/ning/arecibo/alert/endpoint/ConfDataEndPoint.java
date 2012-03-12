@@ -44,6 +44,26 @@ public abstract class ConfDataEndPoint<T extends ConfDataObject>
         this.type = type;
     }
 
+    protected List<Map<String, Object>> findAllConfDataObject()
+    {
+        try {
+            final List<T> confDataObjectsFound = dao.selectAll(table, type);
+            if (confDataObjectsFound == null) {
+                throw new WebApplicationException(buildNotFoundResponse());
+            }
+            else {
+                final List<Map<String, Object>> confDataObjects = new ArrayList<Map<String, Object>>();
+                for (final T confDataObject : confDataObjectsFound) {
+                    confDataObjects.add(confDataObject.toPropertiesMap());
+                }
+                return confDataObjects;
+            }
+        }
+        catch (ConfDataDAOException e) {
+            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+        }
+    }
+
     protected Map<String, Object> findConfDataObjectById(final Long confDataObjectId)
     {
         try {

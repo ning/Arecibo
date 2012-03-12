@@ -20,6 +20,7 @@ import com.google.common.collect.Multimap;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 import javax.annotation.Nullable;
+import java.util.List;
 import java.util.Map;
 
 // TODO Consider extracting the POJO objects from alert-data-support to share them
@@ -30,6 +31,8 @@ public interface AlertClient
     public int createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException;
 
     public int createGroup(final String name);
+
+    public Iterable<Map<String, Object>> findAllPeopleAndGroups() throws UniformInterfaceException;
 
     public Map<String, Object> findPersonOrGroupById(final int id) throws UniformInterfaceException;
 

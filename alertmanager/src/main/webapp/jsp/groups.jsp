@@ -1,6 +1,6 @@
-<%@include file="./global_includes/header.jsp" %>
+<%@include file="../global_includes/header.jsp" %>
 
-<%@include file="./global_includes/navbar.jsp" %>
+<%@include file="../global_includes/navbar.jsp" %>
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -49,4 +49,4 @@
   </form>
 </div><!--/.fluid-container-->
 
-<%@include file="./global_includes/footer.jsp" %>
+<%@include file="../global_includes/footer.jsp" %>
