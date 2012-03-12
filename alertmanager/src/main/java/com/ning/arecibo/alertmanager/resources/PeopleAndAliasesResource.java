@@ -40,7 +40,6 @@ import java.util.Map;
 public class PeopleAndAliasesResource
 {
     private static final Logger log = Logger.getLogger(PeopleAndAliasesResource.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final AlertClient client;
 

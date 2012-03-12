@@ -125,6 +125,12 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
+    public Iterable<Map<String, Object>> findAllNotifications() throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(NOTIF_CONFIG_PATH);
+    }
+
+    @Override
     public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException
     {
         return fetchOneObject(NOTIF_CONFIG_PATH + "/" + id);
@@ -163,6 +169,12 @@ public class DefaultAlertClient implements AlertClient
         }
 
         return notifGroupId;
+    }
+
+    @Override
+    public Iterable<Map<String, Object>> findAllNotificationGroups() throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(NOTIF_GROUP_PATH);
     }
 
     @Override

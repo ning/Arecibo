@@ -20,7 +20,6 @@ import com.google.common.collect.Multimap;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 import javax.annotation.Nullable;
-import java.util.List;
 import java.util.Map;
 
 // TODO Consider extracting the POJO objects from alert-data-support to share them
@@ -45,6 +44,8 @@ public interface AlertClient
 
     public int createSmsNotificationForPersonOrGroup(final int id, final String address);
 
+    public Iterable<Map<String, Object>> findAllNotifications() throws UniformInterfaceException;
+
     public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException;
 
     public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException;
@@ -55,6 +56,8 @@ public interface AlertClient
     // Notification Groups, for creating groups of recipients for alert emails
 
     public int createNotificationGroup(final String groupName, boolean enabled, final Iterable<Integer> notificationsIds) throws UniformInterfaceException;
+
+    public Iterable<Map<String, Object>> findAllNotificationGroups() throws UniformInterfaceException;
 
     public Multimap<String, String> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException;
 

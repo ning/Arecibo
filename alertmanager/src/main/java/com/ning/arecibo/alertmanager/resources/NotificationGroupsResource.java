@@ -1,0 +1,97 @@
+/*
+ * Copyright 2010-2012 Ning, Inc.
+ *
+ * Ning licenses this file to you under the Apache License, version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License.  You may obtain a copy of the License at:
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+package com.ning.arecibo.alertmanager.resources;
+
+import com.google.common.collect.Multimap;
+import com.google.inject.Singleton;
+import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alertmanager.models.NotificationGroupsModel;
+import com.ning.arecibo.util.Logger;
+import com.ning.jersey.metrics.TimedResource;
+import com.sun.jersey.api.view.Viewable;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Singleton
+@Path("/ui/groups")
+public class NotificationGroupsResource
+{
+    private static final Logger log = Logger.getLogger(NotificationGroupsResource.class);
+
+    private final AlertClient client;
+
+    @Inject
+    public NotificationGroupsResource(final AlertClient client)
+    {
+        this.client = client;
+    }
+
+    @GET
+    @TimedResource
+    public Viewable getNotificationGroups()
+    {
+        final List<Map<String, String>> existingNotificationGroups = new ArrayList<Map<String, String>>();
+        final Iterable<Map<String, Object>> groups = client.findAllNotificationGroups();
+
+        // Retrieve notifications for these groups
+        for (final Map<String, Object> group : groups) {
+            final Map<String, String> mappingsForThisGroup = new HashMap<String, String>();
+
+            final Integer groupId = (Integer) group.get("id");
+            final Multimap<String, String> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
+
+            String emails = "";
+            for (final String email : mappings.keySet()) {
+                emails += email + " (" + mappings.get(email) + ")";
+            }
+            mappingsForThisGroup.put("emails", emails);
+
+            mappingsForThisGroup.put("label", (String) group.get("label"));
+            mappingsForThisGroup.put("enabled", group.get("enabled").toString().equals("1") ? "true" : "false");
+            existingNotificationGroups.add(mappingsForThisGroup);
+        }
+
+        final Iterable<Map<String, Object>> allPeopleAndGroups = client.findAllPeopleAndGroups();
+
+        return new Viewable("/jsp/groups.jsp", new NotificationGroupsModel(existingNotificationGroups, allPeopleAndGroups));
+    }
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @TimedResource
+    public Response createNotifGroup(@FormParam("is_group_enabled") final String enabled,
+                                     @FormParam("group_name") final String groupName,
+                                     @FormParam("person_or_alias") final List<Integer> notificationsIds)
+    {
+        final int notificationGroupId = client.createNotificationGroup(groupName, enabled != null, notificationsIds);
+        log.info("Created Notif Group %s (id=%d)", groupName, notificationGroupId);
+
+        return Response.seeOther(URI.create("/ui/groups")).build();
+    }
+}
