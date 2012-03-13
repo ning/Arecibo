@@ -1,4 +1,6 @@
 <%@ page import="java.util.Map" %>
+<%@ page import="com.google.common.collect.Multimap" %>
+<%@ page import="com.ning.arecibo.alertmanager.models.NotificationGroupsModel" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -83,7 +85,7 @@
         <div class="controls">
             <select multiple="multiple" name="person_or_alias" id="person_or_alias">
                 <% if (it != null) {
-                    for (final Map<String, Object> person : it.getAllPeopleAndGroups()) { %>
+                    for (final Map<String, Object> person : it.getAllNotifications()) { %>
                     <option value="<%= person.get("id") %>"><%= person.get("label") %></option>
                 <% } } %>
             </select>
@@ -108,13 +110,19 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final Map<String, String> group : it.getExistingNotificationGroups()) { %>
+        <% for (final NotificationGroupsModel.NotificationGroup group : it.getNotificationGroups()) { %>
         <tr>
-            <td><%= group.get("label") %>
+            <td><%= group.getGroupName() %>
             </td>
-            <td><%= group.get("emails") %>
+            <td>
+                <ul>
+                    <% final Multimap<String, String> emails = group.getEmails();
+                        for (final String email : emails.keys()) { %>
+                    <li><%= email %> <i><%= emails.get(email) %>
+                    </i></li>
+                    <% } %></ul>
             </td>
-            <td><%= group.get("enabled") %>
+            <td><%= group.getEnabled() %>
             </td>
         </tr>
         <% } %>

@@ -16,26 +16,65 @@
 
 package com.ning.arecibo.alertmanager.models;
 
+import com.google.common.collect.Multimap;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class NotificationGroupsModel
 {
-    private final Iterable<Map<String, String>> existingNotificationGroups;
-    private final Iterable<Map<String, Object>> allPeopleAndGroups;
+    private final List<NotificationGroup> notificationGroups = new ArrayList<NotificationGroup>();
+    private final Iterable<Map<String, Object>> allNotifications;
 
-    public NotificationGroupsModel(final Iterable<Map<String, String>> existingNotificationGroups, final Iterable<Map<String, Object>> allPeopleAndGroups)
+    public static final class NotificationGroup
     {
-        this.existingNotificationGroups = existingNotificationGroups;
-        this.allPeopleAndGroups = allPeopleAndGroups;
+        private final String groupName;
+        private final Multimap<String, String> emails;
+        private final String enabled;
+
+        public NotificationGroup(final String groupName, final Multimap<String, String> emails, final String enabled)
+        {
+            this.groupName = groupName;
+            this.emails = emails;
+            this.enabled = enabled;
+        }
+
+        public String getGroupName()
+        {
+            return groupName;
+        }
+
+        public Multimap<String, String> getEmails()
+        {
+            return emails;
+        }
+
+        public String getEnabled()
+        {
+            return enabled;
+        }
     }
 
-    public Iterable<Map<String, String>> getExistingNotificationGroups()
+    public NotificationGroupsModel(final Iterable<Map<String, Object>> existingNotificationGroups, final Map<String, Multimap<String, String>> emailsAndNotificationTypesForGroup, final Iterable<Map<String, Object>> allNotifications)
     {
-        return existingNotificationGroups;
+        this.allNotifications = allNotifications;
+
+        for (final Map<String, Object> group : existingNotificationGroups) {
+            final String groupName = (String) group.get("label");
+            final String enabled = group.get("enabled").toString().equals("1") ? "true" : "false";
+            final NotificationGroup notificationGroup = new NotificationGroup(groupName, emailsAndNotificationTypesForGroup.get(groupName), enabled);
+            notificationGroups.add(notificationGroup);
+        }
     }
 
-    public Iterable<Map<String, Object>> getAllPeopleAndGroups()
+    public List<NotificationGroup> getNotificationGroups()
     {
-        return allPeopleAndGroups;
+        return notificationGroups;
+    }
+
+    public Iterable<Map<String, Object>> getAllNotifications()
+    {
+        return allNotifications;
     }
 }

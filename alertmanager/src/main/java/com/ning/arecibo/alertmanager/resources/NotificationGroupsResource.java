@@ -33,7 +33,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,30 +55,24 @@ public class NotificationGroupsResource
     @TimedResource
     public Viewable getNotificationGroups()
     {
-        final List<Map<String, String>> existingNotificationGroups = new ArrayList<Map<String, String>>();
         final Iterable<Map<String, Object>> groups = client.findAllNotificationGroups();
+        final Map<String, Multimap<String, String>> emailsAndNotificationTypesForGroup = new HashMap<String, Multimap<String, String>>();
 
-        // Retrieve notifications for these groups
+        // Retrieve notifications for these groups to display email addresses
         for (final Map<String, Object> group : groups) {
-            final Map<String, String> mappingsForThisGroup = new HashMap<String, String>();
-
+            final String groupName = (String) group.get("label");
             final Integer groupId = (Integer) group.get("id");
-            final Multimap<String, String> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
 
-            String emails = "";
-            for (final String email : mappings.keySet()) {
-                emails += email + " (" + mappings.get(email) + ")";
+            if (groupId != null) {
+                final Multimap<String, String> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
+                emailsAndNotificationTypesForGroup.put(groupName, mappings);
             }
-            mappingsForThisGroup.put("emails", emails);
-
-            mappingsForThisGroup.put("label", (String) group.get("label"));
-            mappingsForThisGroup.put("enabled", group.get("enabled").toString().equals("1") ? "true" : "false");
-            existingNotificationGroups.add(mappingsForThisGroup);
         }
 
-        final Iterable<Map<String, Object>> allPeopleAndGroups = client.findAllPeopleAndGroups();
+        // To create new associations
+        final Iterable<Map<String, Object>> allNotifications = client.findAllNotifications();
 
-        return new Viewable("/jsp/groups.jsp", new NotificationGroupsModel(existingNotificationGroups, allPeopleAndGroups));
+        return new Viewable("/jsp/groups.jsp", new NotificationGroupsModel(groups, emailsAndNotificationTypesForGroup, allNotifications));
     }
 
     @POST
