@@ -25,16 +25,16 @@ import java.util.Map;
 
 public class PeopleAndAliasesModel
 {
-    private final List<PeopleAndGroups> peopleAndGroups = new ArrayList<PeopleAndGroups>();
+    private final List<PersonOrGroup> peopleAndGroups = new ArrayList<PersonOrGroup>();
 
-    public static final class PeopleAndGroups
+    public static final class PersonOrGroup
     {
         private final String nickName;
         private final String firstName;
         private final String lastName;
         private final Multimap<String, String> emails;
 
-        public PeopleAndGroups(final String nickName, final String firstName, final String lastName, final Multimap<String, String> emails)
+        public PersonOrGroup(final String nickName, final String firstName, final String lastName, final Multimap<String, String> emails)
         {
             this.nickName = nickName;
             this.firstName = firstName;
@@ -74,7 +74,7 @@ public class PeopleAndAliasesModel
                 emailsAndNotifications.put((String) notification.get("address"), (String) notification.get("notif_type"));
             }
 
-            final PeopleAndGroups peopleAndGroup = new PeopleAndGroups(
+            final PersonOrGroup peopleAndGroup = new PersonOrGroup(
                 nickName,
                 (String) person.get("first_name"),
                 (String) person.get("last_name"),
@@ -84,7 +84,7 @@ public class PeopleAndAliasesModel
         }
     }
 
-    public List<PeopleAndGroups> getPeopleAndGroups()
+    public List<PersonOrGroup> getPeopleAndGroups()
     {
         return peopleAndGroups;
     }

@@ -139,7 +139,7 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final PeopleAndAliasesModel.PeopleAndGroups person : it.getPeopleAndGroups()) { %>
+        <% for (final PeopleAndAliasesModel.PersonOrGroup person : it.getPeopleAndGroups()) { %>
         <tr>
             <td><%= person.getNickName() %>
             </td>
