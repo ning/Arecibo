@@ -33,7 +33,6 @@ public class AlertManagerStartupContextListener extends SetupServer
     public void contextInitialized(final ServletContextEvent event)
     {
         final ServerModuleBuilder builder = new ServerModuleBuilder()
-            .addConfig(AreciboAlertManagerConfig.class)
             .setAreciboProfile(System.getProperty("action.arecibo.profile", "ning.jmx:name=MonitoringProfile"))
             .addModule(new LifecycleModule())
             .addModule(new AlertManagerModule())

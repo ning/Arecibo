@@ -16,12 +16,14 @@
 
 package com.ning.arecibo.alert.client.discovery;
 
+import com.google.inject.Inject;
 import com.ning.arecibo.alert.client.AlertClientConfig;
 
 public class DefaultAlertFinder implements AlertFinder
 {
     private final AlertClientConfig config;
 
+    @Inject
     public DefaultAlertFinder(final AlertClientConfig config)
     {
         this.config = config;
