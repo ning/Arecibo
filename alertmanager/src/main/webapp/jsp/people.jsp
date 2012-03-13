@@ -1,4 +1,5 @@
-<%@ page import="java.util.Map" %>
+<%@ page import="com.ning.arecibo.alertmanager.models.PeopleAndAliasesModel" %>
+<%@ page import="com.google.common.collect.Multimap" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -122,7 +123,7 @@
 
 <div class="container">
     <jsp:useBean id="it"
-                 type="Iterable<Map<String, Object>>"
+                 type="com.ning.arecibo.alertmanager.models.PeopleAndAliasesModel"
                  scope="request">
     </jsp:useBean>
     <% if (it != null) { %>
@@ -136,15 +137,20 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final Map<String, Object> person : it) { %>
+        <% for (final PeopleAndAliasesModel.PeopleAndGroups person : it.getPeopleAndGroups()) { %>
         <tr>
-            <td><%= person.get("label") %>
+            <td><%= person.getNickName() %>
             </td>
-            <td><%= person.get("first_name") %>
+            <td><%= person.getFirstName() %>
             </td>
-            <td><%= person.get("last_name") %>
+            <td><%= person.getLastName() %>
             </td>
-            <td><%= person.get("emails") %>
+            <td>
+                <ul>
+                    <% final Multimap<String, String> emails = person.getEmails();
+                        for (final String email : emails.keys()) { %>
+                    <li><%= email %> <i><%= emails.get(email) %></i></li>
+                    <% } %></ul>
             </td>
         </tr>
         <% } %>

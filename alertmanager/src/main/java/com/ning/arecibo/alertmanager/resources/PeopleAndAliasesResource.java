@@ -16,12 +16,13 @@
 
 package com.ning.arecibo.alertmanager.resources;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
 import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alertmanager.models.PeopleAndAliasesModel;
 import com.ning.arecibo.util.Logger;
 import com.ning.jersey.metrics.TimedResource;
 import com.sun.jersey.api.view.Viewable;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -32,7 +33,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 @Singleton
@@ -54,27 +57,20 @@ public class PeopleAndAliasesResource
     public Viewable getPeople()
     {
         final Iterable<Map<String, Object>> peopleAndGroups = client.findAllPeopleAndGroups();
+        final Map<String, List<Map<String, Object>>> notificationsForPersonOrGroup = new HashMap<String, List<Map<String, Object>>>();
 
         // Retrieve notifications for this person
         for (final Map<String, Object> person : peopleAndGroups) {
             final String nickName = (String) person.get("label");
             final Integer personId = (Integer) person.get("id");
 
-            if (nickName != null && personId != null) {
+            if (personId != null) {
                 final Iterator<Map<String, Object>> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
-                String emails = "";
-                while (iterator.hasNext()) {
-                    final Map<String, Object> notification = iterator.next();
-                    emails += notification.get("address") + " (" + notification.get("notif_type") + ")";
-                    if (iterator.hasNext()) {
-                        emails += ", ";
-                    }
-                }
-                person.put("emails", emails);
+                notificationsForPersonOrGroup.put(nickName, ImmutableList.copyOf(iterator));
             }
         }
 
-        return new Viewable("/jsp/people.jsp", peopleAndGroups);
+        return new Viewable("/jsp/people.jsp", new PeopleAndAliasesModel(peopleAndGroups, notificationsForPersonOrGroup));
     }
 
     @POST
