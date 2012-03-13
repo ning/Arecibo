@@ -17,8 +17,10 @@
 package com.ning.arecibo.alert.confdata;
 
 import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class ThresholdDefinition
 {
     private final String thresholdDefinitionName;
