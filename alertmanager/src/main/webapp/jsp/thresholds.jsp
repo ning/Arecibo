@@ -3,6 +3,8 @@
 <%@ page import="com.google.common.collect.Multimap" %>
 <%@ page import="com.ning.arecibo.alert.confdata.ThresholdDefinition" %>
 <%@ page import="com.ning.arecibo.alert.confdata.AlertingConfig" %>
+<%@ page import="com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr" %>
+<%@ page import="com.ning.arecibo.alert.confdata.ThresholdContextAttr" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -205,9 +207,26 @@
             </td>
             <td><%= thresholdDefinition.getMonitoredAttributeType() %>
             </td>
-            <td><%= it.getThresholdQualifyingAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
+            <td>
+                <ul>
+                    <% final Iterable<ThresholdQualifyingAttr> qualifyingAttrIterable = it.getThresholdQualifyingAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName());
+                        if (qualifyingAttrIterable != null) {
+                            for (final ThresholdQualifyingAttr qualifyingAttr : qualifyingAttrIterable) { %>
+                    <li><%= qualifyingAttr.getAttributeType() %> <i><%= qualifyingAttr.getAttributeValue() %>
+                    </i></li>
+                    <% }
+                    } %></ul>
             </td>
             <td><%= it.getThresholdContextAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
+                <ul>
+                    <%
+                        final Iterable<ThresholdContextAttr> contextAttrIterable = it.getThresholdContextAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName());
+                        if (contextAttrIterable != null) {
+                            for (final ThresholdContextAttr qualifyingAttr : contextAttrIterable) { %>
+                    <li><%= qualifyingAttr.getAttributeType() %>
+                    </li>
+                    <% }
+                    } %></ul>
             </td>
             <td>
                 <ul>

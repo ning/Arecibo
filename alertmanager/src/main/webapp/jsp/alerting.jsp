@@ -155,7 +155,7 @@
             </td>
             <td><%= configuration.isNotifyOnRecovery() %>
             </td>
-            <td><%= configuration.getNotificationGroups() %>
+            <td><%= it.getNotificationsGroupsForAlertingConfig().get(configuration.getAlertingConfigurationName()) %>
             </td>
             <td><%= configuration.isEnabled() %>
             </td>
