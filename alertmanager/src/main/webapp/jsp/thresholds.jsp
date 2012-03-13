@@ -1,9 +1,27 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="com.ning.arecibo.alertmanager.models.ThresholdDefinitionsModel" %>
 <%@ page import="com.google.common.collect.Multimap" %>
+<%@ page import="com.ning.arecibo.alert.confdata.ThresholdDefinition" %>
+<%@ page import="com.ning.arecibo.alert.confdata.AlertingConfig" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
+
+<%--
+  ~ Copyright 2010-2012 Ning, Inc.
+  ~
+  ~ Ning licenses this file to you under the Apache License, version 2.0
+  ~ (the "License"); you may not use this file except in compliance with the
+  ~ License.  You may obtain a copy of the License at:
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  --%>
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -75,8 +93,8 @@
         <div class="controls">
             <select multiple="multiple" name="alerting_configuration" id="alerting_configuration">
                 <% if (it != null) {
-                    for (final Map<String, Object> alertingConfiguration : it.getAllAlertingConfigurations()) { %>
-                    <option value="<%= alertingConfiguration.get("id") %>"><%= alertingConfiguration.get("label") %></option>
+                    for (final AlertingConfig alertingConfiguration : it.getAllAlertingConfigurations()) { %>
+                    <option value="<%= alertingConfiguration.getId() %>"><%= alertingConfiguration.getAlertingConfigurationName() %></option>
                 <% } } %>
             </select>
         </div>
@@ -179,7 +197,7 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final ThresholdDefinitionsModel.ThresholdDefinition thresholdDefinition : it.getThresholdDefinitions()) { %>
+        <% for (final ThresholdDefinition thresholdDefinition : it.getThresholdConfigs()) { %>
         <tr>
             <td><%= thresholdDefinition.getThresholdDefinitionName() %>
             </td>
@@ -187,9 +205,9 @@
             </td>
             <td><%= thresholdDefinition.getMonitoredAttributeType() %>
             </td>
-            <td><%= thresholdDefinition.getQualifyingAttrs() %>
+            <td><%= it.getThresholdQualifyingAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
             </td>
-            <td><%= thresholdDefinition.getContextAttrs() %>
+            <td><%= it.getThresholdContextAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
             </td>
             <td>
                 <ul>
@@ -200,7 +218,7 @@
                     <li><em>Clearing interval:</em><%= thresholdDefinition.getClearingIntervalMs() %></li>
                 </ul>
             </td>
-            <td><%= thresholdDefinition.getAlertingConfiguration() %>
+            <td><%= it.getAlertingConfigsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
             </td>
         </tr>
         <% } %>

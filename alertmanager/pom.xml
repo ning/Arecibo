@@ -129,6 +129,28 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>.gitignore</exclude>
+                                <exclude>logs/http.log</exclude>
+                                <exclude>src/main/webapp/static/js/bootstrap-v2.0.0.min.js</exclude>
+                                <exclude>src/main/webapp/static/js/jquery-1.7.1.min.js</exclude>
+                                <exclude>src/main/webapp/static/js/jquery.dataTables-1.9.0.min.js</exclude>
+                                <exclude>src/main/webapp/static/css/bootstrap-v2.0.0.min.css</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>7.5.1.v20110908</version>

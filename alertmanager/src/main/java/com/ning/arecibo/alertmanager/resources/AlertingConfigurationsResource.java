@@ -19,6 +19,8 @@ package com.ning.arecibo.alertmanager.resources;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
 import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alert.confdata.AlertingConfig;
+import com.ning.arecibo.alert.confdata.NotifGroup;
 import com.ning.arecibo.alertmanager.models.AlertingConfigurationsModel;
 import com.ning.arecibo.util.Logger;
 import com.ning.jersey.metrics.TimedResource;
@@ -56,21 +58,21 @@ public class AlertingConfigurationsResource
     @TimedResource
     public Viewable getAlertingConfigurations()
     {
-        final Iterable<Map<String, Object>> alertingConfigurations = client.findAllAlertingConfigurations();
-        final Map<String, List<Map<String, Object>>> notificationsGroupsForAlertingConfig = new HashMap<String, List<Map<String, Object>>>();
+        final Iterable<AlertingConfig> alertingConfigurations = client.findAllAlertingConfigurations();
+        final Map<String, Iterable<NotifGroup>> notificationsGroupsForAlertingConfig = new HashMap<String, Iterable<NotifGroup>>();
 
         // Retrieve notifications groups for these alerting configurations
-        for (final Map<String, Object> alertingConfig : alertingConfigurations) {
-            final String configName = (String) alertingConfig.get("label");
-            final Integer alertingConfigId = (Integer) alertingConfig.get("id");
+        for (final AlertingConfig alertingConfig : alertingConfigurations) {
+            final String configName = alertingConfig.getAlertingConfigurationName();
+            final Integer alertingConfigId = alertingConfig.getId();
 
             if (alertingConfigId != null) {
-                final Iterator<Map<String, Object>> iterator = client.findNotificationGroupsForAlertingConfigById(alertingConfigId).iterator();
+                final Iterator<NotifGroup> iterator = client.findNotificationGroupsForAlertingConfigById(alertingConfigId).iterator();
                 notificationsGroupsForAlertingConfig.put(configName, ImmutableList.copyOf(iterator));
             }
         }
 
-        final Iterable<Map<String, Object>> notificationGroups = client.findAllNotificationGroups();
+        final Iterable<NotifGroup> notificationGroups = client.findAllNotificationGroups();
 
         return new Viewable("/jsp/alerting.jsp", new AlertingConfigurationsModel(alertingConfigurations, notificationsGroupsForAlertingConfig, notificationGroups));
     }

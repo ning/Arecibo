@@ -29,6 +29,11 @@
     <name>arecibo-alert-client-support</name>
     <dependencies>
         <dependency>
+            <groupId>com.ning.arecibo</groupId>
+            <artifactId>arecibo-alert-confdata-support</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>

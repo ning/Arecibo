@@ -16,100 +16,35 @@
 
 package com.ning.arecibo.alertmanager.models;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import com.ning.arecibo.alert.confdata.AlertingConfig;
+import com.ning.arecibo.alert.confdata.NotifGroup;
+
 import java.util.Map;
-import java.util.Set;
 
 public class AlertingConfigurationsModel
 {
-    private final List<AlertingConfiguration> alertingConfigurations = new ArrayList<AlertingConfiguration>();
-    private final Iterable<Map<String, Object>> allNotificationGroups;
+    private final Iterable<AlertingConfig> alertingConfigurations;
+    private final Map<String, Iterable<NotifGroup>> notificationsGroupsForAlertingConfig;
+    private final Iterable<NotifGroup> allNotificationGroups;
 
-    public static final class AlertingConfiguration
+    public AlertingConfigurationsModel(final Iterable<AlertingConfig> alertingConfigurations, final Map<String, Iterable<NotifGroup>> notificationsGroupsForAlertingConfig, final Iterable<NotifGroup> allNotificationGroups)
     {
-        private final String alertingConfigurationName;
-        private final String repeatMode;
-        private final String repeatInterval;
-        private final String notifyOnRecovery;
-        private final Iterable<String> notificationGroups;
-        private final String enabled;
-
-        public AlertingConfiguration(final String alertingConfigurationName, final String enabled, final Iterable<String> notificationGroups,
-                                     final String notifyOnRecovery, final String repeatInterval, final String repeatMode)
-        {
-            this.alertingConfigurationName = alertingConfigurationName;
-            this.enabled = enabled;
-            this.notificationGroups = notificationGroups;
-            this.notifyOnRecovery = notifyOnRecovery;
-            this.repeatInterval = repeatInterval;
-            this.repeatMode = repeatMode;
-        }
-
-        public String getAlertingConfigurationName()
-        {
-            return alertingConfigurationName;
-        }
-
-        public String getEnabled()
-        {
-            return enabled;
-        }
-
-        public Iterable<String> getNotificationGroups()
-        {
-            return notificationGroups;
-        }
-
-        public String getNotifyOnRecovery()
-        {
-            return notifyOnRecovery;
-        }
-
-        public String getRepeatInterval()
-        {
-            return repeatInterval;
-        }
-
-        public String getRepeatMode()
-        {
-            return repeatMode;
-        }
-    }
-
-    public AlertingConfigurationsModel(final Iterable<Map<String, Object>> alertingConfigurations, final Map<String, List<Map<String, Object>>> notificationsGroupsForAlertingConfig, final Iterable<Map<String, Object>> allNotificationGroups)
-    {
+        this.alertingConfigurations = alertingConfigurations;
+        this.notificationsGroupsForAlertingConfig = notificationsGroupsForAlertingConfig;
         this.allNotificationGroups = allNotificationGroups;
-
-        for (final Map<String, Object> person : alertingConfigurations) {
-            final String alertingConfigurationName = (String) person.get("label");
-            final Set<String> emails = new HashSet<String>();
-
-            final List<Map<String, Object>> notificationGroups = notificationsGroupsForAlertingConfig.get(alertingConfigurationName);
-            for (final Map<String, Object> notification : notificationGroups) {
-                emails.add((String) notification.get("address"));
-            }
-
-            final AlertingConfiguration alertingConfiguration = new AlertingConfiguration(
-                alertingConfigurationName,
-                ModelUtils.toString(person.get("enabled")),
-                emails,
-                ModelUtils.toString(person.get("notify_on_recovery")),
-                ModelUtils.toString(person.get("repeat_interval")),
-                ModelUtils.toString(person.get("repeat_mode"))
-            );
-            this.alertingConfigurations.add(alertingConfiguration);
-        }
     }
 
-    public List<AlertingConfiguration> getAlertingConfigurations()
+    public Iterable<AlertingConfig> getAlertingConfigurations()
     {
         return alertingConfigurations;
     }
 
+    public Map<String, Iterable<NotifGroup>> getNotificationsGroupsForAlertingConfig()
+    {
+        return notificationsGroupsForAlertingConfig;
+    }
 
-    public Iterable<Map<String, Object>> getAllNotificationGroups()
+    public Iterable<NotifGroup> getAllNotificationGroups()
     {
         return allNotificationGroups;
     }

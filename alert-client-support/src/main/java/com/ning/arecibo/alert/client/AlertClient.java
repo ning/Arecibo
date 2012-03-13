@@ -16,11 +16,16 @@
 
 package com.ning.arecibo.alert.client;
 
-import com.google.common.collect.Multimap;
+import com.ning.arecibo.alert.confdata.AlertingConfig;
+import com.ning.arecibo.alert.confdata.NotifConfig;
+import com.ning.arecibo.alert.confdata.NotifGroup;
+import com.ning.arecibo.alert.confdata.Person;
+import com.ning.arecibo.alert.confdata.ThresholdContextAttr;
+import com.ning.arecibo.alert.confdata.ThresholdDefinition;
+import com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr;
 import com.sun.jersey.api.client.UniformInterfaceException;
 
 import javax.annotation.Nullable;
-import java.util.Map;
 
 // TODO Consider extracting the POJO objects from alert-data-support to share them
 public interface AlertClient
@@ -31,9 +36,9 @@ public interface AlertClient
 
     public int createGroup(final String name);
 
-    public Iterable<Map<String, Object>> findAllPeopleAndGroups() throws UniformInterfaceException;
+    public Iterable<Person> findAllPeopleAndGroups() throws UniformInterfaceException;
 
-    public Map<String, Object> findPersonOrGroupById(final int id) throws UniformInterfaceException;
+    public Person findPersonOrGroupById(final int id) throws UniformInterfaceException;
 
     public void deletePersonOrGroupById(final int id) throws UniformInterfaceException;
 
@@ -44,11 +49,11 @@ public interface AlertClient
 
     public int createSmsNotificationForPersonOrGroup(final int id, final String address);
 
-    public Iterable<Map<String, Object>> findAllNotifications() throws UniformInterfaceException;
+    public Iterable<NotifConfig> findAllNotifications() throws UniformInterfaceException;
 
-    public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException;
+    public NotifConfig findNotificationById(final int id) throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException;
+    public Iterable<NotifConfig> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException;
 
     public void deleteNotificationById(int id) throws UniformInterfaceException;
 
@@ -57,9 +62,9 @@ public interface AlertClient
 
     public int createNotificationGroup(final String groupName, boolean enabled, final Iterable<Integer> notificationsIds) throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findAllNotificationGroups() throws UniformInterfaceException;
+    public Iterable<NotifGroup> findAllNotificationGroups() throws UniformInterfaceException;
 
-    public Multimap<String, String> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException;
+    public Iterable<NotifConfig> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException;
 
 
     // Alerting Configurations, which allow you to associate notification options with threshold definitions
@@ -67,11 +72,11 @@ public interface AlertClient
     public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
                                     final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findAllAlertingConfigurations() throws UniformInterfaceException;
+    public Iterable<AlertingConfig> findAllAlertingConfigurations() throws UniformInterfaceException;
 
-    public Map<String, Object> findAlertingConfigById(final int id) throws UniformInterfaceException;
+    public AlertingConfig findAlertingConfigById(final Long id) throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException;
+    public Iterable<NotifGroup> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException;
 
     //  Threshold Definitions, which is where you define the rules that will trigger alerting.
 
@@ -84,9 +89,9 @@ public interface AlertClient
 
     public int createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findAllThresholdConfigs() throws UniformInterfaceException;
+    public Iterable<ThresholdDefinition> findAllThresholdConfigs() throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findThresholdQualifyingAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException;
+    public Iterable<ThresholdQualifyingAttr> findThresholdQualifyingAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException;
 
-    public Iterable<Map<String, Object>> findThresholdContextAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException;
+    public Iterable<ThresholdContextAttr> findThresholdContextAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException;
 }

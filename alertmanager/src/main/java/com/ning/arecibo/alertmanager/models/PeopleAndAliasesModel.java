@@ -16,76 +16,29 @@
 
 package com.ning.arecibo.alertmanager.models;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.ning.arecibo.alert.confdata.NotifConfig;
+import com.ning.arecibo.alert.confdata.Person;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class PeopleAndAliasesModel
 {
-    private final List<PersonOrGroup> peopleAndGroups = new ArrayList<PersonOrGroup>();
+    private final Iterable<Person> peopleAndGroups;
+    private final Map<String, Iterable<NotifConfig>> notificationsForPersonOrGroup;
 
-    public static final class PersonOrGroup
+    public PeopleAndAliasesModel(final Iterable<Person> peopleAndGroups, final Map<String, Iterable<NotifConfig>> notificationsForPersonOrGroup)
     {
-        private final String nickName;
-        private final String firstName;
-        private final String lastName;
-        private final Multimap<String, String> emails;
-
-        public PersonOrGroup(final String nickName, final String firstName, final String lastName, final Multimap<String, String> emails)
-        {
-            this.nickName = nickName;
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.emails = emails;
-        }
-
-        public Multimap<String, String> getEmails()
-        {
-            return emails;
-        }
-
-        public String getFirstName()
-        {
-            return firstName;
-        }
-
-        public String getLastName()
-        {
-            return lastName;
-        }
-
-        public String getNickName()
-        {
-            return nickName;
-        }
+        this.peopleAndGroups = peopleAndGroups;
+        this.notificationsForPersonOrGroup = notificationsForPersonOrGroup;
     }
 
-    public PeopleAndAliasesModel(final Iterable<Map<String, Object>> peopleAndAliases, final Map<String, List<Map<String, Object>>> notificationsForPersonOrGroup)
-    {
-        for (final Map<String, Object> person : peopleAndAliases) {
-            final String nickName = (String) person.get("label");
-            final Multimap<String, String> emailsAndNotifications = HashMultimap.create();
-
-            final List<Map<String, Object>> notifications = notificationsForPersonOrGroup.get(nickName);
-            for (final Map<String, Object> notification : notifications) {
-                emailsAndNotifications.put((String) notification.get("address"), (String) notification.get("notif_type"));
-            }
-
-            final PersonOrGroup peopleAndGroup = new PersonOrGroup(
-                nickName,
-                (String) person.get("first_name"),
-                (String) person.get("last_name"),
-                emailsAndNotifications
-            );
-            peopleAndGroups.add(peopleAndGroup);
-        }
-    }
-
-    public List<PersonOrGroup> getPeopleAndGroups()
+    public Iterable<Person> getPeopleAndGroups()
     {
         return peopleAndGroups;
+    }
+
+    public Map<String, Iterable<NotifConfig>> getNotificationsForPersonOrGroup()
+    {
+        return notificationsForPersonOrGroup;
     }
 }

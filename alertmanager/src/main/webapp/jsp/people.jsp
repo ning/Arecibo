@@ -1,5 +1,7 @@
 <%@ page import="com.ning.arecibo.alertmanager.models.PeopleAndAliasesModel" %>
 <%@ page import="com.google.common.collect.Multimap" %>
+<%@ page import="com.ning.arecibo.alert.confdata.Person" %>
+<%@ page import="com.ning.arecibo.alert.confdata.NotifConfig" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -139,7 +141,7 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final PeopleAndAliasesModel.PersonOrGroup person : it.getPeopleAndGroups()) { %>
+        <% for (final Person person : it.getPeopleAndGroups()) { %>
         <tr>
             <td><%= person.getNickName() %>
             </td>
@@ -149,10 +151,13 @@
             </td>
             <td>
                 <ul>
-                    <% final Multimap<String, String> emails = person.getEmails();
-                        for (final String email : emails.keys()) { %>
-                    <li><%= email %> <i><%= emails.get(email) %></i></li>
-                    <% } %></ul>
+                    <% final Iterable<NotifConfig> notifConfigs = it.getNotificationsForPersonOrGroup().get(person.getNickName());
+                        if (notifConfigs != null) {
+                            for (final NotifConfig notifConfig : notifConfigs) { %>
+                    <li><%= notifConfig.getAddress() %> <i><%= notifConfig.getNotifType() %>
+                    </i></li>
+                    <% }
+                    } %></ul>
             </td>
         </tr>
         <% } %>

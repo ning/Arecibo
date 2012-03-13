@@ -16,9 +16,10 @@
 
 package com.ning.arecibo.alertmanager.resources;
 
-import com.google.common.collect.Multimap;
 import com.google.inject.Singleton;
 import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alert.confdata.NotifConfig;
+import com.ning.arecibo.alert.confdata.NotifGroup;
 import com.ning.arecibo.alertmanager.models.NotificationGroupsModel;
 import com.ning.arecibo.util.Logger;
 import com.ning.jersey.metrics.TimedResource;
@@ -55,22 +56,22 @@ public class NotificationGroupsResource
     @TimedResource
     public Viewable getNotificationGroups()
     {
-        final Iterable<Map<String, Object>> groups = client.findAllNotificationGroups();
-        final Map<String, Multimap<String, String>> emailsAndNotificationTypesForGroup = new HashMap<String, Multimap<String, String>>();
+        final Iterable<NotifGroup> groups = client.findAllNotificationGroups();
+        final Map<String, Iterable<NotifConfig>> emailsAndNotificationTypesForGroup = new HashMap<String, Iterable<NotifConfig>>();
 
         // Retrieve notifications for these groups to display email addresses
-        for (final Map<String, Object> group : groups) {
-            final String groupName = (String) group.get("label");
-            final Integer groupId = (Integer) group.get("id");
+        for (final NotifGroup group : groups) {
+            final String groupName = group.getGroupName();
+            final Integer groupId = group.getId();
 
             if (groupId != null) {
-                final Multimap<String, String> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
+                final Iterable<NotifConfig> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
                 emailsAndNotificationTypesForGroup.put(groupName, mappings);
             }
         }
 
         // To create new associations
-        final Iterable<Map<String, Object>> allNotifications = client.findAllNotifications();
+        final Iterable<NotifConfig> allNotifications = client.findAllNotifications();
 
         return new Viewable("/jsp/groups.jsp", new NotificationGroupsModel(groups, emailsAndNotificationTypesForGroup, allNotifications));
     }

@@ -41,6 +41,7 @@
         <module>aggregator-lang</module>
         <module>aggregator</module>
         <module>alert</module>
+        <module>alert-confdata-support</module>
         <module>alert-data-support</module>
         <module>alert-client-support</module>
         <module>alertmanager</module>

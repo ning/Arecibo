@@ -14,12 +14,25 @@
  * under the License.
  */
 
-package com.ning.arecibo.alertmanager.models;
+package com.ning.arecibo.alert.confdata;
 
-public class ModelUtils
+import org.codehaus.jackson.annotate.JsonCreator;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.annotate.JsonProperty;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ThresholdContextAttr
 {
-    public static String toString(final Object o)
+    private final String attributeType;
+
+    @JsonCreator
+    public ThresholdContextAttr(@JsonProperty("attrribute_type") final String attributeType)
     {
-        return o == null ? "" : o.toString();
+        this.attributeType = attributeType;
+    }
+
+    public String getAttributeType()
+    {
+        return attributeType;
     }
 }

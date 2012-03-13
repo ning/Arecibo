@@ -1,6 +1,8 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="com.google.common.collect.Multimap" %>
 <%@ page import="com.ning.arecibo.alertmanager.models.NotificationGroupsModel" %>
+<%@ page import="com.ning.arecibo.alert.confdata.NotifConfig" %>
+<%@ page import="com.ning.arecibo.alert.confdata.NotifGroup" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -85,8 +87,8 @@
         <div class="controls">
             <select multiple="multiple" name="person_or_alias" id="person_or_alias">
                 <% if (it != null) {
-                    for (final Map<String, Object> person : it.getAllNotifications()) { %>
-                    <option value="<%= person.get("id") %>"><%= person.get("label") %></option>
+                    for (final NotifConfig notifConfig : it.getAllNotifications()) { %>
+                    <option value="<%= notifConfig.getId() %>"><%= notifConfig.getAddress() %> (<%= notifConfig.getNotifType() %>)</option>
                 <% } } %>
             </select>
         </div>
@@ -110,19 +112,21 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final NotificationGroupsModel.NotificationGroup group : it.getNotificationGroups()) { %>
+        <% for (final NotifGroup group : it.getNotificationGroups()) { %>
         <tr>
             <td><%= group.getGroupName() %>
             </td>
             <td>
                 <ul>
-                    <% final Multimap<String, String> emails = group.getEmails();
-                        for (final String email : emails.keys()) { %>
-                    <li><%= email %> <i><%= emails.get(email) %>
+                    <% final Iterable<NotifConfig> notifConfigs = it.getEmailsAndNotificationTypesForGroup().get(group.getGroupName());
+                        if (notifConfigs != null) {
+                            for (final NotifConfig notifConfig : notifConfigs) { %>
+                    <li><%= notifConfig.getAddress() %> <i><%= notifConfig.getNotifType() %>
                     </i></li>
-                    <% } %></ul>
+                    <% }
+                    } %></ul>
             </td>
-            <td><%= group.getEnabled() %>
+            <td><%= group.isEnabled() %>
             </td>
         </tr>
         <% } %>

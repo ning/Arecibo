@@ -17,12 +17,13 @@
 package com.ning.arecibo.alert.rest;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Multimap;
 import com.ning.arecibo.alert.client.AlertClient;
 import com.ning.arecibo.alert.client.AlertClientConfig;
 import com.ning.arecibo.alert.client.discovery.AlertFinder;
 import com.ning.arecibo.alert.client.discovery.DefaultAlertFinder;
 import com.ning.arecibo.alert.client.rest.DefaultAlertClient;
+import com.ning.arecibo.alert.confdata.NotifConfig;
+import com.ning.arecibo.alert.confdata.Person;
 import org.skife.config.ConfigurationObjectFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -30,7 +31,6 @@ import org.testng.annotations.Test;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class TestDefaultAlertClientIntegration
@@ -55,14 +55,14 @@ public class TestDefaultAlertClientIntegration
         // Create a contact
         final int personId = client.createPerson(firstName, lastName, nickName);
         Assert.assertTrue(personId > 0);
-        final Iterator<Map<String, Object>> peopleIterator = client.findAllPeopleAndGroups().iterator();
+        final Iterator<Person> peopleIterator = client.findAllPeopleAndGroups().iterator();
         Assert.assertEquals(ImmutableList.copyOf(peopleIterator).size(), 1);
 
         // Make sure we can find it
-        final Map<String, Object> personFound = client.findPersonOrGroupById(personId);
-        Assert.assertEquals(personFound.get("first_name"), firstName);
-        Assert.assertEquals(personFound.get("last_name"), lastName);
-        Assert.assertEquals(personFound.get("is_group_alias"), "0");
+        final Person personFound = client.findPersonOrGroupById(personId);
+        Assert.assertEquals(personFound.getFirstName(), firstName);
+        Assert.assertEquals(personFound.getLastName(), lastName);
+        Assert.assertEquals(personFound.isGroupAlias(), false);
 
         // Create some notifications mechanisms
         final String address = UUID.randomUUID().toString();
@@ -73,7 +73,7 @@ public class TestDefaultAlertClientIntegration
         Assert.assertTrue(smsNotificationId > 0);
 
         // Make sure we can find the notifications by user
-        final Iterator<Map<String, Object>> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
+        final Iterator<NotifConfig> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
         final int notificationsFound = ImmutableList.copyOf(iterator).size();
         Assert.assertEquals(notificationsFound, 2);
 
@@ -83,12 +83,18 @@ public class TestDefaultAlertClientIntegration
         Assert.assertTrue(groupId > 0);
 
         // Make sure we can find it
-        final Multimap<String, String> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
-        Assert.assertEquals(mappings.keys().size(), 2);
-        Assert.assertEquals(mappings.get(address).size(), 1);
-        Assert.assertEquals(mappings.get(address).iterator().next(), "REGULAR_EMAIL");
-        Assert.assertEquals(mappings.get(smsAddress).size(), 1);
-        Assert.assertEquals(mappings.get(smsAddress).iterator().next(), "SMS_VIA_EMAIL");
+        final Iterable<NotifConfig> mappings = client.findEmailsAndNotificationTypesForGroupById(groupId);
+        final List<NotifConfig> notifConfigs = ImmutableList.copyOf(mappings);
+        Assert.assertEquals(notifConfigs.size(), 2);
+        for (final NotifConfig notifConfig : notifConfigs) {
+            if (notifConfig.getAddress().equals(address)) {
+                Assert.assertEquals(notifConfig.getNotifType(), "REGULAR_EMAIL");
+            }
+            else {
+                Assert.assertEquals(notifConfig.getAddress(), smsAddress);
+                Assert.assertEquals(notifConfig.getNotifType(), "SMS_VIA_EMAIL");
+            }
+        }
 
         // Create an Alerting Configuration for this group
         final int alertingConfigurationId = client.createAlertingConfig("critical-alerts-" + UUID.randomUUID().toString(),

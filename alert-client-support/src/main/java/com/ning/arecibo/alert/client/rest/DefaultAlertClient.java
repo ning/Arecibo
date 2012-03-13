@@ -17,12 +17,17 @@
 package com.ning.arecibo.alert.client.rest;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 import com.ning.arecibo.alert.client.AlertClient;
 import com.ning.arecibo.alert.client.discovery.AlertFinder;
+import com.ning.arecibo.alert.confdata.AlertingConfig;
+import com.ning.arecibo.alert.confdata.NotifConfig;
+import com.ning.arecibo.alert.confdata.NotifGroup;
+import com.ning.arecibo.alert.confdata.Person;
+import com.ning.arecibo.alert.confdata.ThresholdContextAttr;
+import com.ning.arecibo.alert.confdata.ThresholdDefinition;
+import com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.GenericType;
@@ -95,15 +100,19 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public Iterable<Map<String, Object>> findAllPeopleAndGroups() throws UniformInterfaceException
+    public Iterable<Person> findAllPeopleAndGroups() throws UniformInterfaceException
     {
-        return fetchMultipleObjects(PERSON_PATH);
+        return fetchObject(PERSON_PATH, new GenericType<List<Person>>()
+        {
+        });
     }
 
     @Override
-    public Map<String, Object> findPersonOrGroupById(final int id) throws UniformInterfaceException
+    public Person findPersonOrGroupById(final int id) throws UniformInterfaceException
     {
-        return fetchOneObject(PERSON_PATH + "/" + id);
+        return fetchObject(PERSON_PATH + "/" + id, new GenericType<Person>()
+        {
+        });
     }
 
     @Override
@@ -125,21 +134,27 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public Iterable<Map<String, Object>> findAllNotifications() throws UniformInterfaceException
+    public Iterable<NotifConfig> findAllNotifications() throws UniformInterfaceException
     {
-        return fetchMultipleObjects(NOTIF_CONFIG_PATH);
+        return fetchObject(NOTIF_CONFIG_PATH, new GenericType<List<NotifConfig>>()
+        {
+        });
     }
 
     @Override
-    public Map<String, Object> findNotificationById(final int id) throws UniformInterfaceException
+    public NotifConfig findNotificationById(final int id) throws UniformInterfaceException
     {
-        return fetchOneObject(NOTIF_CONFIG_PATH + "/" + id);
+        return fetchObject(NOTIF_CONFIG_PATH + "/" + id, new GenericType<NotifConfig>()
+        {
+        });
     }
 
     @Override
-    public Iterable<Map<String, Object>> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException
+    public Iterable<NotifConfig> findNotificationsForPersonOrGroupId(final int id) throws UniformInterfaceException
     {
-        return fetchMultipleObjects(NOTIF_CONFIG_PATH + "/Person/" + id);
+        return fetchObject(NOTIF_CONFIG_PATH + "/Person/" + id, new GenericType<List<NotifConfig>>()
+        {
+        });
     }
 
     @Override
@@ -172,24 +187,19 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public Iterable<Map<String, Object>> findAllNotificationGroups() throws UniformInterfaceException
+    public List<NotifGroup> findAllNotificationGroups() throws UniformInterfaceException
     {
-        return fetchMultipleObjects(NOTIF_GROUP_PATH);
+        return fetchObject(NOTIF_GROUP_PATH, new GenericType<List<NotifGroup>>()
+        {
+        });
     }
 
     @Override
-    public Multimap<String, String> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException
+    public List<NotifConfig> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException
     {
-        final List<Map<String, Object>> mappings = fetchMultipleObjects(NOTIF_MAPPING_PATH + "/NotifGroup/" + id);
-
-        // At most 2 notification types for now (email and sms via email)
-        final Multimap<String, String> emailsAndNotificationTypesForGroup = HashMultimap.create(mappings.size(), 2);
-        for (final Map<String, Object> mapping : mappings) {
-            final Map<String, Object> notification = findNotificationById((Integer) mapping.get("notif_config_id"));
-            emailsAndNotificationTypesForGroup.put((String) notification.get("address"), (String) notification.get("notif_type"));
-        }
-
-        return emailsAndNotificationTypesForGroup;
+        return fetchObject(NOTIF_MAPPING_PATH + "/NotifGroup/" + id, new GenericType<List<NotifConfig>>()
+        {
+        });
     }
 
     @Override
@@ -219,21 +229,27 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public Iterable<Map<String, Object>> findAllAlertingConfigurations() throws UniformInterfaceException
+    public Iterable<AlertingConfig> findAllAlertingConfigurations() throws UniformInterfaceException
     {
-        return fetchMultipleObjects(ALERTING_CONFIG_PATH);
+        return fetchObject(ALERTING_CONFIG_PATH, new GenericType<List<AlertingConfig>>()
+        {
+        });
     }
 
     @Override
-    public Map<String, Object> findAlertingConfigById(final int id) throws UniformInterfaceException
+    public AlertingConfig findAlertingConfigById(final Long id) throws UniformInterfaceException
     {
-        return fetchOneObject(ALERTING_CONFIG_PATH + "/" + id);
+        return fetchObject(ALERTING_CONFIG_PATH + "/" + id, new GenericType<AlertingConfig>()
+        {
+        });
     }
 
     @Override
-    public Iterable<Map<String, Object>> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException
+    public Iterable<NotifGroup> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException
     {
-        return fetchMultipleObjects(NOTIF_GROUP_MAPPING_PATH + "/AlertingConfig/" + id);
+        return fetchObject(NOTIF_GROUP_MAPPING_PATH + "/AlertingConfig/" + id, new GenericType<List<NotifGroup>>()
+        {
+        });
     }
 
     @Override
@@ -288,21 +304,27 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public Iterable<Map<String, Object>> findAllThresholdConfigs() throws UniformInterfaceException
+    public Iterable<ThresholdDefinition> findAllThresholdConfigs() throws UniformInterfaceException
     {
-        return fetchMultipleObjects(THRESHOLD_CONFIG_PATH);
+        return fetchObject(THRESHOLD_CONFIG_PATH, new GenericType<List<ThresholdDefinition>>()
+        {
+        });
     }
 
     @Override
-    public Iterable<Map<String, Object>> findThresholdQualifyingAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException
+    public Iterable<ThresholdQualifyingAttr> findThresholdQualifyingAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException
     {
-        return fetchMultipleObjects(THRESHOLD_QUALIFYING_ATTR_PATH + "/ThresholdConfig/" + thresholdConfigId);
+        return fetchObject(THRESHOLD_QUALIFYING_ATTR_PATH + "/ThresholdConfig/" + thresholdConfigId, new GenericType<List<ThresholdQualifyingAttr>>()
+        {
+        });
     }
 
     @Override
-    public Iterable<Map<String, Object>> findThresholdContextAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException
+    public Iterable<ThresholdContextAttr> findThresholdContextAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException
     {
-        return fetchMultipleObjects(THRESHOLD_CONTEXT_ATTR_PATH + "/ThresholdConfig/" + thresholdConfigId);
+        return fetchObject(THRESHOLD_CONTEXT_ATTR_PATH + "/ThresholdConfig/" + thresholdConfigId, new GenericType<List<ThresholdContextAttr>>()
+        {
+        });
     }
 
     // PRIVATE
@@ -327,20 +349,6 @@ public class DefaultAlertClient implements AlertClient
             label = label.substring(0, 31);
         }
         return label;
-    }
-
-    private Map<String, Object> fetchOneObject(final String path)
-    {
-        return fetchObject(path, new GenericType<Map<String, Object>>()
-        {
-        });
-    }
-
-    private List<Map<String, Object>> fetchMultipleObjects(final String path)
-    {
-        return fetchObject(path, new GenericType<List<Map<String, Object>>>()
-        {
-        });
     }
 
     private <T> T fetchObject(final String path, final GenericType<T> genericType)

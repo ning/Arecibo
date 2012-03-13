@@ -1,9 +1,27 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="com.ning.arecibo.alertmanager.models.AlertingConfigurationsModel" %>
 <%@ page import="com.google.common.collect.Multimap" %>
+<%@ page import="com.ning.arecibo.alert.confdata.NotifGroup" %>
+<%@ page import="com.ning.arecibo.alert.confdata.AlertingConfig" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
+
+<%--
+  ~ Copyright 2010-2012 Ning, Inc.
+  ~
+  ~ Ning licenses this file to you under the Apache License, version 2.0
+  ~ (the "License"); you may not use this file except in compliance with the
+  ~ License.  You may obtain a copy of the License at:
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+  ~ License for the specific language governing permissions and limitations
+  ~ under the License.
+  --%>
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -87,8 +105,8 @@
         <div class="controls">
           <select multiple="multiple" name="notification_groups" id="notification_groups">
               <% if (it != null) {
-                  for (final Map<String, Object> notificationGroup : it.getAllNotificationGroups()) { %>
-              <option value="<%= notificationGroup.get("id") %>"><%= notificationGroup.get("label") %>
+                  for (final NotifGroup notificationGroup : it.getAllNotificationGroups()) { %>
+              <option value="<%= notificationGroup.getId() %>"><%= notificationGroup.getGroupName() %>
               </option>
               <% }
               } %>
@@ -127,7 +145,7 @@
         </tr>
         </thead>
         <tbody>
-        <% for (final AlertingConfigurationsModel.AlertingConfiguration configuration : it.getAlertingConfigurations()) { %>
+        <% for (final AlertingConfig configuration : it.getAlertingConfigurations()) { %>
         <tr>
             <td><%= configuration.getAlertingConfigurationName() %>
             </td>
@@ -135,11 +153,11 @@
             </td>
             <td><%= configuration.getRepeatInterval() %>
             </td>
-            <td><%= configuration.getNotifyOnRecovery() %>
+            <td><%= configuration.isNotifyOnRecovery() %>
             </td>
             <td><%= configuration.getNotificationGroups() %>
             </td>
-            <td><%= configuration.getEnabled() %>
+            <td><%= configuration.isEnabled() %>
             </td>
         </tr>
         <% } %>

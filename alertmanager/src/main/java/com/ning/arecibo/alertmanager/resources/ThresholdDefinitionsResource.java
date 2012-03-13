@@ -18,6 +18,10 @@ package com.ning.arecibo.alertmanager.resources;
 
 import com.google.inject.Singleton;
 import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alert.confdata.AlertingConfig;
+import com.ning.arecibo.alert.confdata.ThresholdContextAttr;
+import com.ning.arecibo.alert.confdata.ThresholdDefinition;
+import com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr;
 import com.ning.arecibo.alertmanager.models.ThresholdDefinitionsModel;
 import com.ning.arecibo.util.Logger;
 import com.ning.jersey.metrics.TimedResource;
@@ -54,37 +58,39 @@ public class ThresholdDefinitionsResource
     @TimedResource
     public Viewable getThresholds()
     {
-        final Map<String, Map<String, Object>> thresholdDefinitions = new HashMap<String, Map<String, Object>>();
+        final Iterable<ThresholdDefinition> thresholdConfigs = client.findAllThresholdConfigs();
+        final Map<String, Iterable<ThresholdQualifyingAttr>> thresholdQualifyingAttrsForThresholdConfig = new HashMap<String, Iterable<ThresholdQualifyingAttr>>();
+        final Map<String, Iterable<ThresholdContextAttr>> thresholdContextAttrsForThresholdConfig = new HashMap<String, Iterable<ThresholdContextAttr>>();
+        final Map<String, AlertingConfig> alertingConfigsForThresholdConfig = new HashMap<String, AlertingConfig>();
 
-        final Iterable<Map<String, Object>> thresholdConfigs = client.findAllThresholdConfigs();
-        for (final Map<String, Object> thresholdConfig : thresholdConfigs) {
-            final String thresholdConfigName = (String) thresholdConfig.get("label");
-            final Integer thresholdConfigId = (Integer) thresholdConfig.get("id");
-            final Integer alertingConfigId = (Integer) thresholdConfig.get("alerting_config_id");
+        for (final ThresholdDefinition thresholdConfig : thresholdConfigs) {
+            final String thresholdConfigName = thresholdConfig.getThresholdDefinitionName();
+            final Integer thresholdConfigId = thresholdConfig.getId();
+            final Long alertingConfigId = thresholdConfig.getAlertingConfigurationId();
 
             if (thresholdConfigId != null) {
                 // Retrieve associated Qualifying Attributes
-                final Iterable<Map<String, Object>> qualifyingAttrs = client.findThresholdQualifyingAttrsForThresholdId(thresholdConfigId);
-                thresholdConfig.put("qualifyingAttrs", qualifyingAttrs);
+                final Iterable<ThresholdQualifyingAttr> qualifyingAttrs = client.findThresholdQualifyingAttrsForThresholdId(thresholdConfigId);
+                thresholdQualifyingAttrsForThresholdConfig.put(thresholdConfigName, qualifyingAttrs);
 
                 // Retrieve associated Context Attributes
-                final Iterable<Map<String, Object>> contextAttrs = client.findThresholdContextAttrsForThresholdId(thresholdConfigId);
-                thresholdConfig.put("contextAttrs", contextAttrs);
+                final Iterable<ThresholdContextAttr> contextAttrs = client.findThresholdContextAttrsForThresholdId(thresholdConfigId);
+                thresholdContextAttrsForThresholdConfig.put(thresholdConfigName, contextAttrs);
             }
 
             if (alertingConfigId != null) {
-                final Map<String, Object> alertingConfig = client.findAlertingConfigById(alertingConfigId);
+                // Retrieve associated Alerting Configuration
+                final AlertingConfig alertingConfig = client.findAlertingConfigById(alertingConfigId);
                 if (alertingConfig != null) {
-                    thresholdConfig.put("alertingConfig", alertingConfig.get("label"));
+                    alertingConfigsForThresholdConfig.put(alertingConfig.getAlertingConfigurationName(), alertingConfig);
                 }
             }
-            thresholdDefinitions.put(thresholdConfigName, thresholdConfig);
         }
 
         // To create new Threshold definitions
-        final Iterable<Map<String, Object>> alertingConfigurations = client.findAllAlertingConfigurations();
+        final Iterable<AlertingConfig> allAlertingConfigurations = client.findAllAlertingConfigurations();
 
-        return new Viewable("/jsp/thresholds.jsp", new ThresholdDefinitionsModel(thresholdDefinitions, alertingConfigurations));
+        return new Viewable("/jsp/thresholds.jsp", new ThresholdDefinitionsModel(thresholdConfigs, thresholdQualifyingAttrsForThresholdConfig, thresholdContextAttrsForThresholdConfig, alertingConfigsForThresholdConfig, allAlertingConfigurations));
     }
 
     @POST

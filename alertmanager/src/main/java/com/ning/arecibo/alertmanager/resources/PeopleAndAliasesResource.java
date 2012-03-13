@@ -19,6 +19,8 @@ package com.ning.arecibo.alertmanager.resources;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
 import com.ning.arecibo.alert.client.AlertClient;
+import com.ning.arecibo.alert.confdata.NotifConfig;
+import com.ning.arecibo.alert.confdata.Person;
 import com.ning.arecibo.alertmanager.models.PeopleAndAliasesModel;
 import com.ning.arecibo.util.Logger;
 import com.ning.jersey.metrics.TimedResource;
@@ -35,7 +37,6 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 @Singleton
@@ -56,16 +57,16 @@ public class PeopleAndAliasesResource
     @TimedResource
     public Viewable getPeople()
     {
-        final Iterable<Map<String, Object>> peopleAndGroups = client.findAllPeopleAndGroups();
-        final Map<String, List<Map<String, Object>>> notificationsForPersonOrGroup = new HashMap<String, List<Map<String, Object>>>();
+        final Iterable<Person> peopleAndGroups = client.findAllPeopleAndGroups();
+        final Map<String, Iterable<NotifConfig>> notificationsForPersonOrGroup = new HashMap<String, Iterable<NotifConfig>>();
 
         // Retrieve notifications for this person
-        for (final Map<String, Object> person : peopleAndGroups) {
-            final String nickName = (String) person.get("label");
-            final Integer personId = (Integer) person.get("id");
+        for (final Person person : peopleAndGroups) {
+            final String nickName = person.getNickName();
+            final Integer personId = person.getId();
 
             if (personId != null) {
-                final Iterator<Map<String, Object>> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
+                final Iterator<NotifConfig> iterator = client.findNotificationsForPersonOrGroupId(personId).iterator();
                 notificationsForPersonOrGroup.put(nickName, ImmutableList.copyOf(iterator));
             }
         }
