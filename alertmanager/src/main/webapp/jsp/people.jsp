@@ -48,8 +48,10 @@
     });
 </script>
 
-<div class="page-header">
+<div class="container">
+  <div class="page-header">
     <h1>People and Aliases <i class="icon-plus" id="add_form" style="cursor: pointer;"></i></h1>
+  </div>
 </div>
 
 <div class="container" id="people_form">

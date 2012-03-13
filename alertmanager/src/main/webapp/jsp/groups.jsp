@@ -41,8 +41,10 @@
     });
 </script>
 
-<div class="page-header">
+<div class="container">
+  <div class="page-header">
     <h1>Notification groups <i class="icon-plus" id="add_form" style="cursor: pointer;"></i></h1>
+  </div>
 </div>
 
 <jsp:useBean id="it"
