@@ -11,7 +11,7 @@
         <ul class="nav">
           <li id="navbar_home"><a href="/">Home</a></li>
           <li id="navbar_alert_activity"><a href="/ui/alert_activity">Alert Activity</a></li>
-          <li id="navbar_alerting_config"><a href="/ui/alerting_config">Alerting Configurations</a></li>
+          <li id="navbar_alerting_config"><a href="/ui/alerting">Alerting Configurations</a></li>
           <li id="navbar_thresholds"><a href="/ui/thresholds">Threshold Definitions</a></li>
           <li id="navbar_alerts"><a href="/ui/alerts">Suppress Alerts</a></li>
           <li id="navbar_groups"><a href="/ui/groups">Notification Groups</a></li>

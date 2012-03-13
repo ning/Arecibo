@@ -141,16 +141,16 @@ public class ThresholdDefinitionsModel
 
             final ThresholdDefinition thresholdDefinition = new ThresholdDefinition(
                 thresholdConfigName,
-                toString(thresholdConfig.get("monitored_event_type")),
-                toString(thresholdConfig.get("monitored_attribute_type")),
-                toString(thresholdConfig.get("clearing_interval_ms")),
-                toString(thresholdConfig.get("min_threshold_value")),
-                toString(thresholdConfig.get("max_threshold_value")),
-                toString(thresholdConfig.get("min_threshold_samples")),
-                toString(thresholdConfig.get("max_sample_window_ms")),
+                ModelUtils.toString(thresholdConfig.get("monitored_event_type")),
+                ModelUtils.toString(thresholdConfig.get("monitored_attribute_type")),
+                ModelUtils.toString(thresholdConfig.get("clearing_interval_ms")),
+                ModelUtils.toString(thresholdConfig.get("min_threshold_value")),
+                ModelUtils.toString(thresholdConfig.get("max_threshold_value")),
+                ModelUtils.toString(thresholdConfig.get("min_threshold_samples")),
+                ModelUtils.toString(thresholdConfig.get("max_sample_window_ms")),
                 qualifyingAttrs,
                 contextAttrs,
-                toString(thresholdConfig.get("alertingConfig"))
+                ModelUtils.toString(thresholdConfig.get("alertingConfig"))
             );
             thresholdDefinitions.add(thresholdDefinition);
         }
@@ -164,10 +164,5 @@ public class ThresholdDefinitionsModel
     public Iterable<Map<String, Object>> getAllAlertingConfigurations()
     {
         return allAlertingConfigurations;
-    }
-
-    private static String toString(final Object o)
-    {
-        return o == null ? "" : o.toString();
     }
 }

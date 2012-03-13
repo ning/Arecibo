@@ -71,6 +71,7 @@ public interface AlertClient
 
     public Map<String, Object> findAlertingConfigById(final int id) throws UniformInterfaceException;
 
+    public Iterable<Map<String, Object>> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException;
 
     //  Threshold Definitions, which is where you define the rules that will trigger alerting.
 

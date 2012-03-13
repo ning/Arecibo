@@ -231,6 +231,12 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
+    public Iterable<Map<String, Object>> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(NOTIF_GROUP_MAPPING_PATH + "/AlertingConfig/" + id);
+    }
+
+    @Override
     public int createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
                                      @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
                                      final Long minThresholdSamples, final Long maxSampleWindowMs,
