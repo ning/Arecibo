@@ -47,7 +47,7 @@ public class CollectorModule extends AbstractModule
     @Override
     public void configure()
     {
-        CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
+        final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
 
         bind(CollectorConfig.class).toInstance(config);
 
@@ -56,7 +56,7 @@ public class CollectorModule extends AbstractModule
         configureServiceLocator(config);
         configureEventHandlers(config);
 
-        ExportBuilder builder = MBeanModule.newExporter(binder());
+        final ExportBuilder builder = MBeanModule.newExporter(binder());
 
         builder.export(TimelineDAO.class).as("arecibo.collector:name=TimelineDAO");
 
@@ -81,7 +81,7 @@ public class CollectorModule extends AbstractModule
         }
     }
 
-    private void configureEventHandlers(CollectorConfig config)
+    private void configureEventHandlers(final CollectorConfig config)
     {
         final ArrayListProvider<EventHandler> provider = new ArrayListProvider<EventHandler>();
 
