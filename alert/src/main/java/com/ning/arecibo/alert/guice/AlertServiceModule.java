@@ -17,6 +17,7 @@
 package com.ning.arecibo.alert.guice;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Module;
 import com.ning.arecibo.alert.conf.ConfigManager;
 import com.ning.arecibo.alert.email.EmailManager;
 import com.ning.arecibo.alert.endpoint.AlertStatusEndPoint;
@@ -88,6 +89,26 @@ public class AlertServiceModule extends AbstractModule
         final ExportBuilder builder = MBeanModule.newExporter(binder());
 
         builder.export(AsynchronousEventHandler.class).as("arecibo.alert:name=AsynchronousEventHandler");
+
+        for (final String guiceModule : alertServiceConfig.getExtraGuiceModules().split(",")) {
+            if (guiceModule.isEmpty()) {
+                continue;
+            }
+
+            try {
+                log.info("Installing extra module: " + guiceModule);
+                install((Module) Class.forName(guiceModule).newInstance());
+            }
+            catch (InstantiationException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+            catch (IllegalAccessException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+            catch (ClassNotFoundException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+        }
     }
 
     private void configureServiceLocator(final AlertServiceConfig config)

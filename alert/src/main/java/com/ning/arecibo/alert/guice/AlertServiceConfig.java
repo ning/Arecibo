@@ -45,4 +45,8 @@ public interface AlertServiceConfig
     @Config("arecibo.alert.serviceLocatorKlass")
     @Default("com.ning.arecibo.util.service.DummyServiceLocator")
     String getServiceLocatorClass();
+
+    @Config("arecibo.alert.extraGuiceModules")
+    @Default("")
+    String getExtraGuiceModules();
 }
