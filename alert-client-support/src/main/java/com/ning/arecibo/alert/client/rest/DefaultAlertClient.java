@@ -219,6 +219,18 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
+    public Iterable<Map<String, Object>> findAllAlertingConfigurations() throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(ALERTING_CONFIG_PATH);
+    }
+
+    @Override
+    public Map<String, Object> findAlertingConfigById(final int id) throws UniformInterfaceException
+    {
+        return fetchOneObject(ALERTING_CONFIG_PATH + "/" + id);
+    }
+
+    @Override
     public int createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
                                      @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
                                      final Long minThresholdSamples, final Long maxSampleWindowMs,
@@ -267,6 +279,24 @@ public class DefaultAlertClient implements AlertClient
             "attributeType", attributeType);
         final URI location = doPost(THRESHOLD_CONTEXT_ATTR_PATH, thresholdContextAttr);
         return extractIdFromURI(location);
+    }
+
+    @Override
+    public Iterable<Map<String, Object>> findAllThresholdConfigs() throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(THRESHOLD_CONFIG_PATH);
+    }
+
+    @Override
+    public Iterable<Map<String, Object>> findThresholdQualifyingAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(THRESHOLD_QUALIFYING_ATTR_PATH + "/ThresholdConfig/" + thresholdConfigId);
+    }
+
+    @Override
+    public Iterable<Map<String, Object>> findThresholdContextAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException
+    {
+        return fetchMultipleObjects(THRESHOLD_CONTEXT_ATTR_PATH + "/ThresholdConfig/" + thresholdConfigId);
     }
 
     // PRIVATE

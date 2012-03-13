@@ -29,6 +29,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -58,6 +59,14 @@ public class ThresholdQualifyingAttrEndPoint extends ConfDataEndPoint<ConfDataTh
     public Map<String, Object> getById(@PathParam("id") final Long id)
     {
         return findConfDataObjectById(id);
+    }
+
+    @GET
+    @Path("/ThresholdConfig/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Map<String, Object>> getAllByThresholdConfigId(@PathParam("id") final Long thresholdConfigId)
+    {
+        return findConfDataObjectById("threshold_config_id", thresholdConfigId);
     }
 
     @POST

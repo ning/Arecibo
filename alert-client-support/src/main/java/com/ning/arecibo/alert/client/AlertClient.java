@@ -67,6 +67,10 @@ public interface AlertClient
     public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
                                     final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException;
 
+    public Iterable<Map<String, Object>> findAllAlertingConfigurations() throws UniformInterfaceException;
+
+    public Map<String, Object> findAlertingConfigById(final int id) throws UniformInterfaceException;
+
 
     //  Threshold Definitions, which is where you define the rules that will trigger alerting.
 
@@ -78,4 +82,10 @@ public interface AlertClient
     public int createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue) throws UniformInterfaceException;
 
     public int createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException;
+
+    public Iterable<Map<String, Object>> findAllThresholdConfigs() throws UniformInterfaceException;
+
+    public Iterable<Map<String, Object>> findThresholdQualifyingAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException;
+
+    public Iterable<Map<String, Object>> findThresholdContextAttrsForThresholdId(final int thresholdConfigId) throws UniformInterfaceException;
 }

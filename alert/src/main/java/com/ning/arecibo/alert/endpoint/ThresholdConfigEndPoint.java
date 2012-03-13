@@ -64,6 +64,13 @@ public class ThresholdConfigEndPoint extends ConfDataEndPoint<ConfDataThresholdC
     }
 
     @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Iterable<Map<String, Object>> getAll()
+    {
+        return findAllConfDataObject();
+    }
+
+    @GET
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Map<String, Object> getById(@PathParam("id") final Long id)

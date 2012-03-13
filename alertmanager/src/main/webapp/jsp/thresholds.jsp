@@ -1,3 +1,6 @@
+<%@ page import="java.util.Map" %>
+<%@ page import="com.ning.arecibo.alertmanager.models.ThresholdDefinitionsModel" %>
+<%@ page import="com.google.common.collect.Multimap" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -5,13 +8,39 @@
 <script type="text/javascript">
     $(document).ready(function() {
         $("#navbar_thresholds").attr("class", "active");
+
+        $("#thresholds_form").collapse();
+        $("#thresholds_form").toggle();
+        $("#add_form").click(function ()
+        {
+            $("#thresholds_form").toggle();
+        });
+
+        $('#table_thresholds').dataTable({
+            "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+            "sPaginationType": "bootstrap",
+            "oLanguage": {
+                "sLengthMenu": "_MENU_ records per page"
+            }
+        });
     });
 </script>
 
 <div class="container">
-  <form class="form-horizontal">
+  <div class="page-header">
+    <h1>Threshold Definitions <i class="icon-plus" id="add_form" style="cursor: pointer;"></i></h1>
+  </div>
+</div>
+
+<jsp:useBean id="it"
+             type="com.ning.arecibo.alertmanager.models.ThresholdDefinitionsModel"
+             scope="request">
+</jsp:useBean>
+
+<div class="container" id="thresholds_form">
+    <form class="form-horizontal" action="/ui/thresholds" method="post" name="thresholds_form">
     <fieldset>
-      <legend>Threshold Definitions</legend>
+      <legend>Add a Threshold Definition</legend>
 
       <div class="control-group">
         <p>A Threshold Definition is a specific rule for defining conditions that should trigger an alert. It is specified by choosing an Event Type and an associated Attribute Type. These must correspond to valid, monitored events and attributes within the Arecibo system, in order to be triggered. These types are case sensitive, so be sure to spell them correctly, observing case. You can refer to the Arecibo Dashboard to view currently active monitored events, for spelling. The specified attribute type must be a numeric valued field.</p>
@@ -20,7 +49,7 @@
       <div class="control-group">
         <label class="control-label" for="threshold_name">Threshold name</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="threshold_name">
+          <input type="text" class="input-xlarge" name="threshold_name" id="threshold_name">
           <p class="help-block">Short identifier for this threshold. Needs to be unique. Required.</p>
         </div>
       </div>
@@ -28,7 +57,7 @@
       <div class="control-group">
         <label class="control-label" for="event_name">Event name</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="event_name">
+          <input type="text" class="input-xlarge" name="event_name" id="event_name">
           <p class="help-block">Usually JMX Bean. Required.</p>
         </div>
       </div>
@@ -36,7 +65,7 @@
       <div class="control-group">
         <label class="control-label" for="attribute_name">Attribute name</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="attribute_name">
+          <input type="text" class="input-xlarge" name="attribute_name" id="attribute_name">
           <p class="help-block">Usually JMX attribute. Required.</p>
         </div>
       </div>
@@ -44,29 +73,33 @@
       <div class="control-group">
         <label class="control-label" for="alerting_configuration">Alerting configuration</label>
         <div class="controls">
-          <select id="alerting_configuration">
-          </select>
+            <select multiple="multiple" name="alerting_configuration" id="alerting_configuration">
+                <% if (it != null) {
+                    for (final Map<String, Object> alertingConfiguration : it.getAllAlertingConfigurations()) { %>
+                    <option value="<%= alertingConfiguration.get("id") %>"><%= alertingConfiguration.get("label") %></option>
+                <% } } %>
+            </select>
         </div>
       </div>
 
       <div class="control-group">
         <label class="control-label" for="min_threshold">Minimum threshold</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="min_threshold">
+          <input type="text" class="input-xlarge" name="min_threshold" id="min_threshold">
         </div>
       </div>
 
       <div class="control-group">
         <label class="control-label" for="max_threshold">Maximum threshold</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="max_threshold">
+          <input type="text" class="input-xlarge" name="max_threshold" id="max_threshold">
         </div>
       </div>
 
       <div class="control-group">
         <label class="control-label" for="min_samples">Minimum samples</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="min_samples">
+          <input type="text" class="input-xlarge" name="min_samples" id="min_samples">
           <p class="help-block">Required.</p>
         </div>
       </div>
@@ -74,14 +107,14 @@
       <div class="control-group">
         <label class="control-label" for="max_samples">Maximum samples window (ms)</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="max_samples">
+          <input type="text" class="input-xlarge" name="max_samples" id="max_samples">
         </div>
       </div>
 
       <div class="control-group">
         <label class="control-label" for="clearing_interval">Clearing interval (ms)</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="clearing_interval">
+          <input type="text" class="input-xlarge" name="clearing_interval" id="clearing_interval">
           <p class="help-block">Required.</p>
         </div>
       </div>
@@ -89,20 +122,20 @@
       <div class="control-group">
         <label class="control-label" for="qualifying_attribute_type">Qualifying Attribute Type</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="qualifying_attribute_type">
+          <input type="text" class="input-xlarge" name="qualifying_attribute_type" id="qualifying_attribute_type">
         </div>
       </div>
       <div class="control-group">
         <label class="control-label" for="qualifying_attribute_value">Qualifying Attribute Value</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="qualifying_attribute_value">
+          <input type="text" class="input-xlarge" name="qualifying_attribute_value" id="qualifying_attribute_value">
         </div>
       </div>
 
       <div class="control-group">
         <label class="control-label" for="context_attribute_type">Context Attribute Type</label>
         <div class="controls">
-          <input type="text" class="input-xlarge" id="context_attribute_type">
+          <input type="text" class="input-xlarge" name="context_attribute_type" id="context_attribute_type">
         </div>
       </div>
 
@@ -129,6 +162,62 @@
 
     <p>The Clearing Interval is a required field which indicates the minimum amount of time required to pass before a triggered alert will become de-activated, and no longer in an alerting state. The default for this field is 300000 ms (i.e. 5 minutes).</p>
   </div>
-</div><!--/.fluid-container-->
+</div>
+
+<div class="container">
+    <% if (it != null) { %>
+    <table cellpadding="0" cellspacing="0" border="0" class="table table-striped table-bordered" id="table_thresholds">
+        <thead>
+        <tr>
+            <th>Threshold name</th>
+            <th>Event type</th>
+            <th>Attribute type</th>
+            <th>Qualifying attributes</th>
+            <th>Context attributes</th>
+            <th>Options</th>
+            <th>Alerting config</th>
+        </tr>
+        </thead>
+        <tbody>
+        <% for (final ThresholdDefinitionsModel.ThresholdDefinition thresholdDefinition : it.getThresholdDefinitions()) { %>
+        <tr>
+            <td><%= thresholdDefinition.getThresholdDefinitionName() %>
+            </td>
+            <td><%= thresholdDefinition.getMonitoredEventType() %>
+            </td>
+            <td><%= thresholdDefinition.getMonitoredAttributeType() %>
+            </td>
+            <td><%= thresholdDefinition.getQualifyingAttrs() %>
+            </td>
+            <td><%= thresholdDefinition.getContextAttrs() %>
+            </td>
+            <td>
+                <ul>
+                    <li><em>Min Threshold:</em><%= thresholdDefinition.getMinThresholdValue() %></li>
+                    <li><em>Max Threshold:</em><%= thresholdDefinition.getMaxThresholdValue() %></li>
+                    <li><em># samples:</em><%= thresholdDefinition.getMinThresholdSamples() %></li>
+                    <li><em>Sample window:</em><%= thresholdDefinition.getMaxSampleWindowMs() %></li>
+                    <li><em>Clearing interval:</em><%= thresholdDefinition.getClearingIntervalMs() %></li>
+                </ul>
+            </td>
+            <td><%= thresholdDefinition.getAlertingConfiguration() %>
+            </td>
+        </tr>
+        <% } %>
+        </tbody>
+        <tfoot>
+        <tr>
+            <th>Threshold name</th>
+            <th>Event type</th>
+            <th>Attribute type</th>
+            <th>Qualifying attributes</th>
+            <th>Context attributes</th>
+            <th>Options</th>
+            <th>Alerting config</th>
+        </tr>
+        </tfoot>
+    </table>
+    <% } %>
+</div>
 
 <%@include file="../global_includes/footer.jsp" %>
