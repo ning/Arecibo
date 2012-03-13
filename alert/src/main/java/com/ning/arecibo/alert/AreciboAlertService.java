@@ -87,6 +87,7 @@ public class AreciboAlertService
         final long startTime = System.currentTimeMillis();
         log.info("Starting up Alert Service on port %d", jettyConfig.getPort());
 
+        serviceLocator.startReadOnly();
 
         // Start the confStatusManager
         confStatusManager.start();
@@ -131,6 +132,7 @@ public class AreciboAlertService
 
         try {
             log.info("Shutting Down Alert Service");
+            serviceLocator.stop();
 
             log.info("Stopping configStatusManager");
             confStatusManager.stop();

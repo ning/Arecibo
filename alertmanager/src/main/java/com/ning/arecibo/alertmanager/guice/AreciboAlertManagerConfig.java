@@ -28,4 +28,8 @@ public interface AreciboAlertManagerConfig
     @Config("arecibo.alertmanager.extraGuiceModules")
     @Default("")
     String getExtraGuiceModules();
+
+    @Config("arecibo.alertmanager.serviceName")
+    @Default("AreciboAlertManagerService")
+    String getServiceName();
 }

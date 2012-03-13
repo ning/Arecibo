@@ -38,4 +38,8 @@ public interface DashboardConfig
     @Config("arecibo.dashboard.galaxy.updateInterval")
     @Default("5m")
     TimeSpan getGalaxyUpdateInterval();
+
+    @Config("arecibo.dashboard.serviceName")
+    @Default("AreciboDashboardService")
+    String getServiceName();
 }

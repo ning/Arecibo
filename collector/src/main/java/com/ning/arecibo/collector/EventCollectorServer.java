@@ -84,15 +84,15 @@ public class EventCollectorServer
         serviceLocator.startReadOnly();
 
         // Advertise event endpoints
-        Map<String, String> map = new HashMap<String, String>();
+        final Map<String, String> map = new HashMap<String, String>();
         map.put(EventService.HOST, jettyConfig.getHost());
         map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
         map.put(EventService.UDP_PORT, String.valueOf(udpConfig.getPort()));
         map.put(EventService.RMI_PORT, String.valueOf(rmiConfig.getPort()));
-        ServiceDescriptor self = new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
+        final ServiceDescriptor self = new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
         serviceLocator.advertiseLocalService(self);
 
-        String name = getClass().getSimpleName();
+        final String name = getClass().getSimpleName();
         final long startTime = System.currentTimeMillis();
         log.info("Starting up %s on port %d", name, jettyConfig.getPort());
 
@@ -127,6 +127,7 @@ public class EventCollectorServer
     {
         try {
             log.info("Shutting down %s", getClass().getSimpleName());
+            serviceLocator.stop();
 
             log.info("Stopping lifecycle");
             lifecycle.fire(LifecycleEvent.STOP);

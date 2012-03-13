@@ -22,13 +22,21 @@ import com.ning.arecibo.alertmanager.guice.AreciboAlertManagerConfig;
 import com.ning.arecibo.util.lifecycle.Lifecycle;
 import com.ning.arecibo.util.lifecycle.LifecycleEvent;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
+import com.ning.arecibo.util.service.ServiceDescriptor;
+import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.jetty.base.modules.ServerModuleBuilder;
+import com.ning.jetty.core.CoreConfig;
 import com.ning.jetty.core.listeners.SetupServer;
 
 import javax.servlet.ServletContextEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 public class AlertManagerStartupContextListener extends SetupServer
 {
+    Lifecycle lifecycle = null;
+    ServiceLocator serviceLocator = null;
+
     @Override
     public void contextInitialized(final ServletContextEvent event)
     {
@@ -45,11 +53,36 @@ public class AlertManagerStartupContextListener extends SetupServer
         // Let Guice create the injector
         super.contextInitialized(event);
 
+        // Further setup for services discovery
         final Injector injector = (Injector) event.getServletContext().getAttribute(Injector.class.getName());
+        serviceLocator = injector.getInstance(ServiceLocator.class);
+        serviceLocator.startReadOnly();
 
-        // do this here for now, should really be part of better guiciness for servlet context
-        // lifecycle is needed, if for no other reason than to start the LoggingModule
-        final Lifecycle lc = injector.getInstance(Lifecycle.class);
-        lc.fire(LifecycleEvent.START);
+        // Advertise alertmanager endpoints
+        final CoreConfig jettyConfig = injector.getInstance(CoreConfig.class);
+        final AreciboAlertManagerConfig alertManagerConfig = injector.getInstance(AreciboAlertManagerConfig.class);
+        final Map<String, String> map = new HashMap<String, String>();
+        map.put("host", jettyConfig.getServerHost());
+        map.put("jetty.port", String.valueOf(jettyConfig.getServerPort()));
+        final ServiceDescriptor self = new ServiceDescriptor(alertManagerConfig.getServiceName(), map);
+        serviceLocator.advertiseLocalService(self);
+
+        // Fire START event
+        lifecycle = injector.getInstance(Lifecycle.class);
+        lifecycle.fire(LifecycleEvent.START);
+    }
+
+    @Override
+    public void contextDestroyed(final ServletContextEvent servletContextEvent)
+    {
+        if (serviceLocator != null) {
+            serviceLocator.stop();
+        }
+
+        if (lifecycle != null) {
+            lifecycle.fire(LifecycleEvent.STOP);
+        }
+
+        super.contextDestroyed(servletContextEvent);
     }
 }
