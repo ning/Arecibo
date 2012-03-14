@@ -24,6 +24,7 @@ import com.ning.arecibo.alert.client.discovery.AlertFinder;
 import com.ning.arecibo.alert.confdata.AlertingConfig;
 import com.ning.arecibo.alert.confdata.NotifConfig;
 import com.ning.arecibo.alert.confdata.NotifGroup;
+import com.ning.arecibo.alert.confdata.NotifGroupMapping;
 import com.ning.arecibo.alert.confdata.NotifMapping;
 import com.ning.arecibo.alert.confdata.Person;
 import com.ning.arecibo.alert.confdata.ThresholdContextAttr;
@@ -78,7 +79,7 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException
+    public Integer createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException
     {
         final Map<String, String> person = ImmutableMap.of(
             "firstName", firstName,
@@ -91,7 +92,7 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createGroup(final String name)
+    public Integer createGroup(final String name)
     {
         final Map<String, ?> group = ImmutableMap.of(
             "label", createLabel(name),
@@ -124,13 +125,13 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createEmailNotificationForPersonOrGroup(final int id, final String address)
+    public Integer createEmailNotificationForPersonOrGroup(final int id, final String address)
     {
         return createNotificationForPersonOrGroup(id, address, "REGULAR_EMAIL");
     }
 
     @Override
-    public int createSmsNotificationForPersonOrGroup(final int id, final String address)
+    public Integer createSmsNotificationForPersonOrGroup(final int id, final String address)
     {
         return createNotificationForPersonOrGroup(id, address, "SMS_VIA_EMAIL");
     }
@@ -166,14 +167,14 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createNotificationGroup(final String groupName, final boolean enabled, final Iterable<Integer> notificationsIds)
+    public Integer createNotificationGroup(final String groupName, final boolean enabled, final Iterable<Integer> notificationsIds)
     {
         // First, create the Notification Group
         final Map<String, ?> group = ImmutableMap.of(
             "label", createLabel(groupName),
             "enabled", enabled);
         final URI location = doPost(NOTIF_GROUP_PATH, group);
-        final int notifGroupId = extractIdFromURI(location);
+        final Integer notifGroupId = extractIdFromURI(location);
 
         // Now, create a Notification Mapping for each Notification Config
         // TODO should we consider a bulk resource?
@@ -186,6 +187,14 @@ public class DefaultAlertClient implements AlertClient
         }
 
         return notifGroupId;
+    }
+
+    @Override
+    public NotifGroup findNotificationGroupById(final int id) throws UniformInterfaceException
+    {
+        return fetchObject(NOTIF_GROUP_PATH + "/" + id, new GenericType<NotifGroup>()
+        {
+        });
     }
 
     @Override
@@ -213,8 +222,8 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
-                                    final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException
+    public Integer createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
+                                        final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException
     {
         // First, create the Alerting Config
         final Map<String, ?> alertingConfig = ImmutableMap.of(
@@ -223,7 +232,7 @@ public class DefaultAlertClient implements AlertClient
             "notifOnRecovery", notifyOnRecovery,
             "enabled", enabled);
         final URI location = doPost(ALERTING_CONFIG_PATH, alertingConfig);
-        final int alertingConfigId = extractIdFromURI(location);
+        final Integer alertingConfigId = extractIdFromURI(location);
 
         // Now, create a Notification Group Mapping for each Notification Group
         // TODO should we consider a bulk resource?
@@ -247,7 +256,7 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public AlertingConfig findAlertingConfigById(final Long id) throws UniformInterfaceException
+    public AlertingConfig findAlertingConfigById(final int id) throws UniformInterfaceException
     {
         return fetchObject(ALERTING_CONFIG_PATH + "/" + id, new GenericType<AlertingConfig>()
         {
@@ -257,16 +266,24 @@ public class DefaultAlertClient implements AlertClient
     @Override
     public Iterable<NotifGroup> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException
     {
-        return fetchObject(NOTIF_GROUP_MAPPING_PATH + "/AlertingConfig/" + id, new GenericType<List<NotifGroup>>()
+        final List<NotifGroup> notifGroups = new ArrayList<NotifGroup>();
+
+        final List<NotifGroupMapping> notifGroupMappings = fetchObject(NOTIF_GROUP_MAPPING_PATH + "/AlertingConfig/" + id, new GenericType<List<NotifGroupMapping>>()
         {
         });
+        for (final NotifGroupMapping notifGroupMapping : notifGroupMappings) {
+            final NotifGroup notifGroup = findNotificationGroupById(notifGroupMapping.getId());
+            notifGroups.add(notifGroup);
+        }
+
+        return notifGroups;
     }
 
     @Override
-    public int createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
-                                     @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
-                                     final Long minThresholdSamples, final Long maxSampleWindowMs,
-                                     final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException
+    public Integer createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
+                                         @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
+                                         final Long minThresholdSamples, final Long maxSampleWindowMs,
+                                         final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException
     {
         final ImmutableMap.Builder<String, Object> thresholdConfigBuilder = new ImmutableMap.Builder<String, Object>()
             .put("label", createLabel(name))
@@ -290,7 +307,7 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue)
+    public Integer createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue)
         throws UniformInterfaceException
     {
         final Map<String, ?> thresholdQualifyingAttr = ImmutableMap.of(
@@ -303,7 +320,7 @@ public class DefaultAlertClient implements AlertClient
     }
 
     @Override
-    public int createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException
+    public Integer createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException
     {
         final Map<String, ?> thresholdContextAttr = ImmutableMap.of(
             "label", createLabel(String.format("%d: %s", thresholdConfigId, attributeType)),
@@ -339,7 +356,7 @@ public class DefaultAlertClient implements AlertClient
 
     // PRIVATE
 
-    private int createNotificationForPersonOrGroup(final int id, final String address, final String notificationType)
+    private Integer createNotificationForPersonOrGroup(final int id, final String address, final String notificationType)
     {
         //TODO for now just use a truncated version of the email address, need to devise something better
         final Map<String, ?> group = ImmutableMap.of(
@@ -409,7 +426,7 @@ public class DefaultAlertClient implements AlertClient
         }
     }
 
-    private int extractIdFromURI(final URI location)
+    private Integer extractIdFromURI(final URI location)
     {
         final Iterable<String> explodedPath = PATH_SPLITTER.split(location.getPath());
         final Iterator<String> iterator = explodedPath.iterator();

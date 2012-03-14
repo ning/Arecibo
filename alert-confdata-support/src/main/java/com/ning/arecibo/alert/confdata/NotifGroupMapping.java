@@ -21,30 +21,20 @@ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final class NotifGroup
+public class NotifGroupMapping
 {
-    private final String groupName;
-    private final boolean enabled;
+    private final Integer notifGroupId;
+    private final Integer alertingConfigId;
     private final Integer id;
 
     @JsonCreator
-    public NotifGroup(@JsonProperty("label") final String groupName,
-                      @JsonProperty("enabled") final String enabled,
-                      @JsonProperty("id") final Integer id)
+    public NotifGroupMapping(@JsonProperty("notif_group_id") final Integer notifGroupId,
+                             @JsonProperty("alerting_config_id") final Integer alertingConfigId,
+                             @JsonProperty("id") final Integer id)
     {
-        this.groupName = groupName;
-        this.enabled = !(enabled != null && enabled.equals("0"));
+        this.notifGroupId = notifGroupId;
+        this.alertingConfigId = alertingConfigId;
         this.id = id;
-    }
-
-    public String getGroupName()
-    {
-        return groupName;
-    }
-
-    public boolean isEnabled()
-    {
-        return enabled;
     }
 
     public Integer getId()
@@ -52,14 +42,24 @@ public final class NotifGroup
         return id;
     }
 
+    public Integer getAlertingConfigId()
+    {
+        return alertingConfigId;
+    }
+
+    public Integer getNotifGroupId()
+    {
+        return notifGroupId;
+    }
+
     @Override
     public String toString()
     {
         final StringBuilder sb = new StringBuilder();
-        sb.append("NotifGroup");
-        sb.append("{enabled=").append(enabled);
-        sb.append(", groupName='").append(groupName).append('\'');
-        sb.append(", id=").append(id);
+        sb.append("NotifMapping");
+        sb.append("{id=").append(id);
+        sb.append(", notifGroupId=").append(notifGroupId);
+        sb.append(", alertingConfigId=").append(alertingConfigId);
         sb.append('}');
         return sb.toString();
     }
@@ -74,15 +74,15 @@ public final class NotifGroup
             return false;
         }
 
-        final NotifGroup that = (NotifGroup) o;
+        final NotifGroupMapping that = (NotifGroupMapping) o;
 
-        if (enabled != that.enabled) {
+        if (id != null ? !id.equals(that.id) : that.id != null) {
             return false;
         }
-        if (id != that.id) {
+        if (alertingConfigId != null ? !alertingConfigId.equals(that.alertingConfigId) : that.alertingConfigId != null) {
             return false;
         }
-        if (groupName != null ? !groupName.equals(that.groupName) : that.groupName != null) {
+        if (notifGroupId != null ? !notifGroupId.equals(that.notifGroupId) : that.notifGroupId != null) {
             return false;
         }
 
@@ -92,9 +92,9 @@ public final class NotifGroup
     @Override
     public int hashCode()
     {
-        int result = groupName != null ? groupName.hashCode() : 0;
-        result = 31 * result + (enabled ? 1 : 0);
-        result = 31 * result + id;
+        int result = notifGroupId != null ? notifGroupId.hashCode() : 0;
+        result = 31 * result + (alertingConfigId != null ? alertingConfigId.hashCode() : 0);
+        result = 31 * result + (id != null ? id.hashCode() : 0);
         return result;
     }
 }

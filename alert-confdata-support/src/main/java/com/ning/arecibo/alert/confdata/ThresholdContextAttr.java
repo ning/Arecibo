@@ -26,7 +26,7 @@ public class ThresholdContextAttr
     private final String attributeType;
 
     @JsonCreator
-    public ThresholdContextAttr(@JsonProperty("attrribute_type") final String attributeType)
+    public ThresholdContextAttr(@JsonProperty("attribute_type") final String attributeType)
     {
         this.attributeType = attributeType;
     }

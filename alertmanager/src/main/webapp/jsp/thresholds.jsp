@@ -209,12 +209,12 @@
                     <% final Iterable<ThresholdQualifyingAttr> qualifyingAttrIterable = it.getThresholdQualifyingAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName());
                         if (qualifyingAttrIterable != null) {
                             for (final ThresholdQualifyingAttr qualifyingAttr : qualifyingAttrIterable) { %>
-                    <li><%= qualifyingAttr.getAttributeType() %> <i><%= qualifyingAttr.getAttributeValue() %>
-                    </i></li>
+                    <li><%= qualifyingAttr.getAttributeType() %> = <%= qualifyingAttr.getAttributeValue() %>
+                    </li>
                     <% }
                     } %></ul>
             </td>
-            <td><%= it.getThresholdContextAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
+            <td>
                 <ul>
                     <%
                         final Iterable<ThresholdContextAttr> contextAttrIterable = it.getThresholdContextAttrsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName());
@@ -227,11 +227,11 @@
             </td>
             <td>
                 <ul>
-                    <li><em>Min Threshold:</em><%= thresholdDefinition.getMinThresholdValue() == null ? "<i>None</i>" : thresholdDefinition.getMinThresholdValue() %></li>
-                    <li><em>Max Threshold:</em><%= thresholdDefinition.getMaxThresholdValue() == null ? "<i>None</i>" : thresholdDefinition.getMaxThresholdValue() %></li>
-                    <li><em># samples:</em><%= thresholdDefinition.getMinThresholdSamples() %></li>
-                    <li><em>Sample window:</em><%= thresholdDefinition.getMaxSampleWindowMs() %></li>
-                    <li><em>Clearing interval:</em><%= thresholdDefinition.getClearingIntervalMs() %></li>
+                    <li><em>Min Threshold:</em> <%= thresholdDefinition.getMinThresholdValue() == null ? "<i>None</i>" : thresholdDefinition.getMinThresholdValue() %></li>
+                    <li><em>Max Threshold:</em> <%= thresholdDefinition.getMaxThresholdValue() == null ? "<i>None</i>" : thresholdDefinition.getMaxThresholdValue() %></li>
+                    <li><em># samples:</em> <%= thresholdDefinition.getMinThresholdSamples() %></li>
+                    <li><em>Sample window:</em> <%= thresholdDefinition.getMaxSampleWindowMs() %></li>
+                    <li><em>Clearing interval:</em> <%= thresholdDefinition.getClearingIntervalMs() %></li>
                 </ul>
             </td>
             <td><%

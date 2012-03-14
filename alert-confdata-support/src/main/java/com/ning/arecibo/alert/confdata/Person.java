@@ -23,7 +23,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Person
 {
-    private final int id;
+    private final Integer id;
     private final String nickName;
     private final String firstName;
     private final String lastName;
@@ -34,7 +34,7 @@ public final class Person
                   @JsonProperty("first_name") final String firstName,
                   @JsonProperty("last_name") final String lastName,
                   @JsonProperty("is_group_alias") final String groupAlias,
-                  @JsonProperty("id") final int id)
+                  @JsonProperty("id") final Integer id)
     {
         this.nickName = nickName;
         this.firstName = firstName;
@@ -63,7 +63,7 @@ public final class Person
         return isGroupAlias;
     }
 
-    public int getId()
+    public Integer getId()
     {
         return id;
     }

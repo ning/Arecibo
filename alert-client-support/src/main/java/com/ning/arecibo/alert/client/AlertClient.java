@@ -32,9 +32,9 @@ public interface AlertClient
 {
     // People and Groups (Aliases)
 
-    public int createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException;
+    public Integer createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException;
 
-    public int createGroup(final String name);
+    public Integer createGroup(final String name);
 
     public Iterable<Person> findAllPeopleAndGroups() throws UniformInterfaceException;
 
@@ -45,9 +45,9 @@ public interface AlertClient
 
     // Associated email addresses to People and Groups (SMS notifications limit the body to 140 characters)
 
-    public int createEmailNotificationForPersonOrGroup(final int id, final String address);
+    public Integer createEmailNotificationForPersonOrGroup(final int id, final String address);
 
-    public int createSmsNotificationForPersonOrGroup(final int id, final String address);
+    public Integer createSmsNotificationForPersonOrGroup(final int id, final String address);
 
     public Iterable<NotifConfig> findAllNotifications() throws UniformInterfaceException;
 
@@ -60,7 +60,9 @@ public interface AlertClient
 
     // Notification Groups, for creating groups of recipients for alert emails
 
-    public int createNotificationGroup(final String groupName, boolean enabled, final Iterable<Integer> notificationsIds) throws UniformInterfaceException;
+    public Integer createNotificationGroup(final String groupName, boolean enabled, final Iterable<Integer> notificationsIds) throws UniformInterfaceException;
+
+    public NotifGroup findNotificationGroupById(final int id) throws UniformInterfaceException;
 
     public Iterable<NotifGroup> findAllNotificationGroups() throws UniformInterfaceException;
 
@@ -69,25 +71,25 @@ public interface AlertClient
 
     // Alerting Configurations, which allow you to associate notification options with threshold definitions
 
-    public int createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
-                                    final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException;
+    public Integer createAlertingConfig(final String name, final boolean repeatUntilCleared, final boolean notifyOnRecovery,
+                                        final boolean enabled, final Iterable<Integer> notificationGroupsIds) throws UniformInterfaceException;
 
     public Iterable<AlertingConfig> findAllAlertingConfigurations() throws UniformInterfaceException;
 
-    public AlertingConfig findAlertingConfigById(final Long id) throws UniformInterfaceException;
+    public AlertingConfig findAlertingConfigById(final int id) throws UniformInterfaceException;
 
     public Iterable<NotifGroup> findNotificationGroupsForAlertingConfigById(final int id) throws UniformInterfaceException;
 
     //  Threshold Definitions, which is where you define the rules that will trigger alerting.
 
-    public int createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
+    public Integer createThresholdConfig(final String name, final String monitoredEventType, final String monitoredAttributeType,
                                      @Nullable final Double minThresholdValue, @Nullable final Double maxThresholdValue,
                                      final Long minThresholdSamples, final Long maxSampleWindowMs,
                                      final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException;
 
-    public int createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue) throws UniformInterfaceException;
+    public Integer createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue) throws UniformInterfaceException;
 
-    public int createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException;
+    public Integer createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException;
 
     public Iterable<ThresholdDefinition> findAllThresholdConfigs() throws UniformInterfaceException;
 

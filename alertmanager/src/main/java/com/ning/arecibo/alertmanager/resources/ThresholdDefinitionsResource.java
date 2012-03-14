@@ -66,7 +66,7 @@ public class ThresholdDefinitionsResource
         for (final ThresholdDefinition thresholdConfig : thresholdConfigs) {
             final String thresholdConfigName = thresholdConfig.getThresholdDefinitionName();
             final Integer thresholdConfigId = thresholdConfig.getId();
-            final Long alertingConfigId = thresholdConfig.getAlertingConfigurationId();
+            final Integer alertingConfigId = thresholdConfig.getAlertingConfigurationId();
 
             if (thresholdConfigId != null) {
                 // Retrieve associated Qualifying Attributes

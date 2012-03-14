@@ -31,7 +31,7 @@ public final class ThresholdDefinition
     private final Double maxThresholdValue;
     private final Long minThresholdSamples;
     private final Long maxSampleWindowMs;
-    private final Long alertingConfigurationId;
+    private final Integer alertingConfigurationId;
     private final Integer id;
 
     @JsonCreator
@@ -43,7 +43,7 @@ public final class ThresholdDefinition
                                @JsonProperty("max_threshold_value") final Double maxThresholdValue,
                                @JsonProperty("min_threshold_samples") final Long minThresholdSamples,
                                @JsonProperty("max_sample_window_ms") final Long maxSampleWindowMs,
-                               @JsonProperty("alerting_config_id") final Long alertingConfigurationId,
+                               @JsonProperty("alerting_config_id") final Integer alertingConfigurationId,
                                @JsonProperty("id") final Integer id)
     {
         this.thresholdDefinitionName = thresholdDefinitionName;
@@ -58,7 +58,7 @@ public final class ThresholdDefinition
         this.id = id;
     }
 
-    public Long getAlertingConfigurationId()
+    public Integer getAlertingConfigurationId()
     {
         return alertingConfigurationId;
     }
