@@ -20,6 +20,7 @@ import com.google.common.collect.BiMap;
 import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
+import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.publisher.EventSenderType;
@@ -72,7 +73,9 @@ public class TestEventCollectorServer
     CollectorEventProcessor processor;
 
     @Inject
-    TimelineEventHandler timelineEventHandler;
+    List<EventHandler> eventHandlers;
+
+    TimelineEventHandler timelineEventHandler = null;
 
     @Inject
     TimelineDAO timelineDAO;
@@ -102,6 +105,9 @@ public class TestEventCollectorServer
         while (!server.isRunning()) {
             Thread.sleep(1000);
         }
+
+        Assert.assertEquals(eventHandlers.size(), 1);
+        timelineEventHandler = (TimelineEventHandler) eventHandlers.get(0);
     }
 
     @AfterMethod(alwaysRun = true)
@@ -130,6 +136,7 @@ public class TestEventCollectorServer
 
             Assert.assertEquals(processor.getEventsReceived(), 1 + i);
             Assert.assertEquals(timelineEventHandler.getEventsDiscarded(), 0);
+            Assert.assertEquals(timelineEventHandler.getAccumulators().size(), 1);
 
             // Make sure we don't create dups
             final BiMap<Integer, String> hosts = timelineDAO.getHosts();
