@@ -57,6 +57,10 @@
             <artifactId>guice-multibindings</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.ning.jaxrs</groupId>
+            <artifactId>jaxrs-metrics</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.ning.jetty</groupId>
             <artifactId>ning-service-skeleton-base</artifactId>
         </dependency>
