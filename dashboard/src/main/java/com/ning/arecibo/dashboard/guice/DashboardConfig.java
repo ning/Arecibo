@@ -19,27 +19,36 @@ package com.ning.arecibo.dashboard.guice;
 import org.skife.config.Config;
 import org.skife.config.Default;
 import org.skife.config.DefaultNull;
+import org.skife.config.Description;
 import org.skife.config.TimeSpan;
 
 public interface DashboardConfig
 {
-    @Config("arecibo.dashboard.alert_host_override")
-    @DefaultNull
-    String getAlertHostOverride();
-
-    @Config("arecibo.dashboard.alert_manager_enabled")
-    @Default("false")
-    boolean isAlertManagerEnabled();
-
     @Config("arecibo.dashboard.serviceLocatorKlass")
+    @Description("ServiceLocator implementation for announcements and discovery")
     @Default("com.ning.arecibo.util.service.DummyServiceLocator")
     String getServiceLocatorClass();
 
+    @Config("arecibo.dashboard.serviceName")
+    @Description("Arecibo service name, used for announcements and discovery")
+    @Default("AreciboDashboardService")
+    String getServiceName();
+
+    @Config("arecibo.dashboard.extraGuiceModules")
+    @Description("Extra Guice modules to be installed")
+    @Default("")
+    String getExtraGuiceModules();
+
     @Config("arecibo.dashboard.galaxy.updateInterval")
+    @Description("Refresh interval for the list of galaxy cores")
     @Default("5m")
     TimeSpan getGalaxyUpdateInterval();
 
-    @Config("arecibo.dashboard.serviceName")
-    @Default("AreciboDashboardService")
-    String getServiceName();
+    @Config("arecibo.dashboard.alertHostOverride")
+    @DefaultNull
+    String getAlertHostOverride();
+
+    @Config("arecibo.dashboard.alertManagerEnabled")
+    @Default("false")
+    boolean isAlertManagerEnabled();
 }

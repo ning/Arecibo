@@ -22,13 +22,13 @@ import org.skife.config.Description;
 
 public interface AlertClientConfig
 {
-    @Config("arecibo.alertClient.serviceLocatorKlass")
+    @Config("arecibo.alertClient.alertFinderKlass")
     @Default("com.ning.arecibo.alert.client.discovery.DefaultAlertFinder")
-    @Description("Service finder for the alert core (by default, location is determined by fixed uri)")
+    @Description("Alert finder for the alert core (by default, location is determined by fixed uri)")
     String getAlertFinderClass();
 
     @Config("arecibo.alertClient.alertUri")
     @Default("http://127.0.0.1:8089")
-    @Description("Used by DefaultAlertFinder")
+    @Description("Alert core location, if fixed (only used by DefaultAlertFinder)")
     String getAlertUri();
 }

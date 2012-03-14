@@ -17,6 +17,7 @@
 package com.ning.arecibo.dashboard.guice;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Module;
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.collector.CollectorClientConfig;
 import com.ning.arecibo.collector.discovery.CollectorFinder;
@@ -43,17 +44,18 @@ public class DashboardModule extends AbstractModule
     @Override
     public void configure()
     {
-        final DashboardConfig config = new ConfigurationObjectFactory(System.getProperties()).build(DashboardConfig.class);
-        bind(DashboardConfig.class).toInstance(config);
+        // Dashboard configuration
+        final DashboardConfig dashboardConfig = new ConfigurationObjectFactory(System.getProperties()).build(DashboardConfig.class);
+        bind(DashboardConfig.class).toInstance(dashboardConfig);
+
+        // Collector client configuration
         final CollectorClientConfig collectorClientConfig = new ConfigurationObjectFactory(System.getProperties()).build(CollectorClientConfig.class);
         bind(CollectorClientConfig.class).toInstance(collectorClientConfig);
 
-        configureServiceLocator(config);
+        configureServiceLocator(dashboardConfig);
+        configureCollectorFinder(collectorClientConfig);
+        configureCollectorClient();
 
-        bind(CollectorClient.class).to(DefaultCollectorClient.class).asEagerSingleton();
-        // TODO hook ServiceLocator
-        final DefaultCollectorFinder defaultCollectorFinder = new DefaultCollectorFinder(collectorClientConfig);
-        bind(CollectorFinder.class).toInstance(defaultCollectorFinder);
         bind(DashboardFormatManager.class).asEagerSingleton();
         bind(GalaxyStatusManager.class).asEagerSingleton();
         bind(AlertStatusManager.class).asEagerSingleton();
@@ -63,6 +65,24 @@ public class DashboardModule extends AbstractModule
         final ExportBuilder builder = MBeanModule.newExporter(binder());
         builder.export(RandomEventServiceChooser.class).as("arecibo:type=HdfsEventServiceChooser");
         builder.export(HdfsEventPublisher.class).as("arecibo:name=HdfsEventPublisher");
+
+        installExtraModules(dashboardConfig);
+    }
+
+    protected void configureCollectorClient()
+    {
+        bind(CollectorClient.class).to(DefaultCollectorClient.class).asEagerSingleton();
+    }
+
+    protected void configureCollectorFinder(final CollectorClientConfig config)
+    {
+        try {
+            bind(CollectorFinder.class).to((Class<? extends CollectorFinder>) Class.forName(config.getCollectorFinderClass())).asEagerSingleton();
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find CollectorFinder", e);
+            bind(CollectorFinder.class).to(DefaultCollectorFinder.class).asEagerSingleton();
+        }
     }
 
     private void configureServiceLocator(final DashboardConfig config)
@@ -73,6 +93,29 @@ public class DashboardModule extends AbstractModule
         catch (ClassNotFoundException e) {
             log.error("Unable to find ServiceLocator", e);
             bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
+        }
+    }
+
+    protected void installExtraModules(final DashboardConfig dashboardConfig)
+    {
+        for (final String guiceModule : dashboardConfig.getExtraGuiceModules().split(",")) {
+            if (guiceModule.isEmpty()) {
+                continue;
+            }
+
+            try {
+                log.info("Installing extra module: " + guiceModule);
+                install((Module) Class.forName(guiceModule).newInstance());
+            }
+            catch (InstantiationException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+            catch (IllegalAccessException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+            catch (ClassNotFoundException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
         }
     }
 }

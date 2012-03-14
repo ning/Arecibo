@@ -35,17 +35,50 @@ public class AlertManagerModule extends AbstractModule
     @Override
     public void configure()
     {
+        // Alert manager configuration
         final AreciboAlertManagerConfig alertManagerConfigonfig = new ConfigurationObjectFactory(System.getProperties()).build(AreciboAlertManagerConfig.class);
         bind(AreciboAlertManagerConfig.class).toInstance(alertManagerConfigonfig);
 
+        // Alert client configuration
         final AlertClientConfig alertClientConfig = new ConfigurationObjectFactory(System.getProperties()).build(AlertClientConfig.class);
         bind(AlertClientConfig.class).toInstance(alertClientConfig);
 
         configureServiceLocator(alertManagerConfigonfig);
         configureAlertFinder(alertClientConfig);
+        configureAlertClient();
 
+        installExtraModules(alertManagerConfigonfig);
+    }
+
+    protected void configureServiceLocator(final AreciboAlertManagerConfig config)
+    {
+        try {
+            bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find ServiceLocator", e);
+            bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
+        }
+    }
+
+    protected void configureAlertFinder(final AlertClientConfig config)
+    {
+        try {
+            bind(AlertFinder.class).to((Class<? extends AlertFinder>) Class.forName(config.getAlertFinderClass())).asEagerSingleton();
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find AlertFinder", e);
+            bind(AlertFinder.class).to(DefaultAlertFinder.class).asEagerSingleton();
+        }
+    }
+
+    protected void configureAlertClient()
+    {
         bind(AlertClient.class).to(DefaultAlertClient.class).asEagerSingleton();
+    }
 
+    protected void installExtraModules(final AreciboAlertManagerConfig alertManagerConfigonfig)
+    {
         for (final String guiceModule : alertManagerConfigonfig.getExtraGuiceModules().split(",")) {
             if (guiceModule.isEmpty()) {
                 continue;
@@ -64,28 +97,6 @@ public class AlertManagerModule extends AbstractModule
             catch (ClassNotFoundException e) {
                 log.warn("Ignoring module: " + guiceModule, e);
             }
-        }
-    }
-
-    private void configureAlertFinder(final AlertClientConfig config)
-    {
-        try {
-            bind(AlertFinder.class).to((Class<? extends AlertFinder>) Class.forName(config.getAlertFinderClass())).asEagerSingleton();
-        }
-        catch (ClassNotFoundException e) {
-            log.error("Unable to find AlertFinder", e);
-            bind(AlertFinder.class).to(DefaultAlertFinder.class).asEagerSingleton();
-        }
-    }
-
-    private void configureServiceLocator(final AreciboAlertManagerConfig config)
-    {
-        try {
-            bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
-        }
-        catch (ClassNotFoundException e) {
-            log.error("Unable to find ServiceLocator", e);
-            bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
         }
     }
 }

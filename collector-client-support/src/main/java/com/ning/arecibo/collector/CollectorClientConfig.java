@@ -22,13 +22,13 @@ import org.skife.config.Description;
 
 public interface CollectorClientConfig
 {
-    @Config("arecibo.collectorClient.serviceLocatorKlass")
+    @Config("arecibo.collectorClient.collectorFinderKlass")
     @Default("com.ning.arecibo.collector.discovery.DefaultCollectorFinder")
-    @Description("Service finder for the collector (by default, location is determined by fixed uri)")
-    String getServiceLocatorClass();
+    @Description("Collector finder for the collector (by default, location is determined by fixed uri)")
+    String getCollectorFinderClass();
 
     @Config("arecibo.collectorClient.collectorUri")
     @Default("http://127.0.0.1:8080")
-    @Description("Used by DefaultCollectorFinder")
+    @Description("Collector core location, if fixed (only used by DefaultCollectorFinder)")
     String getCollectorUri();
 }
