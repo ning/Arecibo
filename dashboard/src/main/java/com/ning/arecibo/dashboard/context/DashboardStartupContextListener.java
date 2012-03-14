@@ -18,8 +18,6 @@ package com.ning.arecibo.dashboard.context;
 
 import com.google.inject.Injector;
 import com.ning.arecibo.alert.confdata.guice.AlertDataModule;
-import com.ning.arecibo.alertmanager.guice.AreciboAlertManagerConfig;
-import com.ning.arecibo.collector.CollectorClientConfig;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
@@ -84,7 +82,7 @@ public class DashboardStartupContextListener extends SetupServer
         final DashboardConfig dashboardConfig = injector.getInstance(DashboardConfig.class);
         final Map<String, String> map = new HashMap<String, String>();
         map.put("host", jettyConfig.getServerHost());
-        map.put("jetty.port", String.valueOf(jettyConfig.getServerPort()));
+        map.put("port", String.valueOf(jettyConfig.getServerPort()));
         final ServiceDescriptor self = new ServiceDescriptor(dashboardConfig.getServiceName(), map);
         serviceLocator.advertiseLocalService(self);
 

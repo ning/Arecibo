@@ -63,7 +63,7 @@ public class AlertManagerStartupContextListener extends SetupServer
         final AreciboAlertManagerConfig alertManagerConfig = injector.getInstance(AreciboAlertManagerConfig.class);
         final Map<String, String> map = new HashMap<String, String>();
         map.put("host", jettyConfig.getServerHost());
-        map.put("jetty.port", String.valueOf(jettyConfig.getServerPort()));
+        map.put("port", String.valueOf(jettyConfig.getServerPort()));
         final ServiceDescriptor self = new ServiceDescriptor(alertManagerConfig.getServiceName(), map);
         serviceLocator.advertiseLocalService(self);
 
