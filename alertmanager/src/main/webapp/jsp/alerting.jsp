@@ -1,8 +1,6 @@
-<%@ page import="java.util.Map" %>
-<%@ page import="com.ning.arecibo.alertmanager.models.AlertingConfigurationsModel" %>
-<%@ page import="com.google.common.collect.Multimap" %>
-<%@ page import="com.ning.arecibo.alert.confdata.NotifGroup" %>
+<%@ page import="com.google.common.base.Strings" %>
 <%@ page import="com.ning.arecibo.alert.confdata.AlertingConfig" %>
+<%@ page import="com.ning.arecibo.alert.confdata.NotifGroup" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -149,13 +147,20 @@
         <tr>
             <td><%= configuration.getAlertingConfigurationName() %>
             </td>
-            <td><%= configuration.getRepeatMode() %>
+            <td><%= Strings.nullToEmpty(configuration.getRepeatMode()) %>
             </td>
-            <td><%= configuration.getRepeatInterval() %>
+            <td><%= configuration.getRepeatInterval() == null ? "" : configuration.getRepeatInterval() %>
             </td>
             <td><%= configuration.isNotifyOnRecovery() %>
             </td>
-            <td><%= it.getNotificationsGroupsForAlertingConfig().get(configuration.getAlertingConfigurationName()) %>
+            <td><%
+                final Iterable<NotifGroup> notificationGroups = it.getNotificationsGroupsForAlertingConfig().get(configuration.getAlertingConfigurationName());
+                if (notificationGroups != null) {
+                    for (final NotifGroup notifGroup : notificationGroups) { %>
+                <li><%= Strings.nullToEmpty(notifGroup.getGroupName()) %>
+                </li>
+                <% }
+                } %>
             </td>
             <td><%= configuration.isEnabled() %>
             </td>

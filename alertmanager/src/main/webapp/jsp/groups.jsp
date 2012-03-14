@@ -1,6 +1,4 @@
-<%@ page import="java.util.Map" %>
-<%@ page import="com.google.common.collect.Multimap" %>
-<%@ page import="com.ning.arecibo.alertmanager.models.NotificationGroupsModel" %>
+<%@ page import="com.google.common.base.Strings" %>
 <%@ page import="com.ning.arecibo.alert.confdata.NotifConfig" %>
 <%@ page import="com.ning.arecibo.alert.confdata.NotifGroup" %>
 <%@include file="../global_includes/header.jsp" %>
@@ -121,7 +119,7 @@
                     <% final Iterable<NotifConfig> notifConfigs = it.getEmailsAndNotificationTypesForGroup().get(group.getGroupName());
                         if (notifConfigs != null) {
                             for (final NotifConfig notifConfig : notifConfigs) { %>
-                    <li><%= notifConfig.getAddress() %> <i><%= notifConfig.getNotifType() %>
+                    <li><%= Strings.nullToEmpty(notifConfig.getAddress()) %> <i>(<%= Strings.nullToEmpty(notifConfig.getNotifType()) %>)
                     </i></li>
                     <% }
                     } %></ul>

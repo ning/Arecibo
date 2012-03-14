@@ -75,4 +75,65 @@ public class AlertingConfig
     {
         return id;
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("AlertingConfig");
+        sb.append("{alertingConfigurationName='").append(alertingConfigurationName).append('\'');
+        sb.append(", repeatMode='").append(repeatMode).append('\'');
+        sb.append(", repeatInterval=").append(repeatInterval);
+        sb.append(", notifyOnRecovery=").append(notifyOnRecovery);
+        sb.append(", enabled=").append(enabled);
+        sb.append(", id=").append(id);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final AlertingConfig that = (AlertingConfig) o;
+
+        if (enabled != that.enabled) {
+            return false;
+        }
+        if (notifyOnRecovery != that.notifyOnRecovery) {
+            return false;
+        }
+        if (alertingConfigurationName != null ? !alertingConfigurationName.equals(that.alertingConfigurationName) : that.alertingConfigurationName != null) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (repeatInterval != null ? !repeatInterval.equals(that.repeatInterval) : that.repeatInterval != null) {
+            return false;
+        }
+        if (repeatMode != null ? !repeatMode.equals(that.repeatMode) : that.repeatMode != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = alertingConfigurationName != null ? alertingConfigurationName.hashCode() : 0;
+        result = 31 * result + (repeatMode != null ? repeatMode.hashCode() : 0);
+        result = 31 * result + (repeatInterval != null ? repeatInterval.hashCode() : 0);
+        result = 31 * result + (notifyOnRecovery ? 1 : 0);
+        result = 31 * result + (enabled ? 1 : 0);
+        result = 31 * result + (id != null ? id.hashCode() : 0);
+        return result;
+    }
 }

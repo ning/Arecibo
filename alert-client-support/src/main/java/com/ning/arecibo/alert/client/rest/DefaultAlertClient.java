@@ -24,6 +24,7 @@ import com.ning.arecibo.alert.client.discovery.AlertFinder;
 import com.ning.arecibo.alert.confdata.AlertingConfig;
 import com.ning.arecibo.alert.confdata.NotifConfig;
 import com.ning.arecibo.alert.confdata.NotifGroup;
+import com.ning.arecibo.alert.confdata.NotifMapping;
 import com.ning.arecibo.alert.confdata.Person;
 import com.ning.arecibo.alert.confdata.ThresholdContextAttr;
 import com.ning.arecibo.alert.confdata.ThresholdDefinition;
@@ -43,6 +44,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -197,9 +199,17 @@ public class DefaultAlertClient implements AlertClient
     @Override
     public List<NotifConfig> findEmailsAndNotificationTypesForGroupById(final int id) throws UniformInterfaceException
     {
-        return fetchObject(NOTIF_MAPPING_PATH + "/NotifGroup/" + id, new GenericType<List<NotifConfig>>()
+        final List<NotifConfig> notifConfigs = new ArrayList<NotifConfig>();
+
+        final List<NotifMapping> notifMappings = fetchObject(NOTIF_MAPPING_PATH + "/NotifGroup/" + id, new GenericType<List<NotifMapping>>()
         {
         });
+        for (final NotifMapping notifMapping : notifMappings) {
+            final NotifConfig notifConfig = findNotificationById(notifMapping.getId());
+            notifConfigs.add(notifConfig);
+        }
+
+        return notifConfigs;
     }
 
     @Override

@@ -20,9 +20,6 @@ import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Person
 {
@@ -69,5 +66,61 @@ public final class Person
     public int getId()
     {
         return id;
+    }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Person");
+        sb.append("{firstName='").append(firstName).append('\'');
+        sb.append(", id=").append(id);
+        sb.append(", nickName='").append(nickName).append('\'');
+        sb.append(", lastName='").append(lastName).append('\'');
+        sb.append(", isGroupAlias=").append(isGroupAlias);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final Person person = (Person) o;
+
+        if (id != person.id) {
+            return false;
+        }
+        if (isGroupAlias != person.isGroupAlias) {
+            return false;
+        }
+        if (firstName != null ? !firstName.equals(person.firstName) : person.firstName != null) {
+            return false;
+        }
+        if (lastName != null ? !lastName.equals(person.lastName) : person.lastName != null) {
+            return false;
+        }
+        if (nickName != null ? !nickName.equals(person.nickName) : person.nickName != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = id;
+        result = 31 * result + (nickName != null ? nickName.hashCode() : 0);
+        result = 31 * result + (firstName != null ? firstName.hashCode() : 0);
+        result = 31 * result + (lastName != null ? lastName.hashCode() : 0);
+        result = 31 * result + (isGroupAlias ? 1 : 0);
+        return result;
     }
 }

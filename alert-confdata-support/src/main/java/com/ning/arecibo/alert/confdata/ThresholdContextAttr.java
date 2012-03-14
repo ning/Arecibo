@@ -35,4 +35,39 @@ public class ThresholdContextAttr
     {
         return attributeType;
     }
+
+    @Override
+    public String toString()
+    {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("ThresholdContextAttr");
+        sb.append("{attributeType='").append(attributeType).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(final Object o)
+    {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final ThresholdContextAttr that = (ThresholdContextAttr) o;
+
+        if (attributeType != null ? !attributeType.equals(that.attributeType) : that.attributeType != null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return attributeType != null ? attributeType.hashCode() : 0;
+    }
 }

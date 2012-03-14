@@ -1,10 +1,7 @@
-<%@ page import="java.util.Map" %>
-<%@ page import="com.ning.arecibo.alertmanager.models.ThresholdDefinitionsModel" %>
-<%@ page import="com.google.common.collect.Multimap" %>
-<%@ page import="com.ning.arecibo.alert.confdata.ThresholdDefinition" %>
 <%@ page import="com.ning.arecibo.alert.confdata.AlertingConfig" %>
-<%@ page import="com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr" %>
 <%@ page import="com.ning.arecibo.alert.confdata.ThresholdContextAttr" %>
+<%@ page import="com.ning.arecibo.alert.confdata.ThresholdDefinition" %>
+<%@ page import="com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -230,14 +227,18 @@
             </td>
             <td>
                 <ul>
-                    <li><em>Min Threshold:</em><%= thresholdDefinition.getMinThresholdValue() %></li>
-                    <li><em>Max Threshold:</em><%= thresholdDefinition.getMaxThresholdValue() %></li>
+                    <li><em>Min Threshold:</em><%= thresholdDefinition.getMinThresholdValue() == null ? "<i>None</i>" : thresholdDefinition.getMinThresholdValue() %></li>
+                    <li><em>Max Threshold:</em><%= thresholdDefinition.getMaxThresholdValue() == null ? "<i>None</i>" : thresholdDefinition.getMaxThresholdValue() %></li>
                     <li><em># samples:</em><%= thresholdDefinition.getMinThresholdSamples() %></li>
                     <li><em>Sample window:</em><%= thresholdDefinition.getMaxSampleWindowMs() %></li>
                     <li><em>Clearing interval:</em><%= thresholdDefinition.getClearingIntervalMs() %></li>
                 </ul>
             </td>
-            <td><%= it.getAlertingConfigsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName()) %>
+            <td><%
+                final AlertingConfig alertingConfig = it.getAlertingConfigsForThresholdConfig().get(thresholdDefinition.getThresholdDefinitionName());
+                if (alertingConfig != null) { %>
+                <%= alertingConfig.getAlertingConfigurationName() %>
+                <% } %>
             </td>
         </tr>
         <% } %>

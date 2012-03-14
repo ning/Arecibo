@@ -1,7 +1,6 @@
-<%@ page import="com.ning.arecibo.alertmanager.models.PeopleAndAliasesModel" %>
-<%@ page import="com.google.common.collect.Multimap" %>
-<%@ page import="com.ning.arecibo.alert.confdata.Person" %>
+<%@ page import="com.google.common.base.Strings" %>
 <%@ page import="com.ning.arecibo.alert.confdata.NotifConfig" %>
+<%@ page import="com.ning.arecibo.alert.confdata.Person" %>
 <%@include file="../global_includes/header.jsp" %>
 
 <%@include file="../global_includes/navbar.jsp" %>
@@ -143,19 +142,19 @@
         <tbody>
         <% for (final Person person : it.getPeopleAndGroups()) { %>
         <tr>
-            <td><%= person.getNickName() %>
+            <td><%= Strings.nullToEmpty(person.getNickName()) %>
             </td>
-            <td><%= person.getFirstName() %>
+            <td><%= Strings.nullToEmpty(person.getFirstName()) %>
             </td>
-            <td><%= person.getLastName() %>
+            <td><%= Strings.nullToEmpty(person.getLastName()) %>
             </td>
             <td>
                 <ul>
                     <% final Iterable<NotifConfig> notifConfigs = it.getNotificationsForPersonOrGroup().get(person.getNickName());
                         if (notifConfigs != null) {
                             for (final NotifConfig notifConfig : notifConfigs) { %>
-                    <li><%= notifConfig.getAddress() %> <i><%= notifConfig.getNotifType() %>
-                    </i></li>
+                    <li><%= Strings.nullToEmpty(notifConfig.getAddress()) %> <i>(<%= Strings.nullToEmpty(notifConfig.getNotifType()) %>)
+                    </i>)</li>
                     <% }
                     } %></ul>
             </td>

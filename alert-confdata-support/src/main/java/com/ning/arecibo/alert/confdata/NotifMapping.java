@@ -21,36 +21,45 @@ import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ThresholdQualifyingAttr
+public class NotifMapping
 {
-    private final String attributeType;
-    private final String attributeValue;
+    private final Integer notifGroupId;
+    private final Integer notifConfigId;
+    private final Integer id;
 
     @JsonCreator
-    public ThresholdQualifyingAttr(@JsonProperty("attribute_type") final String attributeType,
-                                   @JsonProperty("attribute_value") final String attributeValue)
+    public NotifMapping(@JsonProperty("notif_group_id") final Integer notifGroupId,
+                        @JsonProperty("notif_config_id") final Integer notifConfigId,
+                        @JsonProperty("id") final Integer id)
     {
-        this.attributeType = attributeType;
-        this.attributeValue = attributeValue;
+        this.notifGroupId = notifGroupId;
+        this.notifConfigId = notifConfigId;
+        this.id = id;
     }
 
-    public String getAttributeType()
+    public Integer getId()
     {
-        return attributeType;
+        return id;
     }
 
-    public String getAttributeValue()
+    public Integer getNotifConfigId()
     {
-        return attributeValue;
+        return notifConfigId;
+    }
+
+    public Integer getNotifGroupId()
+    {
+        return notifGroupId;
     }
 
     @Override
     public String toString()
     {
         final StringBuilder sb = new StringBuilder();
-        sb.append("ThresholdQualifyingAttr");
-        sb.append("{attributeType='").append(attributeType).append('\'');
-        sb.append(", attributeValue='").append(attributeValue).append('\'');
+        sb.append("NotifMapping");
+        sb.append("{id=").append(id);
+        sb.append(", notifGroupId=").append(notifGroupId);
+        sb.append(", notifConfigId=").append(notifConfigId);
         sb.append('}');
         return sb.toString();
     }
@@ -65,12 +74,15 @@ public class ThresholdQualifyingAttr
             return false;
         }
 
-        final ThresholdQualifyingAttr that = (ThresholdQualifyingAttr) o;
+        final NotifMapping that = (NotifMapping) o;
 
-        if (attributeType != null ? !attributeType.equals(that.attributeType) : that.attributeType != null) {
+        if (id != null ? !id.equals(that.id) : that.id != null) {
             return false;
         }
-        if (attributeValue != null ? !attributeValue.equals(that.attributeValue) : that.attributeValue != null) {
+        if (notifConfigId != null ? !notifConfigId.equals(that.notifConfigId) : that.notifConfigId != null) {
+            return false;
+        }
+        if (notifGroupId != null ? !notifGroupId.equals(that.notifGroupId) : that.notifGroupId != null) {
             return false;
         }
 
@@ -80,8 +92,9 @@ public class ThresholdQualifyingAttr
     @Override
     public int hashCode()
     {
-        int result = attributeType != null ? attributeType.hashCode() : 0;
-        result = 31 * result + (attributeValue != null ? attributeValue.hashCode() : 0);
+        int result = notifGroupId != null ? notifGroupId.hashCode() : 0;
+        result = 31 * result + (notifConfigId != null ? notifConfigId.hashCode() : 0);
+        result = 31 * result + (id != null ? id.hashCode() : 0);
         return result;
     }
 }
