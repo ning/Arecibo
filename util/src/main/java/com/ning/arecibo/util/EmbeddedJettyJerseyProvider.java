@@ -52,7 +52,6 @@ public class EmbeddedJettyJerseyProvider implements Provider<Server>
 
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setMaxThreads(config.getMaxThreads());
-        threadPool.setMinThreads(config.getLowThreads());
 
         SelectChannelConnector connector = new SelectChannelConnector();
 

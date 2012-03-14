@@ -17,150 +17,64 @@
 package com.ning.arecibo.collector.guice;
 
 import org.skife.config.Config;
-import org.skife.config.DataAmount;
 import org.skife.config.Default;
+import org.skife.config.Description;
 import org.skife.config.TimeSpan;
 
 public interface CollectorConfig
 {
-    @Config("arecibo.events.collector.service_name")
-    @Default("EventCollectorServer")
-    String getCollectorServiceName();
-
-    @Config("arecibo.events.collector.bufferWindow")
-    @Default("5s")
-    TimeSpan getBufferWindow();
-
-    @Config("arecibo.events.collector.read_only_mode")
-    @Default("false")
-    boolean isCollectorInReadOnlyMode();
-
-    @Config("arecibo.events.collector.hostUpdateInterval")
-    @Default("5m")
-    TimeSpan getHostUpdateInterval();
-
-    @Config("arecibo.events.collector.throttlePctFreeThreshold")
-    @Default("10")
-    int getThrottlePctFreeThreshold();
-
-    @Config("arecibo.events.collector.tablespace")
-    @Default("ARECIBO_SYSM_NOLOGGING")
-    String getTableSpaceName();
-
-    @Config("arecibo.events.collector.tablespaceStatsUpdateInterval")
-    @Default("5m")
-    TimeSpan getTablespaceStatsUpdateInterval();
-
-    @Config("arecibo.events.collector.maxTableSpace")
-    @Default("1MiB")
-    DataAmount getMaxTableSpace();
-
-    @Config("arecibo.events.collector.maxSplitAndSweepInitialDelay")
-    @Default("30m")
-    TimeSpan getMaxSplitAndSweepInitialDelay();
-
-    @Config("arecibo.events.collector.maxTriageThreads")
-    @Default("1")
-    int getMaxTriageThreads();
-
-    @Config("arecibo.events.collector.maxBatchInsertThreads")
-    @Default("1")
-    int getMaxBatchInsertThreads();
-
-    @Config("arecibo.events.collector.minBatchInsertSize")
-    @Default("0")
-    int getMinBatchInsertSize();
-
-    @Config("arecibo.events.collector.maxBatchInsertSize")
-    @Default("1000")
-    int getMaxBatchInsertSize();
-
-    @Config("arecibo.events.collector.maxAsyncTriageQueueSize")
-    @Default("10")
-    int getMaxAsyncTriageQueueSize();
-
-    @Config("arecibo.events.collector.maxAsyncInsertQueueSize")
-    @Default("100")
-    int getMaxAsyncInsertQueueSize();
-
-    @Config("arecibo.events.collector.maxPendingEvents")
-    @Default("50000")
-    int getMaxPendingEvents();
-
-    @Config("arecibo.events.collector.maxPendingEventsCheckIntervalMs")
-    @Default("10s")
-    TimeSpan getMaxPendingEventsCheckInterval();
-
-    @Config("arecibo.events.collector.enableBatchRetryOnIntegrityViolation")
-    @Default("false")
-    boolean isBatchRetryOnIntegrityViolationEnabled();
-
-    @Config("arecibo.events.collector.enableDuplicateEventLogging")
-    @Default("false")
-    boolean isDuplicateEventLoggingEnabled();
-
-    @Config("arecibo.events.collector.enablePerTableInserts")
-    @Default("false")
-    boolean isPerTableInsertsEnabled();
-
-    @Config("arecibo.events.collector.enablePreparedBatchInserts")
-    @Default("false")
-    boolean isPreparedBatchInsertsEnabled();
-
-    // see also com.ning.arecibo.aggregator.plugin.guice.MonitoringPluginConfig
-    @Config("arecibo.events.collector.reductionFactors")
-    @Default("1")
-    int[] getReductionFactors();
-
-    @Config("arecibo.events.collector.numPartitions")
-    @Default("4")
-    int[] getNumPartitionsToKeep();
-
-    @Config("arecibo.events.collector.splitIntervals")
-    @Default("30m")
-    TimeSpan[] getSplitIntervalsInMinutes();
-
-    @Config("arecibo.events.collector.numPartitionsToSplitAheadList")
-    @Default("2")
-    int[] getNumPartitionsToSplitAhead();
-
-    @Config("arecibo.events.collector.timelines.maxHosts")
-    @Default("10000")
-    int getMaxHosts();
-
-    @Config("arecibo.events.collector.timelines.length")
-    @Default("10m")
-    TimeSpan getTimelineLength();
-
-    @Config("arecibo.events.collector.serviceLocatorKlass")
+    @Config("arecibo.collector.serviceLocatorKlass")
+    @Description("ServiceLocator implementation for announcements and discovery")
     @Default("com.ning.arecibo.util.service.DummyServiceLocator")
     String getServiceLocatorClass();
 
-    @Config("arecibo.events.collector.extraGuiceModules")
+    @Config("arecibo.collector.serviceName")
+    @Description("Arecibo service name, used for announcements and discovery")
+    @Default("AreciboCollectorService")
+    String getCollectorServiceName();
+
+    @Config("arecibo.collector.extraGuiceModules")
+    @Description("Extra Guice modules to be installed")
     @Default("")
     String getExtraGuiceModules();
 
-    @Config("arecibo.events.collector.eventSerializersKlass")
+    @Config("arecibo.collector.eventSerializersKlass")
+    @Description("Serializers classes to use to deserialize incoming events")
     @Default("com.ning.arecibo.event.transport.JavaEventSerializer,com.ning.arecibo.event.transport.JsonEventSerializer,com.ning.arecibo.event.transport.MapEventSerializer")
     String getEventSerializers();
 
-    @Config("arecibo.events.collector.spoolDir")
+    @Config("arecibo.collector.timelines.maxHosts")
+    @Description("Max number of different hosts to keep in memory at the same time")
+    @Default("10000")
+    int getMaxHosts();
+
+    @Config("arecibo.collector.timelines.length")
+    @Description("How long to buffer data in memory before flushing it to the database")
+    @Default("10m")
+    TimeSpan getTimelineLength();
+
+    @Config("arecibo.collector.timelines.spoolDir")
+    @Description("Spool directory for in-memory data")
     @Default("/var/tmp/arecibo")
     String getSpoolDir();
 
-    @Config("arecibo.events.collector.rt.kafka.enabled")
+    @Config("arecibo.collector.rt.kafka.enabled")
+    @Description("Whether Kafka is enabled")
     @Default("false")
     boolean isKafkaEnabled();
 
-    @Config("arecibo.events.collector.rt.kafka.zkConnect")
+    @Config("arecibo.collector.rt.kafka.zkConnect")
+    @Description("zkConnect string for Kafka")
     @Default("127.0.0.1:2181")
     String getZkConnect();
 
-    @Config("arecibo.events.collector.rt.kafka.zkConnectionTimeout")
+    @Config("arecibo.collector.rt.kafka.zkConnectionTimeout")
+    @Description("Zookeeper timeout")
     @Default("6s")
     TimeSpan getZkConnectionTimeout();
 
-    @Config("arecibo.events.collector.rt.kafka.groupId")
+    @Config("arecibo.collector.rt.kafka.groupId")
+    @Description("Kafka groupId")
     @Default("arecibo")
     String getKafkaGroupId();
 }

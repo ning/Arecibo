@@ -25,6 +25,7 @@ import com.google.inject.Stage;
 import com.google.inject.name.Named;
 import com.ning.arecibo.alert.conf.ConfigManager;
 import com.ning.arecibo.alert.confdata.guice.AlertDataModule;
+import com.ning.arecibo.alert.guice.AlertServiceConfig;
 import com.ning.arecibo.alert.guice.AlertServiceModule;
 import com.ning.arecibo.alert.guice.SelfUUID;
 import com.ning.arecibo.alert.manage.AlertEventProcessor;
@@ -52,13 +53,10 @@ public class AreciboAlertService
 {
     private static final Logger log = Logger.getLogger(AreciboAlertService.class);
 
-    private static final String SERVICE_NAME = AreciboAlertService.class.getSimpleName();
-    private static final String SERVICE_HOST = "host";
-    private static final String SERVICE_PORT = "port";
-
     private final Lifecycle lifecycle;
     private final Server server;
     private final ServiceLocator serviceLocator;
+    private final AlertServiceConfig alertServiceConfig;
     private final EmbeddedJettyConfig jettyConfig;
     private final Integer udpPort;
     private final UUID selfUUID;
@@ -68,6 +66,7 @@ public class AreciboAlertService
     private AreciboAlertService(final Lifecycle lifecycle,
                                 final Server server,
                                 final ServiceLocator serviceLocator,
+                                final AlertServiceConfig alertServiceConfig,
                                 final EmbeddedJettyConfig jettyConfig,
                                 @SelfUUID final UUID selfUUID,
                                 @Named("UDPServerPort") final int udpPort,
@@ -76,6 +75,7 @@ public class AreciboAlertService
         this.lifecycle = lifecycle;
         this.server = server;
         this.serviceLocator = serviceLocator;
+        this.alertServiceConfig = alertServiceConfig;
         this.jettyConfig = jettyConfig;
         this.udpPort = udpPort;
         this.selfUUID = selfUUID;
@@ -92,13 +92,13 @@ public class AreciboAlertService
         // Start the confStatusManager
         confStatusManager.start();
 
+        // Advertise alert endpoints
         final Map<String, String> map = new HashMap<String, String>();
-        map.put(SERVICE_HOST, jettyConfig.getHost());
-        map.put(SERVICE_PORT, String.valueOf(jettyConfig.getPort()));
-        //map.put(EventService.HOST, localIp); // this is redundant
+        map.put("host", jettyConfig.getHost());
+        map.put("port", String.valueOf(jettyConfig.getPort()));
         map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
         map.put(EventService.UDP_PORT, String.valueOf(udpPort));
-        final ServiceDescriptor self = new ServiceDescriptor(selfUUID, SERVICE_NAME, map);
+        final ServiceDescriptor self = new ServiceDescriptor(selfUUID, alertServiceConfig.getServiceName(), map);
         serviceLocator.advertiseLocalService(self);
 
         try {
@@ -109,7 +109,6 @@ public class AreciboAlertService
             log.error(ex);
             return;
         }
-
 
         final long secondsToStart = (System.currentTimeMillis() - startTime) / 1000;
         log.info("STARTUP COMPLETE: server started in %d:%02d", secondsToStart / 60, secondsToStart % 60);

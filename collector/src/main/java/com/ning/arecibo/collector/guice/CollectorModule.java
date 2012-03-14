@@ -119,7 +119,7 @@ public class CollectorModule extends AbstractModule
         // set up db connection, with named statistics
         final Named moduleName = Names.named(CollectorConstants.COLLECTOR_DB);
 
-        bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.events.collector.db")).asEagerSingleton();
+        bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.collector.db")).asEagerSingleton();
         bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName)).asEagerSingleton();
         bind(TimelineDAO.class).asEagerSingleton();
     }

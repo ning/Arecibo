@@ -57,18 +57,16 @@ public class EventCollectorServer
     private final UDPEventReceiverConfig udpConfig;
     private final RMIRegistryConfig rmiConfig;
 
-    public static final String NAME = EventCollectorServer.class.getSimpleName();
-
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     @Inject
-    public EventCollectorServer(CollectorConfig collectorConfig,
-                                EmbeddedJettyConfig config,
-                                UDPEventReceiverConfig udpConfig,
-                                RMIRegistryConfig rmiConfig,
-                                Server server,
-                                Lifecycle lifecycle,
-                                ServiceLocator serviceLocator)
+    public EventCollectorServer(final CollectorConfig collectorConfig,
+                                final EmbeddedJettyConfig config,
+                                final UDPEventReceiverConfig udpConfig,
+                                final RMIRegistryConfig rmiConfig,
+                                final Server server,
+                                final Lifecycle lifecycle,
+                                final ServiceLocator serviceLocator)
     {
         this.collectorConfig = collectorConfig;
         this.jettyConfig = config;
