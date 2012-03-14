@@ -33,7 +33,7 @@
     <description>Ning's monitoring tool for Java services</description>
     <properties>
         <scm.base.url>scm:git:git://github.com/ning/arecibo.git</scm.base.url>
-        <skeleton.version>0.0.21-SNAPSHOT</skeleton.version>
+        <skeleton.version>0.0.21</skeleton.version>
     </properties>
     <modules>
         <module>agent</module>
