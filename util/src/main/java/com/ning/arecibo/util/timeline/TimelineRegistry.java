@@ -56,7 +56,7 @@ public class TimelineRegistry
 
         if (hostId == null) {
             synchronized (hostsMonitor) {
-                hostId = hosts.inverse().get(host);
+                hostId = getHostId(host);
                 if (hostId == null) {
                     hostId = dao.addHost(host);
                     hosts.put(hostId, host);
@@ -79,7 +79,7 @@ public class TimelineRegistry
 
     public Iterable<String> getSampleKindsForHost(final String host)
     {
-        final Integer hostId = hosts.inverse().get(host);
+        final Integer hostId = getHostId(host);
         if (hostId != null) {
             return sampleKindsForHost.get(hostId);
         }
