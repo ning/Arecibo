@@ -236,16 +236,25 @@ public class SampleCoder {
 
     public static double getDoubleValue(final SampleOpcode opcode, final Object sampleValue) {
         switch (opcode) {
+        case BYTE:
         case BYTE_FOR_DOUBLE:
             return (double)((Byte)sampleValue);
+        case SHORT:
         case SHORT_FOR_DOUBLE:
             return (double)((Short)sampleValue);
+        case INT:
+            return (double)((Integer)sampleValue);
+        case LONG:
+            return (double)((Long)sampleValue);
+        case FLOAT:
         case FLOAT_FOR_DOUBLE:
             return (double)((Float)sampleValue);
         case HALF_FLOAT_FOR_DOUBLE:
             return (double)HalfFloat.toFloat((short)((Short)sampleValue));
         case DOUBLE:
             return (double)((Double)sampleValue);
+        case BIGINT:
+            return ((BigInteger)sampleValue).doubleValue();
         default:
             throw new IllegalArgumentException(String.format("In getDoubleValue(), sample opcode is %s, sample value is %s",
                     opcode.name(), String.valueOf(sampleValue)));
@@ -276,6 +285,14 @@ public class SampleCoder {
                 log.error("Reading string came up short");
             }
             return new String(bytes, "UTF-8");
+        case BIGINT:
+            final short bs = inputStream.readShort();
+            final byte[] bbytes = new byte[bs];
+            final int bbyteCount = inputStream.read(bbytes, 0, bs);
+            if (bbyteCount != bs) {
+                log.error("Reading bigint came up short");
+            }
+            return new BigInteger(new String(bbytes, "UTF-8"), 10);
         case BYTE_FOR_DOUBLE:
             return (double)inputStream.readByte();
         case SHORT_FOR_DOUBLE:
