@@ -29,10 +29,6 @@ public abstract class EmbeddedJettyConfig
     @Default("8088")
     public abstract int getPort();
 
-    @Config("arecibo.jetty.threads.low")
-    @Default("10")
-    public abstract int getLowThreads();
-
     @Config("arecibo.jetty.threads.min")
     @Default("1")
     public abstract int getMinThreads();
@@ -44,10 +40,6 @@ public abstract class EmbeddedJettyConfig
     @Config("arecibo.jetty.accept-queue")
     @Default("200")
     public abstract int getAcceptQueueSize();
-
-    @Config("arecibo.jetty.requestLog.logDir")
-    @Default("logs")
-    public abstract String getRequestLogPath();
 
     @Config("arecibo.jetty.resourceBase")
     @Default("src/main/webapp")

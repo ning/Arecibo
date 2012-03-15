@@ -14,26 +14,32 @@
  * under the License.
  */
 
-package com.ning.arecibo.collector;
+package com.ning.arecibo.collector.guice;
 
-import com.ning.arecibo.collector.guice.CollectorModule;
-import com.ning.arecibo.dao.MysqlTestingHelper;
+import com.google.inject.Inject;
+import com.ning.arecibo.util.timeline.CachingTimelineDAO;
 import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.IDBI;
 
-public class CollectorTestModule extends CollectorModule
+import javax.inject.Provider;
+
+public class CachingDefaultTimelineDAOProvider implements Provider<TimelineDAO>
 {
-    @Override
-    protected void configureDao()
-    {
-        final MysqlTestingHelper helper = new MysqlTestingHelper();
-        bind(MysqlTestingHelper.class).toInstance(helper);
-        final DBI dbi = helper.getDBI();
+    private final CollectorConfig config;
+    private final DBI dbi;
 
-        bind(DBI.class).toInstance(dbi);
-        bind(IDBI.class).toInstance(dbi);
-        bind(TimelineDAO.class).to(DefaultTimelineDAO.class).asEagerSingleton();
+    @Inject
+    public CachingDefaultTimelineDAOProvider(final CollectorConfig config, final DBI dbi)
+    {
+        this.config = config;
+        this.dbi = dbi;
+    }
+
+    @Override
+    public TimelineDAO get()
+    {
+        final TimelineDAO delegate = new DefaultTimelineDAO(dbi);
+        return new CachingTimelineDAO(delegate, config.getMaxHosts(), config.getMaxSampleKinds());
     }
 }

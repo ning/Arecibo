@@ -18,18 +18,23 @@ package com.ning.arecibo.alertmanager.guice;
 
 import org.skife.config.Config;
 import org.skife.config.Default;
+import org.skife.config.Description;
 
 public interface AreciboAlertManagerConfig
 {
     @Config("arecibo.alertmanager.serviceLocatorKlass")
+    @Description("ServiceLocator implementation for announcements and discovery")
     @Default("com.ning.arecibo.util.service.DummyServiceLocator")
     String getServiceLocatorClass();
 
+    @Config("arecibo.alertmanager.serviceName")
+    @Description("Arecibo service name, used for announcements and discovery")
+    @Default("AreciboAlertManagerService")
+    String getServiceName();
+
     @Config("arecibo.alertmanager.extraGuiceModules")
+    @Description("Extra Guice modules to be installed")
     @Default("")
     String getExtraGuiceModules();
 
-    @Config("arecibo.alertmanager.serviceName")
-    @Default("AreciboAlertManagerService")
-    String getServiceName();
 }

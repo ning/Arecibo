@@ -18,35 +18,43 @@ package com.ning.arecibo.alert.guice;
 
 import org.skife.config.Config;
 import org.skife.config.Default;
+import org.skife.config.Description;
 import org.skife.config.TimeSpan;
 
 public interface AlertServiceConfig
 {
-    @Config("arecibo.alert.config_update_interval")
-    @Default("5m")
-    TimeSpan getConfigUpdateInterval();
-
-    @Config("arecibo.alert.event_handler_buffer_size")
-    @Default("1024")
-    int getEventHandlerBufferSize();
-
-    @Config("arecibo.alert.event_handler_num_threads")
-    @Default("25")
-    int getEventHandlerNumThreads();
-
-    @Config("arecibo.alert.smtp_host")
-    @Default("smtp")
-    String getSMTPHost();
-
-    @Config("arecibo.alert.from_email_address")
-    @Default("arecibo_alerts@example.com")
-    String getFromEmailAddress();
-
     @Config("arecibo.alert.serviceLocatorKlass")
+    @Description("ServiceLocator implementation for announcements and discovery")
     @Default("com.ning.arecibo.util.service.DummyServiceLocator")
     String getServiceLocatorClass();
 
+    @Config("arecibo.alert.serviceName")
+    @Description("Arecibo service name, used for announcements and discovery")
+    @Default("AreciboAlertService")
+    String getServiceName();
+
     @Config("arecibo.alert.extraGuiceModules")
+    @Description("Extra Guice modules to be installed")
     @Default("")
     String getExtraGuiceModules();
+
+    @Config("arecibo.alert.configUpdateInterval")
+    @Default("5m")
+    TimeSpan getConfigUpdateInterval();
+
+    @Config("arecibo.alert.eventHandlerBufferSize")
+    @Default("1024")
+    int getEventHandlerBufferSize();
+
+    @Config("arecibo.alert.eventHandlerNumThreads")
+    @Default("25")
+    int getEventHandlerNumThreads();
+
+    @Config("arecibo.alert.smtpHost")
+    @Default("smtp")
+    String getSMTPHost();
+
+    @Config("arecibo.alert.fromEmailAddress")
+    @Default("arecibo_alerts@example.com")
+    String getFromEmailAddress();
 }

@@ -23,6 +23,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
@@ -55,7 +56,6 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -141,11 +141,11 @@ public class TimelineEventHandler implements EventHandler
             // Extract samples
             if (event instanceof MapEvent) {
                 final Map<String, Object> samplesMap = ((MapEvent) event).getMap();
-                convertSamplesToScalarSamples(samplesMap, scalarSamples);
+                convertSamplesToScalarSamples(hostId, samplesMap, scalarSamples);
             }
             else if (event instanceof MonitoringEvent) {
                 final Map<String, Object> samplesMap = ((MonitoringEvent) event).getMap();
-                convertSamplesToScalarSamples(samplesMap, scalarSamples);
+                convertSamplesToScalarSamples(hostId, samplesMap, scalarSamples);
             }
             else {
                 log.warn("I don't understand event: " + event);
@@ -166,48 +166,59 @@ public class TimelineEventHandler implements EventHandler
         accumulator.addHostSamples(hostSamples);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes() throws IOException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunkAndTimes(null, null, null);
+        final ImmutableList<String> sampleKinds = ImmutableList.copyOf(timelineRegistry.getSampleKindsForHost(filterHostName));
+        return getInMemoryTimelineChunkAndTimes(filterHostName, sampleKinds, filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(@Nullable final String filterHostName, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, final String filterSampleKind, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunkAndTimes(filterHostName, null, filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunkAndTimes(filterHostName, ImmutableList.of(filterSampleKind), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(@Nullable final String filterHostName, @Nullable final String filterSampleKind, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, final List<String> filterSampleKinds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
+        if (timelineRegistry == null) {
+            return ImmutableList.of();
+        }
+
+        // Check first if there is an in-memory accumulator for this host
+        final Integer hostId = timelineRegistry.getHostId(filterHostName);
+        if (hostId == null) {
+            return ImmutableList.of();
+        }
+        final TimelineHostEventAccumulator hostEventAccumulator = accumulators.getIfPresent(hostId);
+        if (hostEventAccumulator == null) {
+            return ImmutableList.of();
+        }
+
+        // Yup, there is. Check now if the filters apply
+        final List<DateTime> accumulatorTimes = hostEventAccumulator.getTimes();
+        final DateTime accumulatorStartTime = hostEventAccumulator.getStartTime();
+        final DateTime accumulatorEndTime = hostEventAccumulator.getEndTime();
+
+        if ((filterStartTime != null && accumulatorEndTime.isBefore(filterStartTime)) || (filterStartTime != null && accumulatorStartTime.isAfter(filterEndTime))) {
+            // Ignore this accumulator
+            return ImmutableList.of();
+        }
+
+        // We have a timeline match, return the samples matching the sample kinds
         final List<TimelineChunkAndTimes> samplesByHostName = new ArrayList<TimelineChunkAndTimes>();
+        for (final TimelineChunkAccumulator chunkAccumulator : hostEventAccumulator.getTimelines().values()) {
+            // Extract the timeline for this chunk by copying it and reading encoded bytes
+            final TimelineChunkAccumulator accumulator = chunkAccumulator.deepCopy();
+            final TimelineChunk timelineChunk = accumulator.extractTimelineChunkAndReset(-1);
+            // NOTE! Further filtering needs to be done in the processing function
+            final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 
-        final ConcurrentMap<Integer, TimelineHostEventAccumulator> accumulatorsMap = accumulators.asMap();
-        for (final int hostId : accumulatorsMap.keySet()) {
-            final TimelineHostEventAccumulator hostEventAccumulator = accumulatorsMap.get(hostId);
-            final List<DateTime> timesForAccumulator = hostEventAccumulator.getTimes();
-            final DateTime startTime = hostEventAccumulator.getStartTime();
-            final DateTime endTime = hostEventAccumulator.getEndTime();
-            final String hostName = timelineDAO.getHosts().get(hostId);
-
-            if ((filterHostName != null && !filterHostName.equals(hostName)) || (filterStartTime != null && endTime.isBefore(filterStartTime)) || (filterStartTime != null && startTime.isAfter(filterEndTime))) {
-                // Ignore this accumulator
+            final String sampleKind = timelineRegistry.getSampleKindById(timelineChunk.getSampleKindId());
+            if (!filterSampleKinds.contains(sampleKind)) {
+                // We don't care about this sample kind
                 continue;
             }
 
-            for (final TimelineChunkAccumulator chunkAccumulator : hostEventAccumulator.getTimelines().values()) {
-                // Extract the timeline for this chunk by copying it and reading encoded bytes
-                final TimelineChunkAccumulator accumulator = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = accumulator.extractTimelineChunkAndReset(-1);
-                // NOTE! Further filtering needs to be done in the processing function
-                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, startTime, endTime, timesForAccumulator);
-
-                // TODO: cache to optimize?
-                final String sampleKind = timelineDAO.getSampleKinds().get(timelineChunk.getSampleKindId());
-                if (filterSampleKind != null && !filterSampleKind.equals(sampleKind)) {
-                    continue;
-                }
-
-                samplesByHostName.add(new TimelineChunkAndTimes(hostName, sampleKind, timelineChunk, timelineTimes));
-            }
+            samplesByHostName.add(new TimelineChunkAndTimes(filterHostName, sampleKind, timelineChunk, timelineTimes));
         }
 
         return samplesByHostName;
@@ -222,14 +233,14 @@ public class TimelineEventHandler implements EventHandler
         return timelineRegistry.getOrAddHost(hostUUID);
     }
 
-    private void convertSamplesToScalarSamples(final Map<String, Object> inputSamples, final Map<Integer, ScalarSample> outputSamples)
+    private void convertSamplesToScalarSamples(final int hostId, final Map<String, Object> inputSamples, final Map<Integer, ScalarSample> outputSamples)
     {
         if (inputSamples == null) {
             return;
         }
 
         for (final String sampleKind : inputSamples.keySet()) {
-            final int sampleKindId = timelineRegistry.getOrAddSampleKind(sampleKind);
+            final int sampleKindId = timelineRegistry.getOrAddSampleKind(hostId, sampleKind);
             final Object sample = inputSamples.get(sampleKind);
 
             if (sample == null) {

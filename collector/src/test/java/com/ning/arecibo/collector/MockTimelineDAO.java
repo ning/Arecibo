@@ -23,19 +23,23 @@ import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineTimes;
 import org.joda.time.DateTime;
+import org.skife.jdbi.v2.exceptions.CallbackFailedException;
+import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 
 import java.util.List;
 
-public final class MockTimelineDAO extends TimelineDAO
+public final class MockTimelineDAO implements TimelineDAO
 {
     private final BiMap<Integer, String> hosts = HashBiMap.create();
     private final BiMap<Integer, String> sampleKinds = HashBiMap.create();
     private final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
 
-    public MockTimelineDAO()
+
+    @Override
+    public String getHost(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        super(null);
+        return hosts.get(hostId);
     }
 
     @Override
@@ -49,6 +53,12 @@ public final class MockTimelineDAO extends TimelineDAO
     {
         hosts.put(hosts.size(), host);
         return hosts.size() - 1;
+    }
+
+    @Override
+    public String getSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return sampleKinds.get(sampleKindId);
     }
 
     @Override
@@ -80,6 +90,12 @@ public final class MockTimelineDAO extends TimelineDAO
 
     @Override
     public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime)
+    {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
     {
         throw new UnsupportedOperationException("TODO");
     }
