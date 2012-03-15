@@ -75,7 +75,7 @@ public class TestDecimatingFilter {
             else {
                 value = (6 - (index - 1)) * 10;
             }
-            System.out.printf("For i %d, index %d, adding value %f\n", i, index, value);
+            //System.out.printf("For i %d, index %d, adding value %f\n", i, index, value);
             filter.processOneSample(new DateTime(millisStart + 2000 * i), i+1, SampleOpcode.DOUBLE, value);
         }
         Assert.assertEquals(outputs.size(), 5);
@@ -83,7 +83,7 @@ public class TestDecimatingFilter {
         for (int i=0; i<5; i++) {
             final double value = outputs.get(i);
             final double expectedValue = expectedValues[i];
-            System.out.printf("index %d, value returned %f, value expected %f\n", i, value, expectedValue);
+            //System.out.printf("index %d, value returned %f, value expected %f\n", i, value, expectedValue);
             Assert.assertEquals(value, expectedValue);
         }
     }
