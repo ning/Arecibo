@@ -19,7 +19,6 @@ package com.ning.arecibo.collector.resources;
 import com.google.common.collect.BiMap;
 import com.google.inject.Singleton;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
-import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.jersey.metrics.TimedResource;

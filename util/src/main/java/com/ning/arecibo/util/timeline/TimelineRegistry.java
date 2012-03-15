@@ -17,6 +17,9 @@
 package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 
 public class TimelineRegistry
@@ -27,6 +30,7 @@ public class TimelineRegistry
     private final TimelineDAO dao;
     private final BiMap<Integer, String> hosts;
     private final BiMap<Integer, String> sampleKinds;
+    private final Multimap<Integer, String> sampleKindsForHost = HashMultimap.create();
 
     @Inject
     public TimelineRegistry(final TimelineDAO dao)
@@ -36,9 +40,19 @@ public class TimelineRegistry
         this.sampleKinds = dao.getSampleKinds();
     }
 
+    public Iterable<String> getHosts()
+    {
+        return hosts.values();
+    }
+
+    public Integer getHostId(final String host)
+    {
+        return hosts.inverse().get(host);
+    }
+
     public int getOrAddHost(final String host)
     {
-        Integer hostId = hosts.inverse().get(host);
+        Integer hostId = getHostId(host);
 
         if (hostId == null) {
             synchronized (hostsMonitor) {
@@ -53,7 +67,28 @@ public class TimelineRegistry
         return hostId;
     }
 
-    public int getOrAddSampleKind(final String sampleKind)
+    public Iterable<String> getSampleKinds()
+    {
+        return sampleKinds.values();
+    }
+
+    public String getSampleKindById(final int sampleKindId)
+    {
+        return sampleKinds.get(sampleKindId);
+    }
+
+    public Iterable<String> getSampleKindsForHost(final String host)
+    {
+        final Integer hostId = hosts.inverse().get(host);
+        if (hostId != null) {
+            return sampleKindsForHost.get(hostId);
+        }
+        else {
+            return ImmutableList.of();
+        }
+    }
+
+    public int getOrAddSampleKind(final int hostId, final String sampleKind)
     {
         Integer sampleKindId = sampleKinds.inverse().get(sampleKind);
 
@@ -63,6 +98,7 @@ public class TimelineRegistry
                 if (sampleKindId == null) {
                     sampleKindId = dao.addSampleKind(sampleKind);
                     sampleKinds.put(sampleKindId, sampleKind);
+                    sampleKindsForHost.put(hostId, sampleKind);
                 }
             }
         }

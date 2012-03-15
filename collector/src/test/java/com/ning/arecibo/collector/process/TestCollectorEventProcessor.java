@@ -33,10 +33,9 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 public class TestCollectorEventProcessor
 {
@@ -59,49 +58,14 @@ public class TestCollectorEventProcessor
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 
-    @Test(groups = "fast")
-    public void testInMemoryFilters() throws Exception
-    {
-        final DateTime startTime = new DateTime(DateTimeZone.UTC);
-        for (int i = 0; i < NB_EVENTS; i++) {
-            final long eventTs = new DateTime(DateTimeZone.UTC).getMillis();
-            processor.processEvent(new MapEvent(eventTs, "NOT_USED", HOST_UUID, EVENT));
-        }
-        final DateTime endTime = new DateTime(DateTimeZone.UTC);
-
-        // One per host and type
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, null, null).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), null, null).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, startTime, null).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, null, endTime).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(null, startTime, endTime).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, null).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), null, endTime).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, startTime, endTime).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime, endTime).size(), 1);
-        // Wider ranges should be supported
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime.minusSeconds(1), endTime).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime, endTime.plusSeconds(1)).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, startTime.minusSeconds(1), endTime.plusSeconds(1)).size(), 1);
-        // Buggy kind
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), "kindC", startTime, endTime).size(), 0);
-        // Buggy start date
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime.plusSeconds(1), endTime).size(), 0);
-        // Buggy end date
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime.minusSeconds(1)).size(), 0);
-        // Buggy host
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(UUID.randomUUID().toString(), startTime, endTime).size(), 0);
-    }
-
     @Test(groups = "slow")
     public void testCache() throws Exception
     {
         // Check initial state
         Assert.assertEquals(processor.getEventsReceived(), 0);
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null).size(), 0);
         Assert.assertEquals(dao.getHosts().size(), 0);
         Assert.assertEquals(dao.getSampleKinds().size(), 0);
 
@@ -127,7 +91,8 @@ public class TestCollectorEventProcessor
         // One per host
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
         // One per host and type
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null).size(), 1);
         Assert.assertEquals(dao.getHosts().size(), 1);
         Assert.assertEquals(dao.getSampleKinds().size(), 2);
         Assert.assertTrue(dao.getSampleKinds().values().contains(KIND_A));
@@ -139,49 +104,22 @@ public class TestCollectorEventProcessor
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
         // Should have been flushed
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes().size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null).size(), 0);
     }
 
-    private void checkProcessorState(final String csvSamplesKindA, final String csvSamplesKindB, final int eventSent) throws IOException
+    private void checkProcessorState(final String csvSamplesKindA, final String csvSamplesKindB, final int eventSent) throws IOException, ExecutionException
     {
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
         Assert.assertEquals(processor.getEventsReceived(), eventSent);
 
         // One per host and per type (two types here: kindA and kindB)
-        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimes = timelineEventHandler.getInMemoryTimelineChunkAndTimes();
-        Assert.assertEquals(inMemoryTimelineChunkAndTimes.size(), 2);
+        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimesA = timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null);
+        Assert.assertEquals(inMemoryTimelineChunkAndTimesA.size(), 1);
+        Assert.assertEquals(inMemoryTimelineChunkAndTimesA.iterator().next().getSamplesAsCSV(), csvSamplesKindA);
 
-        checkInMemoryState(inMemoryTimelineChunkAndTimes, csvSamplesKindA, csvSamplesKindB);
-    }
-
-    private void checkInMemoryState(final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimes, final String csvSamplesKindA, final String csvSamplesKindB) throws IOException
-    {
-        final Set<String> hostNames = new HashSet<String>();
-        final Set<String> sampleKinds = new HashSet<String>();
-        for (final TimelineChunkAndTimes chunkAndTimes : inMemoryTimelineChunkAndTimes) {
-            // Gather hostnames and sample kinds for later check (see below)
-            hostNames.add(chunkAndTimes.getHostName());
-            sampleKinds.add(chunkAndTimes.getSampleKind());
-
-            // Check the actual samples
-            if (chunkAndTimes.getSampleKind().equals(KIND_A)) {
-                Assert.assertEquals(chunkAndTimes.getSamplesAsCSV(), csvSamplesKindA);
-            }
-            else if (chunkAndTimes.getSampleKind().equals(KIND_B)) {
-                Assert.assertEquals(chunkAndTimes.getSamplesAsCSV(), csvSamplesKindB);
-            }
-            else {
-                Assert.fail();
-            }
-        }
-
-        // Data is only sent from one host
-        Assert.assertEquals(hostNames.size(), 1);
-        Assert.assertTrue(hostNames.contains(HOST_UUID.toString()));
-
-        // This host sent two types of beans: kindA and kindB
-        Assert.assertEquals(sampleKinds.size(), 2);
-        Assert.assertTrue(sampleKinds.contains(KIND_A));
-        Assert.assertTrue(sampleKinds.contains(KIND_B));
+        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimesB = timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null);
+        Assert.assertEquals(inMemoryTimelineChunkAndTimesB.size(), 1);
+        Assert.assertEquals(inMemoryTimelineChunkAndTimesB.iterator().next().getSamplesAsCSV(), csvSamplesKindB);
     }
 }
