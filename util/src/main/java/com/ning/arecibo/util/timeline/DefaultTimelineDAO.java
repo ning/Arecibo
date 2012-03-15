@@ -49,6 +49,23 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
+    public Integer getHostId(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return dbi.withHandle(new HandleCallback<Integer>()
+        {
+            @Override
+            public Integer withHandle(final Handle handle) throws Exception
+            {
+                return handle
+                    .createQuery("select host_id from hosts where host_name = :host_name")
+                    .bind("host_name", host)
+                    .map(IntegerMapper.FIRST)
+                    .first();
+            }
+        });
+    }
+
+    @Override
     public String getHost(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<String>()
@@ -91,7 +108,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public int addHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public Integer getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<Integer>()
         {
@@ -99,10 +116,25 @@ public class DefaultTimelineDAO implements TimelineDAO
             public Integer withHandle(final Handle handle) throws Exception
             {
                 handle
-                    .createStatement("insert into hosts (host_name, created_dt) values (:host_name, unix_timestamp())")
+                    .createStatement("insert ignore into hosts (host_name, created_dt) values (:host_name, unix_timestamp())")
                     .bind("host_name", host)
                     .execute();
-                return handle.createQuery("select last_insert_id()")
+                return getHostId(host);
+            }
+        });
+    }
+
+    @Override
+    public Integer getSampleKindId(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return dbi.withHandle(new HandleCallback<Integer>()
+        {
+            @Override
+            public Integer withHandle(final Handle handle) throws Exception
+            {
+                return handle
+                    .createQuery("select sample_kind_id from sample_kinds where sample_kind = :sample_kind")
+                    .bind("sample_kind", sampleKind)
                     .map(IntegerMapper.FIRST)
                     .first();
             }
@@ -127,7 +159,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public int addSampleKind(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public Integer getOrAddSampleKind(final Integer hostId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.withHandle(new HandleCallback<Integer>()
         {
@@ -135,20 +167,44 @@ public class DefaultTimelineDAO implements TimelineDAO
             public Integer withHandle(final Handle handle) throws Exception
             {
                 handle
-                    .createStatement("insert into sample_kinds (sample_kind) values (:sample_kind)")
+                    .createStatement("insert ignore into sample_kinds (sample_kind) values (:sample_kind)")
                     .bind("sample_kind", sampleKind)
                     .execute();
-                return handle
-                    .createQuery("select last_insert_id()")
-                    .map(IntegerMapper.FIRST)
-                    .first();
+                return getSampleKindId(sampleKind);
             }
         });
     }
 
-    private BiMap<Integer, String> makeBiMap()
+    @Override
+    public Iterable<String> getSampleKindsByHostName(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        return HashBiMap.create();
+        return dbi.withHandle(new HandleCallback<List<String>>()
+        {
+            @Override
+            public List<String> withHandle(final Handle handle) throws Exception
+            {
+                return handle
+                    .createQuery(
+                        "select distinct\n" +
+                            "  k.sample_kind\n" +
+                            "from timeline_chunks c\n" +
+                            "join hosts h using (host_id)\n" +
+                            "join sample_kinds k using (sample_kind_id)\n" +
+                            "where h.host_name = :host_name\n" +
+                            ";")
+                    .bind("host_name", host)
+                    .fold(new ArrayList<String>(), new Folder2<List<String>>()
+                    {
+                        @Override
+                        public List<String> fold(final List<String> accumulator, final ResultSet rs, final StatementContext ctx) throws SQLException
+                        {
+                            final String sampleKind = rs.getString(1);
+                            accumulator.add(sampleKind);
+                            return accumulator;
+                        }
+                    });
+            }
+        });
     }
 
     @Override
@@ -177,7 +233,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public int insertTimelineTimes(final TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException
+    public Integer insertTimelineTimes(final TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.inTransaction(new TransactionCallback<Integer>()
         {
@@ -202,7 +258,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public int insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
+    public Integer insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return dbi.inTransaction(new TransactionCallback<Integer>()
         {
@@ -306,5 +362,10 @@ public class DefaultTimelineDAO implements TimelineDAO
                     .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
             }
         });
+    }
+
+    private BiMap<Integer, String> makeBiMap()
+    {
+        return HashBiMap.create();
     }
 }
