@@ -21,21 +21,30 @@ import com.ning.arecibo.util.Logger;
 
 
 public enum SampleOpcode {
-    BYTE((byte)1, 1, false),
-    SHORT((byte)2, 2, false),
-    INT((byte)3, 4, false),
-    LONG((byte)4, 8, false),
-    FLOAT((byte)5, 4, false),
-    DOUBLE((byte)6, 8, false),
-    STRING((byte)7, 0, false),
-    NULL((byte)8, 0, false),
-    REPEAT((byte)9, 0, true);
+    BYTE((byte)1, 1),
+    SHORT((byte)2, 2),
+    INT((byte)3, 4),
+    LONG((byte)4, 8),
+    FLOAT((byte)5, 4),
+    DOUBLE((byte)6, 8),
+    STRING((byte)7, 0),
+    NULL((byte)8, 0),
+    FLOAT_FOR_DOUBLE((byte)10, 4),
+    HALF_FLOAT_FOR_DOUBLE((byte)11, 2),
+    BYTE_FOR_DOUBLE((byte)12, 1),
+    SHORT_FOR_DOUBLE((byte)13, 2),
+    BIGINT((byte)14, 0),
+    REPEAT((byte)0x7f, 1, true);
 
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
 
     private byte opcodeIndex;
     private final int byteSize;
     private final boolean repeater;
+
+    private SampleOpcode(byte opcodeIndex, int byteSize) {
+        this(opcodeIndex, byteSize, false);
+    }
 
     private SampleOpcode(byte opcodeIndex, int byteSize, boolean repeater) {
         this.opcodeIndex = opcodeIndex;

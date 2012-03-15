@@ -155,63 +155,32 @@ public class TimelineChunkAndTimes
         return null;
     }
 
-    private static final class CSVOutputProcessor implements SampleProcessor
+    private static final class CSVOutputProcessor extends TimeRangeSampleProcessor
     {
-        private final DateTime startTime;
-        private final DateTime endTime;
-
         private final StringBuilder builder = new StringBuilder();
         private boolean firstSamples = true;
-        private String lastValue = null;
 
         public CSVOutputProcessor(@Nullable final DateTime startTime, @Nullable final DateTime endTime)
         {
-            this.startTime = startTime;
-            this.endTime = endTime;
+            super(startTime, endTime);
         }
 
-        /**
-         * Process sampleCount sequential samples with identical values.  sampleCount will usually be 1,
-         * but may be larger than 1.  Implementors may just loop processing identical values, but some
-         * implementations may optimize adding a bunch of repeated values
-         *
-         * @param timestamps   a TimelineTimestamps instance, indexed by sample number to get the time at which the sample was captured.
-         * @param sampleNumber the number of the sample within the timeline, used to index timestamps
-         * @param sampleCount  the count of sequential, identical values
-         * @param opcode       the opcode of the sample value, which may not be a REPEAT opcode
-         * @param value        the value of this kind of sample over the count of samples starting at the time
-         *                     given by the sampleNumber indexing the TimelineTimestamps.
-         */
         @Override
-        public void processSamples(final TimelineTimes timestamps, final int sampleNumber, final int sampleCount, final SampleOpcode opcode, final Object value)
+        public void processOneSample(final DateTime sampleTimestamp, final int sampleNumber, final SampleOpcode opcode, final Object value)
         {
-            // Create a CSV of: timestamp, sample value, timestamp, sample value, etc.
-            for (int i = 0; i < sampleCount; i++) {
-                final DateTime sampleTimestamp = timestamps.getSampleTimestamp(sampleNumber + i);
-                if (sampleTimestamp == null) {
-                    // Invalid?
-                    continue;
+            if (sampleTimestamp != null) {
+                final String valueString = value == null ? "0" : value.toString();
+                if (!firstSamples) {
+                    builder.append(",");
+                }
+                else {
+                    firstSamples = false;
                 }
 
-                // Save the current value for upcoming repeat opcodes
-                if (!opcode.getRepeater()) {
-                    lastValue = value == null ? "0" : value.toString();
-                }
-
-                // Check if the sample is in the right time range
-                if ((startTime == null || sampleTimestamp.equals(startTime) || sampleTimestamp.isAfter(startTime)) && (endTime == null || sampleTimestamp.equals(endTime) || sampleTimestamp.isBefore(endTime))) {
-                    if (!firstSamples) {
-                        builder.append(",");
-                    }
-                    else {
-                        firstSamples = false;
-                    }
-
-                    builder
-                        .append(TimelineTimes.unixSeconds(sampleTimestamp))
-                        .append(",")
-                        .append(lastValue);
-                }
+                builder
+                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
+                    .append(",")
+                    .append(valueString);
             }
         }
 

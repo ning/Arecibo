@@ -16,7 +16,6 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.ning.arecibo.util.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.StatementContext;
@@ -32,8 +31,6 @@ import java.util.List;
 
 public class TimelineTimes extends CachedObject
 {
-    private static final Logger log = Logger.getLogger(TimelineTimes.class);
-
     public static final ResultSetMapper<TimelineTimes> mapper = new ResultSetMapper<TimelineTimes>()
     {
         @Override

@@ -19,7 +19,6 @@ package com.ning.arecibo.util.timeline;
 import com.google.common.collect.Sets;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
-import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -133,7 +132,8 @@ public class TimelineHostEventAccumulator
                 }
                 timelines.put(sampleKindId, timeline);
             }
-            timeline.addSample(sample);
+            final ScalarSample compressedSample = SampleCoder.compressSample(sample);
+            timeline.addSample(compressedSample);
         }
         // Now make sure to advance the timelines we haven't added samples to,
         // since the samples for a given sample kind can come and go
