@@ -25,7 +25,6 @@ import java.util.List;
 
 public interface TimelineDAO
 {
-
     String getHost(Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException;
 
     BiMap<Integer, String> getHosts() throws UnableToObtainConnectionException, CallbackFailedException;
