@@ -50,10 +50,10 @@ public class FileBackedBuffer
 
     public FileBackedBuffer(final String basePath, final String prefix) throws IOException
     {
-        // This configuration creates ~60M files, this to stay below 64M default limit
-        // that JVM has for direct buffers.
-        final MemBuffersForBytes bufs = new MemBuffersForBytes(4 * 1024 * 1024, 1, 15);
-        final StreamyBytesMemBuffer inputBuffer = bufs.createStreamyBuffer(8, 15);
+        // Create up to 7 segments of 70kB, which creates ~500kB files.
+        // With -XX:MaxDirectMemorySize=1024m, this allows one to manage up to 2k hosts
+        final MemBuffersForBytes bufs = new MemBuffersForBytes(70 * 1024, 1, 8);
+        final StreamyBytesMemBuffer inputBuffer = bufs.createStreamyBuffer(4, 8);
         out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
         smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);
         // Drop the Smile header
