@@ -186,7 +186,7 @@ public class TimelineEventHandler implements EventHandler
             final List<DateTime> timesForAccumulator = hostEventAccumulator.getTimes();
             final DateTime startTime = hostEventAccumulator.getStartTime();
             final DateTime endTime = hostEventAccumulator.getEndTime();
-            final String hostName = timelineDAO.getHosts().get(hostId);
+            final String hostName = timelineDAO.getHost(hostId);
 
             if ((filterHostName != null && !filterHostName.equals(hostName)) || (filterStartTime != null && endTime.isBefore(filterStartTime)) || (filterStartTime != null && startTime.isAfter(filterEndTime))) {
                 // Ignore this accumulator
@@ -200,8 +200,7 @@ public class TimelineEventHandler implements EventHandler
                 // NOTE! Further filtering needs to be done in the processing function
                 final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, startTime, endTime, timesForAccumulator);
 
-                // TODO: cache to optimize?
-                final String sampleKind = timelineDAO.getSampleKinds().get(timelineChunk.getSampleKindId());
+                final String sampleKind = timelineDAO.getSampleKind(timelineChunk.getSampleKindId());
                 if (filterSampleKind != null && !filterSampleKind.equals(sampleKind)) {
                     continue;
                 }

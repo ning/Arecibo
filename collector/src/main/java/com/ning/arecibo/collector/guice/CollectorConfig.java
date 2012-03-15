@@ -48,6 +48,11 @@ public interface CollectorConfig
     @Default("10000")
     int getMaxHosts();
 
+    @Config("arecibo.collector.timelines.maxSampleKinds")
+    @Description("Max number of different sample kinds to keep in memory at the same time")
+    @Default("10000")
+    int getMaxSampleKinds();
+
     @Config("arecibo.collector.timelines.length")
     @Description("How long to buffer data in memory before flushing it to the database")
     @Default("10m")

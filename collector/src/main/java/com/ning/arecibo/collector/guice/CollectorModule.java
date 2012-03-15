@@ -30,6 +30,7 @@ import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
+import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.jersey.metrics.TimedResourceModule;
 import org.skife.config.ConfigurationObjectFactory;
@@ -58,7 +59,7 @@ public class CollectorModule extends AbstractModule
 
         final ExportBuilder builder = MBeanModule.newExporter(binder());
 
-        builder.export(TimelineDAO.class).as("arecibo.collector:name=TimelineDAO");
+        builder.export(DefaultTimelineDAO.class).as("arecibo.collector:name=TimelineDAO");
 
         for (final String guiceModule : config.getExtraGuiceModules().split(",")) {
             if (guiceModule.isEmpty()) {
@@ -103,7 +104,7 @@ public class CollectorModule extends AbstractModule
             .asEagerSingleton();
     }
 
-    private void configureServiceLocator(CollectorConfig config)
+    private void configureServiceLocator(final CollectorConfig config)
     {
         try {
             bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
@@ -116,12 +117,9 @@ public class CollectorModule extends AbstractModule
 
     protected void configureDao()
     {
-        // set up db connection, with named statistics
-        final Named moduleName = Names.named(CollectorConstants.COLLECTOR_DB);
-
-        bind(DBI.class).annotatedWith(moduleName).toProvider(new DBIProvider(System.getProperties(), "arecibo.collector.db")).asEagerSingleton();
-        bind(IDBI.class).annotatedWith(moduleName).to(Key.get(DBI.class, moduleName)).asEagerSingleton();
-        bind(TimelineDAO.class).asEagerSingleton();
+        bind(DBI.class).toProvider(new DBIProvider(System.getProperties(), "arecibo.collector.db")).asEagerSingleton();
+        bind(IDBI.class).to(Key.get(DBI.class)).asEagerSingleton();
+        bind(TimelineDAO.class).toProvider(CachingDefaultTimelineDAOProvider.class).asEagerSingleton();
     }
 
     protected void configureStats()

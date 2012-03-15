@@ -37,7 +37,7 @@ public class DBIProvider implements Provider<DBI>
     @Override
     public DBI get()
     {
-        BoneCPConfig dbConfig = new BoneCPConfig();
+        final BoneCPConfig dbConfig = new BoneCPConfig();
 
         dbConfig.setJdbcUrl(props.getProperty(prefix + ".url"));
         dbConfig.setUsername(props.getProperty(prefix + ".user"));

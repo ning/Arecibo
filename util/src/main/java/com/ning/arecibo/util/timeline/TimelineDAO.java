@@ -17,256 +17,32 @@
 package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import org.joda.time.DateTime;
-import org.skife.jdbi.v2.Folder2;
-import org.skife.jdbi.v2.Handle;
-import org.skife.jdbi.v2.IDBI;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.TransactionCallback;
-import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
-import org.skife.jdbi.v2.tweak.HandleCallback;
-import org.skife.jdbi.v2.util.IntegerMapper;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
-// TODO Make queries stream-able
-public class TimelineDAO
+public interface TimelineDAO
 {
-    private final IDBI dbi;
 
-    @Inject
-    public TimelineDAO(@Named("collector_db") IDBI dbi)
-    {
-        this.dbi = dbi;
-    }
+    String getHost(Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    /**
-     * Get the full collection of hosts, as a BiMap that lets us look up
-     * by host id
-     */
-    public BiMap<Integer, String> getHosts() throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<BiMap<Integer, String>>()
-        {
-            @Override
-            public BiMap<Integer, String> withHandle(Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery("select host_id, host_name from hosts")
-                    .fold(makeBiMap(), new Folder2<BiMap<Integer, String>>()
-                    {
-                        @Override
-                        public BiMap<Integer, String> fold(BiMap<Integer, String> accumulator, ResultSet rs, StatementContext ctx) throws SQLException
-                        {
-                            final int hostId = rs.getInt(1);
-                            final String host = rs.getString(2);
-                            accumulator.put(hostId, host);
-                            return accumulator;
-                        }
-                    });
-            }
-        });
-    }
+    BiMap<Integer, String> getHosts() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public int addHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<Integer>()
-        {
-            @Override
-            public Integer withHandle(Handle handle) throws Exception
-            {
-                handle
-                    .createStatement("insert into hosts (host_name, created_dt) values (:host_name, unix_timestamp())")
-                    .bind("host_name", host)
-                    .execute();
-                return handle.createQuery("select last_insert_id()")
-                    .map(IntegerMapper.FIRST)
-                    .first();
-            }
-        });
-    }
+    int addHost(String host) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public int addSampleKind(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<Integer>()
-        {
-            @Override
-            public Integer withHandle(Handle handle) throws Exception
-            {
-                handle
-                    .createStatement("insert into sample_kinds (sample_kind) values (:sample_kind)")
-                    .bind("sample_kind", sampleKind)
-                    .execute();
-                return handle
-                    .createQuery("select last_insert_id()")
-                    .map(IntegerMapper.FIRST)
-                    .first();
-            }
-        });
-    }
+    String getSampleKind(Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    private BiMap<Integer, String> makeBiMap()
-    {
-        return HashBiMap.create();
-    }
+    BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<BiMap<Integer, String>>()
-        {
-            @Override
-            public BiMap<Integer, String> withHandle(Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery("select sample_kind_id, sample_kind from sample_kinds")
-                    .fold(makeBiMap(), new Folder2<BiMap<Integer, String>>()
-                    {
-                        @Override
-                        public BiMap<Integer, String> fold(BiMap<Integer, String> accumulator, ResultSet rs, StatementContext ctx) throws SQLException
-                        {
-                            final int sampleKindId = rs.getInt(1);
-                            final String sampleKind = rs.getString(2);
-                            accumulator.put(sampleKindId, sampleKind);
-                            return accumulator;
-                        }
-                    });
-            }
-        });
-    }
+    int addSampleKind(String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public int insertTimelineTimes(final TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.inTransaction(new TransactionCallback<Integer>()
-        {
-            @Override
-            public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
-            {
-                handle
-                    .createStatement("insert into timeline_times (host_id, start_time, end_time, count, times)" +
-                        " values (:host_id, :start_time, :end_time, :count, :times)")
-                    .bind("host_id", timelineTimes.getHostId())
-                    .bind("start_time", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
-                    .bind("end_time", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
-                    .bind("count", timelineTimes.getSampleCount())
-                    .bind("times", timelineTimes.getTimeArray())
-                    .execute();
-                return handle
-                    .createQuery("select last_insert_id()")
-                    .map(IntegerMapper.FIRST)
-                    .first();
-            }
-        });
-    }
+    int insertTimelineTimes(TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public int insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.inTransaction(new TransactionCallback<Integer>()
-        {
-            @Override
-            public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
-            {
-                handle
-                    .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, sample_bytes)" +
-                        "values (:host_id, :sample_kind_id, :sample_count, :timeline_times_id, :sample_bytes)")
-                    .bind("host_id", timelineChunk.getHostId())
-                    .bind("sample_kind_id", timelineChunk.getSampleKindId())
-                    .bind("sample_count", timelineChunk.getSampleCount())
-                    .bind("timeline_times_id", timelineChunk.getTimelineTimesId())
-                    .bind("sample_bytes", timelineChunk.getSamples())
-                    .execute();
-                return handle
-                    .createQuery("select last_insert_id()")
-                    .map(IntegerMapper.FIRST)
-                    .first();
-            }
-        });
-    }
+    int insertTimelineChunk(TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
-        {
-            @Override
-            public List<TimelineChunkAndTimes> withHandle(final Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery(
-                        "select distinct\n" +
-                            "  h.host_id\n" +
-                            ", h.host_name\n" +
-                            ", k.sample_kind_id\n" +
-                            ", k.sample_kind\n" +
-                            ", c.sample_timeline_id\n" +
-                            ", c.timeline_times_id\n" +
-                            ", c.sample_count\n" +
-                            ", c.sample_bytes\n" +
-                            ", t.start_time\n" +
-                            ", t.end_time\n" +
-                            ", t.count\n" +
-                            ", t.times\n" +
-                            "from timeline_chunks c\n" +
-                            "join hosts h using (host_id)\n" +
-                            "join sample_kinds k using (sample_kind_id)\n" +
-                            "join timeline_times t using (timeline_times_id)\n" +
-                            "where t.start_time >= :start_time\n" +
-                            "and t.end_time <= :end_time\n" +
-                            "and h.host_name = :host_name\n" +
-                            "order by start_time asc\n" +
-                            ";")
-                    .bind("host_name", hostName)
-                    .bind("start_time", TimelineTimes.unixSeconds(startTime))
-                    .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                    .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
-            }
-        });
-    }
+    List<TimelineChunkAndTimes> getSamplesByHostName(String hostName, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
-        {
-            @Override
-            public List<TimelineChunkAndTimes> withHandle(final Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery(
-                        "select distinct\n" +
-                            "  h.host_id\n" +
-                            ", h.host_name\n" +
-                            ", k.sample_kind_id\n" +
-                            ", k.sample_kind\n" +
-                            ", c.sample_timeline_id\n" +
-                            ", c.timeline_times_id\n" +
-                            ", c.sample_count\n" +
-                            ", c.sample_bytes\n" +
-                            ", t.start_time\n" +
-                            ", t.end_time\n" +
-                            ", t.count\n" +
-                            ", t.times\n" +
-                            "from timeline_chunks c\n" +
-                            "join hosts h using (host_id)\n" +
-                            "join sample_kinds k using (sample_kind_id)\n" +
-                            "join timeline_times t using (timeline_times_id)\n" +
-                            "where t.start_time >= :start_time\n" +
-                            "and t.end_time <= :end_time\n" +
-                            "and h.host_name = :host_name\n" +
-                            "and k.sample_kind = :sample_kind\n" +
-                            "order by start_time asc\n" +
-                            ";")
-                    .bind("host_name", hostName)
-                    .bind("sample_kind", sampleKind)
-                    .bind("start_time", TimelineTimes.unixSeconds(startTime))
-                    .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                    .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
-            }
-        });
-    }
+    List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(String hostName, String sampleKind, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
 }
