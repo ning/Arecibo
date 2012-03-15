@@ -66,7 +66,7 @@ public class TestKafkaEventHandler
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
-        System.setProperty("arecibo.events.collector.rt.kafka.zkConnect", ZK_CONNECT);
+        System.setProperty("arecibo.collector.rt.kafka.zkConnect", ZK_CONNECT);
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         kafkaEventHandler = new KafkaEventHandler(config);
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(kafkaEventHandler));

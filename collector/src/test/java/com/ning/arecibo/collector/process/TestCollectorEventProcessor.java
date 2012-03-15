@@ -53,7 +53,7 @@ public class TestCollectorEventProcessor
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
-        System.setProperty("arecibo.events.collector.timelines.length", "2s");
+        System.setProperty("arecibo.collector.timelines.length", "2s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         timelineEventHandler = new TimelineEventHandler(config, dao);
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
@@ -93,7 +93,6 @@ public class TestCollectorEventProcessor
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime.minusSeconds(1)).size(), 0);
         // Buggy host
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(UUID.randomUUID().toString(), startTime, endTime).size(), 0);
-
     }
 
     @Test(groups = "slow")

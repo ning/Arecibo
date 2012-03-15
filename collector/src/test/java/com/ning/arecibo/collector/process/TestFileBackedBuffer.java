@@ -59,8 +59,8 @@ public class TestFileBackedBuffer
     public void setUp() throws Exception
     {
         Assert.assertTrue(basePath.mkdir());
-        System.setProperty("arecibo.events.collector.spoolDir", basePath.getAbsolutePath());
-        System.setProperty("arecibo.events.collector.timelines.length", "60s");
+        System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
+        System.setProperty("arecibo.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         timelineEventHandler = new TimelineEventHandler(config, dao);
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
