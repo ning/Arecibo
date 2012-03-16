@@ -17,7 +17,7 @@
 package com.ning.arecibo.util.timeline;
 
 public class SampleBase {
-    private final SampleOpcode opcode;
+    protected final SampleOpcode opcode;
 
     public SampleBase(SampleOpcode opcode) {
         this.opcode = opcode;

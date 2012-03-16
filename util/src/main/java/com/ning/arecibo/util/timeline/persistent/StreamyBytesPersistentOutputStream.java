@@ -39,6 +39,8 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     private final StreamyBytesMemBuffer inputBuffer;
     private final List<String> createdFiles = new ArrayList<String>();
 
+    private long bytesOnDisk = 0L;
+
     public StreamyBytesPersistentOutputStream(String basePath, final String prefix, final StreamyBytesMemBuffer inputBuffer)
     {
         if (!basePath.endsWith("/")) {
@@ -66,6 +68,21 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
 
             if (!inputBuffer.tryAppend(data, off, len)) {
                 log.warn("Unable to append data: 1 byte lost");
+            }
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        // Cleanup volatile data
+        inputBuffer.close();
+
+        // Cleanup persistent data
+        for (final String path : createdFiles) {
+            log.info("Discarding file: {}", path);
+            if (!new File(path).delete()) {
+                log.warn("Unable to discard file: {}", path);
             }
         }
     }
@@ -114,6 +131,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
                 bytesTransferred += r;
             }
 
+            bytesOnDisk += bytesTransferred;
             log.info("Saved {} bytes to disk", bytesTransferred);
         }
         finally {
@@ -137,5 +155,10 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     public List<String> getCreatedFiles()
     {
         return createdFiles;
+    }
+
+    public long getBytesOnDisk()
+    {
+        return bytesOnDisk;
     }
 }

@@ -18,6 +18,7 @@ package com.ning.arecibo.util.timeline.persistent;
 
 import com.fasterxml.util.membuf.MemBuffersForBytes;
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
+import com.google.common.annotations.VisibleForTesting;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -26,10 +27,13 @@ import org.codehaus.jackson.smile.SmileGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Backing buffer for a single TimelineHostEventAccumulator that spools to disk
+ */
 public class FileBackedBuffer
 {
     private static final Logger log = LoggerFactory.getLogger(FileBackedBuffer.class);
@@ -46,6 +50,7 @@ public class FileBackedBuffer
 
     private final StreamyBytesPersistentOutputStream out;
     private final SmileGenerator smileGenerator;
+    private final AtomicBoolean discarded = new AtomicBoolean(false);
     private final AtomicLong samplesforTimestampWritten = new AtomicLong();
 
     public FileBackedBuffer(final String basePath, final String prefix) throws IOException
@@ -63,6 +68,10 @@ public class FileBackedBuffer
 
     public boolean append(final HostSamplesForTimestamp hostSamplesForTimestamp)
     {
+        if (discarded.get()) {
+            throw new IllegalStateException("Attempting to append samples to a discarded FileBackedBuffer!");
+        }
+
         try {
             smileObjectMapper.writeValue(smileGenerator, hostSamplesForTimestamp);
             samplesforTimestampWritten.incrementAndGet();
@@ -74,25 +83,34 @@ public class FileBackedBuffer
         }
     }
 
+    /**
+     * Free up resources.
+     * <p/>
+     * Once discarded, you cannot re-cycle this buffer.
+     */
     public void discard()
     {
-        for (final String path : out.getCreatedFiles()) {
-            log.info("Discarding file: {}", path);
-            if (!new File(path).delete()) {
-                log.warn("Unable to discard file: {}", path);
-            }
+        discarded.set(true);
+
+        try {
+            out.close();
+        }
+        catch (IOException e) {
+            log.warn("Exception discarding buffer", e);
         }
 
         samplesforTimestampWritten.set(0);
     }
 
+    @VisibleForTesting
     public long getFilesCreated()
     {
         return out.getCreatedFiles().size();
     }
 
-    public long getSamplesForTimestampWritten()
+    @VisibleForTesting
+    public long getBytesOnDisk()
     {
-        return samplesforTimestampWritten.get();
+        return out.getBytesOnDisk();
     }
 }
