@@ -77,9 +77,9 @@ public class TestInMemoryCollectorEventProcessor
         // Buggy kind
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), "kindC", startTime, endTime).size(), 0);
         // Buggy start date
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime.plusSeconds(1), endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime.plusMinutes(1), endTime).size(), 0);
         // Buggy end date
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime.minusSeconds(1)).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), startTime, endTime.minusMinutes(1)).size(), 0);
         // Buggy host
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(UUID.randomUUID().toString(), startTime, endTime).size(), 0);
     }

@@ -45,7 +45,7 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.maxHosts")
     @Description("Max number of different hosts to keep in memory at the same time")
-    @Default("10000")
+    @Default("2000")
     int getMaxHosts();
 
     @Config("arecibo.collector.timelines.maxSampleKinds")

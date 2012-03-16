@@ -31,6 +31,8 @@ import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.skife.config.ConfigurationObjectFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -44,6 +46,8 @@ import java.util.UUID;
 
 public class TestFileBackedBuffer
 {
+    private static final Logger log = LoggerFactory.getLogger(TestFileBackedBuffer.class);
+
     private static final UUID HOST_UUID = UUID.randomUUID();
     private static final String KIND_A = "kindA";
     private static final String KIND_B = "kindB";
@@ -86,11 +90,15 @@ public class TestFileBackedBuffer
         }
 
         // Check the files have been created (at least one per accumulator)
+        long bytesOnDisk = 0;
         for (final TimelineHostEventAccumulator accumulator : timelineEventHandler.getAccumulators()) {
             Assert.assertTrue(accumulator.getBackingBuffer().getFilesCreated() > 0);
+            bytesOnDisk += accumulator.getBackingBuffer().getBytesOnDisk();
         }
         final Collection<File> writtenFiles = FileUtils.listFiles(basePath, new String[]{"bin"}, false);
         Assert.assertTrue(writtenFiles.size() > 0);
+
+        log.info("Sent {} events and wrote {} bytes on disk ({} bytes/event)", new Object[]{NB_EVENTS, bytesOnDisk, bytesOnDisk / NB_EVENTS});
 
         // Replay the events. Note that eventsSent != eventsReplayed as some of the ones sent are still in memory
         final Replayer replayer = new Replayer(basePath.getAbsolutePath());

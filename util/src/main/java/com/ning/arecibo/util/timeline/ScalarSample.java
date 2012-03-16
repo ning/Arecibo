@@ -16,14 +16,21 @@
 
 package com.ning.arecibo.util.timeline;
 
+import com.google.common.collect.ImmutableMap;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonValue;
+
+import java.util.Map;
 
 /**
  * @param <T> A value consistent with the opcode
  */
 public class ScalarSample<T> extends SampleBase
 {
+    private static final String KEY_OPCODE = "O";
+    private static final String KEY_SAMPLE_VALUE = "V";
+
     private final T sampleValue;
 
     public ScalarSample(final SampleOpcode opcode, final T sampleValue)
@@ -32,10 +39,16 @@ public class ScalarSample<T> extends SampleBase
         this.sampleValue = sampleValue;
     }
 
-    @JsonCreator
-    public ScalarSample(@JsonProperty("opcode") final String opcode, @JsonProperty("sampleValue") final T sampleValue)
+    public ScalarSample(final String opcode, final T sampleValue)
     {
         super(SampleOpcode.valueOf(opcode));
+        this.sampleValue = sampleValue;
+    }
+
+    @JsonCreator
+    public ScalarSample(@JsonProperty(KEY_OPCODE) final byte opcodeIdx, @JsonProperty(KEY_SAMPLE_VALUE) final T sampleValue)
+    {
+        super(SampleOpcode.getOpcodeFromIndex(opcodeIdx));
         this.sampleValue = sampleValue;
     }
 
@@ -48,5 +61,11 @@ public class ScalarSample<T> extends SampleBase
     public String toString()
     {
         return sampleValue.toString();
+    }
+
+    @JsonValue
+    public Map<String, Object> toMap()
+    {
+        return ImmutableMap.of(KEY_OPCODE, opcode.getOpcodeIndex(), KEY_SAMPLE_VALUE, sampleValue);
     }
 }

@@ -25,21 +25,33 @@ import java.util.List;
 
 public interface TimelineDAO
 {
+    // Hosts table
+
+    Integer getHostId(String host) throws UnableToObtainConnectionException, CallbackFailedException;
+
     String getHost(Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException;
 
     BiMap<Integer, String> getHosts() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    int addHost(String host) throws UnableToObtainConnectionException, CallbackFailedException;
+    Integer getOrAddHost(String host) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    // Sample kinds table
+
+    Integer getSampleKindId(String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
     String getSampleKind(Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException;
 
     BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    int addSampleKind(String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
+    Integer getOrAddSampleKind(Integer hostId, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    int insertTimelineTimes(TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException;
+    Iterable<String> getSampleKindsByHostName(String host) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    int insertTimelineChunk(TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException;
+    // Timelines tables
+
+    Integer insertTimelineTimes(TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    Integer insertTimelineChunk(TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException;
 
     List<TimelineChunkAndTimes> getSamplesByHostName(String hostName, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
 

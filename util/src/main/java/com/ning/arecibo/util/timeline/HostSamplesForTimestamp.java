@@ -16,8 +16,10 @@
 
 package com.ning.arecibo.util.timeline;
 
+import com.google.common.collect.ImmutableMap;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.annotate.JsonValue;
 import org.joda.time.DateTime;
 
 import java.util.HashMap;
@@ -30,6 +32,11 @@ import java.util.Map;
 @SuppressWarnings("unchecked")
 public class HostSamplesForTimestamp
 {
+    private static final String KEY_HOST = "H";
+    private static final String KEY_CATEGORY = "V";
+    private static final String KEY_TIMESTAMP = "T";
+    private static final String KEY_SAMPLES = "S";
+
     private final int hostId;
     private final String category;
     private final DateTime timestamp;
@@ -42,7 +49,7 @@ public class HostSamplesForTimestamp
     }
 
     @JsonCreator
-    public HostSamplesForTimestamp(@JsonProperty("hostId") final int hostId, @JsonProperty("category") final String category, @JsonProperty("timestamp") final DateTime timestamp, @JsonProperty("samples") final Map<Integer, ScalarSample> samples)
+    public HostSamplesForTimestamp(@JsonProperty(KEY_HOST) final int hostId, @JsonProperty(KEY_CATEGORY) final String category, @JsonProperty(KEY_TIMESTAMP) final DateTime timestamp, @JsonProperty(KEY_SAMPLES) final Map<Integer, ScalarSample> samples)
     {
         this.hostId = hostId;
         this.category = category;
@@ -82,5 +89,11 @@ public class HostSamplesForTimestamp
         sb.append('}');
 
         return sb.toString();
+    }
+
+    @JsonValue
+    public Map<String, Object> toMap()
+    {
+        return ImmutableMap.of(KEY_HOST, hostId, KEY_CATEGORY, category, KEY_TIMESTAMP, timestamp, KEY_SAMPLES, samples);
     }
 }

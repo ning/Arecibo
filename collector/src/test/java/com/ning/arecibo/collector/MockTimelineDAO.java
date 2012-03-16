@@ -18,6 +18,8 @@ package com.ning.arecibo.collector;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
@@ -34,7 +36,13 @@ public final class MockTimelineDAO implements TimelineDAO
     private final BiMap<Integer, String> sampleKinds = HashBiMap.create();
     private final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
+    private final Multimap<String, String> hostSampleKinds = HashMultimap.create();
 
+    @Override
+    public Integer getHostId(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return hosts.inverse().get(host);
+    }
 
     @Override
     public String getHost(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
@@ -49,10 +57,24 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public int addHost(final String host)
+    public Integer getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        hosts.put(hosts.size(), host);
-        return hosts.size() - 1;
+        synchronized (hosts) {
+            final Integer hostId = getHostId(host);
+            if (hostId == null) {
+                hosts.put(hosts.size(), host);
+                return hosts.size() - 1;
+            }
+            else {
+                return hostId;
+            }
+        }
+    }
+
+    @Override
+    public Integer getSampleKindId(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return sampleKinds.inverse().get(sampleKind);
     }
 
     @Override
@@ -68,21 +90,36 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public int addSampleKind(final String sampleKind)
+    public Integer getOrAddSampleKind(final Integer hostId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        sampleKinds.put(sampleKinds.size(), sampleKind);
-        return sampleKinds.size() - 1;
+        synchronized (sampleKinds) {
+            final Integer sampleKindId = getSampleKindId(sampleKind);
+            if (sampleKindId == null) {
+                sampleKinds.put(sampleKinds.size(), sampleKind);
+                hostSampleKinds.put(getHost(hostId), sampleKind);
+                return sampleKinds.size() - 1;
+            }
+            else {
+                return sampleKindId;
+            }
+        }
     }
 
     @Override
-    public int insertTimelineTimes(final TimelineTimes timeline)
+    public Iterable<String> getSampleKindsByHostName(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return hostSampleKinds.get(host);
+    }
+
+    @Override
+    public Integer insertTimelineTimes(final TimelineTimes timeline)
     {
         timelineTimes.put(timelineTimes.size(), timeline);
         return timelineTimes.size() - 1;
     }
 
     @Override
-    public int insertTimelineChunk(final TimelineChunk chunk)
+    public Integer insertTimelineChunk(final TimelineChunk chunk)
     {
         timelineChunks.put(timelineChunks.size(), chunk);
         return timelineChunks.size() - 1;

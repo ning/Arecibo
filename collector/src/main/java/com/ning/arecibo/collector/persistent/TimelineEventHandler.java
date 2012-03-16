@@ -42,7 +42,6 @@ import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
-import com.ning.arecibo.util.timeline.TimelineRegistry;
 import com.ning.arecibo.util.timeline.TimelineTimes;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.joda.time.DateTime;
@@ -66,9 +65,8 @@ public class TimelineEventHandler implements EventHandler
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
     private final LoadingCache<Integer, TimelineHostEventAccumulator> accumulators;
-    private final TimelineDAO timelineDAO;
 
-    private TimelineRegistry timelineRegistry = null;
+    private final TimelineDAO timelineDAO;
 
     @Inject
     public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO)
@@ -128,10 +126,6 @@ public class TimelineEventHandler implements EventHandler
     @Override
     public void handle(final Event event)
     {
-        if (timelineRegistry == null) {
-            timelineRegistry = new TimelineRegistry(timelineDAO);
-        }
-
         try {
             final Map<Integer, ScalarSample> scalarSamples = new LinkedHashMap<Integer, ScalarSample>();
 
@@ -168,7 +162,7 @@ public class TimelineEventHandler implements EventHandler
 
     public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        final ImmutableList<String> sampleKinds = ImmutableList.copyOf(timelineRegistry.getSampleKindsForHost(filterHostName));
+        final ImmutableList<String> sampleKinds = ImmutableList.copyOf(timelineDAO.getSampleKindsByHostName(filterHostName));
         return getInMemoryTimelineChunkAndTimes(filterHostName, sampleKinds, filterStartTime, filterEndTime);
     }
 
@@ -179,12 +173,8 @@ public class TimelineEventHandler implements EventHandler
 
     public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, final List<String> filterSampleKinds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        if (timelineRegistry == null) {
-            return ImmutableList.of();
-        }
-
         // Check first if there is an in-memory accumulator for this host
-        final Integer hostId = timelineRegistry.getHostId(filterHostName);
+        final Integer hostId = timelineDAO.getHostId(filterHostName);
         if (hostId == null) {
             return ImmutableList.of();
         }
@@ -212,7 +202,7 @@ public class TimelineEventHandler implements EventHandler
             // NOTE! Further filtering needs to be done in the processing function
             final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 
-            final String sampleKind = timelineRegistry.getSampleKindById(timelineChunk.getSampleKindId());
+            final String sampleKind = timelineDAO.getSampleKind(timelineChunk.getSampleKindId());
             if (!filterSampleKinds.contains(sampleKind)) {
                 // We don't care about this sample kind
                 continue;
@@ -230,7 +220,7 @@ public class TimelineEventHandler implements EventHandler
         if (event instanceof MonitoringEvent) {
             hostUUID = ((MonitoringEvent) event).getHostName();
         }
-        return timelineRegistry.getOrAddHost(hostUUID);
+        return timelineDAO.getOrAddHost(hostUUID);
     }
 
     private void convertSamplesToScalarSamples(final int hostId, final Map<String, Object> inputSamples, final Map<Integer, ScalarSample> outputSamples)
@@ -240,7 +230,7 @@ public class TimelineEventHandler implements EventHandler
         }
 
         for (final String sampleKind : inputSamples.keySet()) {
-            final int sampleKindId = timelineRegistry.getOrAddSampleKind(hostId, sampleKind);
+            final int sampleKindId = timelineDAO.getOrAddSampleKind(hostId, sampleKind);
             final Object sample = inputSamples.get(sampleKind);
 
             if (sample == null) {

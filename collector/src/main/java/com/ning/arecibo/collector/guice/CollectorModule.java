@@ -20,8 +20,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
-import com.google.inject.name.Names;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.rt.kafka.KafkaEventHandler;
@@ -30,7 +28,6 @@ import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.jersey.metrics.TimedResourceModule;
 import org.skife.config.ConfigurationObjectFactory;
@@ -45,6 +42,8 @@ public class CollectorModule extends AbstractModule
 {
     private static final Logger log = Logger.getLogger(CollectorModule.class);
 
+    private ExportBuilder builder = null;
+
     @Override
     public void configure()
     {
@@ -57,9 +56,9 @@ public class CollectorModule extends AbstractModule
         configureServiceLocator(config);
         configureEventHandlers(config);
 
-        final ExportBuilder builder = MBeanModule.newExporter(binder());
+        builder = MBeanModule.newExporter(binder());
 
-        builder.export(DefaultTimelineDAO.class).as("arecibo.collector:name=TimelineDAO");
+        builder.export(TimelineEventHandler.class).as("arecibo.collector:name=TimelineEventHandler");
 
         for (final String guiceModule : config.getExtraGuiceModules().split(",")) {
             if (guiceModule.isEmpty()) {
@@ -95,6 +94,7 @@ public class CollectorModule extends AbstractModule
         if (config.isKafkaEnabled()) {
             log.info("Kafka producer configured");
             provider.add(KafkaEventHandler.class);
+            builder.export(KafkaEventHandler.class).as("arecibo.collector:name=KafkaEventHandler");
         }
 
         bind(new TypeLiteral<List<EventHandler>>()
