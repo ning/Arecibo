@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -52,12 +51,11 @@ public class FileBackedBuffer
 
     private final String basePath;
     private final String prefix;
-    private final AtomicBoolean discarded = new AtomicBoolean(false);
     private final AtomicLong samplesforTimestampWritten = new AtomicLong();
     private final Object recyclingMonitor = new Object();
 
     private final StreamyBytesMemBuffer inputBuffer;
-    private StreamyBytesPersistentOutputStream out;
+    private StreamyBytesPersistentOutputStream out = null;
     private SmileGenerator smileGenerator;
 
     public FileBackedBuffer(final String basePath, final String prefix) throws IOException
@@ -69,6 +67,7 @@ public class FileBackedBuffer
         // that JVM has for direct buffers. You can bump this via -XX:MaxDirectMemorySize
         final MemBuffersForBytes bufs = new MemBuffersForBytes(4 * 1024 * 1024, 1, 15);
         inputBuffer = bufs.createStreamyBuffer(8, 15);
+
         recycle();
     }
 
@@ -103,7 +102,9 @@ public class FileBackedBuffer
     private void recycle() throws IOException
     {
         synchronized (recyclingMonitor) {
-            out.close();
+            if (out != null && !out.isEmpty()) {
+                out.close();
+            }
 
             out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
             smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);

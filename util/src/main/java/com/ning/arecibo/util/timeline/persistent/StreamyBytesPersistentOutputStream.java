@@ -76,7 +76,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     public void close() throws IOException
     {
         // Cleanup volatile data
-        inputBuffer.close();
+        inputBuffer.clear();
 
         // Cleanup persistent data
         for (final String path : createdFiles) {
@@ -170,5 +170,10 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     public long getInMemoryAvailableSpace()
     {
         return inputBuffer.getMaximumAvailableSpace();
+    }
+
+    public boolean isEmpty()
+    {
+        return inputBuffer.isEmpty();
     }
 }
