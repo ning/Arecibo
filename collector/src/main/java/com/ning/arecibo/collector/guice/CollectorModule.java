@@ -95,12 +95,14 @@ public class CollectorModule extends AbstractModule
 
         // Hook the persistent handler by default
         log.info("Persistent producer configured");
+        bind(TimelineEventHandler.class).asEagerSingleton();
         provider.addExportable(TimelineEventHandler.class);
 
         // Hook the real-time handler as needed
         // TODO - do we want to turn it off/on at runtime?
         if (config.isKafkaEnabled()) {
             log.info("Kafka producer configured");
+            bind(KafkaEventHandler.class).asEagerSingleton();
             provider.addExportable(KafkaEventHandler.class);
         }
 
