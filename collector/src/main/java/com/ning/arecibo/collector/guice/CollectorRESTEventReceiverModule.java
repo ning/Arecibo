@@ -22,6 +22,7 @@ import com.ning.arecibo.event.receiver.RESTEventReceiverModule;
 import com.ning.arecibo.event.transport.EventSerializer;
 import com.ning.arecibo.util.Logger;
 import org.skife.config.ConfigurationObjectFactory;
+import org.weakref.jmx.ObjectNames;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +50,6 @@ public class CollectorRESTEventReceiverModule extends AbstractModule
             }
         }
 
-        install(new RESTEventReceiverModule(CollectorEventProcessor.class, "arecibo.collector:name=CollectorEventProcessor", serializers));
+        install(new RESTEventReceiverModule(CollectorEventProcessor.class, ObjectNames.generatedNameOf(CollectorEventProcessor.class), serializers));
     }
 }

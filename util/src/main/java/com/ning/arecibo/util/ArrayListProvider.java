@@ -16,50 +16,80 @@
 
 package com.ning.arecibo.util;
 
-import com.google.inject.Provider;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.Provider;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ObjectNames;
 
-import java.util.List;
-import java.util.ArrayList;
 import java.lang.annotation.Annotation;
+import java.lang.management.ManagementFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ArrayListProvider<T> implements Provider<List<T>>
 {
     private Injector injector;
-    private List<Key<? extends T>> injectables = new ArrayList<Key<? extends T>>();
+    private final List<Key<? extends T>> injectables = new ArrayList<Key<? extends T>>();
+    private final List<Key<? extends T>> exportables = new ArrayList<Key<? extends T>>();
+    private final MBeanExporter exporter = new MBeanExporter(ManagementFactory.getPlatformMBeanServer());
 
     @Inject
-    public void configure(Injector injector)
+    public void configure(final Injector injector)
     {
         this.injector = injector;
     }
 
-    public ArrayListProvider<T> add(Class<? extends T> toBeIncluded)
+    public ArrayListProvider<T> add(final Class<? extends T> toBeIncluded)
     {
         injectables.add(Key.get(toBeIncluded));
         return this;
     }
 
-    public ArrayListProvider<T> add(Class<? extends Annotation> annotation, Class<? extends T> toBeIncluded)
+    public ArrayListProvider<T> addExportable(final Class<? extends T> toBeIncluded)
+    {
+        exportables.add(Key.get(toBeIncluded));
+        return add(toBeIncluded);
+    }
+
+    public ArrayListProvider<T> add(final Class<? extends Annotation> annotation, final Class<? extends T> toBeIncluded)
     {
         injectables.add(Key.get(toBeIncluded, annotation));
         return this;
     }
 
-    public ArrayListProvider<T> add(Annotation annotation, Class<? extends T> toBeIncluded)
+    public ArrayListProvider<T> addExportable(final Class<? extends Annotation> annotation, final Class<? extends T> toBeIncluded)
+    {
+        exportables.add(Key.get(toBeIncluded, annotation));
+        return add(annotation, toBeIncluded);
+    }
+
+    public ArrayListProvider<T> add(final Annotation annotation, final Class<? extends T> toBeIncluded)
     {
         injectables.add(Key.get(toBeIncluded, annotation));
         return this;
+    }
+
+    public ArrayListProvider<T> addExportable(final Annotation annotation, final Class<? extends T> toBeIncluded)
+    {
+        exportables.add(Key.get(toBeIncluded, annotation));
+        return add(annotation, toBeIncluded);
     }
 
     public List<T> get()
     {
-        ArrayList<T> retVal = new ArrayList<T>();
-        for ( Key<? extends T> injectable : injectables ) {
-            retVal.add(injector.getInstance(injectable));
+        final ArrayList<T> retVal = new ArrayList<T>();
+        for (final Key<? extends T> injectable : injectables) {
+            final T instance = injector.getInstance(injectable);
+
+            if (exportables.contains(injectable)) {
+                exporter.export(ObjectNames.generatedNameOf(injectable.getTypeLiteral().getRawType()), instance);
+            }
+
+            retVal.add(instance);
         }
+
         return retVal;
     }
 }
