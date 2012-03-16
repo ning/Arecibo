@@ -58,10 +58,25 @@ public interface CollectorConfig
     @Default("10m")
     TimeSpan getTimelineLength();
 
+    @Config("arecibo.collector.timelines.aggregationInterval")
+    @Description("How often to check to see if there are timelines ready to be aggregated")
+    @Default("1h")
+    TimeSpan getAggregationInterval();
+
+    @Config("arecibo.collector.timelines.deleteAggregatedChunks")
+    @Description("If true, blast the old TimelineTimes and TimelineChunk rows; if false, leave them in peace, since they won't be accessed")
+    @Default("false")
+    boolean getDeleteAggregatedChunks();
+
     @Config("arecibo.collector.timelines.spoolDir")
     @Description("Spool directory for in-memory data")
     @Default("/var/tmp/arecibo")
     String getSpoolDir();
+
+    @Config("arecibo.collector.timelines.chunksToAggregate")
+    @Description("The number of unaggregated sequential TimelineTimes chunks we must find to perform aggregation")
+    @Default("12")
+    int getChunksToAggregate();
 
     @Config("arecibo.collector.rt.kafka.enabled")
     @Description("Whether Kafka is enabled")
