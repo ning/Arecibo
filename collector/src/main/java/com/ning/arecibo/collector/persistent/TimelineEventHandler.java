@@ -226,6 +226,12 @@ public class TimelineEventHandler implements EventHandler
         if (event instanceof MonitoringEvent) {
             hostUUID = ((MonitoringEvent) event).getHostName();
         }
+        else if (event instanceof MapEvent) {
+            final Object hostName = ((MapEvent) event).getMap().get("hostName");
+            if (hostName != null) {
+                hostUUID = hostName.toString();
+            }
+        }
         return timelineDAO.getOrAddHost(hostUUID);
     }
 
