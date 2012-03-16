@@ -33,8 +33,6 @@ import com.ning.jersey.metrics.TimedResourceModule;
 import org.skife.config.ConfigurationObjectFactory;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
-import org.weakref.jmx.guice.ExportBuilder;
-import org.weakref.jmx.guice.MBeanModule;
 
 import java.util.List;
 
@@ -42,23 +40,16 @@ public class CollectorModule extends AbstractModule
 {
     private static final Logger log = Logger.getLogger(CollectorModule.class);
 
-    private ExportBuilder builder = null;
-
     @Override
     public void configure()
     {
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-
         bind(CollectorConfig.class).toInstance(config);
 
         configureDao();
         configureStats();
         configureServiceLocator(config);
         configureEventHandlers(config);
-
-        builder = MBeanModule.newExporter(binder());
-
-        builder.export(TimelineEventHandler.class).as("arecibo.collector:name=TimelineEventHandler");
 
         for (final String guiceModule : config.getExtraGuiceModules().split(",")) {
             if (guiceModule.isEmpty()) {
@@ -87,14 +78,13 @@ public class CollectorModule extends AbstractModule
 
         // Hook the persistent handler by default
         log.info("Persistent producer configured");
-        provider.add(TimelineEventHandler.class);
+        provider.addExportable(TimelineEventHandler.class);
 
         // Hook the real-time handler as needed
         // TODO - do we want to turn it off/on at runtime?
         if (config.isKafkaEnabled()) {
             log.info("Kafka producer configured");
-            provider.add(KafkaEventHandler.class);
-            builder.export(KafkaEventHandler.class).as("arecibo.collector:name=KafkaEventHandler");
+            provider.addExportable(KafkaEventHandler.class);
         }
 
         bind(new TypeLiteral<List<EventHandler>>()

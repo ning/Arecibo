@@ -22,6 +22,7 @@ import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import org.skife.jdbi.v2.DBI;
 import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ObjectNames;
 
 import javax.inject.Provider;
 import javax.management.MBeanServer;
@@ -47,7 +48,7 @@ public class CachingDefaultTimelineDAOProvider implements Provider<TimelineDAO>
         final CachingTimelineDAO cachingTimelineDAO = new CachingTimelineDAO(delegate, config.getMaxHosts(), config.getMaxSampleKinds());
 
         final MBeanExporter exporter = new MBeanExporter(mBeanServer);
-        exporter.export("arecibo.collector:name=CachingTimelineDAO", cachingTimelineDAO);
+        exporter.export(ObjectNames.generatedNameOf(CachingTimelineDAO.class), cachingTimelineDAO);
 
         return cachingTimelineDAO;
     }

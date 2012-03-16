@@ -305,6 +305,66 @@ public class TimelineEventHandler implements EventHandler
         accumulators.invalidateAll();
     }
 
+    @MonitorableManaged(description = "Returns the number of times a host accumulator lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getAccumulatorsHitCount()
+    {
+        return accumulators.stats().hitCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of host accumulator requests which were hits", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getAccumulatorsHitRate()
+    {
+        return accumulators.stats().hitRate();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times a new host accumulator was created", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getAccumulatorsMissCount()
+    {
+        return accumulators.stats().missCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of requests resulting in creating a new host accumulator", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getAccumulatorsMissRate()
+    {
+        return accumulators.stats().missRate();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times a new host accumulator was successfully created", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getAccumulatorsLoadSuccessCount()
+    {
+        return accumulators.stats().loadSuccessCount();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times an exception was thrown while creating a new host accumulator", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getAccumulatorsLoadExceptionCount()
+    {
+        return accumulators.stats().loadExceptionCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of host accumulator creation attempts which threw exceptions", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getAccumulatorsLoadExceptionRate()
+    {
+        return accumulators.stats().loadExceptionRate();
+    }
+
+    @MonitorableManaged(description = "Returns the total number of nanoseconds spent creating new host accumulators", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getAccumulatorsTotalLoadTime()
+    {
+        return accumulators.stats().totalLoadTime();
+    }
+
+    @MonitorableManaged(description = "Returns the average time spent creating new host accumulators", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getAccumulatorsAverageLoadPenalty()
+    {
+        return accumulators.stats().averageLoadPenalty();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times a host accumulator was stored in the database", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getAccumulatorsEvictionCount()
+    {
+        return accumulators.stats().evictionCount();
+    }
+
     @VisibleForTesting
     public Collection<TimelineHostEventAccumulator> getAccumulators()
     {
