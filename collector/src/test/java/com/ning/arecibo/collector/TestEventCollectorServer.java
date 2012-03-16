@@ -17,7 +17,9 @@
 package com.ning.arecibo.collector;
 
 import com.google.common.collect.BiMap;
-import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.collector.process.EventHandler;
@@ -25,14 +27,10 @@ import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.publisher.EventSenderType;
 import com.ning.arecibo.event.publisher.RESTEventService;
-import com.ning.arecibo.event.receiver.UDPEventReceiverModule;
 import com.ning.arecibo.event.transport.EventSerializer;
 import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.JsonEventSerializer;
-import com.ning.arecibo.util.EmbeddedJettyJerseyModule;
-import com.ning.arecibo.util.lifecycle.LifecycleModule;
-import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
@@ -53,14 +51,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 
-@Guice(modules = {
-    LifecycleModule.class,
-    EmbeddedJettyJerseyModule.class,
-    UDPEventReceiverModule.class,
-    RMIModule.class,
-    CollectorTestModule.class,
-    CollectorRESTEventReceiverModule.class
-})
+@Guice(moduleFactory = TestModulesFactory.class)
 public class TestEventCollectorServer
 {
     @Inject
@@ -79,6 +70,9 @@ public class TestEventCollectorServer
 
     @Inject
     TimelineDAO timelineDAO;
+
+    @Inject
+    Injector injector;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
@@ -198,8 +192,8 @@ public class TestEventCollectorServer
     private RESTEventService createService(final EventSerializer serializer)
     {
         final Map<String, String> properties = new HashMap<String, String>();
-        properties.put(EventService.HOST, "0.0.0.0");
-        properties.put(EventService.JETTY_PORT, "8088");
+        properties.put(EventService.HOST, String.valueOf(injector.getInstance(Key.get(String.class, Names.named(TestModulesFactory.TEST_JETTY_HOST)))));
+        properties.put(EventService.JETTY_PORT, String.valueOf(injector.getInstance(Key.get(Integer.class, Names.named(TestModulesFactory.TEST_JETTY_PORT)))));
         final ServiceDescriptor localServiceDescriptor = new ServiceDescriptor("testing", properties);
 
         final AsyncHttpClient client = new AsyncHttpClient();
