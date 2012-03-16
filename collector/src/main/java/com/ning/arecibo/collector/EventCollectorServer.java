@@ -39,6 +39,7 @@ import com.ning.arecibo.util.rmi.RMIRegistryConfig;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import org.eclipse.jetty.server.Server;
+import org.weakref.jmx.guice.MBeanModule;
 
 import javax.management.MBeanServer;
 import java.lang.management.ManagementFactory;
@@ -153,6 +154,7 @@ public class EventCollectorServer
             new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.collector.resources", "com.ning.arecibo.util.jaxrs")),
             new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),
+            new MBeanModule(),
             new AbstractModule()
             {
                 @Override
