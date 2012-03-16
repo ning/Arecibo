@@ -68,6 +68,16 @@ public interface CollectorConfig
     @Default("false")
     boolean getDeleteAggregatedChunks();
 
+    @Config("arecibo.collector.timelines.segmentsSize")
+    @Description("Direct memory segments size in bytes to allocate when buffering incoming events")
+    @Default("1048576")
+    int getSegmentsSize();
+
+    @Config("arecibo.collector.timelines.maxNbSegments")
+    @Description("Max number of direct memory segments to allocate. This times the number of segments indicates the max amount of data buffered before storing a copy to disk")
+    @Default("10")
+    int getMaxNbSegments();
+
     @Config("arecibo.collector.timelines.spoolDir")
     @Description("Spool directory for in-memory data")
     @Default("/var/tmp/arecibo")

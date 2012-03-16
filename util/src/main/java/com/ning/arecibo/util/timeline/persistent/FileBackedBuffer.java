@@ -58,14 +58,12 @@ public class FileBackedBuffer
     private StreamyBytesPersistentOutputStream out = null;
     private SmileGenerator smileGenerator;
 
-    public FileBackedBuffer(final String basePath, final String prefix) throws IOException
+    public FileBackedBuffer(final String basePath, final String prefix, final int segmentsSize, final int maxNbSegments) throws IOException
     {
         this.basePath = basePath;
         this.prefix = prefix;
 
-        // This configuration creates ~60M files, this to stay below 64M default limit
-        // that JVM has for direct buffers. You can bump this via -XX:MaxDirectMemorySize
-        final MemBuffersForBytes bufs = new MemBuffersForBytes(4 * 1024 * 1024, 1, 15);
+        final MemBuffersForBytes bufs = new MemBuffersForBytes(segmentsSize, 1, maxNbSegments);
         inputBuffer = bufs.createStreamyBuffer(8, 15);
 
         recycle();

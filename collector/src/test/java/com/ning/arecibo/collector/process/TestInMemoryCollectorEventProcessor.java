@@ -31,6 +31,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +42,7 @@ public class TestInMemoryCollectorEventProcessor
     private static final String KIND_B = "kindB";
     private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
     private static final int NB_EVENTS = 5;
+    private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestInMemoryCollectorEventProcessor-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
     private CollectorEventProcessor processor;
@@ -49,8 +51,10 @@ public class TestInMemoryCollectorEventProcessor
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
+        Assert.assertTrue(basePath.mkdir());
+        System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler"));
+        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 

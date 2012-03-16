@@ -52,7 +52,8 @@ public class TestFileBackedBuffer
     private static final String KIND_A = "kindA";
     private static final String KIND_B = "kindB";
     private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
-    private static final int NB_EVENTS = 1220491;
+    // 50 bytes per event, 10 1MB buffers -> need at least 210,000 events to spill over
+    private static final int NB_EVENTS = 234567;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestFileBackedBuffer-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
@@ -66,7 +67,7 @@ public class TestFileBackedBuffer
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler"));
+        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 
