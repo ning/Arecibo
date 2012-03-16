@@ -18,7 +18,6 @@ package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.Sets;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * This class represents a collection of timeline chunks, one
@@ -52,8 +50,6 @@ public class TimelineHostEventAccumulator
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
 
-    private final FileBackedBuffer backingBuffer;
-
     private final TimelineDAO dao;
     private final int hostId;
     private DateTime startTime = null;
@@ -69,20 +65,16 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final String spoolDir, final TimelineDAO dao, final int hostId) throws IOException
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId) throws IOException
     {
         this.dao = dao;
         this.hostId = hostId;
-        this.backingBuffer = new FileBackedBuffer(spoolDir, String.format("%d", this.hostId));
     }
 
     @SuppressWarnings("unchecked")
     // TODO - we can probably do better than synchronize the whole method
     public synchronized void addHostSamples(final HostSamplesForTimestamp samples)
     {
-        // Start by saving locally the samples
-        backingBuffer.append(samples);
-
         // You can only add samples at the end of a timeline;
         // If sample time is not >= endtime, log a warning
         // TODO: Figure out if this constraint is realistic, or if
@@ -161,10 +153,6 @@ public class TimelineHostEventAccumulator
         for (final TimelineChunkAccumulator accumulator : timelines.values()) {
             dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId));
         }
-
-        // All the samples have been saved, discard the local buffer
-        // Note: it is fine if we end up storing dups at replay time
-        backingBuffer.discard();
     }
 
     /**
@@ -218,10 +206,5 @@ public class TimelineHostEventAccumulator
     public List<DateTime> getTimes()
     {
         return times;
-    }
-
-    public FileBackedBuffer getBackingBuffer()
-    {
-        return backingBuffer;
     }
 }

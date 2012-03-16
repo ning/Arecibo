@@ -19,11 +19,9 @@ package com.ning.arecibo.collector;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.skife.jdbi.v2.IDBI;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -42,7 +40,7 @@ public class TestTimelineHostEventAccumulator
     @Test(groups = "fast")
     public void testSimpleAggregate() throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(basePath.getAbsolutePath(), dao, HOST_ID);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID);
 
         // Send a first type of data
         final DateTime startTime = new DateTime(DateTimeZone.UTC);

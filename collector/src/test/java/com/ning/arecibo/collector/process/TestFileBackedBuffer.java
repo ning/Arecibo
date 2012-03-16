@@ -25,7 +25,7 @@ import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
+import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
@@ -52,7 +52,7 @@ public class TestFileBackedBuffer
     private static final String KIND_A = "kindA";
     private static final String KIND_B = "kindB";
     private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
-    private static final int NB_EVENTS = 820491;
+    private static final int NB_EVENTS = 1220491;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestFileBackedBuffer-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
@@ -66,7 +66,7 @@ public class TestFileBackedBuffer
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao);
+        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler"));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 
@@ -76,9 +76,7 @@ public class TestFileBackedBuffer
         final List<Event> eventsSent = new ArrayList<Event>();
 
         // Sanity check before the tests
-        for (final TimelineHostEventAccumulator accumulator : timelineEventHandler.getAccumulators()) {
-            Assert.assertEquals(accumulator.getBackingBuffer().getFilesCreated(), 0);
-        }
+        Assert.assertEquals(timelineEventHandler.getBackingBuffer().getFilesCreated(), 0);
         Assert.assertEquals(FileUtils.listFiles(basePath, new String[]{"bin"}, false).size(), 0);
 
         // Send enough events to spill over to disk
@@ -90,11 +88,8 @@ public class TestFileBackedBuffer
         }
 
         // Check the files have been created (at least one per accumulator)
-        long bytesOnDisk = 0;
-        for (final TimelineHostEventAccumulator accumulator : timelineEventHandler.getAccumulators()) {
-            Assert.assertTrue(accumulator.getBackingBuffer().getFilesCreated() > 0);
-            bytesOnDisk += accumulator.getBackingBuffer().getBytesOnDisk();
-        }
+        final long bytesOnDisk = timelineEventHandler.getBackingBuffer().getBytesOnDisk();
+        Assert.assertTrue(timelineEventHandler.getBackingBuffer().getFilesCreated() > 0);
         final Collection<File> writtenFiles = FileUtils.listFiles(basePath, new String[]{"bin"}, false);
         Assert.assertTrue(writtenFiles.size() > 0);
 

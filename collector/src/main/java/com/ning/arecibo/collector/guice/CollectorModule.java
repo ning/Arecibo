@@ -29,11 +29,16 @@ import com.ning.arecibo.util.jdbi.DBIProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.jersey.metrics.TimedResourceModule;
 import org.skife.config.ConfigurationObjectFactory;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ObjectNames;
 
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.List;
 
 public class CollectorModule extends AbstractModule
@@ -45,6 +50,18 @@ public class CollectorModule extends AbstractModule
     {
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         bind(CollectorConfig.class).toInstance(config);
+
+        final MBeanExporter exporter = new MBeanExporter(ManagementFactory.getPlatformMBeanServer());
+
+        // Persistent buffer for in-memory samples
+        try {
+            final FileBackedBuffer fileBackedBuffer = new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler");
+            exporter.export(ObjectNames.generatedNameOf(FileBackedBuffer.class), fileBackedBuffer);
+            bind(FileBackedBuffer.class).toInstance(fileBackedBuffer);
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         configureDao();
         configureStats();

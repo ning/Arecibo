@@ -43,6 +43,7 @@ import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.TimelineTimes;
+import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -67,11 +68,13 @@ public class TimelineEventHandler implements EventHandler
     private final LoadingCache<Integer, TimelineHostEventAccumulator> accumulators;
 
     private final TimelineDAO timelineDAO;
+    private final FileBackedBuffer backingBuffer;
 
     @Inject
-    public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO)
+    public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final FileBackedBuffer fileBackedBuffer) throws IOException
     {
         this.timelineDAO = timelineDAO;
+        this.backingBuffer = fileBackedBuffer;
 
         accumulators = CacheBuilder.newBuilder()
             .concurrencyLevel(4)
@@ -104,7 +107,7 @@ public class TimelineEventHandler implements EventHandler
                 public TimelineHostEventAccumulator load(final Integer hostId) throws Exception
                 {
                     log.info("Creating new Timeline for hostId: " + hostId);
-                    return new TimelineHostEventAccumulator(config.getSpoolDir(), timelineDAO, hostId);
+                    return new TimelineHostEventAccumulator(timelineDAO, hostId);
                 }
             });
 
@@ -147,6 +150,9 @@ public class TimelineEventHandler implements EventHandler
             }
 
             final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, event.getEventType(), new DateTime(event.getTimestamp(), DateTimeZone.UTC), scalarSamples);
+            // Start by saving locally the samples
+            backingBuffer.append(hostSamples);
+            // Then add them to the in-memory accumulator
             processSamples(hostSamples);
         }
         catch (ExecutionException e) {
@@ -303,42 +309,11 @@ public class TimelineEventHandler implements EventHandler
     public void forceCommit()
     {
         accumulators.invalidateAll();
-    }
 
-    @MonitorableManaged(description = "Return the approximate size of bytes on disk for timeline chunks not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
-    public long getBytesOnDiskBackingFootprint()
-    {
-        long bytesOnDisk = 0L;
-
-        for (final TimelineHostEventAccumulator accumulator : accumulators.asMap().values()) {
-            bytesOnDisk += accumulator.getBackingBuffer().getBytesOnDisk();
-        }
-
-        return bytesOnDisk;
-    }
-
-    @MonitorableManaged(description = "Return the approximate size of bytes in memory for timeline chunks not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
-    public long getBytesInMemoryBackingFootprint()
-    {
-        long bytesInMemory = 0L;
-
-        for (final TimelineHostEventAccumulator accumulator : accumulators.asMap().values()) {
-            bytesInMemory += accumulator.getBackingBuffer().getBytesInMemory();
-        }
-
-        return bytesInMemory;
-    }
-
-    @MonitorableManaged(description = "Return the approximate size of bytes available in memory (before spilling over to disk) for timeline chunks not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
-    public long getBytesInMemoryAvailableSpace()
-    {
-        long bytesInMemory = 0L;
-
-        for (final TimelineHostEventAccumulator accumulator : accumulators.asMap().values()) {
-            bytesInMemory += accumulator.getBackingBuffer().getInMemoryAvailableSpace();
-        }
-
-        return bytesInMemory;
+        // All the samples have been saved, discard the local buffer
+        // There is a window of doom here but it is fine if we end up storing dups at replay time
+        // TODO: make replayer discard dups
+        backingBuffer.discard();
     }
 
     @MonitorableManaged(description = "Returns the number of times a host accumulator lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
@@ -405,5 +380,11 @@ public class TimelineEventHandler implements EventHandler
     public Collection<TimelineHostEventAccumulator> getAccumulators()
     {
         return accumulators.asMap().values();
+    }
+
+    @VisibleForTesting
+    public FileBackedBuffer getBackingBuffer()
+    {
+        return backingBuffer;
     }
 }

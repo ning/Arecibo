@@ -23,6 +23,7 @@ import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.skife.config.ConfigurationObjectFactory;
@@ -49,7 +50,7 @@ public class TestInMemoryCollectorEventProcessor
     public void setUp() throws Exception
     {
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao);
+        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler"));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
     }
 

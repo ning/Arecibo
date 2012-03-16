@@ -19,6 +19,8 @@ package com.ning.arecibo.util.timeline.persistent;
 import com.fasterxml.util.membuf.MemBuffersForBytes;
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 import com.google.common.annotations.VisibleForTesting;
+import com.ning.arecibo.util.jmx.MonitorableManaged;
+import com.ning.arecibo.util.jmx.MonitoringType;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -48,34 +50,36 @@ public class FileBackedBuffer
         smileFactory.configure(SmileGenerator.Feature.CHECK_SHARED_STRING_VALUES, false);
     }
 
-    private final StreamyBytesPersistentOutputStream out;
-    private final SmileGenerator smileGenerator;
+    private final String basePath;
+    private final String prefix;
     private final AtomicBoolean discarded = new AtomicBoolean(false);
     private final AtomicLong samplesforTimestampWritten = new AtomicLong();
+    private final Object recyclingMonitor = new Object();
+
+    private final StreamyBytesMemBuffer inputBuffer;
+    private StreamyBytesPersistentOutputStream out;
+    private SmileGenerator smileGenerator;
 
     public FileBackedBuffer(final String basePath, final String prefix) throws IOException
     {
-        // Create up to 7 segments of 70kB, which creates ~500kB files.
-        // With -XX:MaxDirectMemorySize=1024m, this allows one to manage up to 2k hosts
-        final MemBuffersForBytes bufs = new MemBuffersForBytes(70 * 1024, 1, 8);
-        final StreamyBytesMemBuffer inputBuffer = bufs.createStreamyBuffer(4, 8);
-        out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
-        smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);
-        // Drop the Smile header
-        smileGenerator.flush();
-        out.reset();
+        this.basePath = basePath;
+        this.prefix = prefix;
+
+        // This configuration creates ~60M files, this to stay below 64M default limit
+        // that JVM has for direct buffers. You can bump this via -XX:MaxDirectMemorySize
+        final MemBuffersForBytes bufs = new MemBuffersForBytes(4 * 1024 * 1024, 1, 15);
+        inputBuffer = bufs.createStreamyBuffer(8, 15);
+        recycle();
     }
 
     public boolean append(final HostSamplesForTimestamp hostSamplesForTimestamp)
     {
-        if (discarded.get()) {
-            throw new IllegalStateException("Attempting to append samples to a discarded FileBackedBuffer!");
-        }
-
         try {
-            smileObjectMapper.writeValue(smileGenerator, hostSamplesForTimestamp);
-            samplesforTimestampWritten.incrementAndGet();
-            return true;
+            synchronized (recyclingMonitor) {
+                smileObjectMapper.writeValue(smileGenerator, hostSamplesForTimestamp);
+                samplesforTimestampWritten.incrementAndGet();
+                return true;
+            }
         }
         catch (IOException e) {
             log.warn("Unable to backup samples", e);
@@ -84,34 +88,46 @@ public class FileBackedBuffer
     }
 
     /**
-     * Free up resources.
-     * <p/>
-     * Once discarded, you cannot re-cycle this buffer.
+     * Discard in-memory and on-disk data
      */
     public void discard()
     {
-        discarded.set(true);
-
         try {
-            out.close();
+            recycle();
         }
         catch (IOException e) {
             log.warn("Exception discarding buffer", e);
         }
-
-        samplesforTimestampWritten.set(0);
     }
 
+    private void recycle() throws IOException
+    {
+        synchronized (recyclingMonitor) {
+            out.close();
+
+            out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
+            smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);
+            // Drop the Smile header
+            smileGenerator.flush();
+            out.reset();
+
+            samplesforTimestampWritten.set(0);
+        }
+    }
+
+    @MonitorableManaged(description = "Return the approximate size of bytes on disk for samples not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
     public long getBytesOnDisk()
     {
         return out.getBytesOnDisk();
     }
 
+    @MonitorableManaged(description = "Return the approximate size of bytes in memory for samples not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
     public long getBytesInMemory()
     {
         return out.getBytesInMemory();
     }
 
+    @MonitorableManaged(description = "Return the approximate size of bytes available in memory (before spilling over to disk) for sampels not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
     public long getInMemoryAvailableSpace()
     {
         return out.getInMemoryAvailableSpace();
