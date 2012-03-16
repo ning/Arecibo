@@ -311,6 +311,7 @@ public class DefaultTimelineDAO implements TimelineDAO
                             "join timeline_times t using (timeline_times_id)\n" +
                             "where t.start_time >= :start_time\n" +
                             "and t.end_time <= :end_time\n" +
+                            "and t.not_valid = 0" +
                             "and h.host_name = :host_name\n" +
                             "order by start_time asc\n" +
                             ";")
@@ -353,6 +354,7 @@ public class DefaultTimelineDAO implements TimelineDAO
                             "and t.end_time <= :end_time\n" +
                             "and h.host_name = :host_name\n" +
                             "and k.sample_kind = :sample_kind\n" +
+                            "and t.not_valid = 0" +
                             "order by start_time asc\n" +
                             ";")
                     .bind("host_name", hostName)

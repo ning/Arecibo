@@ -38,8 +38,8 @@ public class TimelineTimes extends CachedObject
         {
             final int timelineIntervalId = rs.getInt("timeline_interval_id");
             final int hostId = rs.getInt("host_id");
-            final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
-            final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
+            final DateTime startTime = dateTimeFromUnixSeconds(rs.getInt("start_time"));
+            final DateTime endTime = dateTimeFromUnixSeconds(rs.getInt("end_time"));
             final int count = rs.getInt("count");
             final Blob blobTimes = rs.getBlob("timeline_times");
             final byte[] samples = blobTimes.getBytes(1, (int) blobTimes.length());
@@ -51,15 +51,18 @@ public class TimelineTimes extends CachedObject
     private final int hostId;
     private final DateTime startTime;
     private final DateTime endTime;
-    private final List<DateTime> times;
+    private final List<Integer> times;
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final List<DateTime> times)
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.times = times;
+        this.times = new ArrayList<Integer>(dateTimes.size());
+        for (DateTime dateTime : dateTimes) {
+            times.add(unixSeconds(dateTime));
+        }
     }
 
     public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final byte[] times, final int count)
@@ -69,7 +72,7 @@ public class TimelineTimes extends CachedObject
         final ByteBuffer byteBuffer = ByteBuffer.wrap(times);
         final IntBuffer intBuffer = byteBuffer.asIntBuffer();
         for (int i = 0; i < count; i++) {
-            this.times.add(TimelineTimes.dateTimeFromUnixSeconds(intBuffer.get(i)));
+            this.times.add(intBuffer.get(i));
         }
     }
 
@@ -99,7 +102,7 @@ public class TimelineTimes extends CachedObject
             return null;
         }
         else {
-            return times.get(sampleNumber);
+            return new DateTime(dateTimeFromUnixSeconds(times.get(sampleNumber)));
         }
     }
 
@@ -114,7 +117,7 @@ public class TimelineTimes extends CachedObject
         final int[] unixTimes = new int[times.size()];
 
         for (int i = 0; i < times.size(); i++) {
-            unixTimes[i] = unixSeconds(times.get(i));
+            unixTimes[i] = times.get(i);
         }
 
         final ByteBuffer byteBuffer = ByteBuffer.allocate(unixTimes.length * 4);

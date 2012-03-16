@@ -19,7 +19,10 @@ create table timeline_times (
 , end_time integer not null
 , count integer not null
 , times mediumblob not null
+, not_valid tinyint default 0
+, aggregation_level tinyint default 0
 , unique index host_id_start_time_end_time_idx (host_id, start_time, end_time)
+, index valid_agg_host_start_time (not_valid, aggregation_level, host_id, start_time)
 ) engine = innodb default charset = latin1;
 
 create table timeline_chunks (
@@ -29,5 +32,5 @@ create table timeline_chunks (
 , sample_count integer not null
 , timeline_times_id bigint not null
 , sample_bytes mediumblob not null
-, unique index host_id_sample_timeline_id_sample_kind_id_idx (host_id, sample_timeline_id, sample_kind_id)
+, unique index host_id_timeline_times_sample_kind_idx (host_id, timeline_times_id, sample_kind_id)
 ) engine = innodb default charset = latin1;
