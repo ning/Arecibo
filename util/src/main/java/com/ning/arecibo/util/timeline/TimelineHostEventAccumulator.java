@@ -69,23 +69,7 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    /**
-     * A TimelineHostEventAccumulator object is born the first time the manager receives set of samples from a host
-     *
-     * @param samples a set of samples representing on transmission from the host.
-     */
-    public TimelineHostEventAccumulator(final String spoolDir, TimelineDAO dao, HostSamplesForTimestamp samples) throws IOException
-    {
-        this.dao = dao;
-        this.hostId = samples.getHostId();
-        final DateTime timestamp = samples.getTimestamp();
-        this.startTime = timestamp;
-        this.endTime = timestamp;
-        this.backingBuffer = new FileBackedBuffer(spoolDir, String.format("%d", this.hostId));
-        addHostSamples(samples);
-    }
-
-    public TimelineHostEventAccumulator(final String spoolDir, TimelineDAO dao, int hostId) throws IOException
+    public TimelineHostEventAccumulator(final String spoolDir, final TimelineDAO dao, final int hostId) throws IOException
     {
         this.dao = dao;
         this.hostId = hostId;
@@ -120,7 +104,7 @@ public class TimelineHostEventAccumulator
             return;
         }
         final Set<Integer> currentKinds = Sets.newHashSet(timelines.keySet());
-        for (Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
+        for (final Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
             final Integer sampleKindId = entry.getKey();
             currentKinds.remove(sampleKindId);
             final ScalarSample sample = entry.getValue();
@@ -163,28 +147,6 @@ public class TimelineHostEventAccumulator
         }
     }
 
-    public static class TimesAndTimelineChunks
-    {
-        private final TimelineTimes times;
-        private final List<TimelineChunk> timelines;
-
-        public TimesAndTimelineChunks(TimelineTimes times, List<TimelineChunk> timelines)
-        {
-            this.times = times;
-            this.timelines = timelines;
-        }
-
-        public TimelineTimes getTimes()
-        {
-            return times;
-        }
-
-        public List<TimelineChunk> getTimelines()
-        {
-            return timelines;
-        }
-    }
-
     /**
      * This method "rotates" the accumulators in this set, creating and saving the
      * db representation of the timelines, and clearing the accumulators so they
@@ -220,7 +182,7 @@ public class TimelineHostEventAccumulator
                 hostId, dateFormatter.print(startTime), sampleCount, assertedCount);
             success = false;
         }
-        for (Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
+        for (final Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
             final int sampleKindId = entry.getKey();
             final TimelineChunkAccumulator timeline = entry.getValue();
             final int lineSampleCount = timeline.getSampleCount();
