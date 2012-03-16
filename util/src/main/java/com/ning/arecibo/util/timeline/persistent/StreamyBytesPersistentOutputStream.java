@@ -161,4 +161,14 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     {
         return bytesOnDisk;
     }
+
+    public long getBytesInMemory()
+    {
+        return inputBuffer.getTotalPayloadLength();
+    }
+
+    public long getInMemoryAvailableSpace()
+    {
+        return inputBuffer.getMaximumAvailableSpace();
+    }
 }

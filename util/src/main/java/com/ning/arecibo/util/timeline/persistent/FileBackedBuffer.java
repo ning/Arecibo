@@ -102,15 +102,24 @@ public class FileBackedBuffer
         samplesforTimestampWritten.set(0);
     }
 
+    public long getBytesOnDisk()
+    {
+        return out.getBytesOnDisk();
+    }
+
+    public long getBytesInMemory()
+    {
+        return out.getBytesInMemory();
+    }
+
+    public long getInMemoryAvailableSpace()
+    {
+        return out.getInMemoryAvailableSpace();
+    }
+
     @VisibleForTesting
     public long getFilesCreated()
     {
         return out.getCreatedFiles().size();
-    }
-
-    @VisibleForTesting
-    public long getBytesOnDisk()
-    {
-        return out.getBytesOnDisk();
     }
 }

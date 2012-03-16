@@ -305,6 +305,42 @@ public class TimelineEventHandler implements EventHandler
         accumulators.invalidateAll();
     }
 
+    @MonitorableManaged(description = "Return the approximate size of bytes on disk for timeline chunks not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public long getBytesOnDiskBackingFootprint()
+    {
+        long bytesOnDisk = 0L;
+
+        for (final TimelineHostEventAccumulator accumulator : accumulators.asMap().values()) {
+            bytesOnDisk += accumulator.getBackingBuffer().getBytesOnDisk();
+        }
+
+        return bytesOnDisk;
+    }
+
+    @MonitorableManaged(description = "Return the approximate size of bytes in memory for timeline chunks not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public long getBytesInMemoryBackingFootprint()
+    {
+        long bytesInMemory = 0L;
+
+        for (final TimelineHostEventAccumulator accumulator : accumulators.asMap().values()) {
+            bytesInMemory += accumulator.getBackingBuffer().getBytesInMemory();
+        }
+
+        return bytesInMemory;
+    }
+
+    @MonitorableManaged(description = "Return the approximate size of bytes available in memory (before spilling over to disk) for timeline chunks not yet in the database", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public long getBytesInMemoryAvailableSpace()
+    {
+        long bytesInMemory = 0L;
+
+        for (final TimelineHostEventAccumulator accumulator : accumulators.asMap().values()) {
+            bytesInMemory += accumulator.getBackingBuffer().getInMemoryAvailableSpace();
+        }
+
+        return bytesInMemory;
+    }
+
     @MonitorableManaged(description = "Returns the number of times a host accumulator lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getAccumulatorsHitCount()
     {
