@@ -334,7 +334,7 @@ public class SampleCoder {
                 final byte repeatCount = inputStream.readByte();
                 final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.readByte());
                 final Object value = decodeScalarValue(inputStream, repeatedOpcode);
-                processor.processSamples(timestamps, sampleCount, repeatCount, opcode, value);
+                processor.processSamples(timestamps, sampleCount, repeatCount, repeatedOpcode, value);
                 sampleCount += repeatCount;
                 break;
             default:
