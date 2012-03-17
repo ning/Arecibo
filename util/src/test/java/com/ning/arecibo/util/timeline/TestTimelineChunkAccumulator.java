@@ -19,6 +19,7 @@ package com.ning.arecibo.util.timeline;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import org.eclipse.jetty.util.log.Log;
 import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -72,6 +73,9 @@ public class TestTimelineChunkAccumulator {
                 }
             }
         });
+        final TimelineChunkAndTimes chunkAndTimes = new TimelineChunkAndTimes("zxxxxxx.ningops.com", "Yowza-Sample", chunk, times);
+        final TimelineChunkAndTimesDecoded chunkDecoded = new TimelineChunkAndTimesDecoded(chunkAndTimes);
+        System.out.printf("%s\n", chunkDecoded.toString());
     }
 
     private TimelineTimes makeTimelineTimesBytes(final int initialUnixTime, final int secondsBetweenSamples, final int timelineTimesId, final int sampleCount, final int hostId) {

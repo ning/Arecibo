@@ -129,7 +129,7 @@ public class TimelineHostEventAccumulator
 
     private void addPlaceholders(final TimelineChunkAccumulator timeline, int countToAdd)
     {
-        final int maxRepeatSamples = RepeatedSample.MAX_REPEAT_COUNT;
+        final int maxRepeatSamples = RepeatSample.MAX_REPEAT_COUNT;
         while (countToAdd >= maxRepeatSamples) {
             timeline.addPlaceholder((byte) maxRepeatSamples);
             countToAdd -= maxRepeatSamples;

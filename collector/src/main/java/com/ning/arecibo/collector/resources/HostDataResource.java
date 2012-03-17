@@ -20,7 +20,9 @@ import com.google.common.collect.BiMap;
 import com.google.inject.Singleton;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimesDecoded;
 import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.TimelineTimes;
 import com.ning.jersey.metrics.TimedResource;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -97,6 +99,7 @@ public class HostDataResource
     @TimedResource
     public StreamingOutput getSamplesByHostName(
         @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
+        @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
         @PathParam("host") final String hostName,
         @QueryParam("from") @DefaultValue("0") final String from,
         @QueryParam("to") @DefaultValue("") final String to) throws IOException
@@ -116,7 +119,7 @@ public class HostDataResource
             samplesByHostName.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, startTime, endTime));
 
             // Stream the response out - the caller still needs to filter the samples by time range
-            return streamResponse(samplesByHostName, pretty);
+            return streamResponse(samplesByHostName, pretty, decodeSamples);
         }
         catch (Throwable e) {
             // JDBI exception
@@ -130,6 +133,7 @@ public class HostDataResource
     @TimedResource
     public StreamingOutput getSamplesByHostNameAndSampleKind(
         @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
+        @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
         @PathParam("host") final String hostName,
         @PathParam("sample_kind") final String sampleKind,
         @QueryParam("from") @DefaultValue("0") final String from,
@@ -150,7 +154,7 @@ public class HostDataResource
             samplesByHostNameAndSampleKind.addAll(processor.getInMemoryTimelineChunkAndTimes(hostName, sampleKind, startTime, endTime));
 
             // Stream the response out - the caller still needs to filter the samples by time range
-            return streamResponse(samplesByHostNameAndSampleKind, pretty);
+            return streamResponse(samplesByHostNameAndSampleKind, pretty, decodeSamples);
         }
         catch (Throwable e) {
             // JDBI exception
@@ -159,6 +163,11 @@ public class HostDataResource
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)
+    {
+        return streamResponse(iterable, pretty, false);
+    }
+
+    private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty, final boolean decodeSamples)
     {
         return new StreamingOutput()
         {
@@ -173,13 +182,19 @@ public class HostDataResource
 
                 generator.writeStartArray();
                 for (final Object pojo : iterable) {
-                    generator.writeObject(pojo);
+                    if (decodeSamples && pojo instanceof TimelineChunkAndTimes) {
+                        generator.writeObject(new TimelineChunkAndTimesDecoded((TimelineChunkAndTimes)pojo));
+                    }
+                    else {
+                        generator.writeObject(pojo);
+                    }
                 }
                 generator.writeEndArray();
 
                 generator.close();
             }
         };
+
     }
 
     private Response buildServiceUnavailableResponse()

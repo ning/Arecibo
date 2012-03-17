@@ -73,7 +73,7 @@ public class TimelineChunkAccumulator
     {
         if (repeatCount > 0) {
             addLastSample();
-            lastSample = new RepeatedSample<Void>(repeatCount, new NullSample());
+            lastSample = new RepeatSample<Void>(repeatCount, new NullSample());
             sampleCount += repeatCount;
         }
     }
@@ -103,12 +103,13 @@ public class TimelineChunkAccumulator
             final SampleOpcode lastOpcode = lastSample.getOpcode();
             final SampleOpcode sampleOpcode = sample.getOpcode();
             if (lastOpcode == SampleOpcode.REPEAT) {
-                final RepeatedSample r = (RepeatedSample) lastSample;
-                if (r.getSample().getOpcode() == sampleOpcode &&
-                    (sampleOpcode == SampleOpcode.NULL || r.equals(sample)) &&
-                    r.getRepeatCount() < RepeatedSample.MAX_REPEAT_COUNT) {
+                final RepeatSample repeatSample = (RepeatSample)lastSample;
+                final ScalarSample sampleRepeated = repeatSample.getSampleRepeated();
+                if (sampleRepeated.getOpcode() == sampleOpcode &&
+                    (sampleOpcode.getNoArgs() || sampleRepeated.getSampleValue().equals(sample.getSampleValue())) &&
+                    repeatSample.getRepeatCount() < RepeatSample.MAX_REPEAT_COUNT) {
                     // We can just increment the count in the repeat instance
-                    r.incrementRepeatCount();
+                    repeatSample.incrementRepeatCount();
                 }
                 else {
                     // A non-matching repeat - - just add it
@@ -117,11 +118,11 @@ public class TimelineChunkAccumulator
                 }
             }
             else {
-                final ScalarSample lastScalarSample = (ScalarSample) lastSample;
+                final ScalarSample lastScalarSample = (ScalarSample)lastSample;
                 if (sampleOpcode == lastOpcode &&
-                    ((sampleOpcode == SampleOpcode.NULL) || sample.getSampleValue().equals(lastScalarSample.getSampleValue()))) {
+                    (sampleOpcode.getNoArgs() || sample.getSampleValue().equals(lastScalarSample.getSampleValue()))) {
                     // Replace lastSample with repeat group
-                    lastSample = new RepeatedSample((byte) 2, lastScalarSample);
+                    lastSample = new RepeatSample((byte) 2, lastScalarSample);
                 }
                 else {
                     addLastSample();

@@ -28,12 +28,14 @@ public enum SampleOpcode {
     FLOAT((byte)5, 4),
     DOUBLE((byte)6, 8),
     STRING((byte)7, 0),
-    NULL((byte)8, 0),
+    NULL((byte)8, 0, true),
     FLOAT_FOR_DOUBLE((byte)10, 4),
     HALF_FLOAT_FOR_DOUBLE((byte)11, 2),
     BYTE_FOR_DOUBLE((byte)12, 1),
     SHORT_FOR_DOUBLE((byte)13, 2),
     BIGINT((byte)14, 0),
+    DOUBLE_ZERO((byte)15, 0, true),
+    INT_ZERO((byte)16, 0, true),
     REPEAT((byte)0x7f, 1, true);
 
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
@@ -41,15 +43,21 @@ public enum SampleOpcode {
     private byte opcodeIndex;
     private final int byteSize;
     private final boolean repeater;
+    private final boolean noArgs;
 
     private SampleOpcode(byte opcodeIndex, int byteSize) {
         this(opcodeIndex, byteSize, false);
     }
 
-    private SampleOpcode(byte opcodeIndex, int byteSize, boolean repeater) {
+    private SampleOpcode(byte opcodeIndex, int byteSize, boolean noArgs) {
+        this(opcodeIndex, byteSize, noArgs, false);
+    }
+
+    private SampleOpcode(byte opcodeIndex, int byteSize, boolean noArgs, boolean repeater) {
         this.opcodeIndex = opcodeIndex;
         this.byteSize = byteSize;
         this.repeater = repeater;
+        this.noArgs = noArgs;
     }
 
     public byte getOpcodeIndex() {
@@ -69,6 +77,10 @@ public enum SampleOpcode {
 
     public int getByteSize() {
         return byteSize;
+    }
+
+    public boolean getNoArgs() {
+        return noArgs;
     }
 
     public boolean getRepeater() {

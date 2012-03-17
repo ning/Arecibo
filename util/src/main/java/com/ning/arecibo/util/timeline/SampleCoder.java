@@ -23,6 +23,8 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.math.BigInteger;
 
+import org.apache.commons.codec.binary.Hex;
+
 import com.ning.arecibo.util.Logger;
 
 /**
@@ -31,6 +33,9 @@ import com.ning.arecibo.util.Logger;
  */
 public class SampleCoder {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
+    private static final BigInteger BIGINTEGER_ZERO_VALUE = new BigInteger("0");
+    private static final ScalarSample<Void> DOUBLE_ZERO_SAMPLE = new ScalarSample<Void>(SampleOpcode.DOUBLE_ZERO, null);
+    private static final ScalarSample<Void> INT_ZERO_SAMPLE = new ScalarSample<Void>(SampleOpcode.INT_ZERO, null);
 
     // TODO: Figure out if 1/200 is an acceptable level of inaccuracy
     // For the HalfFloat, which has a 10-bit mantissa, this means that it could differ
@@ -58,8 +63,8 @@ public class SampleCoder {
             // First put out the opcode value
             switch (opcode) {
             case REPEAT:
-                final RepeatedSample r = (RepeatedSample)sample;
-                final ScalarSample repeatee = r.getSample();
+                final RepeatSample r = (RepeatSample)sample;
+                final ScalarSample repeatee = r.getSampleRepeated();
                 outputStream.write(opcode.getOpcodeIndex());
                 outputStream.write(r.getRepeatCount());
                 encodeScalarValue(outputStream, repeatee.getOpcode(), repeatee.getSampleValue());
@@ -88,8 +93,9 @@ public class SampleCoder {
         try {
             outputStream.write(opcode.getOpcodeIndex());
             switch (opcode) {
-             case NULL:
-                // Placeholder
+            case NULL:
+            case DOUBLE_ZERO:
+            case INT_ZERO:
                 break;
             case BYTE:
             case BYTE_FOR_DOUBLE:
@@ -153,7 +159,10 @@ public class SampleCoder {
         switch (sample.getOpcode()) {
         case INT:
             final int intValue = (Integer)sample.getSampleValue();
-            if (intValue >= Byte.MIN_VALUE && intValue <= Byte.MAX_VALUE) {
+            if (intValue == 0) {
+                return INT_ZERO_SAMPLE;
+            }
+            else if (intValue >= Byte.MIN_VALUE && intValue <= Byte.MAX_VALUE) {
                 return new ScalarSample(SampleOpcode.BYTE, new Byte((byte)intValue));
             }
             else if (intValue >= Short.MIN_VALUE && intValue <= Short.MAX_VALUE) {
@@ -164,7 +173,10 @@ public class SampleCoder {
             }
         case LONG:
             final long longValue = (Long)sample.getSampleValue();
-            if (longValue >= Byte.MIN_VALUE && longValue <= Byte.MAX_VALUE) {
+            if (longValue == 0) {
+                return INT_ZERO_SAMPLE;
+            }
+            else if (longValue >= Byte.MIN_VALUE && longValue <= Byte.MAX_VALUE) {
                 return new ScalarSample(SampleOpcode.BYTE, new Byte((byte)longValue));
             }
             else if (longValue >= Short.MIN_VALUE && longValue <= Short.MAX_VALUE) {
@@ -178,6 +190,9 @@ public class SampleCoder {
             }
         case BIGINT:
             final BigInteger bigValue = (BigInteger)sample.getSampleValue();
+            if (bigValue.compareTo(BIGINTEGER_ZERO_VALUE) == 0) {
+                return INT_ZERO_SAMPLE;
+            }
             final int digits = 1 + bigValue.bitCount();
             if (digits <= 8) {
                 return new ScalarSample(SampleOpcode.BYTE, new Byte((byte)bigValue.intValue()));
@@ -207,7 +222,10 @@ public class SampleCoder {
     private static ScalarSample encodeFloatOrDoubleSample(final ScalarSample sample, final double value) {
         // We prefer representations in the following order: byte, HalfFloat, short, float and int
         // The criterion for using each representation is the fractional error
-        final boolean integral = value >= MIN_SHORT_DOUBLE_VALUE && value <= MAX_SHORT_DOUBLE_VALUE && (value == 0.0 || Math.abs((value - (double)((int)value)) / value) <= MAX_FRACTION_ERROR);
+        if (value == 0.0) {
+            return DOUBLE_ZERO_SAMPLE;
+        }
+        final boolean integral = value >= MIN_SHORT_DOUBLE_VALUE && value <= MAX_SHORT_DOUBLE_VALUE && (Math.abs((value - (double)((int)value)) / value) <= MAX_FRACTION_ERROR);
         if (integral && value >= MIN_BYTE_DOUBLE_VALUE && value <= MAX_BYTE_DOUBLE_VALUE) {
             return new ScalarSample<Byte>(SampleOpcode.BYTE_FOR_DOUBLE, (byte)value);
         }
@@ -236,6 +254,10 @@ public class SampleCoder {
 
     public static double getDoubleValue(final SampleOpcode opcode, final Object sampleValue) {
         switch (opcode) {
+        case NULL:
+        case DOUBLE_ZERO:
+        case INT_ZERO:
+            return 0.0;
         case BYTE:
         case BYTE_FOR_DOUBLE:
             return (double)((Byte)sampleValue);
@@ -265,6 +287,10 @@ public class SampleCoder {
         switch (opcode) {
         case NULL:
             return null;
+        case DOUBLE_ZERO:
+            return 0.0;
+        case INT_ZERO:
+            return 0;
         case BYTE:
             return new Byte(inputStream.readByte());
         case SHORT:
@@ -317,6 +343,7 @@ public class SampleCoder {
      * @throws IOException
      */
     public static void scan(final byte[] bytes, final TimelineTimes timestamps, final SampleProcessor processor) throws IOException{
+        //System.out.printf("Decoded: %s\n", new String(Hex.encodeHex(bytes)));
         final ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
         final DataInputStream inputStream = new DataInputStream(byteStream);
         int sampleCount = 0;

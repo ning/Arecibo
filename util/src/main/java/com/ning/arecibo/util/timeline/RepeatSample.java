@@ -16,17 +16,17 @@
 
 package com.ning.arecibo.util.timeline;
 
-public class RepeatedSample<T> extends SampleBase {
+public class RepeatSample<T> extends SampleBase {
     public static final int MAX_REPEAT_COUNT = 0x7F; // The maximum byte value
 
-    private final ScalarSample<T> sample;
+    private final ScalarSample<T> sampleRepeated;
 
     private byte repeatCount;
 
-    public RepeatedSample(byte repeatCount, ScalarSample<T> sample) {
+    public RepeatSample(byte repeatCount, ScalarSample<T> sampleRepeated) {
         super(SampleOpcode.REPEAT);
         this.repeatCount = repeatCount;
-        this.sample = sample;
+        this.sampleRepeated = sampleRepeated;
 
     }
 
@@ -38,7 +38,7 @@ public class RepeatedSample<T> extends SampleBase {
         repeatCount++;
     }
 
-    public ScalarSample<T> getSample() {
-        return sample;
+    public ScalarSample<T> getSampleRepeated() {
+        return sampleRepeated;
     }
 }
