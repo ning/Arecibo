@@ -142,7 +142,7 @@ public class CachingTimelineDAO implements TimelineDAO
                 public String load(final Integer sampleKindId) throws Exception
                 {
                     log.info("Loading sampleKinds cache for key {}", sampleKindId);
-                    return delegate.getHost(sampleKindId);
+                    return delegate.getSampleKind(sampleKindId);
                 }
             });
 
@@ -165,7 +165,7 @@ public class CachingTimelineDAO implements TimelineDAO
                 public Integer load(final String sampleKind) throws Exception
                 {
                     log.info("Loading sampleKindIds cache for key {}", sampleKind);
-                    return delegate.getHostId(sampleKind);
+                    return delegate.getSampleKindId(sampleKind);
                 }
             });
     }

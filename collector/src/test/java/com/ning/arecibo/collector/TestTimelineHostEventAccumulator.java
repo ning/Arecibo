@@ -25,7 +25,6 @@ import org.joda.time.DateTimeZone;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +32,6 @@ import java.util.Map;
 public class TestTimelineHostEventAccumulator
 {
     private static final int HOST_ID = 1;
-    private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestTimelineHostEventAccumulator-" + System.currentTimeMillis());
 
     private static final MockTimelineDAO dao = new MockTimelineDAO();
 
