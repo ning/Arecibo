@@ -302,26 +302,32 @@ public class TimelineEventHandler implements EventHandler
         log.info("Starting replay of files in {}", spoolDir);
         final Replayer replayer = new Replayer(spoolDir);
 
-        // Read all files in the spool directory and delete them after process
-        replayer.readAll(new Function<HostSamplesForTimestamp, Void>()
-        {
-            @Override
-            public Void apply(@Nullable final HostSamplesForTimestamp input)
+        try {
+            // Read all files in the spool directory and delete them after process
+            replayer.readAll(new Function<HostSamplesForTimestamp, Void>()
             {
-                if (input != null) {
-                    try {
-                        processSamples(input);
+                @Override
+                public Void apply(@Nullable final HostSamplesForTimestamp input)
+                {
+                    if (input != null) {
+                        try {
+                            processSamples(input);
+                        }
+                        catch (ExecutionException e) {
+                            log.warn("Got exception replaying sample, data potentially lost! {}", input.toString());
+                        }
                     }
-                    catch (ExecutionException e) {
-                        log.warn("Got exception replaying sample, data potentially lost! {}", input.toString());
-                    }
+
+                    return null;
                 }
+            });
 
-                return null;
-            }
-        });
-
-        log.info("Replay completed");
+            log.info("Replay completed");
+        }
+        catch (RuntimeException e) {
+            // Catch the exception to make the collector start properly
+            log.error("Ignoring error when replaying the data", e);
+        }
     }
 
     @MonitorableManaged(monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
