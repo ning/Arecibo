@@ -24,6 +24,7 @@ public class TestSampleCompression {
     @Test(groups="fast")
     public void testBasicDoubleCompression() throws Exception {
 
+        checkDoubleCodedResult(0.0, SampleOpcode.BYTE_FOR_DOUBLE);
         checkDoubleCodedResult(1.0, SampleOpcode.BYTE_FOR_DOUBLE);
         checkDoubleCodedResult(1.005, SampleOpcode.BYTE_FOR_DOUBLE);
         checkDoubleCodedResult(127.2, SampleOpcode.BYTE_FOR_DOUBLE);
@@ -49,7 +50,7 @@ public class TestSampleCompression {
     private void checkDoubleCodedResult(final double value, final SampleOpcode expectedOpcode) {
         final ScalarSample codedSample = SampleCoder.compressSample(new ScalarSample(SampleOpcode.DOUBLE, value));
         Assert.assertEquals(codedSample.getOpcode(), expectedOpcode);
-        final double error = Math.abs((value - SampleCoder.getDoubleValue(codedSample)) / value);
+        final double error = value == 0.0 ? 0.0 : Math.abs((value - SampleCoder.getDoubleValue(codedSample)) / value);
         Assert.assertTrue(error <= SampleCoder.MAX_FRACTION_ERROR);
     }
 }

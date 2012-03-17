@@ -207,7 +207,7 @@ public class SampleCoder {
     private static ScalarSample encodeFloatOrDoubleSample(final ScalarSample sample, final double value) {
         // We prefer representations in the following order: byte, HalfFloat, short, float and int
         // The criterion for using each representation is the fractional error
-        final boolean integral = value >= MIN_SHORT_DOUBLE_VALUE && value <= MAX_SHORT_DOUBLE_VALUE && Math.abs((value - (double)((int)value)) / value) <= MAX_FRACTION_ERROR;
+        final boolean integral = value >= MIN_SHORT_DOUBLE_VALUE && value <= MAX_SHORT_DOUBLE_VALUE && (value == 0.0 || Math.abs((value - (double)((int)value)) / value) <= MAX_FRACTION_ERROR);
         if (integral && value >= MIN_BYTE_DOUBLE_VALUE && value <= MAX_BYTE_DOUBLE_VALUE) {
             return new ScalarSample<Byte>(SampleOpcode.BYTE_FOR_DOUBLE, (byte)value);
         }
