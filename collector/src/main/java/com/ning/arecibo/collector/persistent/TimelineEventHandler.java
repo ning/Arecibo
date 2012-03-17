@@ -24,6 +24,8 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
 import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Shorts;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
@@ -31,7 +33,6 @@ import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.eventlogger.Event;
-import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
@@ -47,6 +48,8 @@ import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.Nullable;
@@ -62,7 +65,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class TimelineEventHandler implements EventHandler
 {
-    private static final Logger log = Logger.getLogger(TimelineEventHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(TimelineEventHandler.class);
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
     private final LoadingCache<Integer, TimelineHostEventAccumulator> accumulators;
@@ -235,7 +238,8 @@ public class TimelineEventHandler implements EventHandler
         return timelineDAO.getOrAddHost(hostUUID);
     }
 
-    private void convertSamplesToScalarSamples(final int hostId, final Map<String, Object> inputSamples, final Map<Integer, ScalarSample> outputSamples)
+    @VisibleForTesting
+    void convertSamplesToScalarSamples(final int hostId, final Map<String, Object> inputSamples, final Map<Integer, ScalarSample> outputSamples)
     {
         if (inputSamples == null) {
             return;
@@ -255,10 +259,31 @@ public class TimelineEventHandler implements EventHandler
                 outputSamples.put(sampleKindId, new ScalarSample<Short>(SampleOpcode.SHORT, (Short) sample));
             }
             else if (sample instanceof Integer) {
-                outputSamples.put(sampleKindId, new ScalarSample<Integer>(SampleOpcode.INT, (Integer) sample));
+                try {
+                    // Can it fit in a short?
+                    final short optimizedShort = Shorts.checkedCast(Long.valueOf(sample.toString()));
+                    outputSamples.put(sampleKindId, new ScalarSample<Short>(SampleOpcode.SHORT, optimizedShort));
+                }
+                catch (IllegalArgumentException e) {
+                    outputSamples.put(sampleKindId, new ScalarSample<Integer>(SampleOpcode.INT, (Integer) sample));
+                }
             }
             else if (sample instanceof Long) {
-                outputSamples.put(sampleKindId, new ScalarSample<Long>(SampleOpcode.LONG, (Long) sample));
+                try {
+                    // Can it fit in a short?
+                    final short optimizedShort = Shorts.checkedCast(Long.valueOf(sample.toString()));
+                    outputSamples.put(sampleKindId, new ScalarSample<Short>(SampleOpcode.SHORT, optimizedShort));
+                }
+                catch (IllegalArgumentException e) {
+                    try {
+                        // Can it fit in an int?
+                        final int optimizedLong = Ints.checkedCast(Long.valueOf(sample.toString()));
+                        outputSamples.put(sampleKindId, new ScalarSample<Integer>(SampleOpcode.INT, optimizedLong));
+                    }
+                    catch (IllegalArgumentException ohWell) {
+                        outputSamples.put(sampleKindId, new ScalarSample<Long>(SampleOpcode.LONG, (Long) sample));
+                    }
+                }
             }
             else if (sample instanceof Float) {
                 outputSamples.put(sampleKindId, new ScalarSample<Float>(SampleOpcode.FLOAT, (Float) sample));
