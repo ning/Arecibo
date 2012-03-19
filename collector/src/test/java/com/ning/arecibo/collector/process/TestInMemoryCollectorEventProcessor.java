@@ -16,12 +16,14 @@
 
 package com.ning.arecibo.collector.process;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.event.MapEvent;
+import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import org.joda.time.DateTime;
@@ -55,7 +57,7 @@ public class TestInMemoryCollectorEventProcessor
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
-        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
+        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
     }
 
     @Test(groups = "fast")

@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.collector.rt.kafka;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mogwee.executors.Executors;
@@ -69,7 +70,7 @@ public class TestKafkaEventHandler
         System.setProperty("arecibo.collector.rt.kafka.zkConnect", ZK_CONNECT);
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         kafkaEventHandler = new KafkaEventHandler(config);
-        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(kafkaEventHandler));
+        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(kafkaEventHandler), Functions.<Event>identity());
 
         stream = createKafkaConsumer();
 

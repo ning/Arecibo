@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.collector.process;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
@@ -68,7 +69,7 @@ public class TestFileBackedBuffer
         System.setProperty("arecibo.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
-        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler));
+        processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
     }
 
     @Test(groups = "slow")

@@ -16,6 +16,8 @@
 
 package com.ning.arecibo.collector.guice;
 
+import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -131,6 +133,21 @@ public class CollectorModule extends AbstractModule
         })
             .toProvider(provider)
             .asEagerSingleton();
+
+        // Bind the Event filter
+        try {
+            final String eventFilterClass = config.getEventFilterClass();
+            if (eventFilterClass == null) {
+                bind(Function.class).annotatedWith(EventFilter.class).toInstance(Functions.identity());
+            }
+            else {
+                bind(Function.class).annotatedWith(EventFilter.class).to((Class<? extends Function>) Class.forName(eventFilterClass)).asEagerSingleton();
+            }
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find Event filter class", e);
+            bind(Function.class).annotatedWith(EventFilter.class).toInstance(Functions.identity());
+        }
     }
 
     private void configureServiceLocator(final CollectorConfig config)

@@ -18,6 +18,7 @@ package com.ning.arecibo.collector.guice;
 
 import org.skife.config.Config;
 import org.skife.config.Default;
+import org.skife.config.DefaultNull;
 import org.skife.config.Description;
 import org.skife.config.TimeSpan;
 
@@ -42,6 +43,16 @@ public interface CollectorConfig
     @Description("Serializers classes to use to deserialize incoming events")
     @Default("com.ning.arecibo.event.transport.JavaEventSerializer,com.ning.arecibo.event.transport.JsonEventSerializer,com.ning.arecibo.event.transport.MapEventSerializer")
     String getEventSerializers();
+
+    @Config("arecibo.collector.eventFilterKlass")
+    @Description("Class to use to filter events")
+    @DefaultNull
+    String getEventFilterClass();
+
+    @Config("arecibo.collector.attributesToIgnore")
+    @Description("When using the provided FilterOutAttributesEventFilter class, list of attributes to filter out on the way in")
+    @Default("")
+    String getAttributesToIgnore();
 
     @Config("arecibo.collector.timelines.maxHosts")
     @Description("Max number of different hosts to keep in memory at the same time")

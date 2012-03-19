@@ -14,18 +14,26 @@
  * under the License.
  */
 
-package com.ning.arecibo.collector.guice;
+package com.ning.arecibo.collector;
 
-import com.google.inject.BindingAnnotation;
+import com.ning.arecibo.collector.process.EventHandler;
+import com.ning.arecibo.eventlogger.Event;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.List;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.PARAMETER})
-@BindingAnnotation
-public @interface EventTableDescriptors
+public class MockEventHandler implements EventHandler
 {
+    private final List<Event> eventsHandled = new ArrayList<Event>();
+
+    @Override
+    public void handle(final Event event)
+    {
+        eventsHandled.add(event);
+    }
+
+    public List<Event> getEventsHandled()
+    {
+        return eventsHandled;
+    }
 }
