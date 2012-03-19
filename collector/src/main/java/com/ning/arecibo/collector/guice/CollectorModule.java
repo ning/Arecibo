@@ -26,6 +26,9 @@ import com.ning.arecibo.collector.rt.kafka.KafkaEventHandler;
 import com.ning.arecibo.util.ArrayListProvider;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
+import com.ning.arecibo.util.lifecycle.LifecycleAction;
+import com.ning.arecibo.util.lifecycle.LifecycleEvent;
+import com.ning.arecibo.util.lifecycle.LifecycledProvider;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.timeline.TimelineDAO;
@@ -95,7 +98,24 @@ public class CollectorModule extends AbstractModule
 
         // Hook the persistent handler by default
         log.info("Persistent producer configured");
-        bind(TimelineEventHandler.class).asEagerSingleton();
+        final LifecycledProvider<TimelineEventHandler> lifecycledProvider = new LifecycledProvider<TimelineEventHandler>(binder(), TimelineEventHandler.class);
+        lifecycledProvider.addListener(LifecycleEvent.START, new LifecycleAction<TimelineEventHandler>()
+        {
+            public void doAction(final TimelineEventHandler handler)
+            {
+                log.info("START event received: replaying on-disk events");
+                handler.replay(config.getSpoolDir());
+            }
+        });
+        lifecycledProvider.addListener(LifecycleEvent.STOP, new LifecycleAction<TimelineEventHandler>()
+        {
+            public void doAction(final TimelineEventHandler handler)
+            {
+                log.info("STOP event received: forcing commit of timelines");
+                handler.forceCommit();
+            }
+        });
+        bind(TimelineEventHandler.class).toProvider(lifecycledProvider).asEagerSingleton();
         provider.addExportable(TimelineEventHandler.class);
 
         // Hook the real-time handler as needed

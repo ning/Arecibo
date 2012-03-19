@@ -125,8 +125,6 @@ public class TimelineEventHandler implements EventHandler
                 forceCommit();
             }
         }, config.getTimelineLength().getMillis(), config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS);
-
-        replay(config.getSpoolDir());
     }
 
     @Override
@@ -297,7 +295,7 @@ public class TimelineEventHandler implements EventHandler
         }
     }
 
-    private void replay(final String spoolDir)
+    public void replay(final String spoolDir)
     {
         log.info("Starting replay of files in {}", spoolDir);
         final Replayer replayer = new Replayer(spoolDir);
