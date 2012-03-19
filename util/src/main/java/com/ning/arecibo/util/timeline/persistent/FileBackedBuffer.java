@@ -64,7 +64,7 @@ public class FileBackedBuffer
         this.prefix = prefix;
 
         final MemBuffersForBytes bufs = new MemBuffersForBytes(segmentsSize, 1, maxNbSegments);
-        inputBuffer = bufs.createStreamyBuffer(8, 15);
+        inputBuffer = bufs.createStreamyBuffer(1, maxNbSegments);
 
         recycle();
     }

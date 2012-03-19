@@ -142,4 +142,9 @@ public final class MockTimelineDAO implements TimelineDAO
     public void getSamplesByHostNamesAndSampleKinds(List<String> hostNames, List<String> sampleKinds, DateTime startTime, DateTime endTime, TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException {
         throw new UnsupportedOperationException("TODO");
     }
+
+    public BiMap<Integer, TimelineChunk> getTimelineChunks()
+    {
+        return timelineChunks;
+    }
 }
