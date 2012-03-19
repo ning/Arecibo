@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import javax.annotation.Nullable;
+
 public class CachingTimelineDAO implements TimelineDAO
 {
     private static final Logger log = LoggerFactory.getLogger(CachingTimelineDAO.class);
@@ -279,6 +281,11 @@ public class CachingTimelineDAO implements TimelineDAO
     public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return delegate.getSamplesByHostName(hostName, startTime, endTime);
+    }
+
+    @Override
+    public void getSamplesByHostNamesAndSampleKinds(List<String> hostNames, @Nullable List<String> sampleKinds, DateTime startTime, DateTime endTime, TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException {
+        delegate.getSamplesByHostNamesAndSampleKinds(hostNames, sampleKinds, startTime, endTime, chunkConsumer);
     }
 
     @Override

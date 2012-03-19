@@ -19,10 +19,13 @@ package com.ning.arecibo.util.timeline;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
+import com.ning.arecibo.util.Logger;
+
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.ResultIterator;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.TransactionCallback;
 import org.skife.jdbi.v2.TransactionStatus;
@@ -37,9 +40,13 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 // TODO Make queries stream-able
 public class DefaultTimelineDAO implements TimelineDAO
 {
+    private static final Logger log = Logger.getLoggerViaExpensiveMagic();
+
     private final IDBI dbi;
 
     @Inject
@@ -364,6 +371,86 @@ public class DefaultTimelineDAO implements TimelineDAO
                     .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
             }
         });
+    }
+
+    @Override
+    // TODO: Using strings instead of string templates for this stuff is really ugly.
+    // Is there some reason this DAO doesn't use string templates?
+    public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames,
+                                                    final @Nullable List<String> sampleKinds,
+                                                    final DateTime startTime,
+                                                    final DateTime endTime,
+                                                    final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        final String hostNameStrings = stringifyList(hostNames);
+        final String sampleKindStrings = sampleKinds == null ? "" : stringifyList(sampleKinds);
+        final String sampleKindPredicate = sampleKinds == null ? "" : String.format("and k.sample_kind in (%s)\n", sampleKindStrings);
+        dbi.withHandle(new HandleCallback<Void>()
+        {
+            @Override
+            public Void withHandle(final Handle handle) throws Exception
+            {
+                ResultIterator<TimelineChunkAndTimes> iterator = null;
+                try {
+                    iterator = handle
+                        .createQuery(
+                            "select distinct\n" +
+                                "  h.host_id\n" +
+                                ", h.host_name\n" +
+                                ", k.sample_kind_id\n" +
+                                ", k.sample_kind\n" +
+                                ", c.sample_timeline_id\n" +
+                                ", c.timeline_times_id\n" +
+                                ", c.sample_count\n" +
+                                ", c.sample_bytes\n" +
+                                ", t.start_time\n" +
+                                ", t.end_time\n" +
+                                ", t.count\n" +
+                                ", t.times\n" +
+                                "from timeline_chunks c\n" +
+                                "join hosts h using (host_id)\n" +
+                                "join sample_kinds k using (sample_kind_id)\n" +
+                                "join timeline_times t using (timeline_times_id)\n" +
+                                "where t.start_time >= :start_time\n" +
+                                "and t.end_time <= :end_time\n" +
+                                "and h.host_name in (" + hostNameStrings + ")\n" +
+                                sampleKindPredicate +
+                                "and t.not_valid = 0\n" +
+                                "order by :host_name, k.sample_kind, t.start_time asc\n" +
+                                ";")
+                        .bind("start_time", TimelineTimes.unixSeconds(startTime))
+                        .bind("end_time", TimelineTimes.unixSeconds(endTime))
+                        .map(TimelineChunkAndTimes.mapper)
+                        .iterator();
+                    while (iterator.hasNext()) {
+                        chunkConsumer.processTimelineChunkAndTimes(iterator.next());
+                    }
+                    return null;
+                }
+                finally {
+                    if (iterator != null) {
+                        try {
+                            iterator.close();
+                        }
+                        catch (Exception e) {
+                            log.error("Exception closing TimelineChunkAndTimes iterator for hosts %s and sample %s", hostNameStrings, sampleKindStrings);
+                        }
+                    }
+                }
+            }
+        });
+
+    }
+
+    private String stringifyList(final List<String> strings) {
+        final StringBuilder builder = new StringBuilder();
+        for (String string : strings) {
+            if (builder.length() != 0) {
+                builder.append(", ");
+            }
+            builder.append("'").append(string).append("'");
+        }
+        return builder.toString();
     }
 
     private BiMap<Integer, String> makeBiMap()

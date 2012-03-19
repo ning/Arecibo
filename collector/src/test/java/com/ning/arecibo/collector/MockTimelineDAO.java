@@ -22,6 +22,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineTimes;
 import org.joda.time.DateTime;
@@ -134,6 +135,11 @@ public final class MockTimelineDAO implements TimelineDAO
     @Override
     public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
     {
+        throw new UnsupportedOperationException("TODO");
+    }
+
+    @Override
+    public void getSamplesByHostNamesAndSampleKinds(List<String> hostNames, List<String> sampleKinds, DateTime startTime, DateTime endTime, TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException {
         throw new UnsupportedOperationException("TODO");
     }
 }

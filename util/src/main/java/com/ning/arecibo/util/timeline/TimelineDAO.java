@@ -23,6 +23,8 @@ import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public interface TimelineDAO
 {
     // Hosts table
@@ -56,4 +58,10 @@ public interface TimelineDAO
     List<TimelineChunkAndTimes> getSamplesByHostName(String hostName, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
 
     List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(String hostName, String sampleKind, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    void getSamplesByHostNamesAndSampleKinds(List<String> hostNames,
+                                             @Nullable List<String> sampleKinds,
+                                             DateTime startTime,
+                                             DateTime endTime,
+                                             TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException;
 }
