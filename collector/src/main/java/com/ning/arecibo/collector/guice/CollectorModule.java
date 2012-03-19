@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.rt.kafka.KafkaEventHandler;
+import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.ArrayListProvider;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jdbi.DBIProvider;
@@ -138,15 +139,21 @@ public class CollectorModule extends AbstractModule
         try {
             final String eventFilterClass = config.getEventFilterClass();
             if (eventFilterClass == null) {
-                bind(Function.class).annotatedWith(EventFilter.class).toInstance(Functions.identity());
+                bind(new TypeLiteral<Function<Event, Event>>()
+                {
+                }).annotatedWith(EventFilter.class).toInstance(Functions.<Event>identity());
             }
             else {
-                bind(Function.class).annotatedWith(EventFilter.class).to((Class<? extends Function>) Class.forName(eventFilterClass)).asEagerSingleton();
+                bind(new TypeLiteral<Function<Event, Event>>()
+                {
+                }).annotatedWith(EventFilter.class).to((Class<? extends Function<Event, Event>>) Class.forName(eventFilterClass)).asEagerSingleton();
             }
         }
         catch (ClassNotFoundException e) {
             log.error("Unable to find Event filter class", e);
-            bind(Function.class).annotatedWith(EventFilter.class).toInstance(Functions.identity());
+            bind(new TypeLiteral<Function<Event, Event>>()
+            {
+            }).annotatedWith(EventFilter.class).toInstance(Functions.<Event>identity());
         }
     }
 
