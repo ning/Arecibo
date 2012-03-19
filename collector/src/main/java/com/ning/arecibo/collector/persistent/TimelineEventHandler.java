@@ -110,7 +110,7 @@ public class TimelineEventHandler implements EventHandler
                 public TimelineHostEventAccumulator load(final Integer hostId) throws Exception
                 {
                     log.info("Creating new Timeline for hostId: " + hostId);
-                    return new TimelineHostEventAccumulator(timelineDAO, hostId);
+                    return new TimelineHostEventAccumulator(timelineDAO, hostId, config.getTimelinesVerboseStats());
                 }
             });
 

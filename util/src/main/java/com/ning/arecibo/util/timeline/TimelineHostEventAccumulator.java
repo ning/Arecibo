@@ -58,6 +58,7 @@ public class TimelineHostEventAccumulator
 
     private final TimelineDAO dao;
     private final int hostId;
+    private final boolean verboseStats;
     private DateTime startTime = null;
     private DateTime endTime = null;
     private int sampleCount = 0;
@@ -71,10 +72,11 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId) throws IOException
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId, final boolean verboseStats) throws IOException
     {
         this.dao = dao;
         this.hostId = hostId;
+        this.verboseStats = verboseStats;
     }
 
     @SuppressWarnings("unchecked")
@@ -220,7 +222,9 @@ public class TimelineHostEventAccumulator
 
     private void updateStats(final Integer sampleKindId, final ScalarSample sample)
     {
-        getOrCreateCounterMetric(sampleKindId, sample.getOpcode()).inc();
+        if (verboseStats) {
+            getOrCreateCounterMetric(sampleKindId, sample.getOpcode()).inc();
+        }
     }
 
     private synchronized CounterMetric getOrCreateCounterMetric(final Integer sampleKindId, final SampleOpcode opcode)
