@@ -17,10 +17,13 @@
 package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.Sets;
-import com.ning.arecibo.util.Logger;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.CounterMetric;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,10 +48,13 @@ import java.util.Set;
  */
 public class TimelineHostEventAccumulator
 {
-    private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
+    private static final Logger log = LoggerFactory.getLogger(TimelineHostEventAccumulator.class);
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
+
+    // One counter sample kind and resulting opcode
+    private final Map<Integer, Map<Byte, CounterMetric>> countersCache = new HashMap<Integer, Map<Byte, CounterMetric>>();
 
     private final TimelineDAO dao;
     private final int hostId;
@@ -91,8 +97,8 @@ public class TimelineHostEventAccumulator
         }
 
         if (timestamp.isBefore(endTime)) {
-            log.warn("Adding samples for host %d, timestamp %s is earlier than the end time %s; ignored",
-                hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime));
+            log.warn("Adding samples for host {}, timestamp {} is earlier than the end time {}; ignored",
+                new Object[]{hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime)});
             return;
         }
         final Set<Integer> currentKinds = Sets.newHashSet(timelines.keySet());
@@ -110,6 +116,8 @@ public class TimelineHostEventAccumulator
             }
             final ScalarSample compressedSample = SampleCoder.compressSample(sample);
             timeline.addSample(compressedSample);
+            // Keep stats of compressed samples
+            updateStats(sampleKindId, compressedSample);
         }
         // Now make sure to advance the timelines we haven't added samples to,
         // since the samples for a given sample kind can come and go
@@ -153,6 +161,8 @@ public class TimelineHostEventAccumulator
         for (final TimelineChunkAccumulator accumulator : timelines.values()) {
             dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId));
         }
+
+        destroyStats();
     }
 
     /**
@@ -166,8 +176,8 @@ public class TimelineHostEventAccumulator
     {
         boolean success = true;
         if (assertedCount != sampleCount) {
-            log.error("For host %d, start time %s, the HostTimeLines sampleCount %d is not equal to the assertedCount %d",
-                hostId, dateFormatter.print(startTime), sampleCount, assertedCount);
+            log.error("For host {}, start time {}, the HostTimeLines sampleCount {} is not equal to the assertedCount {}",
+                new Object[]{hostId, dateFormatter.print(startTime), sampleCount, assertedCount});
             success = false;
         }
         for (final Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
@@ -175,8 +185,8 @@ public class TimelineHostEventAccumulator
             final TimelineChunkAccumulator timeline = entry.getValue();
             final int lineSampleCount = timeline.getSampleCount();
             if (lineSampleCount != assertedCount) {
-                log.error("For host %d, start time %s, sample kind id %s, the sampleCount %d is not equal to the assertedCount %d",
-                    hostId, dateFormatter.print(startTime), sampleKindId, lineSampleCount, assertedCount);
+                log.error("For host {}, start time {}, sample kind id {}, the sampleCount {} is not equal to the assertedCount {}",
+                    new Object[]{hostId, dateFormatter.print(startTime), sampleKindId, lineSampleCount, assertedCount});
                 success = false;
             }
         }
@@ -206,5 +216,49 @@ public class TimelineHostEventAccumulator
     public List<DateTime> getTimes()
     {
         return times;
+    }
+
+    private void updateStats(final Integer sampleKindId, final ScalarSample sample)
+    {
+        getOrCreateCounterMetric(sampleKindId, sample.getOpcode()).inc();
+    }
+
+    private synchronized CounterMetric getOrCreateCounterMetric(final Integer sampleKindId, final SampleOpcode opcode)
+    {
+        Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
+        if (countersForSampleKindId == null) {
+            countersForSampleKindId = new HashMap<Byte, CounterMetric>();
+            countersCache.put(sampleKindId, countersForSampleKindId);
+        }
+
+        CounterMetric counter = countersForSampleKindId.get(opcode.getOpcodeIndex());
+        if (counter == null) {
+            final String host = dao.getHost(hostId);
+            final String sampleKind = dao.getSampleKind(sampleKindId);
+            counter = Metrics.newCounter(TimelineHostEventAccumulator.class, getMetricName(host, sampleKind, opcode));
+            log.info("Created new CounterMetric for host: {}, sampleKind: {} and opcode {}", new Object[]{host, sampleKind, opcode});
+            countersForSampleKindId.put(opcode.getOpcodeIndex(), counter);
+        }
+
+        return counter;
+    }
+
+    private String getMetricName(final String host, final String sampleKind, final SampleOpcode opcode)
+    {
+        return String.format("%s-%s-%s", host, sampleKind, opcode.toString());
+    }
+
+    private synchronized void destroyStats()
+    {
+        for (final Integer sampleKindId : countersCache.keySet()) {
+            final Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
+            for (final Byte opcode : countersForSampleKindId.keySet()) {
+                final String host = dao.getHost(hostId);
+                final String sampleKind = dao.getSampleKind(sampleKindId);
+                final SampleOpcode sampleOpcode = SampleOpcode.getOpcodeFromIndex(opcode);
+                log.info("Destroyed CounterMetric for host: {}, sampleKind: {} and opcode {}", new Object[]{host, sampleKind, sampleOpcode});
+                Metrics.removeMetric(TimelineHostEventAccumulator.class, getMetricName(host, sampleKind, sampleOpcode));
+            }
+        }
     }
 }
