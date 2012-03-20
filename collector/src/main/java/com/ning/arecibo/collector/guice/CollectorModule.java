@@ -43,6 +43,8 @@ import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.ObjectNames;
+import org.weakref.jmx.guice.ExportBuilder;
+import org.weakref.jmx.guice.MBeanModule;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -114,7 +116,11 @@ public class CollectorModule extends AbstractModule
                 aggregator.stopAggregationThread();
             }
         });
-        bind(TimelineAggregator.class).toProvider(lifecycledProvider).asEagerSingleton();    }
+        bind(TimelineAggregator.class).toProvider(lifecycledProvider).asEagerSingleton();
+
+        final ExportBuilder builder = MBeanModule.newExporter(binder());
+        builder.export(TimelineAggregator.class).withGeneratedName();
+    }
 
     protected void configureStats()
     {

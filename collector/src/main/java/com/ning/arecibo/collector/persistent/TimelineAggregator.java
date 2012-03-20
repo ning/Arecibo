@@ -16,13 +16,14 @@
 
 package com.ning.arecibo.collector.persistent;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineTimes;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.CounterMetric;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
@@ -32,6 +33,9 @@ import org.skife.jdbi.v2.TransactionStatus;
 import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.skife.jdbi.v2.util.IntegerMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.weakref.jmx.Managed;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class runs a thread that periodically looks for unaggregated timeline_times.
@@ -49,6 +54,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class TimelineAggregator
 {
+    private static final Logger log = LoggerFactory.getLogger(TimelineAggregator.class);
+
     private static final ResultSetMapper<TimelineTimes> timelineTimesCandidateMapper = new ResultSetMapper<TimelineTimes>()
     {
         @Override
@@ -67,6 +74,9 @@ public class TimelineAggregator
     private final DefaultTimelineDAO timelineDao;
     private final CollectorConfig config;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
+
+    private final AtomicBoolean isAggregating = new AtomicBoolean(false);
+    private final CounterMetric aggregatesCreated = Metrics.newCounter(TimelineAggregator.class, "aggregates-created");
 
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
@@ -149,6 +159,8 @@ public class TimelineAggregator
 
     private int aggregateTimelineCandidates(final List<TimelineTimes> timelineTimesCandidates)
     {
+        log.info("Looking to aggregate {} candidates in {} chunks", timelineTimesCandidates.size(), config.getChunksToAggregate());
+
         int aggregatesCreated = 0;
         final int chunksToAggregate = config.getChunksToAggregate();
         while (timelineTimesCandidates.size() >= chunksToAggregate) {
@@ -195,6 +207,9 @@ public class TimelineAggregator
             sampleCount += timelineTimes.getSampleCount();
             timelineTimesIds.add(timelineTimes.getObjectId());
         }
+        log.info("Aggregating {} timelines ({} bytes, {} samples): {}",
+            new Object[]{timelineTimesChunks.size(), totalTimelineSize, sampleCount, timelineTimesIds});
+
         final int totalSampleCount = sampleCount;
         final byte[] aggregatedTimes = new byte[totalTimelineSize];
         int timeChunkIndex = 0;
@@ -314,11 +329,18 @@ public class TimelineAggregator
      *
      * @return the count of timeline_times objects aggregated
      */
-    @VisibleForTesting
-    int getAndProcessTimelineAggregationCandidates()
+    @Managed(description = "Aggregate candidate timelines")
+    public void getAndProcessTimelineAggregationCandidates()
     {
+        if (!isAggregating.compareAndSet(false, true)) {
+            log.info("Asked to aggregate, but we're already aggregating!");
+            return;
+        } else {
+            log.info("Starting aggregating");
+        }
+
         final List<TimelineTimes> timelineTimesCandidates = getTimelineTimesAggregationCandidates();
-        int aggregatesCreated = 0;
+
         // The candidates are ordered first by host_id and second by start_time
         // Loop pulling off the candidates for the first host_id
         int lastHostId = 0;
@@ -329,14 +351,16 @@ public class TimelineAggregator
                 lastHostId = hostId;
             }
             if (lastHostId != hostId) {
-                aggregatesCreated += aggregateTimelineCandidates(hostTimelineCandidates);
+                aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates));
                 hostTimelineCandidates.clear();
                 lastHostId = hostId;
             }
             hostTimelineCandidates.add(candidate);
         }
-        aggregatesCreated += aggregateTimelineCandidates(hostTimelineCandidates);
-        return aggregatesCreated;
+        aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates));
+
+        log.info("Aggregation done");
+        isAggregating.set(false);
     }
 
     public void runAggregationThread()
