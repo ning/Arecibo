@@ -21,7 +21,7 @@ create table timeline_times (
 , times mediumblob not null
 , not_valid tinyint default 0
 , aggregation_level tinyint default 0
-, unique index host_id_start_time_end_time_idx (host_id, start_time, end_time)
+, index host_id_start_time_end_time_idx (host_id, start_time, end_time)
 , index valid_agg_host_start_time (not_valid, aggregation_level, host_id, start_time)
 ) engine = innodb default charset = latin1;
 
