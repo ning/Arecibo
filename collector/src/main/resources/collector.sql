@@ -8,7 +8,7 @@ create table hosts (
 
 create table sample_kinds (
   sample_kind_id integer not null auto_increment primary key
-, sample_kind varchar(64) not null
+, sample_kind varchar(256) not null
 , unique index sample_kind_unq (sample_kind)
 ) engine = innodb default charset = latin1;
 
