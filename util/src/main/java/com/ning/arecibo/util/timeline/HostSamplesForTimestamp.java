@@ -37,7 +37,7 @@ public class HostSamplesForTimestamp
     private static final String KEY_TIMESTAMP = "T";
     private static final String KEY_SAMPLES = "S";
 
-    private final int hostId;
+    private final Integer hostId;
     private final String category;
     private final DateTime timestamp;
     // A map from sample id to sample value for that timestamp
@@ -49,7 +49,7 @@ public class HostSamplesForTimestamp
     }
 
     @JsonCreator
-    public HostSamplesForTimestamp(@JsonProperty(KEY_HOST) final int hostId, @JsonProperty(KEY_CATEGORY) final String category, @JsonProperty(KEY_TIMESTAMP) final DateTime timestamp, @JsonProperty(KEY_SAMPLES) final Map<Integer, ScalarSample> samples)
+    public HostSamplesForTimestamp(@JsonProperty(KEY_HOST) final Integer hostId, @JsonProperty(KEY_CATEGORY) final String category, @JsonProperty(KEY_TIMESTAMP) final DateTime timestamp, @JsonProperty(KEY_SAMPLES) final Map<Integer, ScalarSample> samples)
     {
         this.hostId = hostId;
         this.category = category;

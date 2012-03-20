@@ -33,6 +33,7 @@ import java.util.UUID;
 public class TestCollectorEventProcessorFilters
 {
     private static final UUID HOST_UUID = UUID.randomUUID();
+    private static final String EVENT_TYPE = "eventType";
     private static final String KIND_A = "kindA";
     private static final String KIND_B = "kindB";
     private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
@@ -46,7 +47,7 @@ public class TestCollectorEventProcessorFilters
 
         for (int i = 0; i < NB_EVENTS; i++) {
             final long eventTs = new DateTime(DateTimeZone.UTC).getMillis();
-            processor.processEvent(new MapEvent(eventTs, "NOT_USED", HOST_UUID, EVENT));
+            processor.processEvent(new MapEvent(eventTs, EVENT_TYPE, HOST_UUID, EVENT));
         }
 
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
@@ -67,7 +68,7 @@ public class TestCollectorEventProcessorFilters
 
         for (int i = 0; i < NB_EVENTS; i++) {
             final long eventTs = new DateTime(DateTimeZone.UTC).getMillis();
-            processor.processEvent(new MapEvent(eventTs, "NOT_USED", HOST_UUID, EVENT));
+            processor.processEvent(new MapEvent(eventTs, EVENT_TYPE, HOST_UUID, EVENT));
         }
 
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
@@ -89,7 +90,7 @@ public class TestCollectorEventProcessorFilters
 
         for (int i = 0; i < NB_EVENTS; i++) {
             final long eventTs = new DateTime(DateTimeZone.UTC).getMillis();
-            processor.processEvent(new MapEvent(eventTs, "NOT_USED", HOST_UUID, EVENT));
+            processor.processEvent(new MapEvent(eventTs, EVENT_TYPE, HOST_UUID, EVENT));
         }
 
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);

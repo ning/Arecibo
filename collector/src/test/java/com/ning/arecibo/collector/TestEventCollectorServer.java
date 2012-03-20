@@ -23,6 +23,7 @@ import com.google.inject.name.Names;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.collector.process.EventHandler;
+import com.ning.arecibo.collector.process.EventsUtils;
 import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.publisher.EventSenderType;
@@ -54,6 +55,10 @@ import java.util.concurrent.Executors;
 @Guice(moduleFactory = TestModulesFactory.class)
 public class TestEventCollectorServer
 {
+    private static final String EVENT_TYPE = "myType";
+    private static final String MIN_HEAPUSED_KIND = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "min_heapUsed");
+    private static final String MAX_HEAPUSED_KIND = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "max_heapUsed");
+
     @Inject
     MysqlTestingHelper helper;
 
@@ -120,6 +125,8 @@ public class TestEventCollectorServer
         Assert.assertEquals(timelineEventHandler.getEventsDiscarded(), 0);
 
         final UUID hostId = UUID.randomUUID();
+        timelineDAO.getOrAddHost(hostId.toString());
+
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
         DateTime endTime = startTime;
         final int sampleCount = 10;
@@ -140,7 +147,8 @@ public class TestEventCollectorServer
             // Make sure we saw all sample kinds
             final BiMap<Integer, String> sampleKinds = timelineDAO.getSampleKinds();
             Assert.assertEquals(sampleKinds.values().size(), event.getKeys().size());
-            Assert.assertTrue(sampleKinds.values().containsAll(event.getKeys()));
+            Assert.assertTrue(sampleKinds.values().contains(MIN_HEAPUSED_KIND));
+            Assert.assertTrue(sampleKinds.values().contains(MAX_HEAPUSED_KIND));
         }
 
         timelineEventHandler.forceCommit();
@@ -154,8 +162,8 @@ public class TestEventCollectorServer
         Assert.assertEquals(chunkAndTimes.get(0).getHostName(), hostId.toString());
         Assert.assertEquals(chunkAndTimes.get(1).getHostName(), hostId.toString());
         // Two types
-        Assert.assertEquals(chunkAndTimes.get(0).getSampleKind(), "min_heapUsed");
-        Assert.assertEquals(chunkAndTimes.get(1).getSampleKind(), "max_heapUsed");
+        Assert.assertEquals(chunkAndTimes.get(0).getSampleKind(), MIN_HEAPUSED_KIND);
+        Assert.assertEquals(chunkAndTimes.get(1).getSampleKind(), MAX_HEAPUSED_KIND);
 
         // Only one
         Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getHostId(), 1);
@@ -208,6 +216,6 @@ public class TestEventCollectorServer
         data.put("min_heapUsed", Double.valueOf("1.515698888E9"));
         data.put("max_heapUsed", Double.valueOf("1.835511784E9"));
 
-        return new MapEvent(ts, "myType", hostId, data);
+        return new MapEvent(ts, EVENT_TYPE, hostId, data);
     }
 }

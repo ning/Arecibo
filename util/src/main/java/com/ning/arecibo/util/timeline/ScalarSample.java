@@ -17,6 +17,8 @@
 package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Shorts;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.annotate.JsonValue;
@@ -34,6 +36,55 @@ public class ScalarSample<T> extends SampleBase
     private static final String KEY_SAMPLE_VALUE = "V";
 
     private final T sampleValue;
+
+    public static ScalarSample fromObject(final Object sampleValue)
+    {
+        if (sampleValue == null) {
+            return new ScalarSample<Void>(SampleOpcode.NULL, null);
+        }
+        else if (sampleValue instanceof Byte) {
+            return new ScalarSample<Byte>(SampleOpcode.BYTE, (Byte) sampleValue);
+        }
+        else if (sampleValue instanceof Short) {
+            return new ScalarSample<Short>(SampleOpcode.SHORT, (Short) sampleValue);
+        }
+        else if (sampleValue instanceof Integer) {
+            try {
+                // Can it fit in a short?
+                final short optimizedShort = Shorts.checkedCast(Long.valueOf(sampleValue.toString()));
+                return new ScalarSample<Short>(SampleOpcode.SHORT, optimizedShort);
+            }
+            catch (IllegalArgumentException e) {
+                return new ScalarSample<Integer>(SampleOpcode.INT, (Integer) sampleValue);
+            }
+        }
+        else if (sampleValue instanceof Long) {
+            try {
+                // Can it fit in a short?
+                final short optimizedShort = Shorts.checkedCast(Long.valueOf(sampleValue.toString()));
+                return new ScalarSample<Short>(SampleOpcode.SHORT, optimizedShort);
+            }
+            catch (IllegalArgumentException e) {
+                try {
+                    // Can it fit in an int?
+                    final int optimizedLong = Ints.checkedCast(Long.valueOf(sampleValue.toString()));
+                    return new ScalarSample<Integer>(SampleOpcode.INT, optimizedLong);
+                }
+                catch (IllegalArgumentException ohWell) {
+                    return new ScalarSample<Long>(SampleOpcode.LONG, (Long) sampleValue);
+                }
+            }
+        }
+        else if (sampleValue instanceof Float) {
+            return new ScalarSample<Float>(SampleOpcode.FLOAT, (Float) sampleValue);
+        }
+        else if (sampleValue instanceof Double) {
+            return new ScalarSample<Double>(SampleOpcode.DOUBLE, (Double) sampleValue);
+        }
+        else {
+            return new ScalarSample<String>(SampleOpcode.STRING, sampleValue.toString());
+        }
+    }
 
     public ScalarSample(final SampleOpcode opcode, final T sampleValue)
     {

@@ -19,6 +19,7 @@ package com.ning.arecibo.collector.persistent;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.process.EventsUtils;
 import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
@@ -33,6 +34,7 @@ import java.util.Map;
 public class TestTimelineEventHandler
 {
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestTimelineEventHandler-" + System.currentTimeMillis());
+    private static final String EVENT_TYPE = "eventType";
 
     private final TimelineDAO dao = new MockTimelineDAO();
 
@@ -42,11 +44,11 @@ public class TestTimelineEventHandler
         Assert.assertTrue(basePath.mkdir());
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        final int int2shortId = dao.getOrAddSampleKind(1, "int2short");
-        final int long2intId = dao.getOrAddSampleKind(1, "long2int");
-        final int long2shortId = dao.getOrAddSampleKind(1, "long2short");
-        final int int2intId = dao.getOrAddSampleKind(1, "int2int");
-        final int long2longId = dao.getOrAddSampleKind(1, "long2long");
+        final int int2shortId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "int2short"));
+        final int long2intId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2int"));
+        final int long2shortId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2short"));
+        final int int2intId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "int2int"));
+        final int long2longId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2long"));
 
         final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
 
@@ -58,7 +60,7 @@ public class TestTimelineEventHandler
             "int2int", Integer.MAX_VALUE,
             "long2long", Long.MAX_VALUE);
         final Map<Integer, ScalarSample> output = new HashMap<Integer, ScalarSample>();
-        handler.convertSamplesToScalarSamples(1, input, output);
+        handler.convertSamplesToScalarSamples(1, EVENT_TYPE, input, output);
 
         Assert.assertEquals(output.get(int2shortId).getSampleValue(), (short) 1);
         Assert.assertEquals(output.get(int2shortId).getSampleValue().getClass(), Short.class);

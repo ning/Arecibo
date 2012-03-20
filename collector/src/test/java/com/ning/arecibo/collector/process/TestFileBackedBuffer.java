@@ -70,6 +70,8 @@ public class TestFileBackedBuffer
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
+
+        dao.getOrAddHost(HOST_UUID.toString());
     }
 
     @Test(groups = "slow")

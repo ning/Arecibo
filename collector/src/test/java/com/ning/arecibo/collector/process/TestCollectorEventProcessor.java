@@ -44,8 +44,11 @@ import java.util.concurrent.ExecutionException;
 public class TestCollectorEventProcessor
 {
     private static final UUID HOST_UUID = UUID.randomUUID();
+    private static final String EVENT_TYPE = "eventType";
     private static final String KIND_A = "kindA";
     private static final String KIND_B = "kindB";
+    private static final String SAMPLE_KIND_A = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, KIND_A);
+    private static final String SAMPLE_KIND_B = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, KIND_B);
     private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
     private static final int NB_EVENTS = 5;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestCollectorEventProcessor-" + System.currentTimeMillis());
@@ -71,16 +74,19 @@ public class TestCollectorEventProcessor
         // Check initial state
         Assert.assertEquals(processor.getEventsReceived(), 0);
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null).size(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_A, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_B, null, null).size(), 0);
         Assert.assertEquals(dao.getHosts().size(), 0);
         Assert.assertEquals(dao.getSampleKinds().size(), 0);
+
+        dao.getOrAddHost(HOST_UUID.toString());
+        Assert.assertEquals(dao.getHosts().size(), 1);
 
         String csvSamplesKindA = "";
         String csvSamplesKindB = "";
         for (int i = 0; i < NB_EVENTS; i++) {
             final long eventTs = new DateTime(DateTimeZone.UTC).getMillis();
-            processor.processEvent(new MapEvent(eventTs, "NOT_USED", HOST_UUID, EVENT));
+            processor.processEvent(new MapEvent(eventTs, EVENT_TYPE, HOST_UUID, EVENT));
 
             // Build expected CSV output
             if (i > 0) {
@@ -98,12 +104,12 @@ public class TestCollectorEventProcessor
         // One per host
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
         // One per host and type
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_A, null, null).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_B, null, null).size(), 1);
         Assert.assertEquals(dao.getHosts().size(), 1);
         Assert.assertEquals(dao.getSampleKinds().size(), 2);
-        Assert.assertTrue(dao.getSampleKinds().values().contains(KIND_A));
-        Assert.assertTrue(dao.getSampleKinds().values().contains(KIND_B));
+        Assert.assertTrue(dao.getSampleKinds().values().contains(SAMPLE_KIND_A));
+        Assert.assertTrue(dao.getSampleKinds().values().contains(SAMPLE_KIND_B));
 
         Thread.sleep(2 * 1000 + 100);
 
@@ -111,8 +117,8 @@ public class TestCollectorEventProcessor
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
         // Should have been flushed
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null).size(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_A, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_B, null, null).size(), 0);
     }
 
     private void checkProcessorState(final String csvSamplesKindA, final String csvSamplesKindB, final int eventSent) throws IOException, ExecutionException
@@ -121,11 +127,11 @@ public class TestCollectorEventProcessor
         Assert.assertEquals(processor.getEventsReceived(), eventSent);
 
         // One per host and per type (two types here: kindA and kindB)
-        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimesA = timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_A, null, null);
+        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimesA = timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_A, null, null);
         Assert.assertEquals(inMemoryTimelineChunkAndTimesA.size(), 1);
         Assert.assertEquals(inMemoryTimelineChunkAndTimesA.iterator().next().getSamplesAsCSV(), csvSamplesKindA);
 
-        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimesB = timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), KIND_B, null, null);
+        final Collection<? extends TimelineChunkAndTimes> inMemoryTimelineChunkAndTimesB = timelineEventHandler.getInMemoryTimelineChunkAndTimes(HOST_UUID.toString(), SAMPLE_KIND_B, null, null);
         Assert.assertEquals(inMemoryTimelineChunkAndTimesB.size(), 1);
         Assert.assertEquals(inMemoryTimelineChunkAndTimesB.iterator().next().getSamplesAsCSV(), csvSamplesKindB);
     }
