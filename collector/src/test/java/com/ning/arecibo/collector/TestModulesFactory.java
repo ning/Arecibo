@@ -43,7 +43,7 @@ public class TestModulesFactory implements IModuleFactory
     {
         // Make tmp dir
         if (!basePath.mkdir()) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Unable to create " + basePath.toString());
         }
 
         // Find free port
@@ -57,6 +57,7 @@ public class TestModulesFactory implements IModuleFactory
             throw new IllegalStateException(e);
         }
 
+        System.setProperty("arecibo.collector.timelines.chunksToAggregate", "2");
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.jetty.port", String.valueOf(port));
 

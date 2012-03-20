@@ -377,7 +377,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     // TODO: Using strings instead of string templates for this stuff is really ugly.
     // Is there some reason this DAO doesn't use string templates?
     public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames,
-                                                    final @Nullable List<String> sampleKinds,
+                                                    @Nullable final List<String> sampleKinds,
                                                     final DateTime startTime,
                                                     final DateTime endTime,
                                                     final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
@@ -411,12 +411,12 @@ public class DefaultTimelineDAO implements TimelineDAO
                                 "join hosts h using (host_id)\n" +
                                 "join sample_kinds k using (sample_kind_id)\n" +
                                 "join timeline_times t using (timeline_times_id)\n" +
-                                "where t.start_time >= :start_time\n" +
-                                "and t.end_time <= :end_time\n" +
+                                "where t.end_time >= :start_time\n" +
+                                "and t.start_time <= :end_time\n" +
                                 "and h.host_name in (" + hostNameStrings + ")\n" +
                                 sampleKindPredicate +
                                 "and t.not_valid = 0\n" +
-                                "order by :host_name, k.sample_kind, t.start_time asc\n" +
+                                "order by h.host_name, k.sample_kind, t.start_time asc\n" +
                                 ";")
                         .bind("start_time", TimelineTimes.unixSeconds(startTime))
                         .bind("end_time", TimelineTimes.unixSeconds(endTime))

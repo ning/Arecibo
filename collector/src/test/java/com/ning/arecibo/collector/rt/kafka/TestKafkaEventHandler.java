@@ -64,7 +64,7 @@ public class TestKafkaEventHandler
     private Event event;
     private ExecutorService consumerService;
 
-    @BeforeMethod(alwaysRun = true)
+    @BeforeMethod
     public void setUp() throws Exception
     {
         System.setProperty("arecibo.collector.rt.kafka.zkConnect", ZK_CONNECT);
@@ -109,7 +109,7 @@ public class TestKafkaEventHandler
         }
     }
 
-    @Test(groups = "slow,integration")
+    @Test(groups = "integration", enabled = false)
     public void testHandle() throws Exception
     {
         Assert.assertEquals(processor.getEventsReceived(), 0);

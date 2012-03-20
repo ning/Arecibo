@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.ning.arecibo.collector.persistent.TimelineAggregator;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.rt.kafka.KafkaEventHandler;
@@ -54,9 +55,26 @@ public class CollectorModule extends AbstractModule
     @Override
     public void configure()
     {
+        final CollectorConfig config = configureConfig();
+
+        configureFileBackedBuffer(config);
+        configureDao();
+        configureTimelineAggregator();
+        configureStats();
+        configureServiceLocator(config);
+        configureEventHandlers(config);
+        configureExtraModules(config);
+    }
+
+    protected CollectorConfig configureConfig()
+    {
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         bind(CollectorConfig.class).toInstance(config);
+        return config;
+    }
 
+    protected void configureFileBackedBuffer(final CollectorConfig config)
+    {
         final MBeanExporter exporter = new MBeanExporter(ManagementFactory.getPlatformMBeanServer());
 
         // Persistent buffer for in-memory samples
@@ -68,30 +86,49 @@ public class CollectorModule extends AbstractModule
         catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
 
-        configureDao();
-        configureStats();
-        configureServiceLocator(config);
-        configureEventHandlers(config);
+    protected void configureDao()
+    {
+        bind(DBI.class).toProvider(new DBIProvider(System.getProperties(), "arecibo.collector.db")).asEagerSingleton();
+        bind(IDBI.class).to(Key.get(DBI.class)).asEagerSingleton();
+        bind(TimelineDAO.class).toProvider(CachingDefaultTimelineDAOProvider.class).asEagerSingleton();
+    }
 
-        for (final String guiceModule : config.getExtraGuiceModules().split(",")) {
-            if (guiceModule.isEmpty()) {
-                continue;
+    protected void configureTimelineAggregator()
+    {
+        final LifecycledProvider<TimelineAggregator> lifecycledProvider = new LifecycledProvider<TimelineAggregator>(binder(), TimelineAggregator.class);
+        lifecycledProvider.addListener(LifecycleEvent.START, new LifecycleAction<TimelineAggregator>()
+        {
+            public void doAction(final TimelineAggregator aggregator)
+            {
+                log.info("START event received: starting aggregator thread");
+                aggregator.runAggregationThread();
             }
+        });
+        lifecycledProvider.addListener(LifecycleEvent.STOP, new LifecycleAction<TimelineAggregator>()
+        {
+            public void doAction(final TimelineAggregator aggregator)
+            {
+                log.info("STOP event received: stopping aggregator thread");
+                aggregator.stopAggregationThread();
+            }
+        });
+        bind(TimelineAggregator.class).toProvider(lifecycledProvider).asEagerSingleton();    }
 
-            try {
-                log.info("Installing extra module: " + guiceModule);
-                install((Module) Class.forName(guiceModule).newInstance());
-            }
-            catch (InstantiationException e) {
-                log.warn("Ignoring module: " + guiceModule, e);
-            }
-            catch (IllegalAccessException e) {
-                log.warn("Ignoring module: " + guiceModule, e);
-            }
-            catch (ClassNotFoundException e) {
-                log.warn("Ignoring module: " + guiceModule, e);
-            }
+    protected void configureStats()
+    {
+        install(new TimedResourceModule());
+    }
+
+    private void configureServiceLocator(final CollectorConfig config)
+    {
+        try {
+            bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
+        }
+        catch (ClassNotFoundException e) {
+            log.error("Unable to find ServiceLocator", e);
+            bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
         }
     }
 
@@ -157,27 +194,27 @@ public class CollectorModule extends AbstractModule
         }
     }
 
-    private void configureServiceLocator(final CollectorConfig config)
+    protected void configureExtraModules(final CollectorConfig config)
     {
-        try {
-            bind(ServiceLocator.class).to((Class<? extends ServiceLocator>) Class.forName(config.getServiceLocatorClass())).asEagerSingleton();
-        }
-        catch (ClassNotFoundException e) {
-            log.error("Unable to find ServiceLocator", e);
-            bind(ServiceLocator.class).to(DummyServiceLocator.class).asEagerSingleton();
-        }
-    }
+        for (final String guiceModule : config.getExtraGuiceModules().split(",")) {
+            if (guiceModule.isEmpty()) {
+                continue;
+            }
 
-    protected void configureDao()
-    {
-        bind(DBI.class).toProvider(new DBIProvider(System.getProperties(), "arecibo.collector.db")).asEagerSingleton();
-        bind(IDBI.class).to(Key.get(DBI.class)).asEagerSingleton();
-        bind(TimelineDAO.class).toProvider(CachingDefaultTimelineDAOProvider.class).asEagerSingleton();
-    }
-
-    protected void configureStats()
-    {
-        install(new TimedResourceModule());
+            try {
+                log.info("Installing extra module: " + guiceModule);
+                install((Module) Class.forName(guiceModule).newInstance());
+            }
+            catch (InstantiationException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+            catch (IllegalAccessException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+            catch (ClassNotFoundException e) {
+                log.warn("Ignoring module: " + guiceModule, e);
+            }
+        }
     }
 }
 
