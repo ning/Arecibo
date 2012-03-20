@@ -66,7 +66,7 @@ public class TestModulesFactory implements IModuleFactory
             @Override
             protected void configure()
             {
-                bind(String.class).annotatedWith(Names.named(TEST_JETTY_HOST)).toInstance("0.0.0.0");
+                bind(String.class).annotatedWith(Names.named(TEST_JETTY_HOST)).toInstance("127.0.0.1");
                 bind(Integer.class).annotatedWith(Names.named(TEST_JETTY_PORT)).toInstance(port);
                 install(new LifecycleModule());
                 install(new EmbeddedJettyJerseyModule());
