@@ -33,15 +33,17 @@ public class TimelineTimes extends CachedObject
         @Override
         public TimelineTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
         {
-            final int timelineIntervalId = rs.getInt("timeline_interval_id");
+            final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int hostId = rs.getInt("host_id");
             final DateTime startTime = dateTimeFromUnixSeconds(rs.getInt("start_time"));
             final DateTime endTime = dateTimeFromUnixSeconds(rs.getInt("end_time"));
             final int count = rs.getInt("count");
-            final Blob blobTimes = rs.getBlob("timeline_times");
-            final byte[] samples = blobTimes.getBytes(1, (int) blobTimes.length());
-
-            return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, samples, count);
+            byte[] times = rs.getBytes("in_row_times");
+            if (rs.wasNull()) {
+                final Blob blobTimes = rs.getBlob("blob_times");
+                times = blobTimes.getBytes(1, (int) blobTimes.length());
+            }
+            return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
         }
     };
 

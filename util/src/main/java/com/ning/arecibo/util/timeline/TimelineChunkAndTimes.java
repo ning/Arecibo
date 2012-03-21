@@ -64,16 +64,23 @@ public class TimelineChunkAndTimes
             final int sampleKindId = rs.getInt("sample_kind_id");
             final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
-            final Blob blobSamples = rs.getBlob("sample_bytes");
-            final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            byte[] samples = rs.getBytes("in_row_samples");
+            if (rs.wasNull()) {
+                final Blob blobSamples = rs.getBlob("blob_sample");
+                samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            }
             final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
 
             // Construct the TimelineTimes
             final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
             final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
             final int count = rs.getInt("count");
-            final byte[] blobTimes = rs.getBytes("times");
-            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, blobTimes, count);
+            byte[] times = rs.getBytes("in_row_times");
+            if (rs.wasNull()) {
+                final Blob blobTimes = rs.getBlob("blob_times");
+                times = blobTimes.getBytes(1, (int) blobTimes.length());
+            }
+            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
 
             final String hostName = rs.getString("host_name");
             final String sampleKind = rs.getString("sample_kind");

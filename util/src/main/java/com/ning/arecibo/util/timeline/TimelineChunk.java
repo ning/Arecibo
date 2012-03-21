@@ -40,8 +40,11 @@ public class TimelineChunk extends CachedObject
             final int sampleKindId = rs.getInt("sample_kind_id");
             final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
-            final Blob blobSamples = rs.getBlob("sample_bytes");
-            final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            byte[] samples = rs.getBytes("in_row_samples");
+            if (rs.wasNull()) {
+                final Blob blobSamples = rs.getBlob("blob_samples");
+                samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            }
             return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
         }
     };
