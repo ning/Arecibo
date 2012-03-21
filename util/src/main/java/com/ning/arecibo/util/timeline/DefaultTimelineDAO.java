@@ -20,7 +20,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
 import com.ning.arecibo.util.Logger;
-
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.Handle;
@@ -35,12 +34,11 @@ import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.skife.jdbi.v2.util.IntegerMapper;
 import org.skife.jdbi.v2.util.StringMapper;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.annotation.Nullable;
 
 // TODO Make queries stream-able
 public class DefaultTimelineDAO implements TimelineDAO
@@ -290,90 +288,6 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
-        {
-            @Override
-            public List<TimelineChunkAndTimes> withHandle(final Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery(
-                        "select distinct\n" +
-                            "  h.host_id\n" +
-                            ", h.host_name\n" +
-                            ", k.sample_kind_id\n" +
-                            ", k.sample_kind\n" +
-                            ", c.sample_timeline_id\n" +
-                            ", c.timeline_times_id\n" +
-                            ", c.sample_count\n" +
-                            ", c.sample_bytes\n" +
-                            ", t.start_time\n" +
-                            ", t.end_time\n" +
-                            ", t.count\n" +
-                            ", t.times\n" +
-                            "from timeline_chunks c\n" +
-                            "join hosts h using (host_id)\n" +
-                            "join sample_kinds k using (sample_kind_id)\n" +
-                            "join timeline_times t using (timeline_times_id)\n" +
-                            "where t.start_time >= :start_time\n" +
-                            "and t.end_time <= :end_time\n" +
-                            "and t.not_valid = 0\n" +
-                            "and h.host_name = :host_name\n" +
-                            "order by start_time asc\n" +
-                            ";")
-                    .bind("host_name", hostName)
-                    .bind("start_time", TimelineTimes.unixSeconds(startTime))
-                    .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                    .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
-            }
-        });
-    }
-
-    @Override
-    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return dbi.withHandle(new HandleCallback<List<TimelineChunkAndTimes>>()
-        {
-            @Override
-            public List<TimelineChunkAndTimes> withHandle(final Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery(
-                        "select distinct\n" +
-                            "  h.host_id\n" +
-                            ", h.host_name\n" +
-                            ", k.sample_kind_id\n" +
-                            ", k.sample_kind\n" +
-                            ", c.sample_timeline_id\n" +
-                            ", c.timeline_times_id\n" +
-                            ", c.sample_count\n" +
-                            ", c.sample_bytes\n" +
-                            ", t.start_time\n" +
-                            ", t.end_time\n" +
-                            ", t.count\n" +
-                            ", t.times\n" +
-                            "from timeline_chunks c\n" +
-                            "join hosts h using (host_id)\n" +
-                            "join sample_kinds k using (sample_kind_id)\n" +
-                            "join timeline_times t using (timeline_times_id)\n" +
-                            "where t.start_time >= :start_time\n" +
-                            "and t.end_time <= :end_time\n" +
-                            "and h.host_name = :host_name\n" +
-                            "and k.sample_kind = :sample_kind\n" +
-                            "and t.not_valid = 0\n" +
-                            "order by start_time asc\n" +
-                            ";")
-                    .bind("host_name", hostName)
-                    .bind("sample_kind", sampleKind)
-                    .bind("start_time", TimelineTimes.unixSeconds(startTime))
-                    .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                    .fold(new ArrayList<TimelineChunkAndTimes>(), TimelineChunkAndTimes.folder);
-            }
-        });
-    }
-
-    @Override
     // TODO: Using strings instead of string templates for this stuff is really ugly.
     // Is there some reason this DAO doesn't use string templates?
     public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames,
@@ -383,8 +297,8 @@ public class DefaultTimelineDAO implements TimelineDAO
                                                     final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
         final String hostNameStrings = stringifyList(hostNames);
-        final String sampleKindStrings = sampleKinds == null ? "" : stringifyList(sampleKinds);
-        final String sampleKindPredicate = sampleKinds == null ? "" : String.format("and k.sample_kind in (%s)\n", sampleKindStrings);
+        final String sampleKindStrings = stringifyList(sampleKinds);
+        final String sampleKindPredicate = (sampleKinds == null || sampleKinds.size() == 0) ? "" : String.format("and k.sample_kind in (%s)\n", sampleKindStrings);
         dbi.withHandle(new HandleCallback<Void>()
         {
             @Override
@@ -442,9 +356,10 @@ public class DefaultTimelineDAO implements TimelineDAO
 
     }
 
-    private String stringifyList(final List<String> strings) {
+    private String stringifyList(final List<String> strings)
+    {
         final StringBuilder builder = new StringBuilder();
-        for (String string : strings) {
+        for (final String string : strings) {
             if (builder.length() != 0) {
                 builder.append(", ");
             }

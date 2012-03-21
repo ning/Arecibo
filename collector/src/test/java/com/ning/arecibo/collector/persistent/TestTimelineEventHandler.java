@@ -17,6 +17,7 @@
 package com.ning.arecibo.collector.persistent;
 
 import com.google.common.collect.ImmutableMap;
+import com.ning.arecibo.collector.MockFileBackedBuffer;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.process.EventsUtils;
@@ -50,7 +51,7 @@ public class TestTimelineEventHandler
         final int int2intId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "int2int"));
         final int long2longId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2long"));
 
-        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
+        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new MockFileBackedBuffer());
 
         // Test downsizing of values
         final Map<String, Object> input = ImmutableMap.<String, Object>of(

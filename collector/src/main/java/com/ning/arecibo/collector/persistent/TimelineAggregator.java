@@ -326,8 +326,6 @@ public class TimelineAggregator
 
     /**
      * This method aggregates candidate timelines
-     *
-     * @return the count of timeline_times objects aggregated
      */
     @Managed(description = "Aggregate candidate timelines")
     public void getAndProcessTimelineAggregationCandidates()

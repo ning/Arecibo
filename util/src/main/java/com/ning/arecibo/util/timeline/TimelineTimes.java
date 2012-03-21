@@ -16,6 +16,8 @@
 
 package com.ning.arecibo.util.timeline;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.annotate.JsonView;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.StatementContext;
@@ -51,6 +53,8 @@ public class TimelineTimes extends CachedObject
     private final int hostId;
     private final DateTime startTime;
     private final DateTime endTime;
+    @JsonProperty
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final List<Integer> times;
 
     public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)

@@ -16,6 +16,8 @@
 
 package com.ning.arecibo.util.timeline;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.annotate.JsonView;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -49,7 +51,11 @@ public class TimelineChunk extends CachedObject
     private final int hostId;
     private final int sampleKindId;
     private final int timelineTimesId;
+    @JsonProperty
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final byte[] samples;
+    @JsonProperty
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final int sampleCount;
 
     public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final int timelineTimesId, final byte[] samples, final int sampleCount)

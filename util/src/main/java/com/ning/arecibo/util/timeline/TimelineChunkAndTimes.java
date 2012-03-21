@@ -18,8 +18,9 @@ package com.ning.arecibo.util.timeline;
 
 import com.ning.arecibo.util.Logger;
 import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.annotate.JsonValue;
+import org.codehaus.jackson.annotate.JsonUnwrapped;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonView;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.StatementContext;
@@ -82,9 +83,15 @@ public class TimelineChunkAndTimes
         }
     };
 
+    @JsonView(TimelineChunksAndTimesViews.Base.class)
     private final String hostName;
+    @JsonView(TimelineChunksAndTimesViews.Base.class)
     private final String sampleKind;
+    @JsonUnwrapped
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final TimelineChunk timelineChunk;
+    @JsonUnwrapped
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final TimelineTimes timelineTimes;
 
     public TimelineChunkAndTimes(final String hostName, final String sampleKind, final TimelineChunk timelineChunk, final TimelineTimes timelineTimes)
@@ -117,6 +124,7 @@ public class TimelineChunkAndTimes
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    @JsonView(TimelineChunksAndTimesViews.Loose.class)
     public String getSamplesAsCSV() throws IOException
     {
         return getSamplesAsCSV(null, null);
@@ -129,7 +137,6 @@ public class TimelineChunkAndTimes
         return processor.getSamplesCSV();
     }
 
-    @JsonValue
     @Override
     public String toString()
     {

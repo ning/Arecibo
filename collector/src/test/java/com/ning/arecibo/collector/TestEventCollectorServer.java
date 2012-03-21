@@ -17,6 +17,7 @@
 package com.ning.arecibo.collector;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
@@ -124,15 +125,16 @@ public class TestEventCollectorServer
         Assert.assertEquals(processor.getEventsReceived(), 0);
         Assert.assertEquals(timelineEventHandler.getEventsDiscarded(), 0);
 
-        final UUID hostId = UUID.randomUUID();
-        timelineDAO.getOrAddHost(hostId.toString());
+        final UUID hostUUID = UUID.randomUUID();
+        final String hostName = hostUUID.toString();
+        timelineDAO.getOrAddHost(hostName);
 
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
         DateTime endTime = startTime;
         final int sampleCount = 10;
         for (int i = 0; i < sampleCount; i++) {
             endTime = startTime.plusMinutes(i);
-            final MapEvent event = createEvent(hostId, endTime.getMillis());
+            final MapEvent event = createEvent(hostUUID, endTime.getMillis());
             service.sendREST(event);
 
             Assert.assertEquals(processor.getEventsReceived(), 1 + i);
@@ -142,7 +144,7 @@ public class TestEventCollectorServer
             // Make sure we don't create dups
             final BiMap<Integer, String> hosts = timelineDAO.getHosts();
             Assert.assertEquals(hosts.values().size(), 1);
-            Assert.assertEquals(hosts.values().toArray()[0], hostId.toString());
+            Assert.assertEquals(hosts.values().toArray()[0], hostName);
 
             // Make sure we saw all sample kinds
             final BiMap<Integer, String> sampleKinds = timelineDAO.getSampleKinds();
@@ -155,22 +157,26 @@ public class TestEventCollectorServer
         // Might take a while
         Thread.sleep(100);
 
-        final List<TimelineChunkAndTimes> chunkAndTimes = timelineDAO.getSamplesByHostName(hostId.toString(), startTime, endTime);
+        final AccumulatorConsumer consumer = new AccumulatorConsumer();
+        timelineDAO.getSamplesByHostNamesAndSampleKinds(ImmutableList.<String>of(hostName),
+            ImmutableList.<String>copyOf(timelineDAO.getSampleKindsByHostName(hostName).iterator()), startTime, endTime, consumer);
+        final List<TimelineChunkAndTimes> chunkAndTimes = consumer.getAccumulator();
         // 1 host x 2 sample kinds
         Assert.assertEquals(chunkAndTimes.size(), 2);
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getHostName(), hostId.toString());
-        Assert.assertEquals(chunkAndTimes.get(1).getHostName(), hostId.toString());
+        Assert.assertEquals(chunkAndTimes.get(0).getHostName(), hostName);
+        Assert.assertEquals(chunkAndTimes.get(1).getHostName(), hostName);
         // Two types
-        Assert.assertEquals(chunkAndTimes.get(0).getSampleKind(), MIN_HEAPUSED_KIND);
-        Assert.assertEquals(chunkAndTimes.get(1).getSampleKind(), MAX_HEAPUSED_KIND);
+        Assert.assertTrue(chunkAndTimes.get(0).getSampleKind().equals(MIN_HEAPUSED_KIND) || chunkAndTimes.get(0).getSampleKind().equals(MAX_HEAPUSED_KIND));
+        Assert.assertTrue(chunkAndTimes.get(1).getSampleKind().equals(MIN_HEAPUSED_KIND) || chunkAndTimes.get(0).getSampleKind().equals(MAX_HEAPUSED_KIND));
 
         // Only one
         Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getHostId(), 1);
         Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getHostId(), 1);
         // Two types
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getSampleKindId(), 1);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getSampleKindId(), 2);
+        Assert.assertTrue(chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == 1 || chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == 2);
+        Assert.assertTrue(chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == 1 || chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == 2);
+
         // Only one
         Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getTimelineTimesId(), 1);
         Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getTimelineTimesId(), 1);

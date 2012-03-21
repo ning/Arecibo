@@ -31,12 +31,11 @@ import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import javax.annotation.Nullable;
 
 public class CachingTimelineDAO implements TimelineDAO
 {
@@ -278,20 +277,10 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
+    public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames, @Nullable final List<String> sampleKinds,
+                                                    final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        return delegate.getSamplesByHostName(hostName, startTime, endTime);
-    }
-
-    @Override
-    public void getSamplesByHostNamesAndSampleKinds(List<String> hostNames, @Nullable List<String> sampleKinds, DateTime startTime, DateTime endTime, TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException {
         delegate.getSamplesByHostNamesAndSampleKinds(hostNames, sampleKinds, startTime, endTime, chunkConsumer);
-    }
-
-    @Override
-    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return delegate.getSamplesByHostNameAndSampleKind(hostName, sampleKind, startTime, endTime);
     }
 
     @MonitorableManaged(description = "Returns the number of times cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

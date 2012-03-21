@@ -21,9 +21,8 @@ import org.joda.time.DateTime;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 
-import java.util.List;
-
 import javax.annotation.Nullable;
+import java.util.List;
 
 public interface TimelineDAO
 {
@@ -54,10 +53,6 @@ public interface TimelineDAO
     Integer insertTimelineTimes(TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException;
 
     Integer insertTimelineChunk(TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException;
-
-    List<TimelineChunkAndTimes> getSamplesByHostName(String hostName, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
-
-    List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(String hostName, String sampleKind, DateTime startTime, DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException;
 
     void getSamplesByHostNamesAndSampleKinds(List<String> hostNames,
                                              @Nullable List<String> sampleKinds,

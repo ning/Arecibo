@@ -29,7 +29,10 @@ import org.joda.time.DateTime;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class MockTimelineDAO implements TimelineDAO
 {
@@ -38,6 +41,7 @@ public final class MockTimelineDAO implements TimelineDAO
     private final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
     private final Multimap<String, String> hostSampleKinds = HashMultimap.create();
+    private final Map<Integer, Map<Integer, List<TimelineChunkAndTimes>>> samplesPerHostAndSampleKind = new HashMap<Integer, Map<Integer, List<TimelineChunkAndTimes>>>();
 
     @Override
     public Integer getHostId(final String host) throws UnableToObtainConnectionException, CallbackFailedException
@@ -115,32 +119,68 @@ public final class MockTimelineDAO implements TimelineDAO
     @Override
     public Integer insertTimelineTimes(final TimelineTimes timeline)
     {
-        timelineTimes.put(timelineTimes.size(), timeline);
-        return timelineTimes.size() - 1;
+        synchronized (timelineTimes) {
+            timelineTimes.put(timelineTimes.size(), timeline);
+            return timelineTimes.size() - 1;
+        }
     }
 
     @Override
     public Integer insertTimelineChunk(final TimelineChunk chunk)
     {
-        timelineChunks.put(timelineChunks.size(), chunk);
-        return timelineChunks.size() - 1;
+        final Integer timelineChunkId;
+        synchronized (timelineChunks) {
+            timelineChunks.put(timelineChunks.size(), chunk);
+            timelineChunkId = timelineChunks.size() - 1;
+        }
+
+        synchronized (samplesPerHostAndSampleKind) {
+            Map<Integer, List<TimelineChunkAndTimes>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(chunk.getHostId());
+            if (samplesPerSampleKind == null) {
+                samplesPerSampleKind = new HashMap<Integer, List<TimelineChunkAndTimes>>();
+            }
+
+            List<TimelineChunkAndTimes> chunkAndTimes = samplesPerSampleKind.get(chunk.getSampleKindId());
+            if (chunkAndTimes == null) {
+                chunkAndTimes = new ArrayList<TimelineChunkAndTimes>();
+            }
+
+            final String hostName = getHost(chunk.getHostId());
+            final String sampleKind = getSampleKind(chunk.getSampleKindId());
+            chunkAndTimes.add(new TimelineChunkAndTimes(hostName, sampleKind, chunk, timelineTimes.get(chunk.getTimelineTimesId())));
+            samplesPerSampleKind.put(chunk.getSampleKindId(), chunkAndTimes);
+
+            samplesPerHostAndSampleKind.put(chunk.getHostId(), samplesPerSampleKind);
+        }
+
+        return timelineChunkId;
     }
 
     @Override
-    public List<TimelineChunkAndTimes> getSamplesByHostName(final String hostName, final DateTime startTime, final DateTime endTime)
+    public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames, final List<String> sampleKinds, final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        throw new UnsupportedOperationException("TODO");
-    }
+        for (final Integer hostId : samplesPerHostAndSampleKind.keySet()) {
+            final String hostName = getHost(hostId);
+            if (hostNames.indexOf(hostName) == -1) {
+                continue;
+            }
 
-    @Override
-    public List<TimelineChunkAndTimes> getSamplesByHostNameAndSampleKind(final String hostName, final String sampleKind, final DateTime startTime, final DateTime endTime) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        throw new UnsupportedOperationException("TODO");
-    }
+            final Map<Integer, List<TimelineChunkAndTimes>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(hostId);
+            for (final Integer sampleKindId : samplesPerSampleKind.keySet()) {
+                final String sampleKind = getSampleKind(sampleKindId);
+                if (sampleKinds.indexOf(sampleKind) == -1) {
+                    continue;
+                }
 
-    @Override
-    public void getSamplesByHostNamesAndSampleKinds(List<String> hostNames, List<String> sampleKinds, DateTime startTime, DateTime endTime, TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException {
-        throw new UnsupportedOperationException("TODO");
+                for (final TimelineChunkAndTimes chunkAndTimes : samplesPerSampleKind.get(sampleKindId)) {
+                    if (chunkAndTimes.getTimelineTimes().getStartTime().isAfter(endTime) || chunkAndTimes.getTimelineTimes().getEndTime().isBefore(startTime)) {
+                        continue;
+                    }
+
+                    chunkConsumer.processTimelineChunkAndTimes(chunkAndTimes);
+                }
+            }
+        }
     }
 
     public BiMap<Integer, TimelineChunk> getTimelineChunks()
