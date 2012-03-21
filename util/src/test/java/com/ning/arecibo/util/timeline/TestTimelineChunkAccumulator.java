@@ -16,10 +16,6 @@
 
 package com.ning.arecibo.util.timeline;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-
-import org.eclipse.jetty.util.log.Log;
 import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -49,9 +45,11 @@ public class TestTimelineChunkAccumulator {
         Assert.assertEquals(times.getSampleCount(), 9);
         // Now play them back
         SampleCoder.scan(chunk.getSamples(), times, new SampleProcessor() {
+            private int sampleNumber = 0;
 
             @Override
-            public void processSamples(TimelineTimes timestamps, int sampleNumber, int sampleCount, SampleOpcode opcode, Object value) {
+            public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+                timeCursor.consumeRepeat();
                 if (sampleNumber == 0) {
                     Assert.assertEquals(opcode, SampleOpcode.INT);
                     Assert.assertEquals(value, new Integer(25));
@@ -71,6 +69,7 @@ public class TestTimelineChunkAccumulator {
                 else {
                     Assert.assertTrue(false);
                 }
+                sampleNumber += sampleCount;
             }
         });
         final TimelineChunkAndTimes chunkAndTimes = new TimelineChunkAndTimes("zxxxxxx.ningops.com", "Yowza-Sample", chunk, times);
@@ -79,17 +78,15 @@ public class TestTimelineChunkAccumulator {
     }
 
     private TimelineTimes makeTimelineTimesBytes(final int initialUnixTime, final int secondsBetweenSamples, final int timelineTimesId, final int sampleCount, final int hostId) {
-        final byte[] times = new byte[4 * sampleCount];
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(times);
-        final IntBuffer intBuffer = byteBuffer.asIntBuffer();
+        final int[] times = new int[sampleCount];
         for (int i=0; i<sampleCount; i++) {
-            intBuffer.put(initialUnixTime + i * secondsBetweenSamples);
+            times[i] = initialUnixTime + i * secondsBetweenSamples;
         }
         return new TimelineTimes(timelineTimesId,
                                  hostId,
                                  TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime),
                                  TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime + secondsBetweenSamples * sampleCount),
-                                 times,
+                                 TimelineCoder.compressTimes(times),
                                  sampleCount);
     }
 }

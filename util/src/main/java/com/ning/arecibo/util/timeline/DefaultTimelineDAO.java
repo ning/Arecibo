@@ -254,7 +254,7 @@ public class DefaultTimelineDAO implements TimelineDAO
                     .bind("start_time", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
                     .bind("end_time", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
                     .bind("count", timelineTimes.getSampleCount())
-                    .bind("times", timelineTimes.getTimeArray())
+                    .bind("times", timelineTimes.getCompressedTimes())
                     .execute();
                 return handle
                     .createQuery("select last_insert_id()")

@@ -49,7 +49,7 @@ public class TestDecimatingFilter {
                 value = (8 - (index - 1)) * 10;
             }
             //System.out.printf("For i %d, index %d, adding value %f\n", i, index, value);
-            filter.processOneSample(new DateTime(millisStart + 2000 * i), i+1, SampleOpcode.DOUBLE, value);
+            filter.processOneSample(new DateTime(millisStart + 2000 * i), SampleOpcode.DOUBLE, value);
         }
         int index = 0;
         for (Double value : outputs) {
@@ -92,7 +92,7 @@ public class TestDecimatingFilter {
                 value = (6 - (index - 1)) * 10;
             }
             //System.out.printf("For i %d, index %d, adding value %f\n", i, index, value);
-            filter.processOneSample(new DateTime(millisStart + 2000 * i), i+1, SampleOpcode.DOUBLE, value);
+            filter.processOneSample(new DateTime(millisStart + 2000 * i), SampleOpcode.DOUBLE, value);
         }
         Assert.assertEquals(outputs.size(), 5);
         final double[] expectedValues = new double[] { 30.0, 20.0, 30.0, 30.0, 10.0 };

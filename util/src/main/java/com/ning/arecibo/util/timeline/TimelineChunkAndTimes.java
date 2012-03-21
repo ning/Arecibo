@@ -166,7 +166,7 @@ public class TimelineChunkAndTimes
         }
 
         @Override
-        public void processOneSample(final DateTime sampleTimestamp, final int sampleNumber, final SampleOpcode opcode, final Object value)
+        public void processOneSample(final DateTime sampleTimestamp, final SampleOpcode opcode, final Object value)
         {
             if (sampleTimestamp != null) {
                 final String valueString = value == null ? "0" : value.toString();

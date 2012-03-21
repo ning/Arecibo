@@ -203,7 +203,7 @@ public class TimelineAggregator
         int sampleCount = 0;
         final List<Long> timelineTimesIds = new ArrayList<Long>(timelineTimesChunks.size());
         for (final TimelineTimes timelineTimes : timelineTimesChunks) {
-            totalTimelineSize += timelineTimes.getTimeArray().length;
+            totalTimelineSize += timelineTimes.getCompressedTimes().length;
             sampleCount += timelineTimes.getSampleCount();
             timelineTimesIds.add(timelineTimes.getObjectId());
         }
@@ -214,8 +214,8 @@ public class TimelineAggregator
         final byte[] aggregatedTimes = new byte[totalTimelineSize];
         int timeChunkIndex = 0;
         for (final TimelineTimes chunk : timelineTimesChunks) {
-            final int chunkTimeLength = chunk.getTimeArray().length;
-            System.arraycopy(chunk.getTimeArray(), 0, aggregatedTimes, timeChunkIndex, chunkTimeLength);
+            final int chunkTimeLength = chunk.getCompressedTimes().length;
+            System.arraycopy(chunk.getCompressedTimes(), 0, aggregatedTimes, timeChunkIndex, chunkTimeLength);
             timeChunkIndex += chunkTimeLength;
         }
         final int newTimelineTimesId = dbi.inTransaction(new TransactionCallback<Integer>()

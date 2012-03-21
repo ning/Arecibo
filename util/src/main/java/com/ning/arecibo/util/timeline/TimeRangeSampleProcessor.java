@@ -32,7 +32,7 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
      * but may be larger than 1.  Implementors may just loop processing identical values, but some
      * implementations may optimize adding a bunch of repeated values
      *
-     * @param timestamps   a TimelineTimestamps instance, indexed by sample number to get the time at which the sample was captured.
+     * @param timeCursor   a TimeCursor instance, which supplies successive int UNIX times
      * @param sampleNumber the number of the sample within the timeline, used to index timestamps
      * @param sampleCount  the count of sequential, identical values
      * @param opcode       the opcode of the sample value, which may not be a REPEAT opcode
@@ -40,9 +40,9 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
      *                     given by the sampleNumber indexing the TimelineTimestamps.
      */
     @Override
-    public void processSamples(final TimelineTimes timestamps, final int sampleNumber, final int sampleCount, final SampleOpcode opcode, final Object value) {
+    public void processSamples(final TimeCursor timeCursor, final int sampleCount, final SampleOpcode opcode, final Object value) {
         for (int i = 0; i < sampleCount; i++) {
-            final DateTime sampleTimestamp = timestamps.getSampleTimestamp(sampleNumber + i);
+            final DateTime sampleTimestamp = new DateTime(timeCursor.getNextTime());
             if (sampleTimestamp == null) {
                 // Invalid?
                 continue;
@@ -51,10 +51,10 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
             // Check if the sample is in the right time range
             long sampleMillis = sampleTimestamp.getMillis();
             if ((startTime == null || (sampleMillis >= startTime.getMillis())) && (endTime == null || (sampleMillis <= endTime.getMillis()))) {
-                processOneSample(sampleTimestamp, sampleNumber, opcode, value);
+                processOneSample(sampleTimestamp, opcode, value);
             }
         }
     }
 
-    public abstract void processOneSample(final DateTime time, final int sampleNumber, final SampleOpcode opcode, final Object value);
+    public abstract void processOneSample(final DateTime time, final SampleOpcode opcode, final Object value);
 }
