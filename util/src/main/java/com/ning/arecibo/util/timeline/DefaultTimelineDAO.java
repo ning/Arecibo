@@ -288,12 +288,14 @@ public class DefaultTimelineDAO implements TimelineDAO
             public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
             {
                 final Update update = handle
-                    .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, in_row_samples, blob_samples)" +
-                        "values (:host_id, :sample_kind_id, :sample_count, :timeline_times_id, :in_row_samples, :blob_samples)")
+                    .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, start_time, in_row_samples, blob_samples)" +
+                        "values (:host_id, :sample_kind_id, :sample_count, :timeline_times_id, :start_time, :in_row_samples, :blob_samples)")
                     .bind("host_id", timelineChunk.getHostId())
                     .bind("sample_kind_id", timelineChunk.getSampleKindId())
                     .bind("sample_count", timelineChunk.getSampleCount())
-                    .bind("timeline_times_id", timelineChunk.getTimelineTimesId());
+                    .bind("timeline_times_id", timelineChunk.getTimelineTimesId())
+                    .bind("start_time", TimelineTimes.unixSeconds(timelineChunk.getStartTime()));
+
                 final byte[] compressedSamples = timelineChunk.getSamples();
                 if (compressedSamples.length > MAX_IN_ROW_BLOB_SIZE) {
                     update
