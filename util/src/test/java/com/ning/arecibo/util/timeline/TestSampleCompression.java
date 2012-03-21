@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.util.timeline;
 
+import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -54,7 +55,7 @@ public class TestSampleCompression {
         Assert.assertTrue(error <= SampleCoder.MAX_FRACTION_ERROR);
         final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(123, 456);
         accum.addSample(codedSample);
-        final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(789).getSamples();
+        final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(789, new DateTime()).getSamples();
         Assert.assertEquals(encodedSampleBytes.length, expectedSize);
     }
 }

@@ -216,7 +216,7 @@ public class TimelineEventHandler implements EventHandler
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
                 final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1);
+                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime);
                 // NOTE! Further filtering needs to be done in the processing function
                 final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 

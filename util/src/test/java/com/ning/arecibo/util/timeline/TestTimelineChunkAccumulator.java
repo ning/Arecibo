@@ -38,10 +38,10 @@ public class TestTimelineChunkAccumulator {
         accum.addSample(new ScalarSample(SampleOpcode.DOUBLE, new Double(100.0)));
 
         accum.addSample(new ScalarSample(SampleOpcode.STRING, new String("Hiya!")));
-
-        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(timelineTimesId);
+        final DateTime startTime = new DateTime();
+        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(timelineTimesId, startTime);
         Assert.assertEquals(chunk.getSampleCount(), 9);
-        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(new DateTime()), 30, timelineTimesId, 9, hostId);
+        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(startTime), 30, timelineTimesId, 9, hostId);
         Assert.assertEquals(times.getSampleCount(), 9);
         // Now play them back
         SampleCoder.scan(chunk.getSamples(), times, new SampleProcessor() {

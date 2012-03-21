@@ -161,7 +161,7 @@ public class TimelineHostEventAccumulator
         final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, startTime, endTime, times);
         final int timelineTimesId = dao.insertTimelineTimes(dbTimelineTimes);
         for (final TimelineChunkAccumulator accumulator : timelines.values()) {
-            dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId));
+            dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId, dbTimelineTimes.getStartTime()));
         }
 
         destroyStats();

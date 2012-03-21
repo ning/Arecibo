@@ -317,6 +317,7 @@ public class TimelineAggregator
                 firstSampleChunk.getHostId(),
                 firstSampleChunk.getSampleKindId(),
                 newTimelineTimesId,
+                firstSampleChunk.getStartTime(),
                 samples,
                 totalSampleCount);
             // No need to remember the TimelineChunkId
