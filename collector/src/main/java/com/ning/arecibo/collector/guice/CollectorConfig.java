@@ -69,6 +69,11 @@ public interface CollectorConfig
     @Default("10m")
     TimeSpan getTimelineLength();
 
+    @Config("arecibo.collector.timelines.maxAggregationLevel")
+    @Description("Max aggregation level")
+    @Default("2")
+    int getMaxAggregationLevel();
+
     @Config("arecibo.collector.timelines.aggregationInterval")
     @Description("How often to check to see if there are timelines ready to be aggregated")
     @Default("1h")

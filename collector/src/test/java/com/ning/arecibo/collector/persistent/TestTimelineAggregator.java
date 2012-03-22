@@ -153,7 +153,7 @@ public class TestTimelineAggregator
 
     private void createAOneHourTimelineTimes(final int startTimeMinutesAgo) throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, false);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE, false);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = START_TIME.minusMinutes(startTimeMinutesAgo).plusSeconds(i * 30);

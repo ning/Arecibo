@@ -73,8 +73,8 @@ getLastInsertedId() ::= <<
 >>
 
 insertTimelineTimes() ::=<<
-  insert into timeline_times (host_id, start_time, end_time, count, in_row_times, blob_times)
-  values (:hostId, :startTime, :endTime, :count, :inRowTimes, :blobTimes);
+  insert into timeline_times (host_id, event_category, start_time, end_time, count, in_row_times, blob_times)
+  values (:hostId, :eventCategory, :startTime, :endTime, :count, :inRowTimes, :blobTimes);
 >>
 
 insertTimelineChunk() ::=<<
@@ -96,6 +96,9 @@ getSamplesByHostNamesAndSampleKinds(hostNameStrings, sampleKindStrings) ::=<<
   , t.start_time
   , t.end_time
   , t.count
+  , t.event_category
+  , t.aggregation_level
+  , t.not_valid
   , t.in_row_times
   , t.blob_times
   from timeline_chunks c

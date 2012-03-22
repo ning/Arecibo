@@ -103,7 +103,7 @@ public class TimelineAggregator
         return orderedHostSampleChunks;
     }
 
-    private int aggregateTimelineCandidates(final List<TimelineTimes> timelineTimesCandidates)
+    private int aggregateTimelineCandidates(final List<TimelineTimes> timelineTimesCandidates, final int aggregationLevel)
     {
         log.info("Looking to aggregate {} candidates in {} chunks", timelineTimesCandidates.size(), config.getChunksToAggregate());
 
@@ -111,7 +111,7 @@ public class TimelineAggregator
         final int chunksToAggregate = config.getChunksToAggregate();
         while (timelineTimesCandidates.size() >= chunksToAggregate) {
             final List<TimelineTimes> chunkCandidates = timelineTimesCandidates.subList(0, chunksToAggregate);
-            aggregateHostSampleChunks(chunkCandidates);
+            aggregateHostSampleChunks(chunkCandidates, aggregationLevel);
             aggregatesCreated++;
             chunkCandidates.clear();
         }
@@ -135,9 +135,9 @@ public class TimelineAggregator
      * need to be deleted.</li>
      * <p/>
      *
-     * @param timelineTimesChunks the TimlineTime chunks to be aggregated
+     * @param timelineTimesChunks the TimelineTimes chunks to be aggregated
      */
-    private void aggregateHostSampleChunks(final List<TimelineTimes> timelineTimesChunks)
+    private void aggregateHostSampleChunks(final List<TimelineTimes> timelineTimesChunks, final int aggregationLevel)
     {
         final TimelineTimes firstTimesChunk = timelineTimesChunks.get(0);
         final TimelineTimes lastTimesChunk = timelineTimesChunks.get(timelineTimesChunks.size() - 1);
@@ -166,7 +166,8 @@ public class TimelineAggregator
         }
 
         aggregatorDao.begin();
-        aggregatorDao.insertNewInvalidTimelineTimes(new TimelineTimes(-1, hostId, startTime, endTime, aggregatedTimes, totalSampleCount), 1);
+        aggregatorDao.insertNewInvalidTimelineTimes(new TimelineTimes(-1, hostId, firstTimesChunk.getEventCategory(), startTime, endTime,
+                aggregatedTimes, totalSampleCount), aggregationLevel + 1);
         final int newTimelineTimesId = aggregatorDao.getLastInsertedId();
         aggregatorDao.commit();
 
@@ -237,25 +238,30 @@ public class TimelineAggregator
             log.info("Starting aggregating");
         }
 
-        final List<TimelineTimes> timelineTimesCandidates = aggregatorDao.getTimelineTimesAggregationCandidates();
+        for (int aggregationLevel=0; aggregationLevel<config.getMaxAggregationLevel() - 1; aggregationLevel++) {
+            final List<TimelineTimes> timelineTimesCandidates = aggregatorDao.getTimelineTimesAggregationCandidates(aggregationLevel);
 
-        // The candidates are ordered first by host_id and second by start_time
-        // Loop pulling off the candidates for the first host_id
-        int lastHostId = 0;
-        final List<TimelineTimes> hostTimelineCandidates = new ArrayList<TimelineTimes>();
-        for (final TimelineTimes candidate : timelineTimesCandidates) {
-            final int hostId = candidate.getHostId();
-            if (lastHostId == 0) {
-                lastHostId = hostId;
+            // The candidates are ordered first by host_id, then by event_category, and finally by start_time
+            // Loop pulling off the candidates for the first hostId and eventCategory
+            int lastHostId = 0;
+            String lastEventCategory = "";
+            final List<TimelineTimes> hostTimelineCandidates = new ArrayList<TimelineTimes>();
+            for (final TimelineTimes candidate : timelineTimesCandidates) {
+                final int hostId = candidate.getHostId();
+                final String eventCategory = candidate.getEventCategory();
+                if (lastHostId == 0) {
+                    lastHostId = hostId;
+                    lastEventCategory = eventCategory;
+                }
+                if (lastHostId != hostId || !lastEventCategory.equals(eventCategory)) {
+                    aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel));
+                    hostTimelineCandidates.clear();
+                    lastHostId = hostId;
+                }
+                hostTimelineCandidates.add(candidate);
             }
-            if (lastHostId != hostId) {
-                aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates));
-                hostTimelineCandidates.clear();
-                lastHostId = hostId;
-            }
-            hostTimelineCandidates.add(candidate);
+            aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel));
         }
-        aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates));
 
         log.info("Aggregation done");
         isAggregating.set(false);

@@ -26,6 +26,7 @@ public class TestTimelineChunkAccumulator {
     @Test(groups="fast")
     public void testBasicAccumulator() throws Exception {
         final int hostId = 123;
+        final String eventCategory = "JVM";
         final int sampleKindId = 456;
         final int timelineTimesId = 789;
         final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
@@ -41,7 +42,7 @@ public class TestTimelineChunkAccumulator {
         final DateTime startTime = new DateTime();
         final TimelineChunk chunk = accum.extractTimelineChunkAndReset(timelineTimesId, startTime);
         Assert.assertEquals(chunk.getSampleCount(), 9);
-        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(startTime), 30, timelineTimesId, 9, hostId);
+        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(startTime), 30, timelineTimesId, 9, hostId, eventCategory);
         Assert.assertEquals(times.getSampleCount(), 9);
         // Now play them back
         SampleCoder.scan(chunk.getSamples(), times, new SampleProcessor() {
@@ -77,13 +78,16 @@ public class TestTimelineChunkAccumulator {
         System.out.printf("%s\n", chunkDecoded.toString());
     }
 
-    private TimelineTimes makeTimelineTimesBytes(final int initialUnixTime, final int secondsBetweenSamples, final int timelineTimesId, final int sampleCount, final int hostId) {
+    private TimelineTimes makeTimelineTimesBytes(final int initialUnixTime, final int secondsBetweenSamples, final int timelineTimesId,
+            final int sampleCount, final int hostId, final String eventCategory)
+    {
         final int[] times = new int[sampleCount];
         for (int i=0; i<sampleCount; i++) {
             times[i] = initialUnixTime + i * secondsBetweenSamples;
         }
         return new TimelineTimes(timelineTimesId,
                                  hostId,
+                                 eventCategory,
                                  TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime),
                                  TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime + secondsBetweenSamples * sampleCount),
                                  TimelineCoder.compressTimes(times),

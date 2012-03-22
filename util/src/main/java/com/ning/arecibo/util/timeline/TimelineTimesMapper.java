@@ -31,14 +31,17 @@ public class TimelineTimesMapper implements ResultSetMapper<TimelineTimes>
     {
         final int timelineIntervalId = rs.getInt("timeline_times_id");
         final int hostId = rs.getInt("host_id");
+        final String eventCategory = rs.getString("event_category");
         final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
         final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
         final int count = rs.getInt("count");
+        final int aggregationLevel = rs.getInt("aggregation_level");
+        final boolean notValid = rs.getInt("not_valid") != 0;
         byte[] times = rs.getBytes("in_row_times");
         if (rs.wasNull()) {
             final Blob blobTimes = rs.getBlob("blob_times");
             times = blobTimes.getBytes(1, (int) blobTimes.length());
         }
-        return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
+        return new TimelineTimes(timelineIntervalId, hostId, eventCategory, startTime, endTime, times, count, aggregationLevel, notValid);
     }
 }

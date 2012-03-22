@@ -39,7 +39,7 @@ public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorD
     List<TimelineChunk> getTimelineChunksForTimelineTimes(@BindIn("timelineTimesIds") final List<Long> timelineTimesId);
 
     @SqlQuery
-    List<TimelineTimes> getTimelineTimesAggregationCandidates();
+    List<TimelineTimes> getTimelineTimesAggregationCandidates(@Bind("aggregationLevel") final int aggregationLevel);
 
     @SqlUpdate
     void insertNewInvalidTimelineTimes(@TimelineTimesBinder final TimelineTimes times, @Bind("aggregationLevel") final int aggregationLevel);
