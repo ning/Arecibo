@@ -23,8 +23,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.math.BigInteger;
 
-import org.apache.commons.codec.binary.Hex;
-
 import com.ning.arecibo.util.Logger;
 
 /**
@@ -346,9 +344,9 @@ public class SampleCoder {
         //System.out.printf("Decoded: %s\n", new String(Hex.encodeHex(bytes)));
         final ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
         final DataInputStream inputStream = new DataInputStream(byteStream);
-        int sampleCount = 0;
+        final TimeCursor timeCursor = new TimeCursor(timestamps);
         while (true) {
-            byte opcodeByte;
+            final byte opcodeByte;
             try {
                 opcodeByte = inputStream.readByte();
             }
@@ -361,12 +359,11 @@ public class SampleCoder {
                 final byte repeatCount = inputStream.readByte();
                 final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.readByte());
                 final Object value = decodeScalarValue(inputStream, repeatedOpcode);
-                processor.processSamples(timestamps, sampleCount, repeatCount, repeatedOpcode, value);
-                sampleCount += repeatCount;
+                processor.processSamples(timeCursor, repeatCount, repeatedOpcode, value);
+                timeCursor.consumeRepeat();
                 break;
             default:
-                processor.processSamples(timestamps, sampleCount, 1, opcode, decodeScalarValue(inputStream, opcode));
-                sampleCount += 1;
+                processor.processSamples(timeCursor, 1, opcode, decodeScalarValue(inputStream, opcode));
                 break;
             }
         }

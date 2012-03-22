@@ -23,12 +23,9 @@ import org.joda.time.DateTimeZone;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class TimelineTimes extends CachedObject
@@ -38,46 +35,54 @@ public class TimelineTimes extends CachedObject
         @Override
         public TimelineTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
         {
-            final int timelineIntervalId = rs.getInt("timeline_interval_id");
+            final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int hostId = rs.getInt("host_id");
             final DateTime startTime = dateTimeFromUnixSeconds(rs.getInt("start_time"));
             final DateTime endTime = dateTimeFromUnixSeconds(rs.getInt("end_time"));
             final int count = rs.getInt("count");
-            final Blob blobTimes = rs.getBlob("timeline_times");
-            final byte[] samples = blobTimes.getBytes(1, (int) blobTimes.length());
-
-            return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, samples, count);
+            byte[] times = rs.getBytes("in_row_times");
+            if (rs.wasNull()) {
+                final Blob blobTimes = rs.getBlob("blob_times");
+                times = blobTimes.getBytes(1, (int) blobTimes.length());
+            }
+            return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
         }
     };
 
     private final int hostId;
     private final DateTime startTime;
     private final DateTime endTime;
+
+    @JsonProperty(value = "timeSampleCount")
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    private final int sampleCount;
     @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
-    private final List<Integer> times;
+    private final byte[] compressedTimes;
 
     public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
         this.startTime = startTime;
+        this.sampleCount = dateTimes.size();
         this.endTime = endTime;
-        this.times = new ArrayList<Integer>(dateTimes.size());
-        for (DateTime dateTime : dateTimes) {
-            times.add(unixSeconds(dateTime));
+        final int[] times = new int[dateTimes.size()];
+        int i = 0;
+        for (final DateTime dateTime : dateTimes) {
+            times[i++] = unixSeconds(dateTime);
         }
+        compressedTimes = TimelineCoder.compressTimes(times);
     }
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final byte[] times, final int count)
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final byte[] compressedTimes, final int sampleCount)
     {
-        this(timelineIntervalId, hostId, startTime, endTime, new ArrayList<DateTime>());
-
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(times);
-        final IntBuffer intBuffer = byteBuffer.asIntBuffer();
-        for (int i = 0; i < count; i++) {
-            this.times.add(intBuffer.get(i));
-        }
+        super(timelineIntervalId);
+        this.hostId = hostId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.sampleCount = sampleCount;
+        this.compressedTimes = compressedTimes;
     }
 
     public int getHostId()
@@ -97,38 +102,17 @@ public class TimelineTimes extends CachedObject
 
     public int getSampleCount()
     {
-        return times.size();
+        return sampleCount;
     }
 
-    public DateTime getSampleTimestamp(final int sampleNumber)
+    public TimeCursor getTimeCursor()
     {
-        if (sampleNumber < 0 || sampleNumber >= times.size()) {
-            return null;
-        }
-        else {
-            return new DateTime(dateTimeFromUnixSeconds(times.get(sampleNumber)));
-        }
+        return new TimeCursor(this);
     }
 
-    public int getSampleNumberForTimestamp(final DateTime timestamp)
+    public byte[] getCompressedTimes()
     {
-        // TODO: do the binary search
-        throw new IllegalArgumentException("NYI");
-    }
-
-    public byte[] getTimeArray()
-    {
-        final int[] unixTimes = new int[times.size()];
-
-        for (int i = 0; i < times.size(); i++) {
-            unixTimes[i] = times.get(i);
-        }
-
-        final ByteBuffer byteBuffer = ByteBuffer.allocate(unixTimes.length * 4);
-        final IntBuffer intBuffer = byteBuffer.asIntBuffer();
-        intBuffer.put(unixTimes);
-
-        return byteBuffer.array();
+        return compressedTimes;
     }
 
     public static DateTime dateTimeFromUnixSeconds(final int unixTime)
@@ -141,4 +125,5 @@ public class TimelineTimes extends CachedObject
         final long millis = dateTime.toDateTime(DateTimeZone.UTC).getMillis();
         return (int) (millis / 1000L);
     }
+
 }

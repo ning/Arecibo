@@ -18,6 +18,7 @@ package com.ning.arecibo.util.timeline;
 
 import com.ning.arecibo.util.Logger;
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.annotate.JsonUnwrapped;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonView;
@@ -44,16 +45,6 @@ public class TimelineChunkAndTimes
 {
     private static final Logger log = Logger.getLogger(TimelineChunkAndTimes.class);
 
-    public static final Folder2<List<TimelineChunkAndTimes>> folder = new Folder2<List<TimelineChunkAndTimes>>()
-    {
-        @Override
-        public List<TimelineChunkAndTimes> fold(final List<TimelineChunkAndTimes> accumulator, final ResultSet rs, final StatementContext ctx) throws SQLException
-        {
-            accumulator.add(TimelineChunkAndTimes.mapper.map(1, rs, ctx));
-            return accumulator;
-        }
-    };
-
     public static final ResultSetMapper<TimelineChunkAndTimes> mapper = new ResultSetMapper<TimelineChunkAndTimes>()
     {
         @Override
@@ -65,16 +56,23 @@ public class TimelineChunkAndTimes
             final int sampleKindId = rs.getInt("sample_kind_id");
             final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
-            final Blob blobSamples = rs.getBlob("sample_bytes");
-            final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
-            final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
+            final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
+            byte[] samples = rs.getBytes("in_row_samples");
+            if (rs.wasNull()) {
+                final Blob blobSamples = rs.getBlob("blob_samples");
+                samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            }
+            final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, samples, sampleCount);
 
             // Construct the TimelineTimes
-            final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
             final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
             final int count = rs.getInt("count");
-            final byte[] blobTimes = rs.getBytes("times");
-            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, blobTimes, count);
+            byte[] times = rs.getBytes("in_row_times");
+            if (rs.wasNull()) {
+                final Blob blobTimes = rs.getBlob("blob_times");
+                times = blobTimes.getBytes(1, (int) blobTimes.length());
+            }
+            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
 
             final String hostName = rs.getString("host_name");
             final String sampleKind = rs.getString("sample_kind");
@@ -83,8 +81,10 @@ public class TimelineChunkAndTimes
         }
     };
 
+    @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Base.class)
     private final String hostName;
+    @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Base.class)
     private final String sampleKind;
     @JsonUnwrapped
@@ -173,7 +173,7 @@ public class TimelineChunkAndTimes
         }
 
         @Override
-        public void processOneSample(final DateTime sampleTimestamp, final int sampleNumber, final SampleOpcode opcode, final Object value)
+        public void processOneSample(final DateTime sampleTimestamp, final SampleOpcode opcode, final Object value)
         {
             if (sampleTimestamp != null) {
                 final String valueString = value == null ? "0" : value.toString();

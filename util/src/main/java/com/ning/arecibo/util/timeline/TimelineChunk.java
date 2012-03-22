@@ -18,6 +18,7 @@ package com.ning.arecibo.util.timeline;
 
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.annotate.JsonView;
+import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -42,15 +43,23 @@ public class TimelineChunk extends CachedObject
             final int sampleKindId = rs.getInt("sample_kind_id");
             final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
-            final Blob blobSamples = rs.getBlob("sample_bytes");
-            final byte[] samples = blobSamples.getBytes(1, (int) blobSamples.length());
-            return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, samples, sampleCount);
+            final DateTime startTime = new DateTime(TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time")));
+            byte[] samples = rs.getBytes("in_row_samples");
+            if (rs.wasNull()) {
+                final Blob blobSamples = rs.getBlob("blob_samples");
+                samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            }
+            return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, samples, sampleCount);
         }
     };
 
     private final int hostId;
     private final int sampleKindId;
     private final int timelineTimesId;
+
+    @JsonProperty
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    private final DateTime startTime;
     @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final byte[] samples;
@@ -58,12 +67,13 @@ public class TimelineChunk extends CachedObject
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final int sampleCount;
 
-    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final int timelineTimesId, final byte[] samples, final int sampleCount)
+    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final int timelineTimesId, final DateTime startTime, final byte[] samples, final int sampleCount)
     {
         super(sampleTimelineId);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
         this.timelineTimesId = timelineTimesId;
+        this.startTime = startTime;
         this.samples = samples;
         this.sampleCount = sampleCount;
     }
@@ -81,6 +91,10 @@ public class TimelineChunk extends CachedObject
     public int getTimelineTimesId()
     {
         return timelineTimesId;
+    }
+
+    public DateTime getStartTime() {
+        return startTime;
     }
 
     public byte[] getSamples()

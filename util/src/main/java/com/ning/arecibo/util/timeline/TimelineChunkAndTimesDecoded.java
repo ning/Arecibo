@@ -72,11 +72,15 @@ public class TimelineChunkAndTimesDecoded {
         final StringBuilder builder = new StringBuilder();
 
         @Override
-        public void processSamples(TimelineTimes timestamps, int sampleNumber, int sampleCount, SampleOpcode opcode, Object value) {
+        public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            final DateTime timestamp = timestamps.getSampleTimestamp(sampleNumber);
+            final int nextTime = timeCursor.getNextTime();
+            if (sampleCount > 1) {
+                timeCursor.consumeRepeat();
+            }
+            final DateTime timestamp = TimelineTimes.dateTimeFromUnixSeconds(nextTime);
             builder.append("at ").append(timestamp.toString("yyyy-MM-dd HH:mm:ss")).append(" ");
             if (sampleCount > 1) {
                 builder.append(sampleCount).append(" of ");

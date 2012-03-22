@@ -22,6 +22,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.joda.time.DateTime;
+
 /**
  * This class represents a sequence of values for a single attribute,
  * e.g., "TP99 Response Time", for one host and one specific time range,
@@ -81,11 +83,11 @@ public class TimelineChunkAccumulator
     /**
      * This method grabs the current encoded form, and resets the accumulator
      */
-    public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId)
+    public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId, final DateTime startTime)
     {
         // Extract the chunk
         final byte[] bytes = getEncodedSamples().getEncodedBytes();
-        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, timelineTimesId, bytes, sampleCount);
+        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, timelineTimesId, startTime, bytes, sampleCount);
 
         // Reset this current accumulator
         reset();

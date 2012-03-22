@@ -57,7 +57,7 @@ public class TestTimelineChunkAndTimes
         }
 
         final TimelineTimes timelineTimes = new TimelineTimes(TIMELINE_TIMES_ID, HOST_ID, startTime, times.get(times.size() - 1), times);
-        final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, out.toByteArray(), sampleCount);
+        final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, startTime, out.toByteArray(), sampleCount);
 
         final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, timelineChunk, timelineTimes);
         Assert.assertEquals(timelineChunkAndTimes.toString(),

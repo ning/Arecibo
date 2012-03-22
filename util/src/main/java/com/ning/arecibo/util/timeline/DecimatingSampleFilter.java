@@ -61,6 +61,7 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
     private final SampleState[] filterHistory;
 
     private double runningSum = 0.0;
+    private int sampleNumber = 0;
 
     /**
      * Build a DecimatingSampleFilter on which you call processSamples()
@@ -83,7 +84,8 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
     }
 
     @Override
-    public void processOneSample(DateTime time, int sampleNumber, SampleOpcode opcode, Object value) {
+    public void processOneSample(DateTime time, SampleOpcode opcode, Object value) {
+        sampleNumber++;
         final SampleState sampleState = new SampleState(opcode, value, SampleCoder.getDoubleValue(opcode, value), time);
         final int historyIndex = sampleNumber % filterHistory.length;
         filterHistory[historyIndex] = sampleState;

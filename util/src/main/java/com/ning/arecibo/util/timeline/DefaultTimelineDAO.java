@@ -28,6 +28,7 @@ import org.skife.jdbi.v2.ResultIterator;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.TransactionCallback;
 import org.skife.jdbi.v2.TransactionStatus;
+import org.skife.jdbi.v2.Update;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 import org.skife.jdbi.v2.tweak.HandleCallback;
@@ -37,6 +38,7 @@ import org.skife.jdbi.v2.util.StringMapper;
 import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +46,7 @@ import java.util.List;
 public class DefaultTimelineDAO implements TimelineDAO
 {
     private static final Logger log = Logger.getLoggerViaExpensiveMagic();
+    private static final int MAX_IN_ROW_BLOB_SIZE = 400;
 
     private final IDBI dbi;
 
@@ -245,14 +248,26 @@ public class DefaultTimelineDAO implements TimelineDAO
             @Override
             public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
             {
-                handle
-                    .createStatement("insert into timeline_times (host_id, start_time, end_time, count, times)" +
-                        " values (:host_id, :start_time, :end_time, :count, :times)")
+                final byte[] compressedTimes = timelineTimes.getCompressedTimes();
+                final Update update = handle
+                    .createStatement("insert into timeline_times (host_id, start_time, end_time, count, in_row_times, blob_times)" +
+                        " values (:host_id, :start_time, :end_time, :count, :in_row_times, :blob_times)")
                     .bind("host_id", timelineTimes.getHostId())
                     .bind("start_time", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
                     .bind("end_time", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
-                    .bind("count", timelineTimes.getSampleCount())
-                    .bind("times", timelineTimes.getTimeArray())
+                    .bind("count", timelineTimes.getSampleCount());
+                // Use the in-row field if the blob is small enough
+                if (compressedTimes.length > MAX_IN_ROW_BLOB_SIZE) {
+                    update
+                        .bindNull("in_row_times", Types.VARBINARY)
+                        .bind("blob_times", compressedTimes);
+                }
+                else {
+                    update
+                        .bind("in_row_times", compressedTimes)
+                        .bindNull("blob_times", Types.BLOB);
+                }
+                update
                     .execute();
                 return handle
                     .createQuery("select last_insert_id()")
@@ -270,14 +285,27 @@ public class DefaultTimelineDAO implements TimelineDAO
             @Override
             public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
             {
-                handle
-                    .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, sample_bytes)" +
-                        "values (:host_id, :sample_kind_id, :sample_count, :timeline_times_id, :sample_bytes)")
+                final Update update = handle
+                    .createStatement("insert into timeline_chunks (host_id, sample_kind_id, sample_count, timeline_times_id, start_time, in_row_samples, blob_samples)" +
+                        " values (:host_id, :sample_kind_id, :sample_count, :timeline_times_id, :start_time, :in_row_samples, :blob_samples)")
                     .bind("host_id", timelineChunk.getHostId())
                     .bind("sample_kind_id", timelineChunk.getSampleKindId())
                     .bind("sample_count", timelineChunk.getSampleCount())
                     .bind("timeline_times_id", timelineChunk.getTimelineTimesId())
-                    .bind("sample_bytes", timelineChunk.getSamples())
+                    .bind("start_time", TimelineTimes.unixSeconds(timelineChunk.getStartTime()));
+
+                final byte[] compressedSamples = timelineChunk.getSamples();
+                if (compressedSamples.length > MAX_IN_ROW_BLOB_SIZE) {
+                    update
+                        .bindNull("in_row_samples", Types.VARBINARY)
+                        .bind("blob_samples", compressedSamples);
+                }
+                else {
+                    update
+                        .bind("in_row_samples", compressedSamples)
+                        .bindNull("blob_samples", Types.BLOB);
+                }
+                update
                     .execute();
                 return handle
                     .createQuery("select last_insert_id()")
@@ -287,9 +315,9 @@ public class DefaultTimelineDAO implements TimelineDAO
         });
     }
 
-    @Override
     // TODO: Using strings instead of string templates for this stuff is really ugly.
     // Is there some reason this DAO doesn't use string templates?
+    @Override
     public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames,
                                                     @Nullable final List<String> sampleKinds,
                                                     final DateTime startTime,
@@ -316,11 +344,13 @@ public class DefaultTimelineDAO implements TimelineDAO
                                 ", c.sample_timeline_id\n" +
                                 ", c.timeline_times_id\n" +
                                 ", c.sample_count\n" +
-                                ", c.sample_bytes\n" +
+                                ", c.in_row_samples\n" +
+                                ", c.blob_samples\n" +
                                 ", t.start_time\n" +
                                 ", t.end_time\n" +
                                 ", t.count\n" +
-                                ", t.times\n" +
+                                ", t.in_row_times\n" +
+                                ", t.blob_times\n" +
                                 "from timeline_chunks c\n" +
                                 "join hosts h using (host_id)\n" +
                                 "join sample_kinds k using (sample_kind_id)\n" +

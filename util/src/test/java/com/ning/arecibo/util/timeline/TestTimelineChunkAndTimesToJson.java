@@ -16,7 +16,6 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.google.common.collect.ImmutableList;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.node.TextNode;
@@ -28,6 +27,8 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,6 +44,8 @@ public class TestTimelineChunkAndTimesToJson
     private static final long TIMELINE_INTERVAL_ID = 1337L;
     private static final String HOST_NAME = UUID.randomUUID().toString();
     private static final String SAMPLE_KIND = UUID.randomUUID().toString();
+    private static final DateTime END_TIME = new DateTime(DateTimeZone.UTC);
+    private static final DateTime START_TIME = END_TIME.minusMinutes(SAMPLE_COUNT);
 
     private byte[] samples;
     private TimelineChunk chunk;
@@ -52,18 +55,19 @@ public class TestTimelineChunkAndTimesToJson
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
+        final List<DateTime> dateTimes = new ArrayList<DateTime>();
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final DataOutputStream output = new DataOutputStream(out);
         for (int i = 0; i < SAMPLE_COUNT; i++) {
             SampleCoder.encodeSample(output, new ScalarSample<Long>(SampleOpcode.LONG, 10L));
+            dateTimes.add(START_TIME.plusMinutes(i));
         }
         output.flush();
         output.close();
         samples = out.toByteArray();
 
-        chunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, samples, SAMPLE_COUNT);
-        times = new TimelineTimes(TIMELINE_INTERVAL_ID, HOST_ID, new DateTime(DateTimeZone.UTC).minusHours(1), new DateTime(DateTimeZone.UTC),
-            ImmutableList.<DateTime>of(new DateTime(DateTimeZone.UTC).minusMinutes(30)));
+        chunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, START_TIME, samples, SAMPLE_COUNT);
+        times = new TimelineTimes(TIMELINE_INTERVAL_ID, HOST_ID, START_TIME, START_TIME, dateTimes);
         chunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, chunk, times);
     }
 
@@ -72,9 +76,10 @@ public class TestTimelineChunkAndTimesToJson
     {
         final String chunkToString = mapper.writerWithView(TimelineChunksAndTimesViews.Compact.class).writeValueAsString(chunk);
         final Map chunkFromString = mapper.readValue(chunkToString, Map.class);
-        Assert.assertEquals(chunkFromString.keySet().size(), 2);
+        Assert.assertEquals(chunkFromString.keySet().size(), 3);
         Assert.assertEquals(new TextNode((String) chunkFromString.get("samples")).getBinaryValue(), samples);
         Assert.assertEquals(chunkFromString.get("sampleCount"), SAMPLE_COUNT);
+        Assert.assertEquals(chunkFromString.get("startTime"), START_TIME.getMillis());
     }
 
     @Test(groups = "fast")
@@ -82,7 +87,9 @@ public class TestTimelineChunkAndTimesToJson
     {
         final String timesToString = mapper.writerWithView(TimelineChunksAndTimesViews.Compact.class).writeValueAsString(times);
         final Map timesFromString = mapper.readValue(timesToString, Map.class);
-        Assert.assertEquals(timesFromString.keySet().size(), 1);
+        Assert.assertEquals(timesFromString.keySet().size(), 2);
+        Assert.assertEquals(timesFromString.get("timeSampleCount"), SAMPLE_COUNT);
+        Assert.assertNotNull(timesFromString.get("compressedTimes"));
     }
 
     @Test(groups = "fast")
@@ -90,7 +97,14 @@ public class TestTimelineChunkAndTimesToJson
     {
         final String chunkAndTimesToString = mapper.writerWithView(TimelineChunksAndTimesViews.Compact.class).writeValueAsString(chunkAndTimes);
         final Map chunkAndTimesFromString = mapper.readValue(chunkAndTimesToString, Map.class);
-        Assert.assertEquals(chunkAndTimesFromString.keySet().size(), 5);
+        Assert.assertEquals(chunkAndTimesFromString.keySet().size(), 7);
+        Assert.assertEquals(chunkAndTimesFromString.get("hostName"), HOST_NAME);
+        Assert.assertEquals(chunkAndTimesFromString.get("sampleKind"), SAMPLE_KIND);
+        Assert.assertEquals(new TextNode((String) chunkAndTimesFromString.get("samples")).getBinaryValue(), samples);
+        Assert.assertEquals(chunkAndTimesFromString.get("sampleCount"), SAMPLE_COUNT);
+        Assert.assertEquals(chunkAndTimesFromString.get("startTime"), START_TIME.getMillis());
+        Assert.assertEquals(chunkAndTimesFromString.get("timeSampleCount"), SAMPLE_COUNT);
+        Assert.assertNotNull(chunkAndTimesFromString.get("compressedTimes"));
     }
 
     @Test(groups = "fast")
@@ -99,5 +113,8 @@ public class TestTimelineChunkAndTimesToJson
         final String chunkAndTimesToString = mapper.writerWithView(TimelineChunksAndTimesViews.Loose.class).writeValueAsString(chunkAndTimes);
         final Map chunkAndTimesFromString = mapper.readValue(chunkAndTimesToString, Map.class);
         Assert.assertEquals(chunkAndTimesFromString.keySet().size(), 3);
+        Assert.assertEquals(chunkAndTimesFromString.get("hostName"), HOST_NAME);
+        Assert.assertEquals(chunkAndTimesFromString.get("sampleKind"), SAMPLE_KIND);
+        Assert.assertNotNull(chunkAndTimesFromString.get("samplesAsCSV"));
     }
 }
