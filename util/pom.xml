@@ -84,7 +84,7 @@
         <dependency>
             <groupId>org.jdbi</groupId>
             <artifactId>jdbi</artifactId>
-            <optional>true</optional>
+            <version>2.32</version>
         </dependency>
         <dependency>
             <groupId>com.oracle</groupId>
@@ -189,6 +189,26 @@
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.rat</groupId>
+                <artifactId>apache-rat-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>.gitignore</exclude>
+                                <exclude>
+                                    src/main/resources/com/ning/arecibo/util/timeline/persistent/TimelineDAOQueries.sql.stg
+                                </exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
