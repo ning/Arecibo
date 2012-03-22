@@ -25,20 +25,11 @@ import com.ning.arecibo.util.timeline.TimelineTimes;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.CounterMetric;
 import org.joda.time.DateTime;
-import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.TransactionCallback;
-import org.skife.jdbi.v2.TransactionStatus;
-import org.skife.jdbi.v2.tweak.HandleCallback;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-import org.skife.jdbi.v2.util.IntegerMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.weakref.jmx.Managed;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
@@ -56,23 +47,9 @@ public class TimelineAggregator
 {
     private static final Logger log = LoggerFactory.getLogger(TimelineAggregator.class);
 
-    private static final ResultSetMapper<TimelineTimes> timelineTimesCandidateMapper = new ResultSetMapper<TimelineTimes>()
-    {
-        @Override
-        public TimelineTimes map(final int index, final ResultSet r, final StatementContext ctx) throws SQLException
-        {
-            return new TimelineTimes(r.getInt("timeline_times_id"),
-                r.getInt("host_id"),
-                TimelineTimes.dateTimeFromUnixSeconds(r.getInt("start_time")),
-                TimelineTimes.dateTimeFromUnixSeconds(r.getInt("end_time")),
-                r.getBytes("times"),
-                r.getInt("count"));
-        }
-    };
-
-    private final IDBI dbi;
     private final DefaultTimelineDAO timelineDao;
     private final CollectorConfig config;
+    private final TimelineAggregatorDAO aggregatorDao;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
@@ -81,33 +58,16 @@ public class TimelineAggregator
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
     {
-        this.dbi = dbi;
         this.timelineDao = timelineDao;
         this.config = config;
-    }
-
-    private List<TimelineTimes> getTimelineTimesAggregationCandidates()
-    {
-        return dbi.withHandle(new HandleCallback<List<TimelineTimes>>()
-        {
-            @Override
-            public List<TimelineTimes> withHandle(final Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery("select timeline_times_id, host_id, start_time, end_time, times, count from timeline_times " +
-                        "where not_valid = 0 and aggregation_level = 0 " +
-                        "order by host_id, start_time")
-                    .map(timelineTimesCandidateMapper)
-                    .list();
-            }
-        });
+        this.aggregatorDao = dbi.onDemand(TimelineAggregatorDAO.class);
     }
 
     /**
      * This returns a list of lists of TimelineChunks.  Each of the lists is
      * a time-ordered sequence of chunks for one host and one sample kind.
      *
-     * @param idString the timelineTimes ids for the TimelineTimes chunks
+     * @param timelineTimesId the timelineTimes ids for the TimelineTimes chunks
      *                 to be aggregated
      * @return the list of lists of host/sample chunks for the supplied timelineTimesIds
      *         TODO: If we ever do multi-level aggregation, ordering by timeline_times_id
@@ -116,23 +76,9 @@ public class TimelineAggregator
      *         single-level aggreation.  And we could always sort in Java memory by matching
      *         up with the timeline_times start times.
      */
-    private List<List<TimelineChunk>> getHostSampleTimelineChunks(final String idString)
+    private List<List<TimelineChunk>> getHostSampleTimelineChunks(final List<Long> timelineTimesId)
     {
-        final List<TimelineChunk> chunks = dbi.withHandle(new HandleCallback<List<TimelineChunk>>()
-        {
-            @Override
-            public List<TimelineChunk> withHandle(final Handle handle) throws Exception
-            {
-                return handle
-                    .createQuery("select sample_timeline_id, host_id, sample_kind_id, timeline_times_id, sample_count, sample_bytes " +
-                        "from timeline_chunks " +
-                        "where timeline_times_id in (" + idString + ") " +
-                        "order by host_id, sample_kind_id, timeline_times_id")
-                    .map(TimelineChunk.mapper)
-                    .list();
-
-            }
-        });
+        final List<TimelineChunk> chunks = aggregatorDao.getTimelineChunksForTimelineTimes(timelineTimesId);
 
         final List<List<TimelineChunk>> orderedHostSampleChunks = new ArrayList<List<TimelineChunk>>();
         int lastHostId = 0;
@@ -218,88 +164,40 @@ public class TimelineAggregator
             System.arraycopy(chunk.getCompressedTimes(), 0, aggregatedTimes, timeChunkIndex, chunkTimeLength);
             timeChunkIndex += chunkTimeLength;
         }
-        final int newTimelineTimesId = dbi.inTransaction(new TransactionCallback<Integer>()
-        {
-            @Override
-            public Integer inTransaction(final Handle handle, final TransactionStatus status) throws Exception
-            {
-                handle
-                    .createStatement("insert into timeline_times (host_id, start_time, end_time, count, times, aggregation_level, not_valid)" +
-                        " values (:host_id, :start_time, :end_time, :count, :times, 1, 0)")
-                    .bind("host_id", hostId)
-                    .bind("start_time", TimelineTimes.unixSeconds(startTime))
-                    .bind("end_time", TimelineTimes.unixSeconds(endTime))
-                    .bind("count", totalSampleCount)
-                    .bind("times", aggregatedTimes)
-                    .execute();
-                return handle
-                    .createQuery("select last_insert_id()")
-                    .map(IntegerMapper.FIRST)
-                    .first();
-            }
-        });
 
-        final StringBuilder builder = new StringBuilder();
-        for (final long timelineTimesId : timelineTimesIds) {
-            if (builder.length() != 0) {
-                builder.append(", ");
-            }
-            builder.append(timelineTimesId);
-        }
-        final String idString = builder.toString();
-        aggregateSampleChunks(idString, newTimelineTimesId, totalSampleCount);
+        aggregatorDao.begin();
+        aggregatorDao.insertNewInvalidTimelineTimes(new TimelineTimes(-1, hostId, startTime, endTime, aggregatedTimes, totalSampleCount), 1);
+        final int newTimelineTimesId = aggregatorDao.getLastInsertedId();
+        aggregatorDao.commit();
+
+        aggregateSampleChunks(timelineTimesIds, newTimelineTimesId, totalSampleCount);
 
         // This is the atomic operation: set the new aggregated TimelineTimes object valid, and the
         // ones that were aggregated invalid.  This should be very fast.
-        dbi.inTransaction(new TransactionCallback<Void>()
-        {
-            @Override
-            public Void inTransaction(final Handle handle, final TransactionStatus status) throws Exception
-            {
-                handle
-                    .createStatement("update timeline_times set not_valid = 0, aggregation_level = 1 " +
-                        "where timeline_times_id = :timeline_times_id")
-                    .bind("timeline_times_id", newTimelineTimesId)
-                    .execute();
-                handle
-                    .createStatement("update timeline_times set not_valid = 1 where timeline_times_id in (" + idString + ")")
-                    .execute();
-                return null;
-            }
+        aggregatorDao.begin();
+        aggregatorDao.makeTimelineTimesValid(newTimelineTimesId);
+        aggregatorDao.makeTimelineTimesInvalid(timelineTimesIds);
+        aggregatorDao.commit();
 
-        });
         // TODO: Flush the cache of all entities with the given timelineTimesIds.
         // This will require remodularization of the LRUObjectCache, afaict.
 
         // Now (maybe) dispose of the old ones
         if (config.getDeleteAggregatedChunks()) {
-            dbi.inTransaction(new TransactionCallback<Void>()
-            {
-
-                @Override
-                public Void inTransaction(final Handle handle, final TransactionStatus status) throws Exception
-                {
-                    // TODO: Could leave these around rather than deleting them, for testing purposes, since
-                    // they are already marked invalid
-                    handle
-                        .createStatement("delete from timeline_times where timeline_times_id in (" + idString + ")")
-                        .execute();
-                    // TODO: Could just leave these around for testing purposes, since they are only referenced
-                    // by timeline_times_id.
-                    handle
-                        .createStatement("delete from timeline_chunks where timeline_times_id in (" + idString + ")")
-                        .execute();
-                    return null;
-                }
-
-            });
-
+            aggregatorDao.begin();
+            // TODO: Could leave these around rather than deleting them, for testing purposes, since
+            // they are already marked invalid
+            aggregatorDao.deleteTimelineTimes(timelineTimesIds);
+            // TODO: Could just leave these around for testing purposes, since they are only referenced
+            // by timeline_times_id.
+            aggregatorDao.deleteTimelineChunks(timelineTimesIds);
+            aggregatorDao.commit();
         }
     }
 
-    private void aggregateSampleChunks(final String idString, final int newTimelineTimesId, final int totalSampleCount)
+    private void aggregateSampleChunks(final List<Long> timelineTimesId, final int newTimelineTimesId, final int totalSampleCount)
     {
-        final List<List<TimelineChunk>> orderedHostSampleChunks = getHostSampleTimelineChunks(idString);
+        final List<List<TimelineChunk>> orderedHostSampleChunks = getHostSampleTimelineChunks(timelineTimesId);
         for (final List<TimelineChunk> chunkList : orderedHostSampleChunks) {
             final TimelineChunk firstSampleChunk = chunkList.get(0);
             int totalChunkSize = 0;
@@ -334,11 +232,12 @@ public class TimelineAggregator
         if (!isAggregating.compareAndSet(false, true)) {
             log.info("Asked to aggregate, but we're already aggregating!");
             return;
-        } else {
+        }
+        else {
             log.info("Starting aggregating");
         }
 
-        final List<TimelineTimes> timelineTimesCandidates = getTimelineTimesAggregationCandidates();
+        final List<TimelineTimes> timelineTimesCandidates = aggregatorDao.getTimelineTimesAggregationCandidates();
 
         // The candidates are ordered first by host_id and second by start_time
         // Loop pulling off the candidates for the first host_id
