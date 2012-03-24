@@ -258,6 +258,7 @@
                             <excludes>
                                 <exclude>.gitignore</exclude>
                                 <exclude>src/main/resources/collector.sql</exclude>
+                                <exclude>src/main/resources/com/ning/arecibo/collector/persistent/TimelineAggregatorDAO.sql.stg</exclude>
                             </excludes>
                         </configuration>
                     </execution>
