@@ -166,7 +166,7 @@ public class TimelineEventHandler implements EventHandler
                 hostAccumulators = accumulators.get(hostSamples.getHostId());
                 accumulator = hostAccumulators.get(hostSamples.getCategory());
                 if (accumulator == null) {
-                    accumulator = new TimelineHostEventAccumulator(timelineDAO, hostSamples.getHostId(), config.getTimelinesVerboseStats());
+                    accumulator = new TimelineHostEventAccumulator(timelineDAO, hostSamples.getHostId(), hostSamples.getCategory(), config.getTimelinesVerboseStats());
                     hostAccumulators.put(hostSamples.getCategory(), accumulator);
                     log.info("Created new Timeline for hostId [{}] and category [{}]", hostSamples.getHostId(), hostSamples.getCategory());
                 }
@@ -214,17 +214,17 @@ public class TimelineEventHandler implements EventHandler
 
             // This accumulator is in the right time range, now return only the sample kinds specified
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
-                final String sampleKind = timelineDAO.getSampleKind(chunkAccumulator.getSampleKindId());
-                if (!filterSampleKinds.contains(sampleKind)) {
-                    // We don't care about this sample kind
-                    continue;
-                }
-
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
                 final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
                 final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime);
                 // NOTE! Further time filtering needs to be done in the processing function
-                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
+                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulator.getEventCategory(), accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
+
+                final String sampleKind = timelineDAO.getSampleKind(timelineChunk.getSampleKindId());
+                if (!filterSampleKinds.contains(sampleKind)) {
+                    // We don't care about this sample kind
+                    continue;
+                }
 
                 samplesByHostName.add(new TimelineChunkAndTimes(filterHostName, sampleKind, timelineChunk, timelineTimes));
             }

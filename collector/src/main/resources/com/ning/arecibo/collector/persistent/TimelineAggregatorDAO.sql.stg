@@ -20,21 +20,24 @@ getTimelineTimesAggregationCandidates() ::= <<
   select
     timeline_times_id
   , host_id
+  , event_category
   , start_time
   , end_time
   , in_row_times
   , blob_times
   , count
+  , aggregation_level
+  , not_valid
   from timeline_times
   where not_valid = 0
-  and aggregation_level = 0
-  order by host_id, start_time
+  and aggregation_level = :aggregationLevel
+  order by host_id, event_category, start_time
   ;
 >>
 
 insertNewInvalidTimelineTimes() ::= <<
-  insert into timeline_times (host_id, start_time, end_time, count, in_row_times, blob_times, aggregation_level, not_valid)
-  values (:hostId, :startTime, :endTime, :count, :inRowTimes, :blobTimes, :aggregationLevel, 0);
+  insert into timeline_times (host_id, event_category, start_time, end_time, count, in_row_times, blob_times, aggregation_level, not_valid)
+  values (:hostId, :eventCategory, :startTime, :endTime, :count, :inRowTimes, :blobTimes, :aggregationLevel, 1);
 >>
 
 getLastInsertedId() ::= <<

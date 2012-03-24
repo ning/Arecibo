@@ -20,38 +20,17 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.annotate.JsonView;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
-import java.sql.Blob;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 public class TimelineTimes extends CachedObject
 {
-    public static final ResultSetMapper<TimelineTimes> mapper = new ResultSetMapper<TimelineTimes>()
-    {
-        @Override
-        public TimelineTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
-        {
-            final int timelineIntervalId = rs.getInt("timeline_times_id");
-            final int hostId = rs.getInt("host_id");
-            final DateTime startTime = dateTimeFromUnixSeconds(rs.getInt("start_time"));
-            final DateTime endTime = dateTimeFromUnixSeconds(rs.getInt("end_time"));
-            final int count = rs.getInt("count");
-            byte[] times = rs.getBytes("in_row_times");
-            if (rs.wasNull()) {
-                final Blob blobTimes = rs.getBlob("blob_times");
-                times = blobTimes.getBytes(1, (int) blobTimes.length());
-            }
-            return new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
-        }
-    };
-
     private final int hostId;
+    private final String eventCategory;
     private final DateTime startTime;
     private final DateTime endTime;
+    private final int aggregationLevel;
+    private final boolean notValid;
 
     @JsonProperty(value = "timeSampleCount")
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
@@ -60,10 +39,11 @@ public class TimelineTimes extends CachedObject
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final byte[] compressedTimes;
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final String eventCategory, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
+        this.eventCategory = eventCategory;
         this.startTime = startTime;
         this.sampleCount = dateTimes.size();
         this.endTime = endTime;
@@ -73,21 +53,45 @@ public class TimelineTimes extends CachedObject
             times[i++] = unixSeconds(dateTime);
         }
         compressedTimes = TimelineCoder.compressTimes(times);
+        aggregationLevel = 0;
+        notValid = false;
     }
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final DateTime startTime, final DateTime endTime, final byte[] compressedTimes, final int sampleCount)
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final String eventCategory, final DateTime startTime, final DateTime endTime, final byte[] compressedTimes, final int sampleCount)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
+        this.eventCategory = eventCategory;
         this.startTime = startTime;
         this.endTime = endTime;
         this.sampleCount = sampleCount;
         this.compressedTimes = compressedTimes;
+        aggregationLevel = 0;
+        notValid = false;
+    }
+
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final String eventCategory, final DateTime startTime, final DateTime endTime,
+                         final byte[] compressedTimes, final int sampleCount, final int aggregationLevel, final boolean notValid)
+    {
+        super(timelineIntervalId);
+        this.hostId = hostId;
+        this.eventCategory = eventCategory;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.sampleCount = sampleCount;
+        this.compressedTimes = compressedTimes;
+        this.aggregationLevel = aggregationLevel;
+        this.notValid = notValid;
     }
 
     public int getHostId()
     {
         return hostId;
+    }
+
+    public String getEventCategory()
+    {
+        return eventCategory;
     }
 
     public DateTime getStartTime()
@@ -113,6 +117,16 @@ public class TimelineTimes extends CachedObject
     public byte[] getCompressedTimes()
     {
         return compressedTimes;
+    }
+
+    public int getAggregationLevel()
+    {
+        return aggregationLevel;
+    }
+
+    public boolean getNotValid()
+    {
+        return notValid;
     }
 
     public static DateTime dateTimeFromUnixSeconds(final int unixTime)

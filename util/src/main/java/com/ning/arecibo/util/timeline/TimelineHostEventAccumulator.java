@@ -58,6 +58,7 @@ public class TimelineHostEventAccumulator
 
     private final TimelineDAO dao;
     private final int hostId;
+    private final String eventCategory;
     private final boolean verboseStats;
     private DateTime startTime = null;
     private DateTime endTime = null;
@@ -72,10 +73,11 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId, final boolean verboseStats) throws IOException
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId, final String eventCategory, final boolean verboseStats) throws IOException
     {
         this.dao = dao;
         this.hostId = hostId;
+        this.eventCategory = eventCategory;
         this.verboseStats = verboseStats;
     }
 
@@ -158,7 +160,7 @@ public class TimelineHostEventAccumulator
      */
     public void extractAndSaveTimelineChunks()
     {
-        final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, startTime, endTime, times);
+        final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, eventCategory, startTime, endTime, times);
         final int timelineTimesId = dao.insertTimelineTimes(dbTimelineTimes);
         for (final TimelineChunkAccumulator accumulator : timelines.values()) {
             dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId, dbTimelineTimes.getStartTime()));
@@ -198,6 +200,11 @@ public class TimelineHostEventAccumulator
     public int getHostId()
     {
         return hostId;
+    }
+
+    public String getEventCategory()
+    {
+        return eventCategory;
     }
 
     public DateTime getStartTime()

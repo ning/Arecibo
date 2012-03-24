@@ -15,6 +15,7 @@ create table sample_kinds (
 create table timeline_times (
   timeline_times_id bigint not null auto_increment primary key
 , host_id integer not null
+, event_category varchar(256)
 , start_time integer not null
 , end_time integer not null
 , count integer not null

@@ -23,7 +23,6 @@ import org.codehaus.jackson.annotate.JsonUnwrapped;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonView;
 import org.joda.time.DateTime;
-import org.skife.jdbi.v2.Folder2;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
@@ -33,7 +32,6 @@ import java.io.IOException;
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * Instances of this class represent samples sent from one host and one
@@ -53,9 +51,12 @@ public class TimelineChunkAndTimes
             // Construct the TimelineChunk
             final int sampleTimelineId = rs.getInt("sample_timeline_id");
             final int hostId = rs.getInt("host_id");
+            final String eventCategory = rs.getString("event_category");
             final int sampleKindId = rs.getInt("sample_kind_id");
             final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
+            final int aggregationLevel = rs.getInt("aggregation_level");
+            final boolean notValid = rs.getInt("not_valid") != 0;
             final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
             byte[] samples = rs.getBytes("in_row_samples");
             if (rs.wasNull()) {
@@ -72,7 +73,7 @@ public class TimelineChunkAndTimes
                 final Blob blobTimes = rs.getBlob("blob_times");
                 times = blobTimes.getBytes(1, (int) blobTimes.length());
             }
-            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, startTime, endTime, times, count);
+            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, eventCategory, startTime, endTime, times, count, aggregationLevel, notValid);
 
             final String hostName = rs.getString("host_name");
             final String sampleKind = rs.getString("sample_kind");

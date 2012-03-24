@@ -175,7 +175,7 @@ public class TestHostDataResource
 
     private void sendSamples(final Integer hostId, final Integer sampleKindId, final DateTime startTime) throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, hostId, false);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, hostId, EVENT_TYPE, false);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = startTime.plusSeconds(i * 30);

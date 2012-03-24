@@ -38,6 +38,7 @@ public class TestTimelineChunkAndTimesToJson
 
     private static final long SAMPLE_TIMELINE_ID = 1242L;
     private static final int HOST_ID = 1422;
+    private static final String EVENT_CATEGORY = "JVM";
     private static final int SAMPLE_KIND_ID = 1224;
     private static final int TIMELINE_TIMES_ID = 4221;
     private static final int SAMPLE_COUNT = 2142;
@@ -67,7 +68,7 @@ public class TestTimelineChunkAndTimesToJson
         samples = out.toByteArray();
 
         chunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, START_TIME, samples, SAMPLE_COUNT);
-        times = new TimelineTimes(TIMELINE_INTERVAL_ID, HOST_ID, START_TIME, START_TIME, dateTimes);
+        times = new TimelineTimes(TIMELINE_INTERVAL_ID, HOST_ID, EVENT_CATEGORY, START_TIME, START_TIME, dateTimes);
         chunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, chunk, times);
     }
 
