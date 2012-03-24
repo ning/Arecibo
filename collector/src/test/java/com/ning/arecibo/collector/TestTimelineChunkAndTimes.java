@@ -68,9 +68,9 @@ public class TestTimelineChunkAndTimes
         Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(null, null), "1326749039,12345,1326749040,12346,1326749041,12347");
         Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime, null), "1326749039,12345,1326749040,12346,1326749041,12347");
         Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(null, startTime.plusSeconds(sampleCount)), "1326749039,12345,1326749040,12346,1326749041,12347");
-        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(1), startTime.plusSeconds(sampleCount)), "1326749040,12346,1326749041,12347");
-        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(2), startTime.plusSeconds(sampleCount)), "1326749041,12347");
-        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(3), startTime.plusSeconds(sampleCount)), "");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(1), startTime.plusSeconds(sampleCount)), "1326749039,12345,1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(2), startTime.plusSeconds(sampleCount)), "1326749040,12346,1326749041,12347");
+        Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(3), startTime.plusSeconds(sampleCount)), "1326749041,12347");
         Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(4), startTime.plusSeconds(sampleCount)), "");
         // Buggy start date
         Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(startTime.plusSeconds(10), startTime.plusSeconds(sampleCount)), "");

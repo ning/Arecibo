@@ -16,6 +16,9 @@
 
 package com.ning.arecibo.util.timeline;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -25,10 +28,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ning.arecibo.util.Logger;
-
 public class TimelineCoder {
-    public static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
+    public static final Logger log = LoggerFactory.getLogger(TimelineCoder.class);
     public static final int MAX_DELTA_TIME = 0x7F;
     public static final int MAX_REPEAT_COUNT = 0xFF;
 
@@ -42,8 +43,8 @@ public class TimelineCoder {
             writeTime(0, lastTime, dataStream);
             for (int i=1; i<times.length; i++) {
                 final int newTime = times[i];
-                if (newTime <= lastTime) {
-                    log.warn("In TimelineCoder.compressTimes(), newTime %d is <= lastTime %d; ignored", newTime, lastTime);
+                if (newTime < lastTime) {
+                    log.warn("In TimelineCoder.compressTimes(), newTime {} is < lastTime {}; ignored", newTime, lastTime);
                     continue;
                 }
                 final int delta = newTime - lastTime;
@@ -82,7 +83,7 @@ public class TimelineCoder {
             return outputStream.toByteArray();
         }
         catch (IOException e) {
-            log.error(e, "Exception compressing times array of length %d", times.length);
+            log.error("Exception compressing times array of length {}", times.length, e);
             return null;
         }
     }
@@ -131,10 +132,8 @@ public class TimelineCoder {
     }
 
     private static void writeRepeatedDelta(final int delta, final int repeatCount, final DataOutputStream dataStream) throws IOException {
-        if (repeatCount > 1) {
-            dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME.getOpcodeIndex());
-            dataStream.writeByte(repeatCount);
-        }
+        dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME.getOpcodeIndex());
+        dataStream.writeByte(repeatCount);
         dataStream.writeByte(delta);
     }
 

@@ -55,20 +55,20 @@ public class TimelineChunkAccumulator
         reset();
     }
 
-    private TimelineChunkAccumulator(final int hostId, final int sampleKindId, final ByteArrayOutputStream stream, final SampleBase lastSample, final int sampleCount) throws IOException
+    private TimelineChunkAccumulator(final int hostId, final int sampleKindId, final byte[] bytes, final SampleBase lastSample, final int sampleCount) throws IOException
     {
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
-        this.byteStream = stream;
-        byteStream.write(byteStream.toByteArray());
-        outputStream = new DataOutputStream(byteStream);
+
+        reset();
+        this.byteStream.write(bytes);
         this.lastSample = lastSample;
         this.sampleCount = sampleCount;
     }
 
     public TimelineChunkAccumulator deepCopy() throws IOException
     {
-        return new TimelineChunkAccumulator(hostId, sampleKindId, byteStream, lastSample, sampleCount);
+        return new TimelineChunkAccumulator(hostId, sampleKindId, byteStream.toByteArray(), lastSample, sampleCount);
     }
 
     public synchronized void addPlaceholder(final byte repeatCount)

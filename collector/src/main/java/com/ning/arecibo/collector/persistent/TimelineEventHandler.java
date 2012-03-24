@@ -202,29 +202,29 @@ public class TimelineEventHandler implements EventHandler
         // Now, filter each accumulator for this host
         final List<TimelineChunkAndTimes> samplesByHostName = new ArrayList<TimelineChunkAndTimes>();
         for (final TimelineHostEventAccumulator accumulator : hostAccumulators.values()) {
-            // Yup, there is. Check now if the filters apply
             final List<DateTime> accumulatorTimes = accumulator.getTimes();
             final DateTime accumulatorStartTime = accumulator.getStartTime();
             final DateTime accumulatorEndTime = accumulator.getEndTime();
 
+            // Check if the time filters apply
             if ((filterStartTime != null && accumulatorEndTime.isBefore(filterStartTime)) || (filterStartTime != null && accumulatorStartTime.isAfter(filterEndTime))) {
                 // Ignore this accumulator
-                return ImmutableList.of();
+                continue;
             }
 
-            // We have a timeline match, return the samples matching the sample kinds
+            // This accumulator is in the right time range, now return only the sample kinds specified
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
-                // Extract the timeline for this chunk by copying it and reading encoded bytes
-                final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime);
-                // NOTE! Further filtering needs to be done in the processing function
-                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
-
-                final String sampleKind = timelineDAO.getSampleKind(timelineChunk.getSampleKindId());
+                final String sampleKind = timelineDAO.getSampleKind(chunkAccumulator.getSampleKindId());
                 if (!filterSampleKinds.contains(sampleKind)) {
                     // We don't care about this sample kind
                     continue;
                 }
+
+                // Extract the timeline for this chunk by copying it and reading encoded bytes
+                final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
+                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime);
+                // NOTE! Further time filtering needs to be done in the processing function
+                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 
                 samplesByHostName.add(new TimelineChunkAndTimes(filterHostName, sampleKind, timelineChunk, timelineTimes));
             }

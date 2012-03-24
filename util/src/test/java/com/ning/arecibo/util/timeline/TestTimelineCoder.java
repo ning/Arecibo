@@ -16,21 +16,36 @@
 
 package com.ning.arecibo.util.timeline;
 
-import org.apache.commons.codec.binary.Hex;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class TestTimelineCoder {
-    private static int firstTime = 1000000;
-    private static int[] unencodedTimes = new int[] { firstTime, firstTime + 30, firstTime + 60, firstTime + 90, firstTime + 1000, firstTime + 2000, firstTime + 2030, firstTime + 2060 };
+public class TestTimelineCoder
+{
+    @Test(groups = "fast")
+    public void testBasicEncodeDecode() throws Exception
+    {
+        final int firstTime = 1000000;
+        final int[] unencodedTimes = new int[]{firstTime, firstTime + 30, firstTime + 60, firstTime + 90, firstTime + 1000, firstTime + 2000, firstTime + 2030, firstTime + 2060};
 
-    @Test(groups="fast")
-    public void testBasicEncodeDecode() throws Exception {
         final byte[] compressedTimes = TimelineCoder.compressTimes(unencodedTimes);
-        System.out.printf("Compressed times: %s\n", new String(Hex.encodeHex(compressedTimes)));
+        //System.out.printf("Compressed times: %s\n", new String(Hex.encodeHex(compressedTimes)));
         final int[] decompressedTimes = TimelineCoder.decompressTimes(compressedTimes);
         Assert.assertEquals(decompressedTimes.length, unencodedTimes.length);
-        for (int i=0; i<unencodedTimes.length; i++) {
+        for (int i = 0; i < unencodedTimes.length; i++) {
+            Assert.assertEquals(decompressedTimes[i], unencodedTimes[i]);
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testRepeats() throws Exception
+    {
+        final int firstTime = 1293846;
+        final int[] unencodedTimes = new int[]{firstTime, firstTime + 5, firstTime + 5, firstTime + 5, firstTime + 1000, firstTime + 1000, firstTime + 2030, firstTime + 2060};
+
+        final byte[] compressedTimes = TimelineCoder.compressTimes(unencodedTimes);
+        final int[] decompressedTimes = TimelineCoder.decompressTimes(compressedTimes);
+        Assert.assertEquals(decompressedTimes.length, unencodedTimes.length);
+        for (int i = 0; i < unencodedTimes.length; i++) {
             Assert.assertEquals(decompressedTimes[i], unencodedTimes[i]);
         }
     }
