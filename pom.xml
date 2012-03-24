@@ -127,6 +127,11 @@
                 <artifactId>easymockclassextension</artifactId>
                 <version>2.4</version>
             </dependency>
+            <dependency>
+                <groupId>org.jdbi</groupId>
+                <artifactId>jdbi</artifactId>
+                <version>2.32</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <prerequisites>
