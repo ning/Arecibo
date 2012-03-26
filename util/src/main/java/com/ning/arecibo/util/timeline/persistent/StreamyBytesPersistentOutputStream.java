@@ -17,6 +17,7 @@
 package com.ning.arecibo.util.timeline.persistent;
 
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Files;
 import org.codehaus.jackson.smile.SmileConstants;
 import org.slf4j.Logger;
@@ -95,7 +96,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
                 return;
             }
 
-            final String pathname = basePath + "arecibo." + prefix + "." + System.nanoTime() + ".bin";
+            final String pathname = getFileName();
             createdFiles.add(pathname);
             log.info("Flushing in-memory buffer to disk: {}", pathname);
 
@@ -111,6 +112,12 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
                 reset();
             }
         }
+    }
+
+    @VisibleForTesting
+    String getFileName()
+    {
+        return basePath + "arecibo." + prefix + "." + System.nanoTime() + ".bin";
     }
 
     private void flushToFile(final File out) throws IOException

@@ -16,7 +16,9 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import org.apache.commons.io.FileUtils;
 import org.codehaus.jackson.JsonParser;
@@ -31,6 +33,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class Replayer
@@ -43,6 +46,21 @@ public class Replayer
         smileFactory.configure(SmileParser.Feature.REQUIRE_HEADER, false);
         smileFactory.setCodec(smileMapper);
     }
+
+    @VisibleForTesting
+    static final Ordering<File> FILE_ORDERING = new Ordering<File>()
+    {
+        @Override
+        public int compare(@Nullable final File left, @Nullable final File right)
+        {
+            if (left == null || right == null) {
+                throw new NullPointerException();
+            }
+
+            // Order by the nano time
+            return left.getAbsolutePath().compareTo(right.getAbsolutePath());
+        }
+    };
 
     private final String path;
 
@@ -72,7 +90,9 @@ public class Replayer
 
     public void readAll(final Function<HostSamplesForTimestamp, Void> fn)
     {
-        for (final File file : FileUtils.listFiles(new File(path), new String[]{"bin"}, false)) {
+        final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
+
+        for (final File file : FILE_ORDERING.sortedCopy(files)) {
             try {
                 read(file, fn);
 
@@ -86,7 +106,8 @@ public class Replayer
         }
     }
 
-    private void read(final File file, final Function<HostSamplesForTimestamp, Void> fn) throws IOException
+    @VisibleForTesting
+    void read(final File file, final Function<HostSamplesForTimestamp, Void> fn) throws IOException
     {
         final JsonParser smileParser = smileFactory.createJsonParser(file);
         if (smileParser.nextToken() != JsonToken.START_ARRAY) {
