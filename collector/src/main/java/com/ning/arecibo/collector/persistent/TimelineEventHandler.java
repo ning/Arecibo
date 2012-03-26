@@ -303,6 +303,8 @@ public class TimelineEventHandler implements EventHandler
         // There is a window of doom here but it is fine if we end up storing dups at replay time
         // TODO: make replayer discard dups
         backingBuffer.discard();
+
+        log.info("Timelines committed");
     }
 
     @MonitorableManaged(description = "Returns the number of times a host accumulator lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

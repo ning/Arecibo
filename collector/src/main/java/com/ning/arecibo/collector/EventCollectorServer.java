@@ -33,7 +33,9 @@ import com.ning.arecibo.util.EmbeddedJettyJerseyModule;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.lifecycle.Lifecycle;
 import com.ning.arecibo.util.lifecycle.LifecycleEvent;
+import com.ning.arecibo.util.lifecycle.LifecycleListener;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
+import com.ning.arecibo.util.lifecycle.StagedLifecycle;
 import com.ning.arecibo.util.rmi.RMIModule;
 import com.ning.arecibo.util.rmi.RMIRegistryConfig;
 import com.ning.arecibo.util.service.ServiceDescriptor;
@@ -51,7 +53,6 @@ public class EventCollectorServer
 {
     private static final Logger log = Logger.getLogger(EventCollectorServer.class);
     private final Server server;
-    private final Lifecycle lifecycle;
     private final ServiceLocator serviceLocator;
     private final CollectorConfig collectorConfig;
     private final EmbeddedJettyConfig jettyConfig;
@@ -66,7 +67,6 @@ public class EventCollectorServer
                                 final UDPEventReceiverConfig udpConfig,
                                 final RMIRegistryConfig rmiConfig,
                                 final Server server,
-                                final Lifecycle lifecycle,
                                 final ServiceLocator serviceLocator)
     {
         this.collectorConfig = collectorConfig;
@@ -74,68 +74,41 @@ public class EventCollectorServer
         this.udpConfig = udpConfig;
         this.rmiConfig = rmiConfig;
         this.server = server;
-        this.lifecycle = lifecycle;
         this.serviceLocator = serviceLocator;
     }
 
-    public void run() throws Exception
+    public void start() throws Exception
+    {
+        server.start();
+        isRunning.set(true);
+    }
+
+    public void announce()
     {
         serviceLocator.startReadOnly();
 
         // Advertise event endpoints
         final Map<String, String> map = new HashMap<String, String>();
+
         map.put(EventService.HOST, jettyConfig.getHost());
         map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getPort()));
         map.put(EventService.UDP_PORT, String.valueOf(udpConfig.getPort()));
         map.put(EventService.RMI_PORT, String.valueOf(rmiConfig.getPort()));
+
         final ServiceDescriptor self = new ServiceDescriptor(collectorConfig.getCollectorServiceName(), map);
         serviceLocator.advertiseLocalService(self);
+    }
 
-        final String name = getClass().getSimpleName();
-        final long startTime = System.currentTimeMillis();
-        log.info("Starting up %s on port %d", name, jettyConfig.getPort());
-
-        lifecycle.fire(LifecycleEvent.START);
-
-        final long secondsToStart = (System.currentTimeMillis() - startTime) / 1000;
-        log.info("STARTUP COMPLETE: server started in %d:%02d", secondsToStart / 60, secondsToStart % 60);
-
-        final Thread t = Thread.currentThread();
-        Runtime.getRuntime().addShutdownHook(new Thread()
-        {
-            public void run()
-            {
-                t.interrupt();
-            }
-        });
-
-        server.start();
-        isRunning.set(true);
-
-        try {
-            Thread.currentThread().join();
-        }
-        catch (InterruptedException e) {
-            // continue
-        }
-
-        stop();
+    public void unannounce()
+    {
+        serviceLocator.stop();
     }
 
     public void stop()
     {
         try {
-            log.info("Shutting down %s", getClass().getSimpleName());
-            serviceLocator.stop();
-
-            log.info("Stopping lifecycle");
-            lifecycle.fire(LifecycleEvent.STOP);
-
-            log.info("Stopping jetty server");
             server.stop();
             isRunning.set(false);
-
-            log.info("Shutdown completed");
         }
         catch (Exception e) {
             log.warn(e);
@@ -150,7 +123,7 @@ public class EventCollectorServer
     public static void main(final String[] args) throws Exception
     {
         final Injector injector = Guice.createInjector(Stage.PRODUCTION,
-            new LifecycleModule(),
+            new LifecycleModule(new StagedLifecycle()),
             new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.collector.resources", "com.ning.arecibo.util.jaxrs")),
             new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),
@@ -166,7 +139,56 @@ public class EventCollectorServer
             new RMIModule(),
             new CollectorModule());
 
-        final EventCollectorServer server = injector.getInstance(EventCollectorServer.class);
-        server.run();
+        final Lifecycle lifecycle = injector.getInstance(Lifecycle.class);
+        final EventCollectorServer starter = injector.getInstance(EventCollectorServer.class);
+
+        final LifecycleListener listener = new LifecycleListener()
+        {
+            @Override
+            public void onEvent(final LifecycleEvent event)
+            {
+                try {
+                    if (LifecycleEvent.START.equals(event)) {
+                        starter.start();
+                    }
+                    else if (LifecycleEvent.ANNOUNCE.equals(event)) {
+                        starter.announce();
+                    }
+                    else if (LifecycleEvent.UNANNOUNCE.equals(event)) {
+                        starter.unannounce();
+                    }
+                    else if (LifecycleEvent.STOP.equals(event)) {
+                        starter.stop();
+                    }
+                }
+                catch (Exception ex) {
+                    log.warn(ex, "Error while performing lifecycle action");
+                    throw new RuntimeException(ex);
+                }
+            }
+        };
+
+        lifecycle.addListener(LifecycleEvent.START, listener);
+        lifecycle.addListener(LifecycleEvent.STOP, listener);
+        lifecycle.addListener(LifecycleEvent.ANNOUNCE, listener);
+
+        lifecycle.fireUpTo(LifecycleEvent.ANNOUNCE, true);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try {
+                    lifecycle.fireUpTo(LifecycleEvent.STOP, true);
+                }
+                catch (Exception ex) {
+                    log.warn(ex, "Error while stopping the service");
+                    throw new RuntimeException(ex);
+                }
+            }
+        }));
+
+        Thread.currentThread().join();
     }
 }

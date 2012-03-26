@@ -95,7 +95,7 @@ public class TestEventCollectorServer
             public void run()
             {
                 try {
-                    server.run();
+                    server.start();
                 }
                 catch (Exception e) {
                     Assert.fail();
