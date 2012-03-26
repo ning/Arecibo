@@ -59,4 +59,6 @@ public interface TimelineDAO
                                              DateTime startTime,
                                              DateTime endTime,
                                              TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    void test() throws UnableToObtainConnectionException, CallbackFailedException;
 }

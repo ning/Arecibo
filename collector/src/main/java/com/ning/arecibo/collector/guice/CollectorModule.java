@@ -22,6 +22,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.Multibinder;
+import com.ning.arecibo.collector.healthchecks.DAOHealthCheck;
+import com.ning.arecibo.collector.healthchecks.TimelineEventHandlerHealthCheck;
 import com.ning.arecibo.collector.persistent.TimelineAggregator;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.EventHandler;
@@ -38,6 +41,9 @@ import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.jersey.metrics.TimedResourceModule;
+import com.yammer.metrics.core.HealthCheck;
+import com.yammer.metrics.guice.InstrumentationModule;
+import com.yammer.metrics.reporting.guice.MetricsServletModule;
 import org.skife.config.ConfigurationObjectFactory;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
@@ -124,6 +130,12 @@ public class CollectorModule extends AbstractModule
 
     protected void configureStats()
     {
+        install(new MetricsServletModule("/1.0/healthcheck", "/1.0/metrics", "/1.0/ping", "/1.0/threads"));
+        final Multibinder<HealthCheck> healthChecksBinder = Multibinder.newSetBinder(binder(), HealthCheck.class);
+        healthChecksBinder.addBinding().to(TimelineEventHandlerHealthCheck.class).asEagerSingleton();
+        healthChecksBinder.addBinding().to(DAOHealthCheck.class).asEagerSingleton();
+
+        install(new InstrumentationModule());
         install(new TimedResourceModule());
     }
 

@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.collector;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
@@ -69,7 +70,10 @@ public class TestModulesFactory implements IModuleFactory
                 bind(String.class).annotatedWith(Names.named(TEST_JETTY_HOST)).toInstance("127.0.0.1");
                 bind(Integer.class).annotatedWith(Names.named(TEST_JETTY_PORT)).toInstance(port);
                 install(new LifecycleModule());
-                install(new EmbeddedJettyJerseyModule());
+                install(new EmbeddedJettyJerseyModule(ImmutableMap.<String, String>of(
+                    "/xn/rest/.*", "com.ning.arecibo.event.receiver",
+                    "/rest/.*", "com.ning.arecibo.collector.resources,com.ning.arecibo.util.jaxrs"
+                )));
                 install(new UDPEventReceiverModule());
                 install(new RMIModule());
                 install(new CollectorTestModule());

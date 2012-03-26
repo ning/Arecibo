@@ -183,6 +183,11 @@ public final class MockTimelineDAO implements TimelineDAO
         }
     }
 
+    @Override
+    public void test() throws UnableToObtainConnectionException, CallbackFailedException
+    {
+    }
+
     public BiMap<Integer, TimelineChunk> getTimelineChunks()
     {
         return timelineChunks;

@@ -75,4 +75,7 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 
     @SqlUpdate
     void insertTimelineChunk(@TimelineChunkBinder final TimelineChunk timelineChunk);
+
+    @SqlUpdate
+    void test();
 }

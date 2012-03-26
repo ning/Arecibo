@@ -16,7 +16,7 @@
 
 package com.ning.arecibo.collector;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -124,7 +124,10 @@ public class EventCollectorServer
     {
         final Injector injector = Guice.createInjector(Stage.PRODUCTION,
             new LifecycleModule(new StagedLifecycle()),
-            new EmbeddedJettyJerseyModule(ImmutableList.<String>of("com.ning.arecibo.collector.resources", "com.ning.arecibo.util.jaxrs")),
+            new EmbeddedJettyJerseyModule(ImmutableMap.<String, String>of(
+                "/xn/rest/.*", "com.ning.arecibo.event.receiver",
+                "/rest/.*", "com.ning.arecibo.collector.resources,com.ning.arecibo.util.jaxrs"
+            )),
             new CollectorRESTEventReceiverModule(),
             new UDPEventReceiverModule(),
             new MBeanModule(),

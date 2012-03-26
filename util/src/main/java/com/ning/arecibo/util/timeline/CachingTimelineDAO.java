@@ -283,6 +283,12 @@ public class CachingTimelineDAO implements TimelineDAO
         delegate.getSamplesByHostNamesAndSampleKinds(hostNames, sampleKinds, startTime, endTime, chunkConsumer);
     }
 
+    @Override
+    public void test() throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        delegate.test();
+    }
+
     @MonitorableManaged(description = "Returns the number of times cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsCacheHitCount()
     {

@@ -191,6 +191,12 @@ public class DefaultTimelineDAO implements TimelineDAO
 
     }
 
+    @Override
+    public void test() throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        delegate.test();
+    }
+
     private String stringifyList(final List<String> strings)
     {
         final StringBuilder builder = new StringBuilder();

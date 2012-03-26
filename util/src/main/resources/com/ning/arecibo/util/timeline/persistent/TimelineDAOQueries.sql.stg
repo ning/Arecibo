@@ -115,3 +115,7 @@ getSamplesByHostNamesAndSampleKinds(hostNameStrings, sampleKindStrings) ::=<<
   order by h.host_name, k.sample_kind, t.start_time asc
   ;
 >>
+
+test() ::=<<
+  select 1;
+>>

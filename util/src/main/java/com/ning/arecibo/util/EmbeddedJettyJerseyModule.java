@@ -16,9 +16,7 @@
 
 package com.ning.arecibo.util;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.servlet.ServletModule;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
@@ -28,22 +26,22 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.skife.config.ConfigurationObjectFactory;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
 
 public class EmbeddedJettyJerseyModule extends ServletModule
 {
     private static final String STATIC_URL_PATTERN = "/static/*";
 
-    private final List<String> resources = Lists.newArrayList("com.ning.arecibo.event.receiver");
+    private final Map<String, String> resources = new HashMap<String, String>();
 
     public EmbeddedJettyJerseyModule()
     {
-        this(ImmutableList.<String>of());
+        this(ImmutableMap.<String, String>of());
     }
 
-    public EmbeddedJettyJerseyModule(final List<String> resources)
+    public EmbeddedJettyJerseyModule(final Map<String, String> resources)
     {
-        this.resources.addAll(resources);
+        this.resources.putAll(resources);
     }
 
     @Override
@@ -58,12 +56,13 @@ public class EmbeddedJettyJerseyModule extends ServletModule
         bind(DefaultServlet.class).asEagerSingleton();
         serve(STATIC_URL_PATTERN).with(DefaultServlet.class);
 
-        final String jerseyResources = Joiner.on(",").join(resources);
-        serve("*").with(GuiceContainer.class, new HashMap<String, String>()
-        {
+        for (final String urlPattern : resources.keySet()) {
+            serveRegex(urlPattern).with(GuiceContainer.class, new HashMap<String, String>()
             {
-                put(PackagesResourceConfig.PROPERTY_PACKAGES, jerseyResources);
-            }
-        });
+                {
+                    put(PackagesResourceConfig.PROPERTY_PACKAGES, resources.get(urlPattern));
+                }
+            });
+        }
     }
 }
