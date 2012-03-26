@@ -176,24 +176,19 @@ public class TimelineEventHandler implements EventHandler
         accumulator.addHostSamples(hostSamples);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final Integer hostId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        final ImmutableList<String> sampleKinds = ImmutableList.copyOf(timelineDAO.getSampleKindsByHostName(filterHostName));
-        return getInMemoryTimelineChunkAndTimes(filterHostName, sampleKinds, filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunkAndTimes(hostId, ImmutableList.copyOf(timelineDAO.getSampleKindIdsByHostId(hostId)), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, final String filterSampleKind, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final Integer hostId, final Integer sampleKindId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunkAndTimes(filterHostName, ImmutableList.of(filterSampleKind), filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunkAndTimes(hostId, ImmutableList.<Integer>of(sampleKindId), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final String filterHostName, final List<String> filterSampleKinds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
         // Check first if there is an in-memory accumulator for this host
-        final Integer hostId = timelineDAO.getHostId(filterHostName);
-        if (hostId == null) {
-            return ImmutableList.of();
-        }
         final Map<String, TimelineHostEventAccumulator> hostAccumulators = accumulators.getIfPresent(hostId);
         if (hostAccumulators == null) {
             return ImmutableList.of();
@@ -220,13 +215,12 @@ public class TimelineEventHandler implements EventHandler
                 // NOTE! Further time filtering needs to be done in the processing function
                 final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulator.getEventCategory(), accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 
-                final String sampleKind = timelineDAO.getSampleKind(timelineChunk.getSampleKindId());
-                if (!filterSampleKinds.contains(sampleKind)) {
+                if (!sampleKindIds.contains(timelineChunk.getSampleKindId())) {
                     // We don't care about this sample kind
                     continue;
                 }
 
-                samplesByHostName.add(new TimelineChunkAndTimes(filterHostName, sampleKind, timelineChunk, timelineTimes));
+                samplesByHostName.add(new TimelineChunkAndTimes(hostId, timelineChunk.getSampleKindId(), timelineChunk, timelineTimes));
             }
         }
 

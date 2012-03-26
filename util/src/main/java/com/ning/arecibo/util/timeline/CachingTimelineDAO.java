@@ -43,7 +43,7 @@ public class CachingTimelineDAO implements TimelineDAO
 
     private final LoadingCache<Integer, String> hostsCache;
     private final LoadingCache<String, Integer> hostIdsCache;
-    private final LoadingCache<String, Set<String>> hostsSampleKindsCache;
+    private final LoadingCache<Integer, Set<Integer>> hostIdsSampleKindIdsCache;
     private final LoadingCache<Integer, String> sampleKindsCache;
     private final LoadingCache<String, Integer> sampleKindIdsCache;
 
@@ -101,26 +101,26 @@ public class CachingTimelineDAO implements TimelineDAO
                 }
             });
 
-        hostsSampleKindsCache = CacheBuilder.newBuilder()
+        hostIdsSampleKindIdsCache = CacheBuilder.newBuilder()
             .maximumSize(maxNbHosts)
-            .removalListener(new RemovalListener<String, Set<String>>()
+            .removalListener(new RemovalListener<Integer, Set<Integer>>()
             {
                 @Override
-                public void onRemoval(final RemovalNotification<String, Set<String>> removedObjectNotification)
+                public void onRemoval(final RemovalNotification<Integer, Set<Integer>> removedObjectNotification)
                 {
-                    final Set<String> sampleKinds = removedObjectNotification.getValue();
-                    if (sampleKinds != null) {
-                        log.info("{} was evicted from the hostsSampleKindsCache cache", sampleKinds);
+                    final Set<Integer> sampleKindIds = removedObjectNotification.getValue();
+                    if (sampleKindIds != null) {
+                        log.info("{} was evicted from the hostIdsSampleKindIdsCache cache", sampleKindIds);
                     }
                 }
             })
-            .build(new CacheLoader<String, Set<String>>()
+            .build(new CacheLoader<Integer, Set<Integer>>()
             {
                 @Override
-                public Set<String> load(final String host) throws Exception
+                public Set<Integer> load(final Integer hostId) throws Exception
                 {
-                    log.info("Loading hostsSampleKindsCache cache for key {}", host);
-                    return new HashSet<String>(ImmutableList.<String>copyOf(delegate.getSampleKindsByHostName(host)));
+                    log.info("Loading hostIdsSampleKindIdsCache cache for key {}", hostId);
+                    return new HashSet<Integer>(ImmutableList.<Integer>copyOf(delegate.getSampleKindIdsByHostId(hostId)));
                 }
             });
 
@@ -248,16 +248,16 @@ public class CachingTimelineDAO implements TimelineDAO
             sampleKindIdsCache.put(sampleKind, sampleKindId);
         }
 
-        hostsSampleKindsCache.getUnchecked(getHost(hostId)).add(sampleKind);
+        hostIdsSampleKindIdsCache.getUnchecked(hostId).add(sampleKindId);
 
         return sampleKindId;
     }
 
     @Override
-    public Iterable<String> getSampleKindsByHostName(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public Iterable<Integer> getSampleKindIdsByHostId(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
         try {
-            return ImmutableList.copyOf(hostsSampleKindsCache.get(host));
+            return ImmutableList.copyOf(hostIdsSampleKindIdsCache.get(hostId));
         }
         catch (ExecutionException e) {
             throw new CallbackFailedException(e);
@@ -277,10 +277,10 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames, @Nullable final List<String> sampleKinds,
+    public void getSamplesByHostIdsAndSampleKindIds(final List<Integer> hostIds, @Nullable final List<Integer> sampleKindIds,
                                                     final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        delegate.getSamplesByHostNamesAndSampleKinds(hostNames, sampleKinds, startTime, endTime, chunkConsumer);
+        delegate.getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds, startTime, endTime, chunkConsumer);
     }
 
     @Override
@@ -412,61 +412,61 @@ public class CachingTimelineDAO implements TimelineDAO
     @MonitorableManaged(description = "Returns the number of times Cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsSampleKindsCacheHitCount()
     {
-        return hostsSampleKindsCache.stats().hitCount();
+        return hostIdsSampleKindIdsCache.stats().hitCount();
     }
 
     @MonitorableManaged(description = "Returns the ratio of cache requests which were hits", monitored = true, monitoringType = {MonitoringType.VALUE})
     public double getHostsSampleKindsCacheHitRate()
     {
-        return hostsSampleKindsCache.stats().hitRate();
+        return hostIdsSampleKindIdsCache.stats().hitRate();
     }
 
     @MonitorableManaged(description = "Returns the number of times cache lookup methods have returned an uncached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsSampleKindsCacheMissCount()
     {
-        return hostsSampleKindsCache.stats().missCount();
+        return hostIdsSampleKindIdsCache.stats().missCount();
     }
 
     @MonitorableManaged(description = "Returns the ratio of cache requests which were misses", monitored = true, monitoringType = {MonitoringType.VALUE})
     public double getHostsSampleKindsCacheMissRate()
     {
-        return hostsSampleKindsCache.stats().missRate();
+        return hostIdsSampleKindIdsCache.stats().missRate();
     }
 
     @MonitorableManaged(description = "Returns the number of times cache lookup methods have successfully loaded a new value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsSampleKindsCacheLoadSuccessCount()
     {
-        return hostsSampleKindsCache.stats().loadSuccessCount();
+        return hostIdsSampleKindIdsCache.stats().loadSuccessCount();
     }
 
     @MonitorableManaged(description = "Returns the number of times cache lookup methods threw an exception while loading a new value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsSampleKindsCacheLoadExceptionCount()
     {
-        return hostsSampleKindsCache.stats().loadExceptionCount();
+        return hostIdsSampleKindIdsCache.stats().loadExceptionCount();
     }
 
     @MonitorableManaged(description = "Returns the ratio of cache loading attempts which threw exceptions", monitored = true, monitoringType = {MonitoringType.VALUE})
     public double getHostsSampleKindsCacheLoadExceptionRate()
     {
-        return hostsSampleKindsCache.stats().loadExceptionRate();
+        return hostIdsSampleKindIdsCache.stats().loadExceptionRate();
     }
 
     @MonitorableManaged(description = "Returns the total number of nanoseconds the cache has spent loading new values", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsSampleKindsCacheTotalLoadTime()
     {
-        return hostsSampleKindsCache.stats().totalLoadTime();
+        return hostIdsSampleKindIdsCache.stats().totalLoadTime();
     }
 
     @MonitorableManaged(description = "Returns the average time spent loading new values", monitored = true, monitoringType = {MonitoringType.VALUE})
     public double getHostsSampleKindsCacheAverageLoadPenalty()
     {
-        return hostsSampleKindsCache.stats().averageLoadPenalty();
+        return hostIdsSampleKindIdsCache.stats().averageLoadPenalty();
     }
 
     @MonitorableManaged(description = "Returns the number of times an entry has been evicted", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
     public long getHostsSampleKindsCacheEvictionCount()
     {
-        return hostsSampleKindsCache.stats().evictionCount();
+        return hostIdsSampleKindIdsCache.stats().evictionCount();
     }
 
     @MonitorableManaged(description = "Returns the number of times Cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

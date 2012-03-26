@@ -46,7 +46,7 @@ public class TimelineChunkAndTimesDecoded {
             generator.writeStartObject();
 
             generator.writeFieldName("sampleKind");
-            generator.writeString(chunkAndTimes.getSampleKind());
+            generator.writeNumber(chunkAndTimes.getSampleKindId());
 
             generator.writeFieldName("decodedSamples");
             generator.writeString(getDecodedSamples());

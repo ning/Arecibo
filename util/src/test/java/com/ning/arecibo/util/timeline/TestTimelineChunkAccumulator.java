@@ -73,7 +73,7 @@ public class TestTimelineChunkAccumulator {
                 sampleNumber += sampleCount;
             }
         });
-        final TimelineChunkAndTimes chunkAndTimes = new TimelineChunkAndTimes("zxxxxxx.ningops.com", "Yowza-Sample", chunk, times);
+        final TimelineChunkAndTimes chunkAndTimes = new TimelineChunkAndTimes(Integer.MIN_VALUE, Integer.MAX_VALUE, chunk, times);
         final TimelineChunkAndTimesDecoded chunkDecoded = new TimelineChunkAndTimesDecoded(chunkAndTimes);
         System.out.printf("%s\n", chunkDecoded.toString());
     }

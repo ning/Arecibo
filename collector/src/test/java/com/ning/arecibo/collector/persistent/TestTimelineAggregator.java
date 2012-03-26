@@ -104,7 +104,7 @@ public class TestTimelineAggregator
         createAOneHourTimelineTimes(125);
         createAOneHourTimelineTimes(60);
 
-        // Check the getSamplesByHostNamesAndSampleKinds DAO method works as expected
+        // Check the getSamplesByHostIdsAndSampleKindIds DAO method works as expected
         // You might want to draw timelines on a paper and remember boundaries are inclusive to understand these numbers
         checkSamplesForATimeline(185, 126, 0);
         checkSamplesForATimeline(185, 125, 2);
@@ -136,14 +136,14 @@ public class TestTimelineAggregator
     {
         final AtomicLong timelineChunkSeen = new AtomicLong(0);
 
-        timelineDAO.getSamplesByHostNamesAndSampleKinds(ImmutableList.<String>of(HOST_NAME), ImmutableList.<String>of(MIN_HEAPUSED_KIND, MAX_HEAPUSED_KIND),
+        timelineDAO.getSamplesByHostIdsAndSampleKindIds(ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(minHeapUsedKindId, maxHeapUsedKindId),
             START_TIME.minusMinutes(startTimeMinutesAgo), START_TIME.minusMinutes(endTimeMinutesAgo), new TimelineChunkAndTimesConsumer()
         {
             @Override
             public void processTimelineChunkAndTimes(final TimelineChunkAndTimes chunkAndTimes)
             {
-                Assert.assertEquals(chunkAndTimes.getHostName(), HOST_NAME);
-                Assert.assertTrue(chunkAndTimes.getSampleKind().equals(MIN_HEAPUSED_KIND) || chunkAndTimes.getSampleKind().equals(MAX_HEAPUSED_KIND));
+                Assert.assertEquals(chunkAndTimes.getHostId(), hostId);
+                Assert.assertTrue(chunkAndTimes.getSampleKindId().equals(minHeapUsedKindId) || chunkAndTimes.getSampleKindId().equals(maxHeapUsedKindId));
                 timelineChunkSeen.incrementAndGet();
             }
         });

@@ -50,13 +50,10 @@ addSampleKind() ::=<<
   values (:sampleKind);
 >>
 
-getSampleKindsByHostName() ::=<<
-  select
-    k.sample_kind
+getSampleKindIdsByHostId() ::=<<
+  select distinct sample_kind_id
   from timeline_chunks c
-  join hosts h using (host_id)
-  join sample_kinds k using (sample_kind_id)
-  where h.host_name = :hostName
+  where host_id = :hostId
   ;
 >>
 
@@ -82,12 +79,10 @@ insertTimelineChunk() ::=<<
   values (:hostId, :sampleKindId, :sampleCount, :timelineTimesId, :startTime, :inRowSamples, :blobSamples);
 >>
 
-getSamplesByHostNamesAndSampleKinds(hostNameStrings, sampleKindStrings) ::=<<
+getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::=<<
   select
-    h.host_id
-  , h.host_name
-  , k.sample_kind_id
-  , k.sample_kind
+    c.host_id
+  , c.sample_kind_id
   , c.sample_timeline_id
   , c.timeline_times_id
   , c.sample_count
@@ -102,17 +97,15 @@ getSamplesByHostNamesAndSampleKinds(hostNameStrings, sampleKindStrings) ::=<<
   , t.in_row_times
   , t.blob_times
   from timeline_chunks c
-  join hosts h using (host_id)
-  join sample_kinds k using (sample_kind_id)
   join timeline_times t using (timeline_times_id)
   where t.end_time >= :startTime
   and t.start_time \<= :endTime
-  and h.host_name in (<hostNameStrings>)
-  <if(sampleKindStrings)>
-  and k.sample_kind in (<sampleKindStrings>)
+  and c.host_id in (<hostIds>)
+  <if(sampleKindIds)>
+  and sample_kind_id in (<sampleKindIds>)
   <endif>
   and t.not_valid = 0
-  order by h.host_name, k.sample_kind, t.start_time asc
+  order by c.host_id, sample_kind_id, t.start_time asc
   ;
 >>
 

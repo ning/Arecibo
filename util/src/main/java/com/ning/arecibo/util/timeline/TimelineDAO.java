@@ -46,7 +46,7 @@ public interface TimelineDAO
 
     Integer getOrAddSampleKind(Integer hostId, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    Iterable<String> getSampleKindsByHostName(String host) throws UnableToObtainConnectionException, CallbackFailedException;
+    Iterable<Integer> getSampleKindIdsByHostId(Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException;
 
     // Timelines tables
 
@@ -54,8 +54,8 @@ public interface TimelineDAO
 
     Integer insertTimelineChunk(TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    void getSamplesByHostNamesAndSampleKinds(List<String> hostNames,
-                                             @Nullable List<String> sampleKinds,
+    void getSamplesByHostIdsAndSampleKindIds(List<Integer> hostIds,
+                                             @Nullable List<Integer> sampleKindIds,
                                              DateTime startTime,
                                              DateTime endTime,
                                              TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException;

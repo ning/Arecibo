@@ -128,7 +128,13 @@ public class TestEventCollectorServer
 
         final UUID hostUUID = UUID.randomUUID();
         final String hostName = hostUUID.toString();
-        timelineDAO.getOrAddHost(hostName);
+        final Integer hostId = timelineDAO.getOrAddHost(hostName);
+        Assert.assertNotNull(hostId);
+
+        final Integer minHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, MIN_HEAPUSED_KIND);
+        Assert.assertNotNull(minHeapUserKindId);
+        final Integer maxHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, MAX_HEAPUSED_KIND);
+        Assert.assertNotNull(maxHeapUserKindId);
 
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
         DateTime endTime = startTime;
@@ -159,24 +165,24 @@ public class TestEventCollectorServer
         Thread.sleep(100);
 
         final AccumulatorConsumer consumer = new AccumulatorConsumer();
-        timelineDAO.getSamplesByHostNamesAndSampleKinds(ImmutableList.<String>of(hostName),
-            ImmutableList.<String>copyOf(timelineDAO.getSampleKindsByHostName(hostName).iterator()), startTime, endTime, consumer);
+        timelineDAO.getSamplesByHostIdsAndSampleKindIds(ImmutableList.<Integer>of(hostId),
+            ImmutableList.<Integer>of(minHeapUserKindId, maxHeapUserKindId), startTime, endTime, consumer);
         final List<TimelineChunkAndTimes> chunkAndTimes = consumer.getAccumulator();
         // 1 host x 2 sample kinds
         Assert.assertEquals(chunkAndTimes.size(), 2);
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getHostName(), hostName);
-        Assert.assertEquals(chunkAndTimes.get(1).getHostName(), hostName);
+        Assert.assertEquals(chunkAndTimes.get(0).getHostId(), hostId);
+        Assert.assertEquals(chunkAndTimes.get(1).getHostId(), hostId);
         // Two types
-        Assert.assertTrue(chunkAndTimes.get(0).getSampleKind().equals(MIN_HEAPUSED_KIND) || chunkAndTimes.get(0).getSampleKind().equals(MAX_HEAPUSED_KIND));
-        Assert.assertTrue(chunkAndTimes.get(1).getSampleKind().equals(MIN_HEAPUSED_KIND) || chunkAndTimes.get(0).getSampleKind().equals(MAX_HEAPUSED_KIND));
+        Assert.assertTrue(chunkAndTimes.get(0).getSampleKindId().equals(minHeapUserKindId) || chunkAndTimes.get(0).getSampleKindId().equals(maxHeapUserKindId));
+        Assert.assertTrue(chunkAndTimes.get(1).getSampleKindId().equals(minHeapUserKindId) || chunkAndTimes.get(1).getSampleKindId().equals(maxHeapUserKindId));
 
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getHostId(), 1);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getHostId(), 1);
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getHostId(), (int) hostId);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getHostId(), (int) hostId);
         // Two types
-        Assert.assertTrue(chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == 1 || chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == 2);
-        Assert.assertTrue(chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == 1 || chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == 2);
+        Assert.assertTrue(chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == minHeapUserKindId || chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == maxHeapUserKindId);
+        Assert.assertTrue(chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == minHeapUserKindId || chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == maxHeapUserKindId);
 
         // Only one
         Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getTimelineTimesId(), 1);
@@ -186,8 +192,8 @@ public class TestEventCollectorServer
         Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getSampleCount(), sampleCount);
 
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getHostId(), 1);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getHostId(), 1);
+        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getHostId(), (int) hostId);
+        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getHostId(), (int) hostId);
         // When we started sending events (we store seconds granularity)
         Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
         Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);

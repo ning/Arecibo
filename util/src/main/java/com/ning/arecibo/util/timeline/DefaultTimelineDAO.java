@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.util.timeline;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;
@@ -23,6 +24,7 @@ import com.ning.arecibo.util.timeline.persistent.TimelineDAOQueries;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultIterator;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
@@ -38,6 +40,7 @@ import java.util.Map;
 public class DefaultTimelineDAO implements TimelineDAO
 {
     private static final Logger log = LoggerFactory.getLogger(DefaultTimelineDAO.class);
+    private static final Joiner JOINER = Joiner.on(",");
 
     final IDBI dbi;
     final TimelineDAOQueries delegate;
@@ -116,9 +119,9 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Iterable<String> getSampleKindsByHostName(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public Iterable<Integer> getSampleKindIdsByHostId(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        return delegate.getSampleKindsByHostName(host);
+        return delegate.getSampleKindIdsByHostId(hostId);
     }
 
     @Override
@@ -144,15 +147,12 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames,
-                                                    @Nullable final List<String> sampleKinds,
+    public void getSamplesByHostIdsAndSampleKindIds(final List<Integer> hostIdList,
+                                                    @Nullable final List<Integer> sampleKindIdList,
                                                     final DateTime startTime,
                                                     final DateTime endTime,
                                                     final TimelineChunkAndTimesConsumer chunkConsumer)
     {
-        final String hostNameStrings = stringifyList(hostNames);
-        final String sampleKindStrings = stringifyList(sampleKinds);
-
         dbi.withHandle(new HandleCallback<Void>()
         {
             @Override
@@ -162,12 +162,17 @@ public class DefaultTimelineDAO implements TimelineDAO
 
                 ResultIterator<TimelineChunkAndTimes> iterator = null;
                 try {
-                    iterator = handle
-                        .createQuery("getSamplesByHostNamesAndSampleKinds")
+                    final Query<Map<String, Object>> query = handle
+                        .createQuery("getSamplesByHostIdsAndSampleKindIds")
                         .bind("startTime", TimelineTimes.unixSeconds(startTime))
                         .bind("endTime", TimelineTimes.unixSeconds(endTime))
-                        .define("hostNameStrings", hostNameStrings)
-                        .define("sampleKindStrings", sampleKindStrings)
+                        .define("hostIds", JOINER.join(hostIdList));
+
+                    if (sampleKindIdList != null) {
+                        query.define("sampleKindIds", JOINER.join(sampleKindIdList));
+                    }
+
+                    iterator = query
                         .map(TimelineChunkAndTimes.mapper)
                         .iterator();
 
@@ -182,7 +187,7 @@ public class DefaultTimelineDAO implements TimelineDAO
                             iterator.close();
                         }
                         catch (Exception e) {
-                            log.error("Exception closing TimelineChunkAndTimes iterator for hosts %s and sample %s", hostNameStrings, sampleKindStrings);
+                            log.error("Exception closing TimelineChunkAndTimes iterator for hostIds %s and sampleKindIds %s", hostIdList, sampleKindIdList);
                         }
                     }
                 }
@@ -195,17 +200,5 @@ public class DefaultTimelineDAO implements TimelineDAO
     public void test() throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.test();
-    }
-
-    private String stringifyList(final List<String> strings)
-    {
-        final StringBuilder builder = new StringBuilder();
-        for (final String string : strings) {
-            if (builder.length() != 0) {
-                builder.append(", ");
-            }
-            builder.append("'").append(string).append("'");
-        }
-        return builder.toString();
     }
 }

@@ -161,10 +161,10 @@ public class CollectorResource
             generator.writeFieldName("samples");
             generator.writeStartObject();
 
-            final Map<String, StringBuilder> samplesBySampleKind = buildSampleLists(samples, startTime, endTime);
-            for (final String sampleKind : samplesBySampleKind.keySet()) {
-                generator.writeFieldName(sampleKind);
-                generator.writeString(samplesBySampleKind.get(sampleKind).toString());
+            final Map<Integer, StringBuilder> samplesBySampleKind = buildSampleLists(samples, startTime, endTime);
+            for (final Integer sampleKindId : samplesBySampleKind.keySet()) {
+                generator.writeFieldName(sampleKindId.toString());
+                generator.writeString(samplesBySampleKind.get(sampleKindId).toString());
             }
             generator.writeEndObject();
 
@@ -180,18 +180,18 @@ public class CollectorResource
         }
     }
 
-    private Map<String, StringBuilder> buildSampleLists(final Iterable<TimelineChunkAndTimes> samples, final DateTime startTime, final DateTime endTime) throws IOException
+    private Map<Integer, StringBuilder> buildSampleLists(final Iterable<TimelineChunkAndTimes> samples, final DateTime startTime, final DateTime endTime) throws IOException
     {
         // We merge the list of samples by type to concatenate timelines
-        final Map<String, StringBuilder> samplesBySampleKind = new HashMap<String, StringBuilder>();
+        final Map<Integer, StringBuilder> samplesBySampleKind = new HashMap<Integer, StringBuilder>();
         for (final TimelineChunkAndTimes timelineChunkAndTimes : samples) {
-            if (samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()) == null) {
-                samplesBySampleKind.put(timelineChunkAndTimes.getSampleKind(), new StringBuilder());
+            if (samplesBySampleKind.get(timelineChunkAndTimes.getSampleKindId()) == null) {
+                samplesBySampleKind.put(timelineChunkAndTimes.getSampleKindId(), new StringBuilder());
             }
             else {
-                samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(",");
+                samplesBySampleKind.get(timelineChunkAndTimes.getSampleKindId()).append(",");
             }
-            samplesBySampleKind.get(timelineChunkAndTimes.getSampleKind()).append(timelineChunkAndTimes.getSamplesAsCSV(startTime, endTime));
+            samplesBySampleKind.get(timelineChunkAndTimes.getSampleKindId()).append(timelineChunkAndTimes.getSamplesAsCSV(startTime, endTime));
         }
         return samplesBySampleKind;
     }

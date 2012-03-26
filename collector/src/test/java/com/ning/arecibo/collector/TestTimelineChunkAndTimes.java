@@ -34,10 +34,8 @@ import java.util.List;
 
 public class TestTimelineChunkAndTimes
 {
-    private static final String HOST_NAME = "arecibo.ning.com";
     private static final int HOST_ID = 1242;
     private static final String EVENT_CATEGORY = "JVM";
-    private static final String SAMPLE_KIND = "JVM_Heap_Used";
     private static final int SAMPLE_KIND_ID = 12;
     private static final int SAMPLE_TIMELINE_ID = 30;
     private static final int TIMELINE_TIMES_ID = 11;
@@ -60,9 +58,9 @@ public class TestTimelineChunkAndTimes
         final TimelineTimes timelineTimes = new TimelineTimes(TIMELINE_TIMES_ID, HOST_ID, EVENT_CATEGORY, startTime, times.get(times.size() - 1), times);
         final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, startTime, out.toByteArray(), sampleCount);
 
-        final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, timelineChunk, timelineTimes);
+        final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_ID, SAMPLE_KIND_ID, timelineChunk, timelineTimes);
         Assert.assertEquals(timelineChunkAndTimes.toString(),
-            "{\"sampleKind\":\"JVM_Heap_Used\",\"samples\":\"1326749039,12345,1326749040,12346,1326749041,12347\"}");
+            "{\"sampleKindId\":" + SAMPLE_KIND_ID + ",\"samples\":\"1326749039,12345,1326749040,12346,1326749041,12347\"}");
 
         // Test CSV filtering
         Assert.assertEquals(timelineChunkAndTimes.getSamplesAsCSV(), "1326749039,12345,1326749040,12346,1326749041,12347");

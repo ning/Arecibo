@@ -69,7 +69,7 @@ public class TestTimelineChunkAndTimesToJson
 
         chunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, START_TIME, samples, SAMPLE_COUNT);
         times = new TimelineTimes(TIMELINE_INTERVAL_ID, HOST_ID, EVENT_CATEGORY, START_TIME, START_TIME, dateTimes);
-        chunkAndTimes = new TimelineChunkAndTimes(HOST_NAME, SAMPLE_KIND, chunk, times);
+        chunkAndTimes = new TimelineChunkAndTimes(HOST_ID, SAMPLE_KIND_ID, chunk, times);
     }
 
     @Test(groups = "fast")
@@ -99,8 +99,8 @@ public class TestTimelineChunkAndTimesToJson
         final String chunkAndTimesToString = mapper.writerWithView(TimelineChunksAndTimesViews.Compact.class).writeValueAsString(chunkAndTimes);
         final Map chunkAndTimesFromString = mapper.readValue(chunkAndTimesToString, Map.class);
         Assert.assertEquals(chunkAndTimesFromString.keySet().size(), 7);
-        Assert.assertEquals(chunkAndTimesFromString.get("hostName"), HOST_NAME);
-        Assert.assertEquals(chunkAndTimesFromString.get("sampleKind"), SAMPLE_KIND);
+        Assert.assertEquals(chunkAndTimesFromString.get("hostId"), HOST_ID);
+        Assert.assertEquals(chunkAndTimesFromString.get("sampleKindId"), SAMPLE_KIND_ID);
         Assert.assertEquals(new TextNode((String) chunkAndTimesFromString.get("samples")).getBinaryValue(), samples);
         Assert.assertEquals(chunkAndTimesFromString.get("sampleCount"), SAMPLE_COUNT);
         Assert.assertEquals(chunkAndTimesFromString.get("startTime"), START_TIME.getMillis());
@@ -114,8 +114,8 @@ public class TestTimelineChunkAndTimesToJson
         final String chunkAndTimesToString = mapper.writerWithView(TimelineChunksAndTimesViews.Loose.class).writeValueAsString(chunkAndTimes);
         final Map chunkAndTimesFromString = mapper.readValue(chunkAndTimesToString, Map.class);
         Assert.assertEquals(chunkAndTimesFromString.keySet().size(), 3);
-        Assert.assertEquals(chunkAndTimesFromString.get("hostName"), HOST_NAME);
-        Assert.assertEquals(chunkAndTimesFromString.get("sampleKind"), SAMPLE_KIND);
+        Assert.assertEquals(chunkAndTimesFromString.get("hostId"), HOST_ID);
+        Assert.assertEquals(chunkAndTimesFromString.get("sampleKindId"), SAMPLE_KIND_ID);
         Assert.assertNotNull(chunkAndTimesFromString.get("samplesAsCSV"));
     }
 }

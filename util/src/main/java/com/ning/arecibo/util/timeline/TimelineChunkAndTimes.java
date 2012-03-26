@@ -75,19 +75,16 @@ public class TimelineChunkAndTimes
             }
             final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, eventCategory, startTime, endTime, times, count, aggregationLevel, notValid);
 
-            final String hostName = rs.getString("host_name");
-            final String sampleKind = rs.getString("sample_kind");
-
-            return new TimelineChunkAndTimes(hostName, sampleKind, timelineChunk, timelineTimesObject);
+            return new TimelineChunkAndTimes(hostId, sampleKindId, timelineChunk, timelineTimesObject);
         }
     };
 
     @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Base.class)
-    private final String hostName;
+    private final Integer hostId;
     @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Base.class)
-    private final String sampleKind;
+    private final Integer sampleKindId;
     @JsonUnwrapped
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final TimelineChunk timelineChunk;
@@ -95,22 +92,22 @@ public class TimelineChunkAndTimes
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final TimelineTimes timelineTimes;
 
-    public TimelineChunkAndTimes(final String hostName, final String sampleKind, final TimelineChunk timelineChunk, final TimelineTimes timelineTimes)
+    public TimelineChunkAndTimes(final Integer hostId, final Integer sampleKindId, final TimelineChunk timelineChunk, final TimelineTimes timelineTimes)
     {
-        this.hostName = hostName;
-        this.sampleKind = sampleKind;
+        this.hostId = hostId;
+        this.sampleKindId = sampleKindId;
         this.timelineChunk = timelineChunk;
         this.timelineTimes = timelineTimes;
     }
 
-    public String getHostName()
+    public Integer getHostId()
     {
-        return hostName;
+        return hostId;
     }
 
-    public String getSampleKind()
+    public Integer getSampleKindId()
     {
-        return sampleKind;
+        return sampleKindId;
     }
 
     public TimelineChunk getTimelineChunk()
@@ -146,8 +143,8 @@ public class TimelineChunkAndTimes
             final JsonGenerator generator = objectMapper.getJsonFactory().createJsonGenerator(out);
             generator.writeStartObject();
 
-            generator.writeFieldName("sampleKind");
-            generator.writeString(sampleKind);
+            generator.writeFieldName("sampleKindId");
+            generator.writeNumber(sampleKindId);
 
             generator.writeFieldName("samples");
             generator.writeString(getSamplesAsCSV());

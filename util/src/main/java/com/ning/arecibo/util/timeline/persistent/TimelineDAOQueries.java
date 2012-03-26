@@ -61,7 +61,7 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
     void addSampleKind(@Bind("sampleKind") final String sampleKind);
 
     @SqlQuery
-    Iterable<String> getSampleKindsByHostName(@Bind("hostName") final String host);
+    Iterable<Integer> getSampleKindIdsByHostId(@Bind("hostId") final Integer hostId);
 
     @SqlQuery
     @Mapper(DefaultMapper.class)
