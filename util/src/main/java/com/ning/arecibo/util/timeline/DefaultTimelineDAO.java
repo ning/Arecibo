@@ -168,7 +168,7 @@ public class DefaultTimelineDAO implements TimelineDAO
                         .bind("endTime", TimelineTimes.unixSeconds(endTime))
                         .define("hostIds", JOINER.join(hostIdList));
 
-                    if (sampleKindIdList != null) {
+                    if (sampleKindIdList != null && !sampleKindIdList.isEmpty()) {
                         query.define("sampleKindIds", JOINER.join(sampleKindIdList));
                     }
 
