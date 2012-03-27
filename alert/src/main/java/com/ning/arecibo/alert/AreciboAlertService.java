@@ -16,7 +16,7 @@
 
 package com.ning.arecibo.alert;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -163,7 +163,7 @@ public class AreciboAlertService
                 }
             },
             new AlertDataModule(),
-            new EmbeddedJettyJerseyModule(ImmutableMap.<String, String>of("/xn/rest/.*", "com.ning.arecibo.event.receiver,com.ning.arecibo.util.jaxrs")),
+            new EmbeddedJettyJerseyModule("/xn/rest/.*", ImmutableList.<String>of("com.ning.arecibo.event.receiver", "com.ning.arecibo.util.jaxrs")),
             new RESTEventReceiverModule(AlertEventProcessor.class, "arecibo.alert:name=AlertEventProcessor"),
             new UDPEventReceiverModule(),
             new AggregatorClientModule(),

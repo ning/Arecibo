@@ -16,7 +16,8 @@
 
 package com.ning.arecibo.util;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.servlet.ServletModule;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.guice.spi.container.servlet.GuiceContainer;
@@ -25,23 +26,26 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.skife.config.ConfigurationObjectFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 public class EmbeddedJettyJerseyModule extends ServletModule
 {
     private static final String STATIC_URL_PATTERN = "/static/*";
 
-    private final Map<String, String> resources = new HashMap<String, String>();
+    private final String urlPatterns;
+    private final List<String> resources = new ArrayList<String>();
 
     public EmbeddedJettyJerseyModule()
     {
-        this(ImmutableMap.<String, String>of());
+        this("/xn/rest/.*", ImmutableList.<String>of("com.ning.arecibo.event.receiver"));
     }
 
-    public EmbeddedJettyJerseyModule(final Map<String, String> resources)
+    public EmbeddedJettyJerseyModule(final String urlPatterns, final List<String> resources)
     {
-        this.resources.putAll(resources);
+        this.urlPatterns = urlPatterns;
+        this.resources.addAll(resources);
     }
 
     @Override
@@ -56,13 +60,11 @@ public class EmbeddedJettyJerseyModule extends ServletModule
         bind(DefaultServlet.class).asEagerSingleton();
         serve(STATIC_URL_PATTERN).with(DefaultServlet.class);
 
-        for (final String urlPattern : resources.keySet()) {
-            serveRegex(urlPattern).with(GuiceContainer.class, new HashMap<String, String>()
+        serveRegex(urlPatterns).with(GuiceContainer.class, new HashMap<String, String>()
+        {
             {
-                {
-                    put(PackagesResourceConfig.PROPERTY_PACKAGES, resources.get(urlPattern));
-                }
-            });
-        }
+                put(PackagesResourceConfig.PROPERTY_PACKAGES, Joiner.on(",").join(resources));
+            }
+        });
     }
 }
