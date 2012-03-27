@@ -16,12 +16,13 @@
 
 package com.ning.arecibo.util.jdbi;
 
-import java.util.Properties;
-import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.logging.Log4JLog;
 import com.google.inject.Provider;
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
+import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.logging.Log4JLog;
+
+import java.util.Properties;
 
 public class DBIProvider implements Provider<DBI>
 {
@@ -45,6 +46,8 @@ public class DBIProvider implements Provider<DBI>
         dbConfig.setMinConnectionsPerPartition(Integer.valueOf(props.getProperty(prefix + ".minIdleConnections", "1")));
         dbConfig.setMaxConnectionsPerPartition(Integer.valueOf(props.getProperty(prefix + ".maxActiveConnections", "50")));
         dbConfig.setPartitionCount(1);
+        // Needs to be less than MySQL wait_timeout
+        dbConfig.setIdleConnectionTestPeriodInMinutes(Integer.valueOf(props.getProperty(prefix + ".connectionTestPeriodInMinutes", "5")));
 
         final DBI dbi = new DBI(new BoneCPDataSource(dbConfig));
 
