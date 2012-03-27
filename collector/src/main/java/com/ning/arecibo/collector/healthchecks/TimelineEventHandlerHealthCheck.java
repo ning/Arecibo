@@ -34,7 +34,7 @@ public class TimelineEventHandlerHealthCheck extends HealthCheck
     private static final String EVENT_TYPE = "AreciboCollectorHealthCheck";
     private static final UUID EVENT_UUID = UUID.randomUUID();
 
-    private final Logger log = LoggerFactory.getLogger(DAOHealthCheck.class);
+    private final Logger log = LoggerFactory.getLogger(TimelineEventHandlerHealthCheck.class);
 
     private final TimelineEventHandler processor;
 
