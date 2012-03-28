@@ -16,8 +16,12 @@
 
 package com.ning.arecibo.dashboard.resources;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Singleton;
 import com.ning.arecibo.collector.CollectorClient;
+import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.jersey.metrics.TimedResource;
@@ -40,6 +44,7 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Singleton
@@ -50,11 +55,13 @@ public class CollectorResource
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final CollectorClient client;
+    private final GalaxyStatusManager manager;
 
     @Inject
-    public CollectorResource(final CollectorClient client)
+    public CollectorResource(final CollectorClient client, final GalaxyStatusManager manager)
     {
         this.client = client;
+        this.manager = manager;
     }
 
     @GET
@@ -64,13 +71,25 @@ public class CollectorResource
     public Response getHosts(@QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         try {
+            final ImmutableList.Builder<Map<String, String>> builder = new ImmutableList.Builder<Map<String, String>>();
             final Iterable<String> hosts = client.getHosts();
-            final JSONPObject object = new JSONPObject(callback, hosts);
+
+            for (final String hostName : hosts) {
+                builder.add(ImmutableMap.<String, String>of(
+                    "hostName", hostName,
+                    "globalZone", Strings.nullToEmpty(manager.getGlobalZone(hostName)),
+                    "configPath", Strings.nullToEmpty(manager.getConfigPath(hostName)),
+                    "configSubPath", Strings.nullToEmpty(manager.getConfigSubPath(hostName)),
+                    "coreType", Strings.nullToEmpty(manager.getCoreType(hostName))
+                ));
+            }
+
+            final JSONPObject object = new JSONPObject(callback, builder.build());
             return Response.ok(object).build();
         }
-        catch (Throwable t) {
+        catch (RuntimeException e) {
             // Likely UniformInterfaceException from the collector client library
-            throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
+            throw new WebApplicationException(e, buildServiceUnavailableResponse());
         }
     }
 
@@ -78,14 +97,15 @@ public class CollectorResource
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
     @TimedResource
-    public Response getSampleKinds(@QueryParam("callback") @DefaultValue("callback") final String callback)
+    public Response getSampleKinds(@QueryParam("host") final List<String> hostNames,
+                                   @QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         try {
-            final Iterable<String> sampleKinds = client.getSampleKinds();
+            final Iterable<String> sampleKinds = client.getSampleKinds(hostNames);
             final JSONPObject object = new JSONPObject(callback, sampleKinds);
             return Response.ok(object).build();
         }
-        catch (Throwable t) {
+        catch (RuntimeException t) {
             // Likely UniformInterfaceException from the collector client library
             throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
         }
