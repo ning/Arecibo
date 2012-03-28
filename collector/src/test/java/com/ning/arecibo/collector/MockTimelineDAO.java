@@ -181,32 +181,6 @@ public final class MockTimelineDAO implements TimelineDAO
         }
     }
 
-    public void getSamplesByHostNamesAndSampleKinds(final List<String> hostNames, final List<String> sampleKinds, final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        for (final Integer hostId : samplesPerHostAndSampleKind.keySet()) {
-            final String hostName = getHost(hostId);
-            if (hostNames.indexOf(hostName) == -1) {
-                continue;
-            }
-
-            final Map<Integer, List<TimelineChunkAndTimes>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(hostId);
-            for (final Integer sampleKindId : samplesPerSampleKind.keySet()) {
-                final String sampleKind = getSampleKind(sampleKindId);
-                if (sampleKinds.indexOf(sampleKind) == -1) {
-                    continue;
-                }
-
-                for (final TimelineChunkAndTimes chunkAndTimes : samplesPerSampleKind.get(sampleKindId)) {
-                    if (chunkAndTimes.getTimelineTimes().getStartTime().isAfter(endTime) || chunkAndTimes.getTimelineTimes().getEndTime().isBefore(startTime)) {
-                        continue;
-                    }
-
-                    chunkConsumer.processTimelineChunkAndTimes(chunkAndTimes);
-                }
-            }
-        }
-    }
-
     @Override
     public void test() throws UnableToObtainConnectionException, CallbackFailedException
     {

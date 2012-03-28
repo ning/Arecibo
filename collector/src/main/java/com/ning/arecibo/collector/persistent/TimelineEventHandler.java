@@ -159,16 +159,20 @@ public class TimelineEventHandler implements EventHandler
 
     private void processSamples(final HostSamplesForTimestamp hostSamples) throws ExecutionException, IOException
     {
-        Map<String, TimelineHostEventAccumulator> hostAccumulators = accumulators.get(hostSamples.getHostId());
-        TimelineHostEventAccumulator accumulator = hostAccumulators.get(hostSamples.getCategory());
+        final int hostId = hostSamples.getHostId();
+        final String category = hostSamples.getCategory();
+
+        Map<String, TimelineHostEventAccumulator> hostAccumulators = accumulators.get(hostId);
+        TimelineHostEventAccumulator accumulator = hostAccumulators.get(category);
+
         if (accumulator == null) {
             synchronized (accumulatorsMonitor) {
-                hostAccumulators = accumulators.get(hostSamples.getHostId());
-                accumulator = hostAccumulators.get(hostSamples.getCategory());
+                hostAccumulators = accumulators.get(hostId);
+                accumulator = hostAccumulators.get(category);
                 if (accumulator == null) {
-                    accumulator = new TimelineHostEventAccumulator(timelineDAO, hostSamples.getHostId(), hostSamples.getCategory(), config.getTimelinesVerboseStats());
-                    hostAccumulators.put(hostSamples.getCategory(), accumulator);
-                    log.info("Created new Timeline for hostId [{}] and category [{}]", hostSamples.getHostId(), hostSamples.getCategory());
+                    accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, category, config.getTimelinesVerboseStats());
+                    hostAccumulators.put(category, accumulator);
+                    log.info("Created new Timeline for hostId [{}] and category [{}]", hostId, category);
                 }
             }
         }

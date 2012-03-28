@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.collector.resources;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
@@ -34,6 +35,7 @@ import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.util.DefaultPrettyPrinter;
 import org.joda.time.DateTime;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
@@ -48,6 +50,7 @@ import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -191,10 +194,6 @@ public class HostDataResource
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
 
-        final AtomicReference<Integer> lastHostId = new AtomicReference<Integer>(null);
-        final AtomicReference<Integer> lastSampleKindId = new AtomicReference<Integer>(null);
-        final List<TimelineChunkAndTimes> chunksForHostAndSampleKind = new ArrayList<TimelineChunkAndTimes>();
-
         return new StreamingOutput()
         {
             @Override
@@ -215,50 +214,9 @@ public class HostDataResource
 
                 generator.writeStartArray();
                 try {
-                    // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
-                    final ImmutableList.Builder<Integer> hostIdsBuilder = new ImmutableList.Builder<Integer>();
-                    for (final String hostName : hostNames) {
-                        hostIdsBuilder.add(dao.getHostId(hostName));
-                    }
-                    final ImmutableList.Builder<Integer> sampleKindIdsBuilder = new ImmutableList.Builder<Integer>();
-                    if (sampleKinds != null) {
-                        for (final String sampleKind : sampleKinds) {
-                            sampleKindIdsBuilder.add(dao.getSampleKindId(sampleKind));
-                        }
-                    }
-
-                    // writeJsonForChunks will merge in-memory and persisted samples
-                    dao.getSamplesByHostIdsAndSampleKindIds(hostIdsBuilder.build(), sampleKindIdsBuilder.build(), startTime, endTime, new TimelineChunkAndTimesConsumer()
-                    {
-                        @Override
-                        public void processTimelineChunkAndTimes(final TimelineChunkAndTimes chunkAndTimes)
-                        {
-                            try {
-                                final Integer previousHostId = lastHostId.get();
-                                final Integer previousSampleKindId = lastSampleKindId.get();
-                                final Integer currentHostId = chunkAndTimes.getHostId();
-                                final Integer currentSampleKindId = chunkAndTimes.getSampleKindId();
-                                chunksForHostAndSampleKind.add(chunkAndTimes);
-
-                                if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
-                                    writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, previousHostId, previousSampleKindId, startTime, endTime, decodeSamples);
-                                }
-
-                                lastHostId.set(currentHostId);
-                                lastSampleKindId.set(currentSampleKindId);
-                            }
-                            catch (Throwable e) {
-                                // JDBI exception
-                                throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
-                            }
-                        }
-                    });
-
-                    if (chunksForHostAndSampleKind.size() > 0) {
-                        writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, lastHostId.get(), lastSampleKindId.get(), startTime, endTime, decodeSamples);
-                    }
+                    writeJsonForAllChunks(generator, writer, hostNames, sampleKinds, startTime, endTime, decodeSamples);
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     // JDBI exception
                     throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
                 }
@@ -270,12 +228,88 @@ public class HostDataResource
         };
     }
 
-    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final List<TimelineChunkAndTimes> chunksForHostAndSampleKind,
-                                    final Integer hostId, final Integer sampleKindId, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
+    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final List<String> hostNames,
+                                       final List<String> sampleKinds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
         throws IOException, ExecutionException
     {
-        chunksForHostAndSampleKind.addAll(processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindId, startTime, endTime));
+        // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
+        final ImmutableList.Builder<Integer> hostIdsBuilder = new ImmutableList.Builder<Integer>();
+        for (final String hostName : hostNames) {
+            hostIdsBuilder.add(dao.getHostId(hostName));
+        }
+        final ImmutableList<Integer> hostIdsList = hostIdsBuilder.build();
 
+        final ImmutableList.Builder<Integer> sampleKindIdsBuilder = new ImmutableList.Builder<Integer>();
+        if (sampleKinds != null) {
+            for (final String sampleKind : sampleKinds) {
+                sampleKindIdsBuilder.add(dao.getSampleKindId(sampleKind));
+            }
+        }
+        final ImmutableList<Integer> sampleKindIdsList = sampleKindIdsBuilder.build();
+
+        // First, return all data in memory.
+        // Data won't be merged with the on-disk one because we don't want to buffer samples in memory.
+        writeJsonForInMemoryChunks(generator, writer, hostIdsList, sampleKindIdsList, startTime, endTime, decodeSamples);
+
+        // Now, return all data stored in the database
+        writeJsonForStoredChunks(generator, writer, hostIdsList, sampleKindIdsList, startTime, endTime, decodeSamples);
+    }
+
+    @VisibleForTesting
+    void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
+                                    final List<Integer> sampleKindIdsList, @Nullable final DateTime startTime, @Nullable final DateTime endTime, final boolean decodeSamples)
+        throws IOException, ExecutionException
+    {
+        for (final Integer hostId : hostIdsList) {
+            final Collection<? extends TimelineChunkAndTimes> inMemorySamples = processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindIdsList, startTime, endTime);
+            writeJsonForChunks(generator, writer, inMemorySamples, decodeSamples);
+        }
+    }
+
+    private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
+                                          final List<Integer> sampleKindIdsList, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
+        throws IOException, ExecutionException
+    {
+        final AtomicReference<Integer> lastHostId = new AtomicReference<Integer>(null);
+        final AtomicReference<Integer> lastSampleKindId = new AtomicReference<Integer>(null);
+        final List<TimelineChunkAndTimes> chunksForHostAndSampleKind = new ArrayList<TimelineChunkAndTimes>();
+
+        dao.getSamplesByHostIdsAndSampleKindIds(hostIdsList, sampleKindIdsList, startTime, endTime, new TimelineChunkAndTimesConsumer()
+        {
+            @Override
+            public void processTimelineChunkAndTimes(final TimelineChunkAndTimes chunkAndTimes)
+            {
+                try {
+                    final Integer previousHostId = lastHostId.get();
+                    final Integer previousSampleKindId = lastSampleKindId.get();
+                    final Integer currentHostId = chunkAndTimes.getHostId();
+                    final Integer currentSampleKindId = chunkAndTimes.getSampleKindId();
+
+                    chunksForHostAndSampleKind.add(chunkAndTimes);
+                    if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
+                        writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, decodeSamples);
+                        chunksForHostAndSampleKind.clear();
+                    }
+
+                    lastHostId.set(currentHostId);
+                    lastSampleKindId.set(currentSampleKindId);
+                }
+                catch (Throwable e) {
+                    // JDBI exception
+                    throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+                }
+            }
+        });
+
+        if (chunksForHostAndSampleKind.size() > 0) {
+            writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, decodeSamples);
+            chunksForHostAndSampleKind.clear();
+        }
+    }
+
+    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
+        throws IOException, ExecutionException
+    {
         for (final TimelineChunkAndTimes chunk : chunksForHostAndSampleKind) {
             if (decodeSamples) {
                 writer.writeValue(generator, new TimelineChunkAndTimesDecoded(chunk));
@@ -284,8 +318,6 @@ public class HostDataResource
                 writer.writeValue(generator, chunk);
             }
         }
-
-        chunksForHostAndSampleKind.clear();
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)
