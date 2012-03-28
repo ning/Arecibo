@@ -105,7 +105,9 @@ public class TimelineAggregator
 
     private int aggregateTimelineCandidates(final List<TimelineTimes> timelineTimesCandidates, final int aggregationLevel)
     {
-        log.info("Looking to aggregate {} candidates in {} chunks", timelineTimesCandidates.size(), config.getChunksToAggregate());
+        final TimelineTimes firstCandidate = timelineTimesCandidates.get(0);
+        log.info("For host_id {}, eventCategory {}, looking to aggregate {} candidates in {} chunks",
+                new Object[]{firstCandidate.getHostId(), firstCandidate.getEventCategory(), timelineTimesCandidates.size(), config.getChunksToAggregate()});
 
         int aggregatesCreated = 0;
         final int chunksToAggregate = config.getChunksToAggregate();
@@ -153,8 +155,8 @@ public class TimelineAggregator
             sampleCount += timelineTimes.getSampleCount();
             timelineTimesIds.add(timelineTimes.getObjectId());
         }
-        log.info("Aggregating {} timelines ({} bytes, {} samples): {}",
-            new Object[]{timelineTimesChunks.size(), totalTimelineSize, sampleCount, timelineTimesIds});
+        log.info("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
+            new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineTimesChunks.size(), totalTimelineSize, sampleCount, timelineTimesIds});
 
         final int totalSampleCount = sampleCount;
         final byte[] aggregatedTimes = new byte[totalTimelineSize];
@@ -196,9 +198,9 @@ public class TimelineAggregator
         }
     }
 
-    private void aggregateSampleChunks(final List<Long> timelineTimesId, final int newTimelineTimesId, final int totalSampleCount)
+    private void aggregateSampleChunks(final List<Long> timelineTimesIds, final int newTimelineTimesId, final int totalSampleCount)
     {
-        final List<List<TimelineChunk>> orderedHostSampleChunks = getHostSampleTimelineChunks(timelineTimesId);
+        final List<List<TimelineChunk>> orderedHostSampleChunks = getHostSampleTimelineChunks(timelineTimesIds);
         for (final List<TimelineChunk> chunkList : orderedHostSampleChunks) {
             final TimelineChunk firstSampleChunk = chunkList.get(0);
             int totalChunkSize = 0;
@@ -257,6 +259,7 @@ public class TimelineAggregator
                     aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel));
                     hostTimelineCandidates.clear();
                     lastHostId = hostId;
+                    lastEventCategory = eventCategory;
                 }
                 hostTimelineCandidates.add(candidate);
             }
