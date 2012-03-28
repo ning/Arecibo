@@ -38,15 +38,19 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
         final Response originalResponse = ex.getResponse();
 
         // TODO: respect the original warning header?
-        final Response response = Response.fromResponse(originalResponse).header("Warning", "199 " + warningMsg).build();
+        final Response.ResponseBuilder responseBuilder = Response.fromResponse(originalResponse);
+        if (!warningMsg.isEmpty()) {
+            responseBuilder.header("Warning", "199 " + warningMsg).build();
+        }
+        final Response response = responseBuilder.build();
 
         String warningHeader = null;
-        if (response.getMetadata() != null) {
+        if (response.getMetadata() != null && response.getMetadata().get("Warning") != null) {
             warningHeader = Joiner.on(",").join(response.getMetadata().get("Warning"));
         }
 
         if (response instanceof ResponseImpl) {
-            if (warningHeader != null) {
+            if (warningHeader != null && !warningHeader.isEmpty()) {
                 logger.error("Response {} ({}): {}", new Object[]{((ResponseImpl) response).getStatusType(), response.getStatus(), warningHeader});
             }
             else {
@@ -67,7 +71,11 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
 
     private String buildWarningMessage(final Throwable t, final String prevWarningMessage)
     {
-        final String newWarningMessage = prevWarningMessage + ": " + t.getClass().toString();
+        String newWarningMessage = "";
+        // Skip these, not really useful (e.g. 400 requests)
+        if (!(t instanceof WebApplicationException)) {
+            newWarningMessage = prevWarningMessage + ": " + t.getClass().toString();
+        }
 
         if (t.getCause() != null) {
             return buildWarningMessage(t.getCause(), newWarningMessage);

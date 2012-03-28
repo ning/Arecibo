@@ -191,6 +191,10 @@ public class HostDataResource
                                           @QueryParam("host") final List<String> hostNames,
                                           @QueryParam("sample_kind") final List<String> sampleKinds)
     {
+        if (hostNames == null || hostNames.isEmpty()) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
 
