@@ -51,7 +51,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -91,11 +93,19 @@ public class HostDataResource
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
     @TimedResource
-    public StreamingOutput getSampleKinds(@QueryParam("pretty") @DefaultValue("false") final boolean pretty)
+    public StreamingOutput getSampleKinds(@QueryParam("host") final List<String> hostNames,
+                                          @QueryParam("pretty") @DefaultValue("false") final boolean pretty)
     {
         try {
-            final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
-            return streamResponse(sampleKinds.values(), pretty);
+            if (hostNames == null || hostNames.isEmpty()) {
+                final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
+                return streamResponse(sampleKinds.values(), pretty);
+            }
+            else {
+                // Return the union of all sample kinds available for these hosts
+                final Set<String> sampleKinds = findSampleKindsForHosts(hostNames);
+                return streamResponse(sampleKinds, pretty);
+            }
         }
         catch (Throwable e) {
             // JDBI exception
@@ -322,6 +332,21 @@ public class HostDataResource
                 writer.writeValue(generator, chunk);
             }
         }
+    }
+
+    @VisibleForTesting
+    Set<String> findSampleKindsForHosts(final List<String> hostNames)
+    {
+        final Set<String> sampleKinds = new HashSet<String>();
+        for (final String hostName : hostNames) {
+            // Note: all of this is usually cached
+            final Integer hostId = dao.getHostId(hostName);
+            for (final Integer sampleKindId : dao.getSampleKindIdsByHostId(hostId)) {
+                sampleKinds.add(dao.getSampleKind(sampleKindId));
+            }
+        }
+
+        return sampleKinds;
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)

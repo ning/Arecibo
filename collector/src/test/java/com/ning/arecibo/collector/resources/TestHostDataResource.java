@@ -44,6 +44,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class TestHostDataResource
@@ -91,6 +92,14 @@ public class TestHostDataResource
         Assert.assertNotNull(sampleKindId1);
         sampleKindId2 = dao.getOrAddSampleKind(hostId1, SAMPLE_KIND_2);
         Assert.assertNotNull(sampleKindId2);
+
+        // Check the sample kinds for this host
+        Set<String> sampleKinds = resource.findSampleKindsForHosts(ImmutableList.<String>of(HOST_NAME_1));
+        Assert.assertEquals(sampleKinds.size(), 2);
+        Assert.assertTrue(sampleKinds.contains(SAMPLE_KIND_1));
+        Assert.assertTrue(sampleKinds.contains(SAMPLE_KIND_2));
+        sampleKinds = resource.findSampleKindsForHosts(ImmutableList.<String>of(HOST_NAME_2));
+        Assert.assertEquals(sampleKinds.size(), 0);
     }
 
     @Test(groups = "fast")
@@ -108,6 +117,13 @@ public class TestHostDataResource
         handler.handle(new MapEvent(System.currentTimeMillis(), EVENT_TYPE, UUID.randomUUID(), ImmutableMap.<String, Object>of("hostName", HOST_NAME_3, ATTRIBUTE_1, 12, ATTRIBUTE_2, 42)));
         resource.writeJsonForInMemoryChunks(generator, mapper.writer(), ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, false);
         Assert.assertTrue(output.size() > 0);
+
+        // Check the sample kinds for this host
+        final Set<String> sampleKinds = resource.findSampleKindsForHosts(ImmutableList.<String>of(HOST_NAME_3));
+        Assert.assertEquals(sampleKinds.size(), 3);
+        Assert.assertTrue(sampleKinds.contains(SAMPLE_KIND_1));
+        Assert.assertTrue(sampleKinds.contains(SAMPLE_KIND_2));
+        Assert.assertTrue(sampleKinds.contains(EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "hostName")));
     }
 
     @Test(groups = "fast")

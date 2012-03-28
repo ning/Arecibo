@@ -103,12 +103,10 @@ public final class MockTimelineDAO implements TimelineDAO
             if (sampleKindId == null) {
                 sampleKinds.put(sampleKinds.size(), sampleKind);
                 sampleKindId = sampleKinds.size() - 1;
-                hostSampleKindIds.put(hostId, sampleKindId);
-                return sampleKindId;
             }
-            else {
-                return sampleKindId;
-            }
+
+            hostSampleKindIds.put(hostId, sampleKindId);
+            return sampleKindId;
         }
     }
 
