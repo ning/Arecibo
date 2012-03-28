@@ -88,12 +88,34 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
+    public InputStream getSampleKindsAsStream(final Iterable<String> hostNames) throws UniformInterfaceException
+    {
+        final MultivaluedMap<String, String> params = new MultivaluedMapImpl();
+        for (final String hostName : hostNames) {
+            params.add("host", hostName);
+        }
+
+        return getPathAsStream("sample_kinds", params);
+    }
+
+    @Override
     public Iterable<String> getSampleKinds() throws UniformInterfaceException
     {
         final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
         {
         };
         final InputStream stream = getSampleKindsAsStream();
+
+        return readValue(stream, valueTypeRef);
+    }
+
+    @Override
+    public Iterable<String> getSampleKinds(final Iterable<String> hostNames) throws UniformInterfaceException
+    {
+        final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
+        {
+        };
+        final InputStream stream = getSampleKindsAsStream(hostNames);
 
         return readValue(stream, valueTypeRef);
     }

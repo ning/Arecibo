@@ -30,7 +30,11 @@ public interface CollectorClient
 
     public InputStream getSampleKindsAsStream() throws UniformInterfaceException;
 
+    public InputStream getSampleKindsAsStream(final Iterable<String> hostNames) throws UniformInterfaceException;
+
     public Iterable<String> getSampleKinds() throws UniformInterfaceException;
+
+    public Iterable<String> getSampleKinds(final Iterable<String> hostNames) throws UniformInterfaceException;
 
     public InputStream getSamplesByHostNameAsStream(final String hostName) throws UniformInterfaceException;
 
