@@ -40,7 +40,7 @@ public class WebApplicationExceptionMapper implements ExceptionMapper<WebApplica
         // TODO: respect the original warning header?
         final Response.ResponseBuilder responseBuilder = Response.fromResponse(originalResponse);
         if (!warningMsg.isEmpty()) {
-            responseBuilder.header("Warning", "199 " + warningMsg).build();
+            responseBuilder.header("Warning", "199 " + warningMsg);
         }
         final Response response = responseBuilder.build();
 

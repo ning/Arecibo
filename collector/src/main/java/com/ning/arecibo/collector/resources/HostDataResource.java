@@ -17,6 +17,7 @@
 package com.ning.arecibo.collector.resources;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheLoader;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Singleton;
@@ -83,9 +84,12 @@ public class HostDataResource
             final BiMap<Integer, String> hosts = dao.getHosts();
             return streamResponse(hosts.values(), pretty);
         }
-        catch (Throwable e) {
+        catch (CacheLoader.InvalidCacheLoadException e) {
+            throw new WebApplicationException(e, Response.Status.NOT_FOUND);
+        }
+        catch (RuntimeException e) {
             // JDBI exception
-            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+            throw new WebApplicationException(e, buildServiceUnavailableResponse());
         }
     }
 
@@ -107,9 +111,12 @@ public class HostDataResource
                 return streamResponse(sampleKinds, pretty);
             }
         }
-        catch (Throwable e) {
+        catch (CacheLoader.InvalidCacheLoadException e) {
+            throw new WebApplicationException(e, Response.Status.NOT_FOUND);
+        }
+        catch (RuntimeException e) {
             // JDBI exception
-            throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+            throw new WebApplicationException(e, buildServiceUnavailableResponse());
         }
     }
 
@@ -124,16 +131,25 @@ public class HostDataResource
                                                 @QueryParam("compact") @DefaultValue("false") final boolean compact,
                                                 @PathParam("host") final String hostName) throws IOException
     {
-        final Integer hostId = dao.getHostId(hostName);
-        final Iterable<Integer> sampleKindIds = dao.getSampleKindIdsByHostId(hostId);
+        try {
+            final Integer hostId = dao.getHostId(hostName);
+            final Iterable<Integer> sampleKindIds = dao.getSampleKindIdsByHostId(hostId);
 
-        // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
-        final ImmutableList.Builder<String> sampleKinds = ImmutableList.<String>builder();
-        for (final Integer sampleKindId : sampleKindIds) {
-            sampleKinds.add(dao.getSampleKind(sampleKindId));
+            // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
+            final ImmutableList.Builder<String> sampleKinds = ImmutableList.<String>builder();
+            for (final Integer sampleKindId : sampleKindIds) {
+                sampleKinds.add(dao.getSampleKind(sampleKindId));
+            }
+
+            return getHostSamples(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<String>of(hostName), sampleKinds.build());
         }
-
-        return getHostSamples(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<String>of(hostName), sampleKinds.build());
+        catch (CacheLoader.InvalidCacheLoadException e) {
+            throw new WebApplicationException(e, Response.Status.NOT_FOUND);
+        }
+        catch (RuntimeException e) {
+            // JDBI exception
+            throw new WebApplicationException(e, buildServiceUnavailableResponse());
+        }
     }
 
     @GET
@@ -230,9 +246,15 @@ public class HostDataResource
                 try {
                     writeJsonForAllChunks(generator, writer, hostNames, sampleKinds, startTime, endTime, decodeSamples);
                 }
-                catch (Exception e) {
+                catch (CacheLoader.InvalidCacheLoadException e) {
+                    throw new WebApplicationException(e, Response.Status.NOT_FOUND);
+                }
+                catch (RuntimeException e) {
                     // JDBI exception
-                    throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
+                    throw new WebApplicationException(e, buildServiceUnavailableResponse());
+                }
+                catch (ExecutionException e) {
+                    throw new WebApplicationException(e, buildServiceUnavailableResponse());
                 }
                 generator.writeEndArray();
 
@@ -293,25 +315,31 @@ public class HostDataResource
             @Override
             public void processTimelineChunkAndTimes(final TimelineChunkAndTimes chunkAndTimes)
             {
-                try {
-                    final Integer previousHostId = lastHostId.get();
-                    final Integer previousSampleKindId = lastSampleKindId.get();
-                    final Integer currentHostId = chunkAndTimes.getHostId();
-                    final Integer currentSampleKindId = chunkAndTimes.getSampleKindId();
+                final Integer previousHostId = lastHostId.get();
+                final Integer previousSampleKindId = lastSampleKindId.get();
+                final Integer currentHostId = chunkAndTimes.getHostId();
+                final Integer currentSampleKindId = chunkAndTimes.getSampleKindId();
 
-                    chunksForHostAndSampleKind.add(chunkAndTimes);
-                    if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
+                chunksForHostAndSampleKind.add(chunkAndTimes);
+                if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
+                    try {
                         writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, decodeSamples);
-                        chunksForHostAndSampleKind.clear();
                     }
+                    catch (RuntimeException e) {
+                        // JDBI exception
+                        throw new WebApplicationException(e, buildServiceUnavailableResponse());
+                    }
+                    catch (IOException e) {
+                        throw new WebApplicationException(e, buildServiceUnavailableResponse());
+                    }
+                    catch (ExecutionException e) {
+                        throw new WebApplicationException(e, buildServiceUnavailableResponse());
+                    }
+                    chunksForHostAndSampleKind.clear();
+                }
 
-                    lastHostId.set(currentHostId);
-                    lastSampleKindId.set(currentSampleKindId);
-                }
-                catch (Throwable e) {
-                    // JDBI exception
-                    throw new WebApplicationException(e.getCause(), buildServiceUnavailableResponse());
-                }
+                lastHostId.set(currentHostId);
+                lastSampleKindId.set(currentSampleKindId);
             }
         });
 
@@ -335,14 +363,22 @@ public class HostDataResource
     }
 
     @VisibleForTesting
-    Set<String> findSampleKindsForHosts(final List<String> hostNames)
+    Set<String> findSampleKindsForHosts(final List<String> hostNames) throws CacheLoader.InvalidCacheLoadException
     {
+        // Note: all of this is usually cached
         final Set<String> sampleKinds = new HashSet<String>();
+
         for (final String hostName : hostNames) {
-            // Note: all of this is usually cached
             final Integer hostId = dao.getHostId(hostName);
+            if (hostId == null) {
+                continue;
+            }
+
             for (final Integer sampleKindId : dao.getSampleKindIdsByHostId(hostId)) {
-                sampleKinds.add(dao.getSampleKind(sampleKindId));
+                final String sampleKind = dao.getSampleKind(sampleKindId);
+                if (sampleKind != null) {
+                    sampleKinds.add(sampleKind);
+                }
             }
         }
 
