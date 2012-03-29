@@ -16,9 +16,10 @@
 
 package com.ning.arecibo.util.timeline;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.node.TextNode;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.Assert;
@@ -34,7 +35,9 @@ import java.util.UUID;
 
 public class TestTimelineChunkAndTimesToJson
 {
-    private static final ObjectMapper mapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
+    private static final ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JodaModule())
+            .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
 
     private static final long SAMPLE_TIMELINE_ID = 1242L;
     private static final int HOST_ID = 1422;
@@ -78,7 +81,7 @@ public class TestTimelineChunkAndTimesToJson
         final String chunkToString = mapper.writerWithView(TimelineChunksAndTimesViews.Compact.class).writeValueAsString(chunk);
         final Map chunkFromString = mapper.readValue(chunkToString, Map.class);
         Assert.assertEquals(chunkFromString.keySet().size(), 3);
-        Assert.assertEquals(new TextNode((String) chunkFromString.get("samples")).getBinaryValue(), samples);
+        Assert.assertEquals(new TextNode((String) chunkFromString.get("samples")).binaryValue(), samples);
         Assert.assertEquals(chunkFromString.get("sampleCount"), SAMPLE_COUNT);
         Assert.assertEquals(chunkFromString.get("startTime"), START_TIME.getMillis());
     }
@@ -101,7 +104,7 @@ public class TestTimelineChunkAndTimesToJson
         Assert.assertEquals(chunkAndTimesFromString.keySet().size(), 7);
         Assert.assertEquals(chunkAndTimesFromString.get("hostId"), HOST_ID);
         Assert.assertEquals(chunkAndTimesFromString.get("sampleKindId"), SAMPLE_KIND_ID);
-        Assert.assertEquals(new TextNode((String) chunkAndTimesFromString.get("samples")).getBinaryValue(), samples);
+        Assert.assertEquals(new TextNode((String) chunkAndTimesFromString.get("samples")).binaryValue(), samples);
         Assert.assertEquals(chunkAndTimesFromString.get("sampleCount"), SAMPLE_COUNT);
         Assert.assertEquals(chunkAndTimesFromString.get("startTime"), START_TIME.getMillis());
         Assert.assertEquals(chunkAndTimesFromString.get("timeSampleCount"), SAMPLE_COUNT);

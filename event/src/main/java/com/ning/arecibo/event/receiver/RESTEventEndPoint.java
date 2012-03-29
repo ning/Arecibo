@@ -16,14 +16,15 @@
 
 package com.ning.arecibo.event.receiver;
 
-import com.google.inject.Inject;
 import com.ning.arecibo.event.BatchedEvent;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.event.MonitoringEvent;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.Logger;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -40,7 +41,7 @@ public class RESTEventEndPoint
     private final BaseEventProcessor processor;
 
     @Inject
-    public RESTEventEndPoint(BaseEventProcessor processor)
+    public RESTEventEndPoint(final BaseEventProcessor processor)
     {
         this.processor = processor;
     }
@@ -49,7 +50,7 @@ public class RESTEventEndPoint
 
     @POST
     @Path("/1.0/event")
-    public Response post(JsonNode node)
+    public Response post(final JsonNode node)
     {
         final Event e;
         if (node.isArray()) {
@@ -69,11 +70,11 @@ public class RESTEventEndPoint
         }
 
         if (processor instanceof EventProcessor) {
-            ((EventProcessor)processor).processEvent(e);
+            ((EventProcessor) processor).processEvent(e);
             return Response.ok().build();
         }
         else if (processor instanceof RESTEventProcessor) {
-            return ((RESTEventProcessor)processor).processEvent(e);
+            return ((RESTEventProcessor) processor).processEvent(e);
         }
         else {
             throw new IllegalStateException("Unsupported EventProcessor class: " + processor.getClass().getName());

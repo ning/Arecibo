@@ -16,10 +16,10 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
+import com.fasterxml.jackson.dataformat.smile.SmileConstants;
 import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Files;
-import org.codehaus.jackson.smile.SmileConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +88,8 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
         }
     }
 
-    private void flushUnderlyingBufferAndReset()
+    @VisibleForTesting
+    void flushUnderlyingBufferAndReset()
     {
         synchronized (inputBuffer) {
             if (inputBuffer.available() == 0) {

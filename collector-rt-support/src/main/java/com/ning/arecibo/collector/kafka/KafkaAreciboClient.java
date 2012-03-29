@@ -16,22 +16,24 @@
 
 package com.ning.arecibo.collector.kafka;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableMap;
-import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.RealtimeClient;
 import com.ning.arecibo.collector.RealtimeClientConfig;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableMap;
+import com.mogwee.executors.Executors;
 import kafka.consumer.Consumer;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.KafkaMessageStream;
 import kafka.javaapi.consumer.ConsumerConnector;
 import kafka.message.Message;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class KafkaAreciboClient implements RealtimeClient<Message>
 {
     private static final Logger log = LoggerFactory.getLogger(KafkaAreciboClient.class);
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
 
     private final Map<String, ExecutorService> executorServicePerTopic = new ConcurrentHashMap<String, ExecutorService>();
     private final Map<String, ConsumerConnector> kafkaConnectorPerTopic = new ConcurrentHashMap<String, ConsumerConnector>();

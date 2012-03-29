@@ -16,23 +16,25 @@
 
 package com.ning.arecibo.util.timeline;
 
+import com.ning.arecibo.util.Logger;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.joda.time.DateTime;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.annotate.JsonValue;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.joda.time.DateTime;
-
-import com.ning.arecibo.util.Logger;
-
-public class TimelineChunkAndTimesDecoded {
+public class TimelineChunkAndTimesDecoded
+{
     private static final Logger log = Logger.getLogger(TimelineChunkAndTimesDecoded.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final TimelineChunkAndTimes chunkAndTimes;
 
-    public TimelineChunkAndTimesDecoded(TimelineChunkAndTimes chunkAndTimes) {
+    public TimelineChunkAndTimesDecoded(final TimelineChunkAndTimes chunkAndTimes)
+    {
         this.chunkAndTimes = chunkAndTimes;
     }
 
@@ -62,17 +64,20 @@ public class TimelineChunkAndTimesDecoded {
         return null;
     }
 
-    private String getDecodedSamples() throws IOException {
+    private String getDecodedSamples() throws IOException
+    {
         final DecodedSampleOutputProcessor processor = new DecodedSampleOutputProcessor();
         SampleCoder.scan(chunkAndTimes.getTimelineChunk().getSamples(), chunkAndTimes.getTimelineTimes(), processor);
         return processor.getDecodedSamples();
     }
 
-    private static final class DecodedSampleOutputProcessor implements SampleProcessor {
+    private static final class DecodedSampleOutputProcessor implements SampleProcessor
+    {
         final StringBuilder builder = new StringBuilder();
 
         @Override
-        public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+        public void processSamples(final TimeCursor timeCursor, final int sampleCount, final SampleOpcode opcode, final Object value)
+        {
             if (builder.length() > 0) {
                 builder.append(", ");
             }
@@ -87,17 +92,18 @@ public class TimelineChunkAndTimesDecoded {
             }
             builder.append(opcode.name().toLowerCase());
             switch (opcode) {
-            case NULL:
-            case DOUBLE_ZERO:
-            case INT_ZERO:
-                break;
-            default:
-                builder.append("(").append(String.valueOf(value)).append(")");
-                break;
+                case NULL:
+                case DOUBLE_ZERO:
+                case INT_ZERO:
+                    break;
+                default:
+                    builder.append("(").append(String.valueOf(value)).append(")");
+                    break;
             }
         }
 
-        public String getDecodedSamples() {
+        public String getDecodedSamples()
+        {
             return builder.toString();
         }
     }

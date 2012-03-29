@@ -23,7 +23,7 @@ import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineTimes;
 import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
+import com.yammer.metrics.core.Counter;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.IDBI;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class TimelineAggregator
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
-    private final CounterMetric aggregatesCreated = Metrics.newCounter(TimelineAggregator.class, "aggregates-created");
+    private final Counter aggregatesCreated = Metrics.newCounter(TimelineAggregator.class, "aggregates-created");
 
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)

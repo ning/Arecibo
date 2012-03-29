@@ -16,11 +16,11 @@
 
 package com.ning.arecibo.event;
 
-import com.espertech.esper.client.EventBean;
 import com.ning.arecibo.eventlogger.Event;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.annotate.JsonValue;
+
+import com.espertech.esper.client.EventBean;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -38,12 +38,12 @@ public class MapEvent extends Event implements TransformableEvent
     public static final String KEY_UUID = "sourceUUID";
     public static final String KEY_TIMESTAMP = "timestamp";
 
-    private long ts;
-    private String type;
+    private final long ts;
+    private final String type;
     private UUID uuid;
-    private HashMap<String, Object> map;
+    private final HashMap<String, Object> map;
 
-    public MapEvent(Event event)
+    public MapEvent(final Event event)
     {
         super(event.getTimestamp(), event.getEventType(), event.getSourceUUID());
         this.type = event.getEventType();
@@ -53,11 +53,11 @@ public class MapEvent extends Event implements TransformableEvent
         copyEvent(event);
     }
 
-    private void copyEvent(Event event)
+    private void copyEvent(final Event event)
     {
-        Method[] methods = event.getClass().getMethods();
-        Object[] args = new Object[0];
-        for (Method m : methods) {
+        final Method[] methods = event.getClass().getMethods();
+        final Object[] args = new Object[0];
+        for (final Method m : methods) {
             if (m.getName().startsWith("get")) {
                 String field = m.getName().substring(3);
                 field = field.substring(0, 1).toLowerCase() + field.substring(1);
@@ -65,16 +65,16 @@ public class MapEvent extends Event implements TransformableEvent
                     try {
                         map.put(field, m.invoke(event, args));
                     }
-                    catch (IllegalAccessException e) {
+                    catch (IllegalAccessException ignored) {
                     }
-                    catch (InvocationTargetException e) {
+                    catch (InvocationTargetException ignored) {
                     }
                 }
             }
         }
     }
 
-    public MapEvent(long ts, String type, UUID uuid, Map<String, Object> map)
+    public MapEvent(final long ts, final String type, final UUID uuid, final Map<String, Object> map)
     {
         super(-1, MapEvent.class.getSimpleName(), FAKE_UUID);
         this.type = type;
@@ -84,13 +84,13 @@ public class MapEvent extends Event implements TransformableEvent
     }
 
     @JsonCreator
-    public MapEvent(Map<String, Object> map)
+    public MapEvent(final Map<String, Object> map)
     {
         super(-1, MapEvent.class.getSimpleName(), FAKE_UUID);
         this.map = new HashMap<String, Object>(map);
         this.type = (String) map.get(KEY_EVENT_NAME);
         this.uuid = UUID.fromString((String) map.get(KEY_UUID));
-        Long time = (Long) map.get(KEY_TIMESTAMP);
+        final Long time = (Long) map.get(KEY_TIMESTAMP);
         if (time == null) {
             this.ts = System.currentTimeMillis();
         }
@@ -102,7 +102,7 @@ public class MapEvent extends Event implements TransformableEvent
         this.map.remove(KEY_TIMESTAMP);
     }
 
-    public void setUuid(UUID uuid)
+    public void setUuid(final UUID uuid)
     {
         this.uuid = uuid;
     }
@@ -122,7 +122,7 @@ public class MapEvent extends Event implements TransformableEvent
         return ts;
     }
 
-    public Object getValue(String key)
+    public Object getValue(final String key)
     {
         return map.get(key);
     }
@@ -132,7 +132,7 @@ public class MapEvent extends Event implements TransformableEvent
         return map.keySet();
     }
 
-    public Object getObject(String name)
+    public Object getObject(final String name)
     {
         return map.get(name);
     }
@@ -140,7 +140,7 @@ public class MapEvent extends Event implements TransformableEvent
     @JsonValue
     public Map<String, Object> toMap()
     {
-        HashMap<String, Object> clone = (HashMap<String, Object>) map.clone();
+        final HashMap<String, Object> clone = (HashMap<String, Object>) map.clone();
         clone.put(KEY_EVENT_NAME, this.getEventType());
         clone.put(KEY_TIMESTAMP, this.getTimestamp());
         clone.put(KEY_UUID, this.getSourceUUID());
@@ -158,17 +158,17 @@ public class MapEvent extends Event implements TransformableEvent
             return "";
         }
 
-        StringBuffer sb = new StringBuffer();
-        for (Object o : map.values()) {
+        final StringBuilder sb = new StringBuilder();
+        for (final Object o : map.values()) {
             sb.append(o).append(", ");
         }
         return sb.toString();
     }
 
-    public static MapEvent fromEventBean(EventBean event, String eventName)
+    public static MapEvent fromEventBean(final EventBean event, final String eventName)
     {
-        Map<String, Object> map = new HashMap<String, Object>();
-        for (String name : event.getEventType().getPropertyNames()) {
+        final Map<String, Object> map = new HashMap<String, Object>();
+        for (final String name : event.getEventType().getPropertyNames()) {
             map.put(name, event.get(name));
         }
         map.put(MapEvent.KEY_EVENT_NAME, eventName);

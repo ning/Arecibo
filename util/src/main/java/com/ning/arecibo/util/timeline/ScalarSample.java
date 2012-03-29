@@ -16,28 +16,24 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.google.common.collect.ImmutableMap;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Shorts;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.annotate.JsonValue;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 
 /**
  * @param <T> A value consistent with the opcode
  */
 public class ScalarSample<T> extends SampleBase
 {
-    private static final String KEY_OPCODE = "O";
-    private static final String KEY_SAMPLE_CLASS = "K";
     private static final String KEY_SAMPLE_VALUE = "V";
 
+    @JsonProperty(KEY_SAMPLE_VALUE)
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
     private final T sampleValue;
 
-    public static ScalarSample fromObject(final Object sampleValue)
+    public static ScalarSample<?> fromObject(final Object sampleValue)
     {
         if (sampleValue == null) {
             return new ScalarSample<Void>(SampleOpcode.NULL, null);
@@ -86,7 +82,8 @@ public class ScalarSample<T> extends SampleBase
         }
     }
 
-    public ScalarSample(final SampleOpcode opcode, final T sampleValue)
+    @JsonCreator
+    public ScalarSample(@JsonProperty(KEY_OPCODE) final SampleOpcode opcode, @JsonProperty(KEY_SAMPLE_VALUE) final T sampleValue)
     {
         super(opcode);
         this.sampleValue = sampleValue;
@@ -98,16 +95,6 @@ public class ScalarSample<T> extends SampleBase
         this.sampleValue = sampleValue;
     }
 
-    @JsonCreator
-    public ScalarSample(@JsonProperty(KEY_OPCODE) final byte opcodeIdx,
-                        @JsonProperty(KEY_SAMPLE_CLASS) final Class klass,
-                        @JsonProperty(KEY_SAMPLE_VALUE) final T sampleValue) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException
-    {
-        super(SampleOpcode.getOpcodeFromIndex(opcodeIdx));
-        // Numerical classes have a String constructor
-        this.sampleValue = (T) klass.getConstructor(String.class).newInstance(sampleValue.toString());
-    }
-
     public T getSampleValue()
     {
         return sampleValue;
@@ -117,13 +104,5 @@ public class ScalarSample<T> extends SampleBase
     public String toString()
     {
         return sampleValue.toString();
-    }
-
-    @JsonValue
-    public Map<String, Object> toMap()
-    {
-        // Work around type erasure by storing explicitly the sample class. This avoid deserializing shorts as integers
-        // at replay time for instance
-        return ImmutableMap.of(KEY_OPCODE, opcode.getOpcodeIndex(), KEY_SAMPLE_CLASS, sampleValue.getClass(), KEY_SAMPLE_VALUE, sampleValue);
     }
 }

@@ -17,11 +17,12 @@
 package com.ning.arecibo.util.timeline;
 
 import com.ning.arecibo.util.Logger;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.annotate.JsonUnwrapped;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.annotate.JsonView;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
@@ -183,9 +184,9 @@ public class TimelineChunkAndTimes
                 }
 
                 builder
-                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
-                    .append(",")
-                    .append(valueString);
+                        .append(TimelineTimes.unixSeconds(sampleTimestamp))
+                        .append(",")
+                        .append(valueString);
             }
         }
 

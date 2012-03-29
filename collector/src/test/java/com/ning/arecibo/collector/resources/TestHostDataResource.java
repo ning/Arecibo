@@ -16,8 +16,6 @@
 
 package com.ning.arecibo.collector.resources;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockFileBackedBuffer;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
@@ -29,9 +27,15 @@ import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.jaxrs.DateTimeParameter;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.skife.config.ConfigurationObjectFactory;
@@ -49,7 +53,7 @@ import java.util.UUID;
 
 public class TestHostDataResource
 {
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
     private static final UUID HOST_1 = UUID.randomUUID();
     private static final UUID HOST_2 = UUID.randomUUID();
     private static final UUID HOST_3 = UUID.randomUUID();
@@ -232,20 +236,20 @@ public class TestHostDataResource
     private Map<Integer, ScalarSample> createEvent(final Integer sampleKindId, final long ts)
     {
         return ImmutableMap.<Integer, ScalarSample>of(
-            sampleKindId, new ScalarSample(SampleOpcode.LONG, Long.MIN_VALUE + ts)
+                sampleKindId, new ScalarSample(SampleOpcode.LONG, Long.MIN_VALUE + ts)
         );
     }
 
     private List<Map<String, Object>> getSamplesSinceDateTime(final List<String> hosts, final List<String> sampleKinds, final DateTime startTime) throws IOException
     {
         final StreamingOutput output = resource.getHostSamples(
-            new DateTimeParameter(startTime.toString()),
-            new DateTimeParameter(null),
-            true,
-            false,
-            false,
-            hosts,
-            sampleKinds
+                new DateTimeParameter(startTime.toString()),
+                new DateTimeParameter(null),
+                true,
+                false,
+                false,
+                hosts,
+                sampleKinds
         );
         return parseOutput(output);
     }

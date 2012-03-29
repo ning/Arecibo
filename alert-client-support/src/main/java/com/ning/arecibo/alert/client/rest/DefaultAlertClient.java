@@ -16,9 +16,6 @@
 
 package com.ning.arecibo.alert.client.rest;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
 import com.ning.arecibo.alert.client.AlertClient;
 import com.ning.arecibo.alert.client.discovery.AlertFinder;
 import com.ning.arecibo.alert.confdata.AlertingConfig;
@@ -30,15 +27,19 @@ import com.ning.arecibo.alert.confdata.Person;
 import com.ning.arecibo.alert.confdata.ThresholdContextAttr;
 import com.ning.arecibo.alert.confdata.ThresholdDefinition;
 import com.ning.arecibo.alert.confdata.ThresholdQualifyingAttr;
+
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonatype.spice.jersey.client.ahc.config.DefaultAhcConfig;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.MediaType;
@@ -82,10 +83,10 @@ public class DefaultAlertClient implements AlertClient
     public Integer createPerson(final String firstName, final String lastName, final String nickName) throws UniformInterfaceException
     {
         final Map<String, String> person = ImmutableMap.of(
-            "firstName", firstName,
-            "lastName", lastName,
-            "label", createLabel(nickName),
-            "isGroupAlias", "false");
+                "firstName", firstName,
+                "lastName", lastName,
+                "label", createLabel(nickName),
+                "isGroupAlias", "false");
 
         final URI location = doPost(PERSON_PATH, person);
         return extractIdFromURI(location);
@@ -95,8 +96,8 @@ public class DefaultAlertClient implements AlertClient
     public Integer createGroup(final String name)
     {
         final Map<String, ?> group = ImmutableMap.of(
-            "label", createLabel(name),
-            "isGroupAlias", Boolean.TRUE);
+                "label", createLabel(name),
+                "isGroupAlias", Boolean.TRUE);
 
         final URI location = doPost(PERSON_PATH, group);
         return extractIdFromURI(location);
@@ -171,8 +172,8 @@ public class DefaultAlertClient implements AlertClient
     {
         // First, create the Notification Group
         final Map<String, ?> group = ImmutableMap.of(
-            "label", createLabel(groupName),
-            "enabled", enabled);
+                "label", createLabel(groupName),
+                "enabled", enabled);
         final URI location = doPost(NOTIF_GROUP_PATH, group);
         final Integer notifGroupId = extractIdFromURI(location);
 
@@ -180,9 +181,9 @@ public class DefaultAlertClient implements AlertClient
         // TODO should we consider a bulk resource?
         for (final int notifConfigId : notificationsIds) {
             final Map<String, ?> mapping = ImmutableMap.of(
-                "label", createLabel(String.format("%d_to_%d", notifGroupId, notifConfigId)),
-                "notifGroupId", notifGroupId,
-                "notifConfigId", notifConfigId);
+                    "label", createLabel(String.format("%d_to_%d", notifGroupId, notifConfigId)),
+                    "notifGroupId", notifGroupId,
+                    "notifConfigId", notifConfigId);
             doPost(NOTIF_MAPPING_PATH, mapping);
         }
 
@@ -227,10 +228,10 @@ public class DefaultAlertClient implements AlertClient
     {
         // First, create the Alerting Config
         final Map<String, ?> alertingConfig = ImmutableMap.of(
-            "label", createLabel(name),
-            "notifRepeatMode", repeatUntilCleared ? "UNTIL_CLEARED" : "NO_REPEAT",
-            "notifOnRecovery", notifyOnRecovery,
-            "enabled", enabled);
+                "label", createLabel(name),
+                "notifRepeatMode", repeatUntilCleared ? "UNTIL_CLEARED" : "NO_REPEAT",
+                "notifOnRecovery", notifyOnRecovery,
+                "enabled", enabled);
         final URI location = doPost(ALERTING_CONFIG_PATH, alertingConfig);
         final Integer alertingConfigId = extractIdFromURI(location);
 
@@ -238,9 +239,9 @@ public class DefaultAlertClient implements AlertClient
         // TODO should we consider a bulk resource?
         for (final int notifGroupId : notificationGroupsIds) {
             final Map<String, ?> mapping = ImmutableMap.of(
-                "label", createLabel(String.format("%d_to_%d", alertingConfigId, notifGroupId)),
-                "alertingConfigId", alertingConfigId,
-                "notifGroupId", notifGroupId);
+                    "label", createLabel(String.format("%d_to_%d", alertingConfigId, notifGroupId)),
+                    "alertingConfigId", alertingConfigId,
+                    "notifGroupId", notifGroupId);
             doPost(NOTIF_GROUP_MAPPING_PATH, mapping);
         }
 
@@ -286,13 +287,13 @@ public class DefaultAlertClient implements AlertClient
                                          final Long clearingIntervalMs, final int alertingConfigId) throws UniformInterfaceException
     {
         final ImmutableMap.Builder<String, Object> thresholdConfigBuilder = new ImmutableMap.Builder<String, Object>()
-            .put("label", createLabel(name))
-            .put("monitoredEventType", monitoredEventType)
-            .put("monitoredAttributeType", monitoredAttributeType)
-            .put("minThresholdSamples", minThresholdSamples)
-            .put("maxSampleWindowMs", maxSampleWindowMs)
-            .put("clearingIntervalMs", clearingIntervalMs)
-            .put("alertingConfigId", alertingConfigId);
+                .put("label", createLabel(name))
+                .put("monitoredEventType", monitoredEventType)
+                .put("monitoredAttributeType", monitoredAttributeType)
+                .put("minThresholdSamples", minThresholdSamples)
+                .put("maxSampleWindowMs", maxSampleWindowMs)
+                .put("clearingIntervalMs", clearingIntervalMs)
+                .put("alertingConfigId", alertingConfigId);
 
         if (minThresholdValue != null) {
             thresholdConfigBuilder.put("minThresholdValue", minThresholdValue);
@@ -308,13 +309,13 @@ public class DefaultAlertClient implements AlertClient
 
     @Override
     public Integer createThresholdQualifyingAttr(final int thresholdConfigId, final String attributeType, final String attributeValue)
-        throws UniformInterfaceException
+            throws UniformInterfaceException
     {
         final Map<String, ?> thresholdQualifyingAttr = ImmutableMap.of(
-            "label", createLabel(String.format("%d: %s -> %s", thresholdConfigId, attributeType, attributeValue)),
-            "thresholdConfigId", thresholdConfigId,
-            "attributeType", attributeType,
-            "attributeValue", attributeValue);
+                "label", createLabel(String.format("%d: %s -> %s", thresholdConfigId, attributeType, attributeValue)),
+                "thresholdConfigId", thresholdConfigId,
+                "attributeType", attributeType,
+                "attributeValue", attributeValue);
         final URI location = doPost(THRESHOLD_QUALIFYING_ATTR_PATH, thresholdQualifyingAttr);
         return extractIdFromURI(location);
     }
@@ -323,9 +324,9 @@ public class DefaultAlertClient implements AlertClient
     public Integer createThresholdContextAttr(final int thresholdConfigId, final String attributeType) throws UniformInterfaceException
     {
         final Map<String, ?> thresholdContextAttr = ImmutableMap.of(
-            "label", createLabel(String.format("%d: %s", thresholdConfigId, attributeType)),
-            "thresholdConfigId", thresholdConfigId,
-            "attributeType", attributeType);
+                "label", createLabel(String.format("%d: %s", thresholdConfigId, attributeType)),
+                "thresholdConfigId", thresholdConfigId,
+                "attributeType", attributeType);
         final URI location = doPost(THRESHOLD_CONTEXT_ATTR_PATH, thresholdContextAttr);
         return extractIdFromURI(location);
     }
@@ -360,10 +361,10 @@ public class DefaultAlertClient implements AlertClient
     {
         //TODO for now just use a truncated version of the email address, need to devise something better
         final Map<String, ?> group = ImmutableMap.of(
-            "personId", id,
-            "address", address,
-            "notifType", notificationType,
-            "label", createLabel(address));
+                "personId", id,
+                "address", address,
+                "notifType", notificationType,
+                "label", createLabel(address));
 
         final URI location = doPost(NOTIF_CONFIG_PATH, group);
         return extractIdFromURI(location);
@@ -459,7 +460,7 @@ public class DefaultAlertClient implements AlertClient
 
     private void createClient()
     {
-        final DefaultAhcConfig config = new DefaultAhcConfig();
+        final DefaultClientConfig config = new DefaultClientConfig();
         config.getClasses().add(JacksonJsonProvider.class);
         client = Client.create(config);
     }
@@ -474,8 +475,8 @@ public class DefaultAlertClient implements AlertClient
 
         final WebResource resource = client.resource(collectorUri);
         resource
-            .accept(MediaType.APPLICATION_JSON)
-            .header("User-Agent", USER_AGENT);
+                .accept(MediaType.APPLICATION_JSON)
+                .header("User-Agent", USER_AGENT);
 
         return resource;
     }

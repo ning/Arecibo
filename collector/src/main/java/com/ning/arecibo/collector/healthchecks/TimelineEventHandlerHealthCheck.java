@@ -31,6 +31,7 @@ import java.util.UUID;
 @Singleton
 public class TimelineEventHandlerHealthCheck extends HealthCheck
 {
+    private static final String NAME = TimelineEventHandlerHealthCheck.class.getSimpleName();
     private static final String EVENT_TYPE = "AreciboCollectorHealthCheck";
     private static final UUID EVENT_UUID = UUID.randomUUID();
 
@@ -41,13 +42,8 @@ public class TimelineEventHandlerHealthCheck extends HealthCheck
     @Inject
     public TimelineEventHandlerHealthCheck(final TimelineEventHandler eventHandler)
     {
+        super(NAME);
         this.processor = eventHandler;
-    }
-
-    @Override
-    public String name()
-    {
-        return TimelineEventHandlerHealthCheck.class.getSimpleName();
     }
 
     @Override
@@ -64,11 +60,11 @@ public class TimelineEventHandlerHealthCheck extends HealthCheck
             processor.handle(new MapEvent(System.currentTimeMillis(), EVENT_TYPE, EVENT_UUID, payload));
         }
         catch (Exception e) {
-            log.warn("{} check failed", name());
+            log.warn("{} check failed", NAME);
             return Result.unhealthy(e);
         }
 
-        log.info("{} check succeeded", name());
+        log.info("{} check succeeded", NAME);
         return Result.healthy();
     }
 }

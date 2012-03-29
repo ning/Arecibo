@@ -16,10 +16,11 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
+import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

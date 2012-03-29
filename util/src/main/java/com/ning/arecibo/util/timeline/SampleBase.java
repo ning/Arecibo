@@ -16,14 +16,28 @@
 
 package com.ning.arecibo.util.timeline;
 
-public class SampleBase {
-    protected final SampleOpcode opcode;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-    public SampleBase(SampleOpcode opcode) {
+public class SampleBase
+{
+    protected static final String KEY_OPCODE = "O";
+
+    @JsonProperty(KEY_OPCODE)
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+    protected SampleOpcode opcode;
+
+    public SampleBase(final SampleOpcode opcode)
+    {
         this.opcode = opcode;
     }
 
-    public SampleOpcode getOpcode() {
+    public SampleBase()
+    {
+    }
+
+    public SampleOpcode getOpcode()
+    {
         return opcode;
     }
 }

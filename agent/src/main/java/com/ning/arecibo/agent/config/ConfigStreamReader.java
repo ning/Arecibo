@@ -16,54 +16,55 @@
 
 package com.ning.arecibo.agent.config;
 
+import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
 import com.ning.arecibo.util.Logger;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MappingJsonFactory;
+
 import java.io.IOException;
-import java.io.Reader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.HashMap;
-
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.MappingJsonFactory;
-import com.ning.arecibo.agent.guice.GuiceDefaultsForDataSources;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class ConfigStreamReader extends BaseConfigReader
 {
-	private static final Logger log = Logger.getLogger(BaseConfigReader.class);
+    private static final Logger log = Logger.getLogger(BaseConfigReader.class);
 
-    public final static String INCLUDES = "includes";
-    public final static String CONFIGS = "configs";
+    public static final String INCLUDES = "includes";
+    public static final String CONFIGS = "configs";
 
-	private final List<Config> configs = new ArrayList<Config>();
+    private final List<Config> configs = new ArrayList<Config>();
     private final List<String> includeFilesToProcess = new ArrayList<String>();
-    private final List<String> includeFilesProcessed = new ArrayList<String>();
 
-	public ConfigStreamReader(Reader inReader,String host, String configPath, String coreType,
-                              GuiceDefaultsForDataSources guiceDefaults) throws ConfigException
-	{
-		super(host, configPath, coreType, guiceDefaults);
+    public ConfigStreamReader(Reader inReader, final String host, final String configPath, final String coreType,
+                              final GuiceDefaultsForDataSources guiceDefaults) throws ConfigException
+    {
+        super(host, configPath, coreType, guiceDefaults);
 
         parseConfigsFromJSON(inReader);
 
-        ClassLoader cLoader = Thread.currentThread().getContextClassLoader();
-        while(includeFilesToProcess.size() > 0) {
-            String includeFile = includeFilesToProcess.remove(0);
+        final ClassLoader cLoader = Thread.currentThread().getContextClassLoader();
+        while (includeFilesToProcess.size() > 0) {
+            final String includeFile = includeFilesToProcess.remove(0);
 
             // make sure we don't duplicate any configs (prevent circular reference loop)
-            if(includeFilesProcessed.contains(includeFile))
+            final List<String> includeFilesProcessed = new ArrayList<String>();
+            if (includeFilesProcessed.contains(includeFile)) {
                 continue;
+            }
 
-            InputStream inputStream = cLoader.getResourceAsStream(includeFile);
+            final InputStream inputStream = cLoader.getResourceAsStream(includeFile);
             includeFilesProcessed.add(includeFile);
 
             if (inputStream != null) {
-                log.info("Loading config entries from included file '%s'",includeFile);
+                log.info("Loading config entries from included file '%s'", includeFile);
             }
             else {
                 throw new ConfigException("Could not load included config file '" + includeFile + "'");
@@ -74,8 +75,8 @@ public class ConfigStreamReader extends BaseConfigReader
         }
     }
 
-    private void parseConfigsFromJSON(Reader inReader) throws ConfigException {
-
+    private void parseConfigsFromJSON(final Reader inReader) throws ConfigException
+    {
         JsonParser parser = null;
         try {
             parser = new MappingJsonFactory().createJsonParser(inReader);
@@ -83,82 +84,81 @@ public class ConfigStreamReader extends BaseConfigReader
             parser.enable(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES);
             parser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
 
-            JsonNode rootNode = parser.readValueAsTree();
+            final JsonNode rootNode = parser.readValueAsTree();
 
             // add include file references to list to process later
-            JsonNode includesNode = rootNode.path(INCLUDES);
-            if(!includesNode.isMissingNode() && includesNode.size() > 0) {
-                Iterator<JsonNode> includeNodes = includesNode.getElements();
+            final JsonNode includesNode = rootNode.path(INCLUDES);
+            if (!includesNode.isMissingNode() && includesNode.size() > 0) {
 
-                while(includeNodes.hasNext()) {
-                    JsonNode includeNode = includeNodes.next();
-                    String fileName = includeNode.getValueAsText();
+                for (final JsonNode includeNode : includesNode) {
+                    final String fileName = includeNode.asText();
                     includeFilesToProcess.add(fileName);
                 }
             }
 
             // process configs
-            JsonNode configsNode = rootNode.path(CONFIGS);
-            if(!configsNode.isMissingNode() && configsNode.size() > 0) {
-                Iterator<JsonNode> configNodes = configsNode.getElements();
+            final JsonNode configsNode = rootNode.path(CONFIGS);
+            if (!configsNode.isMissingNode() && configsNode.size() > 0) {
 
-                while(configNodes.hasNext()) {
-                    JsonNode configNode = configNodes.next();
-                    Map<String,Object> fieldMap = new HashMap<String,Object>();
+                for (final JsonNode configNode : configsNode) {
+                    final Map<String, Object> fieldMap = new HashMap<String, Object>();
 
-                    Iterator<String> fieldNames = configNode.getFieldNames();
-                    while(fieldNames.hasNext()) {
-                        String fieldName = fieldNames.next();
-                        JsonNode valueNode = configNode.get(fieldName);
+                    final Iterator<String> fieldNames = configNode.fieldNames();
+                    while (fieldNames.hasNext()) {
+                        final String fieldName = fieldNames.next();
+                        final JsonNode valueNode = configNode.get(fieldName);
 
                         // allow one level of sub-nodes, and return list of objects
-                        if(valueNode.isArray()) {
-                            Iterator<JsonNode> arrayNodes = valueNode.getElements();
-                            ArrayList<Object> arrayValues = new ArrayList<Object>();
-                            while(arrayNodes.hasNext()) {
-                                JsonNode arrayNode = arrayNodes.next();
-                                arrayValues.add(arrayNode.getValueAsText());
+                        if (valueNode.isArray()) {
+                            final Iterator<JsonNode> arrayNodes = valueNode.elements();
+                            final ArrayList<Object> arrayValues = new ArrayList<Object>();
+                            while (arrayNodes.hasNext()) {
+                                final JsonNode arrayNode = arrayNodes.next();
+                                arrayValues.add(arrayNode.asText());
                             }
-                            fieldMap.put(fieldName,arrayValues);
+                            fieldMap.put(fieldName, arrayValues);
                         }
-                        else if(valueNode.isNumber()) {
-                            fieldMap.put(fieldName,valueNode.getNumberValue());
+                        else if (valueNode.isNumber()) {
+                            fieldMap.put(fieldName, valueNode.numberValue());
                         }
                         else {
-                            fieldMap.put(fieldName,valueNode.getValueAsText());
+                            fieldMap.put(fieldName, valueNode.asText());
                         }
                     }
 
-                    Config config = createConfigFromMap(fieldMap);
+                    final Config config = createConfigFromMap(fieldMap);
 
-                    if(config != null)
+                    if (config != null) {
                         configs.add(config);
+                    }
                 }
             }
         }
-        catch(IOException ioEx) {
-            throw new ConfigException("problem creating json parser from inputStream",ioEx);
+        catch (IOException ioEx) {
+            throw new ConfigException("problem creating json parser from inputStream", ioEx);
         }
-        catch(RuntimeException ruEx) {
+        catch (RuntimeException ruEx) {
             log.warn(ruEx);
-            throw new ConfigException("problem creating json parser from inputStream",ruEx);
+            throw new ConfigException("problem creating json parser from inputStream", ruEx);
         }
         finally {
             try {
-                if(parser != null)
+                if (parser != null) {
                     parser.close();
-                if(inReader != null)
+                }
+                if (inReader != null) {
                     inReader.close();
+                }
             }
-            catch(IOException ioEx) {
-                log.info(ioEx,"IOException:");
+            catch (IOException ioEx) {
+                log.info(ioEx, "IOException:");
                 // return ok here
             }
         }
-	}
+    }
 
-	public List<Config> getConfigurations()
-	{
-		return this.configs;
-	}
+    public List<Config> getConfigurations()
+    {
+        return this.configs;
+    }
 }

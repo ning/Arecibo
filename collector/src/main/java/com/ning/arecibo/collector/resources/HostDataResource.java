@@ -16,11 +16,6 @@
 
 package com.ning.arecibo.collector.resources;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheLoader;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Singleton;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
@@ -29,11 +24,19 @@ import com.ning.arecibo.util.timeline.TimelineChunksAndTimesViews;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.util.DefaultPrettyPrinter;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheLoader;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Singleton;
 import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
@@ -62,7 +65,9 @@ import java.util.concurrent.atomic.AtomicReference;
 @Path("/rest/1.0")
 public class HostDataResource
 {
-    private static final ObjectMapper objectMapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JodaModule())
+            .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, false);
 
     private final TimelineDAO dao;
     private final TimelineEventHandler processor;
@@ -266,7 +271,7 @@ public class HostDataResource
 
     private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final List<String> hostNames,
                                        final List<String> sampleKinds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
         final ImmutableList.Builder<Integer> hostIdsBuilder = new ImmutableList.Builder<Integer>();
@@ -294,7 +299,7 @@ public class HostDataResource
     @VisibleForTesting
     void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
                                     final List<Integer> sampleKindIdsList, @Nullable final DateTime startTime, @Nullable final DateTime endTime, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         for (final Integer hostId : hostIdsList) {
             final Collection<? extends TimelineChunkAndTimes> inMemorySamples = processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindIdsList, startTime, endTime);
@@ -304,7 +309,7 @@ public class HostDataResource
 
     private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
                                           final List<Integer> sampleKindIdsList, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         final AtomicReference<Integer> lastHostId = new AtomicReference<Integer>(null);
         final AtomicReference<Integer> lastSampleKindId = new AtomicReference<Integer>(null);
@@ -350,7 +355,7 @@ public class HostDataResource
     }
 
     private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         for (final TimelineChunkAndTimes chunk : chunksForHostAndSampleKind) {
             if (decodeSamples) {
@@ -395,7 +400,7 @@ public class HostDataResource
                 final JsonGenerator generator = objectMapper.getJsonFactory().createJsonGenerator(output);
                 generator.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
                 if (pretty) {
-                    generator.setPrettyPrinter(new DefaultPrettyPrinter());
+                    generator.useDefaultPrettyPrinter();
                 }
 
                 generator.writeStartArray();

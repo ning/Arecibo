@@ -18,7 +18,8 @@ package com.ning.arecibo.event.transport;
 
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.eventlogger.Event;
-import org.codehaus.jackson.map.ObjectMapper;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,18 +32,18 @@ public class JsonEventSerializer implements EventSerializer
     public static final String CONTENT_TYPE = "application/json";
     public static final ObjectMapper mapper = new ObjectMapper();
 
-    public void serialize(Event event, OutputStream stream) throws IOException
+    public void serialize(final Event event, final OutputStream stream) throws IOException
     {
         mapper.writeValue(stream, event);
     }
 
     // TODO : this won't work for streaming multiple events
-    public Event deserialize(InputStream in) throws IOException
+    public Event deserialize(final InputStream in) throws IOException
     {
-        InputStreamReader reader = new InputStreamReader(in);
-        BufferedReader br = new BufferedReader(reader);
+        final InputStreamReader reader = new InputStreamReader(in);
+        final BufferedReader br = new BufferedReader(reader);
 
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         String line;
         while ((line = br.readLine()) != null) {
             sb.append(line);

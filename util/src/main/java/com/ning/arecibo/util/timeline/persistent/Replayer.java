@@ -16,16 +16,18 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
+import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.fasterxml.jackson.dataformat.smile.SmileParser;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
-import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.smile.SmileFactory;
-import org.codehaus.jackson.smile.SmileParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public class Replayer
 {
     private static final Logger log = LoggerFactory.getLogger(Replayer.class);
     private static final SmileFactory smileFactory = new SmileFactory();
-    private static final ObjectMapper smileMapper = new ObjectMapper(smileFactory);
+    private static final ObjectMapper smileMapper = new ObjectMapper(smileFactory).registerModule(new JodaModule());
 
     static {
         smileFactory.configure(SmileParser.Feature.REQUIRE_HEADER, false);

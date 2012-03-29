@@ -16,16 +16,18 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
-import com.fasterxml.util.membuf.MemBuffersForBytes;
-import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
-import com.google.common.annotations.VisibleForTesting;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import org.codehaus.jackson.JsonEncoding;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.smile.SmileFactory;
-import org.codehaus.jackson.smile.SmileGenerator;
+
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.smile.SmileFactory;
+import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.util.membuf.MemBuffersForBytes;
+import com.fasterxml.util.membuf.StreamyBytesMemBuffer;
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public class FileBackedBuffer
     private static final Logger log = LoggerFactory.getLogger(FileBackedBuffer.class);
 
     private static final SmileFactory smileFactory = new SmileFactory();
-    private static final ObjectMapper smileObjectMapper = new ObjectMapper(smileFactory);
+    private static final ObjectMapper smileObjectMapper = new ObjectMapper(smileFactory).registerModule(new JodaModule());
 
     static {
         // Disable all magic for now as we don't write the Smile header (we share the same smileGenerator

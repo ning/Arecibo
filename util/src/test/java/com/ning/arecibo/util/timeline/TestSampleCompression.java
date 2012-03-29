@@ -20,10 +20,12 @@ import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class TestSampleCompression {
+public class TestSampleCompression
+{
 
-    @Test(groups="fast")
-    public void testBasicDoubleCompression() throws Exception {
+    @Test(groups = "fast")
+    public void testBasicDoubleCompression() throws Exception
+    {
 
         checkDoubleCodedResult(0.0, SampleOpcode.DOUBLE_ZERO, 1);
         checkDoubleCodedResult(1.0, SampleOpcode.BYTE_FOR_DOUBLE, 2);
@@ -41,14 +43,15 @@ public class TestSampleCompression {
         checkDoubleCodedResult(-200.0, SampleOpcode.SHORT_FOR_DOUBLE, 3);
         checkDoubleCodedResult(-32768.0, SampleOpcode.SHORT_FOR_DOUBLE, 3);
 
-        checkDoubleCodedResult((double)Float.MAX_VALUE, SampleOpcode.FLOAT_FOR_DOUBLE, 5);
-        checkDoubleCodedResult((double)Float.MIN_VALUE, SampleOpcode.FLOAT_FOR_DOUBLE, 5);
+        checkDoubleCodedResult((double) Float.MAX_VALUE, SampleOpcode.FLOAT_FOR_DOUBLE, 5);
+        checkDoubleCodedResult((double) Float.MIN_VALUE, SampleOpcode.FLOAT_FOR_DOUBLE, 5);
 
-        checkDoubleCodedResult(((double)Float.MAX_VALUE) * 10.0, SampleOpcode.DOUBLE, 9);
+        checkDoubleCodedResult(((double) Float.MAX_VALUE) * 10.0, SampleOpcode.DOUBLE, 9);
     }
 
     @SuppressWarnings("unchecked")
-    private void checkDoubleCodedResult(final double value, final SampleOpcode expectedOpcode, final int expectedSize) {
+    private void checkDoubleCodedResult(final double value, final SampleOpcode expectedOpcode, final int expectedSize)
+    {
         final ScalarSample codedSample = SampleCoder.compressSample(new ScalarSample(SampleOpcode.DOUBLE, value));
         Assert.assertEquals(codedSample.getOpcode(), expectedOpcode);
         final double error = value == 0.0 ? 0.0 : Math.abs((value - SampleCoder.getDoubleValue(codedSample)) / value);

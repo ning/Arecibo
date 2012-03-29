@@ -16,10 +16,8 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.google.common.collect.ImmutableMap;
-import org.codehaus.jackson.annotate.JsonCreator;
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.annotate.JsonValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.joda.time.DateTime;
 
 import java.util.HashMap;
@@ -37,10 +35,14 @@ public class HostSamplesForTimestamp
     private static final String KEY_TIMESTAMP = "T";
     private static final String KEY_SAMPLES = "S";
 
+    @JsonProperty(KEY_HOST)
     private final Integer hostId;
+    @JsonProperty(KEY_CATEGORY)
     private final String category;
+    @JsonProperty(KEY_TIMESTAMP)
     private final DateTime timestamp;
     // A map from sample id to sample value for that timestamp
+    @JsonProperty(KEY_SAMPLES)
     private final Map<Integer, ScalarSample> samples;
 
     public HostSamplesForTimestamp(final int hostId, final String category, final DateTime timestamp)
@@ -89,11 +91,5 @@ public class HostSamplesForTimestamp
         sb.append('}');
 
         return sb.toString();
-    }
-
-    @JsonValue
-    public Map<String, Object> toMap()
-    {
-        return ImmutableMap.of(KEY_HOST, hostId, KEY_CATEGORY, category, KEY_TIMESTAMP, timestamp, KEY_SAMPLES, samples);
     }
 }

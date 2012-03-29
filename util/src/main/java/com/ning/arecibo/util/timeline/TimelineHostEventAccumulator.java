@@ -18,7 +18,7 @@ package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.Sets;
 import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
+import com.yammer.metrics.core.Counter;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -54,7 +54,7 @@ public class TimelineHostEventAccumulator
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
 
     // One counter sample kind and resulting opcode
-    private final Map<Integer, Map<Byte, CounterMetric>> countersCache = new HashMap<Integer, Map<Byte, CounterMetric>>();
+    private final Map<Integer, Map<Byte, Counter>> countersCache = new HashMap<Integer, Map<Byte, Counter>>();
 
     private final TimelineDAO dao;
     private final int hostId;
@@ -234,15 +234,15 @@ public class TimelineHostEventAccumulator
         }
     }
 
-    private synchronized CounterMetric getOrCreateCounterMetric(final Integer sampleKindId, final SampleOpcode opcode)
+    private synchronized Counter getOrCreateCounterMetric(final Integer sampleKindId, final SampleOpcode opcode)
     {
-        Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
+        Map<Byte, Counter> countersForSampleKindId = countersCache.get(sampleKindId);
         if (countersForSampleKindId == null) {
-            countersForSampleKindId = new HashMap<Byte, CounterMetric>();
+            countersForSampleKindId = new HashMap<Byte, Counter>();
             countersCache.put(sampleKindId, countersForSampleKindId);
         }
 
-        CounterMetric counter = countersForSampleKindId.get(opcode.getOpcodeIndex());
+        Counter counter = countersForSampleKindId.get(opcode.getOpcodeIndex());
         if (counter == null) {
             final String host = dao.getHost(hostId);
             final String sampleKind = dao.getSampleKind(sampleKindId);
@@ -262,13 +262,13 @@ public class TimelineHostEventAccumulator
     private synchronized void destroyStats()
     {
         for (final Integer sampleKindId : countersCache.keySet()) {
-            final Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
+            final Map<Byte, Counter> countersForSampleKindId = countersCache.get(sampleKindId);
             for (final Byte opcode : countersForSampleKindId.keySet()) {
                 final String host = dao.getHost(hostId);
                 final String sampleKind = dao.getSampleKind(sampleKindId);
                 final SampleOpcode sampleOpcode = SampleOpcode.getOpcodeFromIndex(opcode);
                 log.info("Destroyed CounterMetric for host: {}, sampleKind: {} and opcode {}", new Object[]{host, sampleKind, sampleOpcode});
-                Metrics.removeMetric(TimelineHostEventAccumulator.class, getMetricName(host, sampleKind, sampleOpcode));
+                Metrics.defaultRegistry().removeMetric(TimelineHostEventAccumulator.class, getMetricName(host, sampleKind, sampleOpcode));
             }
         }
     }

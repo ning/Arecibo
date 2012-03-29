@@ -16,23 +16,25 @@
 
 package com.ning.arecibo.collector.rest;
 
-import com.google.inject.Inject;
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.collector.discovery.CollectorFinder;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.inject.Inject;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonatype.spice.jersey.client.ahc.config.DefaultAhcConfig;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.core.MediaType;
@@ -212,7 +214,8 @@ public class DefaultCollectorClient implements CollectorClient
 
     private void createClient()
     {
-        final DefaultAhcConfig config = new DefaultAhcConfig();
+        final DefaultClientConfig config = new DefaultClientConfig();
+        config.getClasses().add(JacksonJsonProvider.class);
         client = Client.create(config);
     }
 
@@ -249,7 +252,7 @@ public class DefaultCollectorClient implements CollectorClient
     private <T> T readValue(final InputStream stream, final TypeReference<T> valueTypeRef)
     {
         try {
-            return mapper.readValue(stream, valueTypeRef);
+            return mapper.<T>readValue(stream, valueTypeRef);
         }
         catch (JsonMappingException e) {
             log.warn("Failed to map response from collector", e);

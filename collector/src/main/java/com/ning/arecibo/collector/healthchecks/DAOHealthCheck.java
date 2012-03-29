@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 public class DAOHealthCheck extends HealthCheck
 {
+    private static final String NAME = DAOHealthCheck.class.getSimpleName();
+
     private final Logger log = LoggerFactory.getLogger(DAOHealthCheck.class);
 
     private final TimelineDAO dao;
@@ -31,13 +33,8 @@ public class DAOHealthCheck extends HealthCheck
     @Inject
     public DAOHealthCheck(final TimelineDAO dao)
     {
+        super(NAME);
         this.dao = dao;
-    }
-
-    @Override
-    public String name()
-    {
-        return DAOHealthCheck.class.getSimpleName();
     }
 
     @Override
@@ -47,11 +44,11 @@ public class DAOHealthCheck extends HealthCheck
             dao.test();
         }
         catch (Exception e) {
-            log.warn("{} check failed", name());
+            log.warn("{} check failed", NAME);
             return Result.unhealthy(e);
         }
 
-        log.info("{} check succeeded", name());
+        log.info("{} check succeeded", NAME);
         return Result.healthy();
     }
 }

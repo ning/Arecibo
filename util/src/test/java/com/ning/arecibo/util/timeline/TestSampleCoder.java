@@ -36,7 +36,6 @@ public class TestSampleCoder
         final TimelineTimes times = new TimelineTimes(-1, -1, "JVM", startTime, endTime,
             ImmutableList.<DateTime>of(startTime.plusSeconds(1), startTime.plusSeconds(2), startTime.plusSeconds(3), startTime.plusSeconds(4)));
 
-
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
         final ScalarSample<Short> sample = new ScalarSample<Short>(SampleOpcode.SHORT, (short) 4);

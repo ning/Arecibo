@@ -16,17 +16,19 @@
 
 package com.ning.arecibo.collector.rt.kafka;
 
-import com.google.inject.Inject;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.inject.Inject;
 import kafka.javaapi.producer.Producer;
 import kafka.javaapi.producer.ProducerData;
 import kafka.producer.ProducerConfig;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -39,7 +41,7 @@ public class KafkaEventHandler implements EventHandler
     private final AtomicLong eventsSent = new AtomicLong(0L);
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
 
-    final ObjectMapper mapper = new ObjectMapper();
+    final ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
     final Producer<String, String> producer;
 
     @Inject
