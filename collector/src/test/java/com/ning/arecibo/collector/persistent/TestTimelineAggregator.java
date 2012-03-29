@@ -16,19 +16,13 @@
 
 package com.ning.arecibo.collector.persistent;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Injector;
-import com.ning.arecibo.collector.TestModulesFactory;
-import com.ning.arecibo.collector.process.EventsUtils;
-import com.ning.arecibo.dao.MysqlTestingHelper;
-import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.SampleOpcode;
-import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
-import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+
+import javax.inject.Inject;
+
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -38,11 +32,18 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.inject.Inject;
-import java.io.IOException;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Injector;
+import com.ning.arecibo.collector.TestModulesFactory;
+import com.ning.arecibo.dao.MysqlTestingHelper;
+import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+import com.ning.arecibo.util.timeline.SampleOpcode;
+import com.ning.arecibo.util.timeline.ScalarSample;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
+import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 
 @Guice(moduleFactory = TestModulesFactory.class)
 public class TestTimelineAggregator
@@ -50,8 +51,9 @@ public class TestTimelineAggregator
     private static final UUID HOST_UUID = UUID.randomUUID();
     private static final String HOST_NAME = HOST_UUID.toString();
     private static final String EVENT_TYPE = "myType";
-    private static final String MIN_HEAPUSED_KIND = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "min_heapUsed");
-    private static final String MAX_HEAPUSED_KIND = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "max_heapUsed");
+    private static final int EVENT_TYPE_ID = 123;
+    private static final String MIN_HEAPUSED_KIND = "min_heapUsed";
+    private static final String MAX_HEAPUSED_KIND = "max_heapUsed";
     private static final DateTime START_TIME = new DateTime(DateTimeZone.UTC);
 
     @Inject
@@ -94,9 +96,9 @@ public class TestTimelineAggregator
         Assert.assertEquals(timelineDAO.getHosts().values().size(), 1);
 
         // Create the sample kinds
-        minHeapUsedKindId = timelineDAO.getOrAddSampleKind(hostId, MIN_HEAPUSED_KIND);
+        minHeapUsedKindId = timelineDAO.getOrAddSampleKind(hostId, EVENT_TYPE_ID, MIN_HEAPUSED_KIND);
         Assert.assertNotNull(minHeapUsedKindId);
-        maxHeapUsedKindId = timelineDAO.getOrAddSampleKind(hostId, MAX_HEAPUSED_KIND);
+        maxHeapUsedKindId = timelineDAO.getOrAddSampleKind(hostId, EVENT_TYPE_ID, MAX_HEAPUSED_KIND);
         Assert.assertNotNull(maxHeapUsedKindId);
         Assert.assertEquals(timelineDAO.getSampleKinds().values().size(), 2);
 
@@ -153,7 +155,7 @@ public class TestTimelineAggregator
 
     private void createAOneHourTimelineTimes(final int startTimeMinutesAgo) throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE, false);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE_ID, false);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = START_TIME.minusMinutes(startTimeMinutesAgo).plusSeconds(i * 30);

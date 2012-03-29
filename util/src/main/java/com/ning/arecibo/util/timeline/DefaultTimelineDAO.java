@@ -86,33 +86,63 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getSampleKindId(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return delegate.getSampleKindId(sampleKind);
+    public Integer getEventCategoryId(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+        return delegate.getEventCategoryId(eventCategory);
     }
 
     @Override
-    public String getSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return delegate.getSampleKind(sampleKindId);
+    public String getEventCategory(Integer eventCategoryId) throws UnableToObtainConnectionException, CallbackFailedException {
+        return delegate.getEventCategory(eventCategoryId);
     }
 
     @Override
-    public BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException
-    {
+    public BiMap<Integer, String> getEventCategories() throws UnableToObtainConnectionException, CallbackFailedException {
         final HashBiMap<Integer, String> accumulator = HashBiMap.create();
-        for (final Map<String, Object> sampleKind : delegate.getSampleKinds()) {
-            accumulator.put(Integer.valueOf(sampleKind.get("sample_kind_id").toString()), sampleKind.get("sample_kind").toString());
+        for (final Map<String, Object> eventCategory : delegate.getEventCategories()) {
+            accumulator.put(Integer.valueOf(eventCategory.get("event_category_id").toString()), eventCategory.get("event_category").toString());
         }
         return accumulator;
     }
 
     @Override
-    public synchronized Integer getOrAddSampleKind(final Integer hostId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public synchronized Integer getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+        delegate.begin();
+        delegate.addEventCategory(eventCategory);
+        final Integer eventCategoryId = delegate.getEventCategoryId(eventCategory);
+        delegate.commit();
+
+        return eventCategoryId;
+    }
+
+    @Override
+    public Integer getSampleKindId(final int eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return delegate.getSampleKindId(eventCategoryId, sampleKind);
+    }
+
+    @Override
+    public CategoryIdAndSampleKind getCategoryIdAndSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return delegate.getEventCategoryIdAndSampleKind(sampleKindId);
+    }
+
+    @Override
+    public BiMap<Integer, CategoryIdAndSampleKind> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        final HashBiMap<Integer, CategoryIdAndSampleKind> accumulator = HashBiMap.create();
+        for (final Map<String, Object> sampleKindInfo : delegate.getSampleKinds()) {
+            accumulator.put(Integer.valueOf(sampleKindInfo.get("sample_kind_id").toString()),
+                    new CategoryIdAndSampleKind((Integer)sampleKindInfo.get("event_category_id"), sampleKindInfo.get("sample_kind").toString()));
+        }
+        return accumulator;
+    }
+
+    @Override
+    public synchronized Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.begin();
-        delegate.addSampleKind(sampleKind);
-        final Integer sampleKindId = delegate.getSampleKindId(sampleKind);
+        delegate.addSampleKind(eventCategoryId, sampleKind);
+        final Integer sampleKindId = delegate.getSampleKindId(eventCategoryId, sampleKind);
         delegate.commit();
 
         return sampleKindId;

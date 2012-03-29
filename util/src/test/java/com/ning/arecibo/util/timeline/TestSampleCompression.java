@@ -55,7 +55,7 @@ public class TestSampleCompression {
         Assert.assertTrue(error <= SampleCoder.MAX_FRACTION_ERROR);
         final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(123, 456);
         accum.addSample(codedSample);
-        final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(789, new DateTime()).getSamples();
+        final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(789, new DateTime(), new DateTime()).getSamples();
         Assert.assertEquals(encodedSampleBytes.length, expectedSize);
     }
 }

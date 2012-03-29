@@ -26,7 +26,7 @@ public class TestTimelineChunkAccumulator {
     @Test(groups="fast")
     public void testBasicAccumulator() throws Exception {
         final int hostId = 123;
-        final String eventCategory = "JVM";
+        final int eventCategoryId = 345;
         final int sampleKindId = 456;
         final int timelineTimesId = 789;
         final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
@@ -40,9 +40,10 @@ public class TestTimelineChunkAccumulator {
 
         accum.addSample(new ScalarSample(SampleOpcode.STRING, new String("Hiya!")));
         final DateTime startTime = new DateTime();
-        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(timelineTimesId, startTime);
+        final DateTime endTime = startTime.plus(1000);
+        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(timelineTimesId, startTime, endTime);
         Assert.assertEquals(chunk.getSampleCount(), 9);
-        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(startTime), 30, timelineTimesId, 9, hostId, eventCategory);
+        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(startTime), 30, timelineTimesId, 9, hostId, eventCategoryId);
         Assert.assertEquals(times.getSampleCount(), 9);
         // Now play them back
         SampleCoder.scan(chunk.getSamples(), times, new SampleProcessor() {
@@ -79,7 +80,7 @@ public class TestTimelineChunkAccumulator {
     }
 
     private TimelineTimes makeTimelineTimesBytes(final int initialUnixTime, final int secondsBetweenSamples, final int timelineTimesId,
-            final int sampleCount, final int hostId, final String eventCategory)
+            final int sampleCount, final int hostId, final int eventCategoryId)
     {
         final int[] times = new int[sampleCount];
         for (int i=0; i<sampleCount; i++) {
@@ -87,7 +88,7 @@ public class TestTimelineChunkAccumulator {
         }
         return new TimelineTimes(timelineTimesId,
                                  hostId,
-                                 eventCategory,
+                                 eventCategoryId,
                                  TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime),
                                  TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime + secondsBetweenSamples * sampleCount),
                                  TimelineCoder.compressTimes(times),

@@ -44,7 +44,7 @@ public @interface TimelineTimesBinder
                 public void bind(final SQLStatement query, final TimelineTimesBinder binder, final TimelineTimes timelineTimes)
                 {
                     query.bind("hostId", timelineTimes.getHostId())
-                        .bind("eventCategory", timelineTimes.getEventCategory())
+                        .bind("eventCategoryId", timelineTimes.getEventCategoryId())
                         .bind("startTime", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
                         .bind("endTime", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
                         .bind("count", timelineTimes.getSampleCount());

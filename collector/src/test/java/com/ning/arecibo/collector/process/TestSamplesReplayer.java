@@ -44,7 +44,7 @@ public class TestSamplesReplayer
     // One will still be in memory after the flush
     private static final int EVENTS_ON_DISK = NB_EVENTS - 1;
     private static final int HOST_ID = 1;
-    private static final String EVENT_CATEGORY = "JVM";
+    private static final int EVENT_CATEGORY_ID = 123;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestSamplesReplayer-" + System.currentTimeMillis());
 
     @BeforeMethod(alwaysRun = true)
@@ -86,7 +86,7 @@ public class TestSamplesReplayer
 
         // Try to encode them again
         final MockTimelineDAO dao = new MockTimelineDAO();
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY, false);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID, false);
         for (final HostSamplesForTimestamp samplesFound : hostSamples) {
             accumulator.addHostSamples(samplesFound);
         }

@@ -31,7 +31,7 @@ public class TestTimelineTimes
     {
         final int timelineTimesId = 12;
         final int hostId = 42;
-        final String eventCategory = "JVM";
+        final int eventCategoryId = 55;
         final DateTime startTime = new DateTime("2009-01-16T21:23:58.316Z", DateTimeZone.UTC);
         final int sampleCount = 3;
         final List<DateTime> times = new ArrayList<DateTime>();
@@ -40,7 +40,7 @@ public class TestTimelineTimes
             times.add(startTime.plusSeconds(1 + i));
         }
 
-        final TimelineTimes timelineTimes = new TimelineTimes(timelineTimesId, hostId, eventCategory, startTime, times.get(times.size() - 1), times);
+        final TimelineTimes timelineTimes = new TimelineTimes(timelineTimesId, hostId, eventCategoryId, startTime, times.get(times.size() - 1), times);
         TimeCursor cursor = new TimeCursor(timelineTimes);
         for (int i = 0; i < sampleCount; i++) {
             Assert.assertEquals(cursor.getNextTime(), TimelineTimes.unixSeconds(times.get(i)));
