@@ -67,7 +67,7 @@ public class TimelineAggregator
      * This returns a list of lists of TimelineChunks.  Each of the lists is
      * a time-ordered sequence of chunks for one host and one sample kind.
      *
-     * @param timelineTimesId the timelineTimes ids for the TimelineTimes chunks
+     * @param timelineTimesIds the timelineTimes ids for the TimelineTimes chunks
      *                 to be aggregated
      * @return the list of lists of host/sample chunks for the supplied timelineTimesIds
      *         TODO: If we ever do multi-level aggregation, ordering by timeline_times_id
@@ -76,9 +76,9 @@ public class TimelineAggregator
      *         single-level aggreation.  And we could always sort in Java memory by matching
      *         up with the timeline_times start times.
      */
-    private List<List<TimelineChunk>> getHostSampleTimelineChunks(final List<Long> timelineTimesId)
+    private List<List<TimelineChunk>> getHostSampleTimelineChunks(final List<Long> timelineTimesIds)
     {
-        final List<TimelineChunk> chunks = aggregatorDao.getTimelineChunksForTimelineTimes(timelineTimesId);
+        final List<TimelineChunk> chunks = aggregatorDao.getTimelineChunksForTimelineTimes(timelineTimesIds);
 
         final List<List<TimelineChunk>> orderedHostSampleChunks = new ArrayList<List<TimelineChunk>>();
         int lastHostId = 0;
@@ -94,6 +94,9 @@ public class TimelineAggregator
                     orderedHostSampleChunks.add(hostSampleChunks);
                     hostSampleChunks = new ArrayList<TimelineChunk>();
                 }
+                hostSampleChunks.add(chunk);
+            }
+            else {
                 hostSampleChunks.add(chunk);
             }
         }
