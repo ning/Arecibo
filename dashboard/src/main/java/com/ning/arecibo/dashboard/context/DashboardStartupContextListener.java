@@ -23,6 +23,8 @@ import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.dashboard.guice.DashboardModule;
+import com.ning.arecibo.dashboard.healthchecks.CollectorClientHealthCheck;
+import com.ning.arecibo.dashboard.healthchecks.GalaxyStatusManagerHealthCheck;
 import com.ning.arecibo.event.publisher.HdfsEventPublisherModule;
 import com.ning.arecibo.util.galaxy.GalaxyModule;
 import com.ning.arecibo.util.lifecycle.Lifecycle;
@@ -53,6 +55,8 @@ public class DashboardStartupContextListener extends SetupServer
             .addModule(new DashboardModule())
             .addModule(new HdfsEventPublisherModule("server", "dashboard"))
             .addModule(new AlertDataModule("arecibo.dashboard.alert.conf.db"))
+            .addHealthCheck(CollectorClientHealthCheck.class)
+            .addHealthCheck(GalaxyStatusManagerHealthCheck.class)
             .enableLog4J()
             .setJerseyUriPattern("(.)*/rest/.*")
             .addJerseyResource("com.ning.arecibo.dashboard.resources")

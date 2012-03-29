@@ -16,8 +16,6 @@
 
 package com.ning.arecibo.dashboard.guice;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.collector.CollectorClientConfig;
 import com.ning.arecibo.collector.discovery.CollectorFinder;
@@ -28,14 +26,13 @@ import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.alert.ClusterAwareAlertClient;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
-import com.ning.arecibo.event.publisher.HdfsEventPublisher;
-import com.ning.arecibo.event.publisher.RandomEventServiceChooser;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Module;
 import org.skife.config.ConfigurationObjectFactory;
-import org.weakref.jmx.guice.ExportBuilder;
-import org.weakref.jmx.guice.MBeanModule;
 
 public class DashboardModule extends AbstractModule
 {
@@ -61,10 +58,6 @@ public class DashboardModule extends AbstractModule
         bind(AlertStatusManager.class).asEagerSingleton();
         bind(ClusterAwareAlertClient.class).asEagerSingleton();
         bind(AlertRESTClient.class).asEagerSingleton();
-
-        final ExportBuilder builder = MBeanModule.newExporter(binder());
-        builder.export(RandomEventServiceChooser.class).as("arecibo:type=HdfsEventServiceChooser");
-        builder.export(HdfsEventPublisher.class).as("arecibo:name=HdfsEventPublisher");
 
         installExtraModules(dashboardConfig);
     }

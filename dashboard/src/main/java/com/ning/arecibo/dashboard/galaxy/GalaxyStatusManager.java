@@ -30,10 +30,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class GalaxyStatusManager implements Runnable
 {
     private static final Logger log = Logger.getLogger(GalaxyStatusManager.class);
+
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     private final DashboardConfig config;
     private final GalaxyCorePicker corePicker;
@@ -56,6 +59,8 @@ public class GalaxyStatusManager implements Runnable
 
         // start the config updater
         this.executor.scheduleWithFixedDelay(this, 0, config.getGalaxyUpdateInterval().getMillis(), TimeUnit.MILLISECONDS);
+
+        isRunning.set(true);
     }
 
     public synchronized void stop()
@@ -63,7 +68,13 @@ public class GalaxyStatusManager implements Runnable
         if (this.executor != null) {
             this.executor.shutdown();
             this.executor = null;
+            isRunning.set(false);
         }
+    }
+
+    public ConcurrentHashMap<String, GalaxyCoreStatus> getCoreStatusMap()
+    {
+        return coreStatusMap;
     }
 
     public String getGlobalZone(final String hostName)
@@ -115,6 +126,11 @@ public class GalaxyStatusManager implements Runnable
         else {
             return parts[4];
         }
+    }
+
+    public boolean isRunning()
+    {
+        return isRunning.get();
     }
 
     public void run()
