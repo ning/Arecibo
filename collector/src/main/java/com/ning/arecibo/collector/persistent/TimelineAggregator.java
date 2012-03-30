@@ -245,7 +245,7 @@ public class TimelineAggregator
         }
 
         final String[] chunkCountsToAggregate = config.getChunksToAggregate().split(",");
-        for (int aggregationLevel=0; aggregationLevel<config.getMaxAggregationLevel(); aggregationLevel++) {
+        for (int aggregationLevel=0; aggregationLevel<config.getMaxAggregationLevel() - 1; aggregationLevel++) {
             final int chunkCountIndex = aggregationLevel >= chunkCountsToAggregate.length ? chunkCountsToAggregate.length - 1 : aggregationLevel;
             final int chunksToAggregate = Integer.parseInt(chunkCountsToAggregate[chunkCountIndex]);
             final List<TimelineTimes> timelineTimesCandidates = aggregatorDao.getTimelineTimesAggregationCandidates(aggregationLevel);
