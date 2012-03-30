@@ -71,8 +71,13 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.length")
     @Description("How long to buffer data in memory before flushing it to the database")
-    @Default("10m")
+    @Default("60m")
     TimeSpan getTimelineLength();
+
+    @Config("arecibo.collector.timelines.timelineAggregationEnabled")
+    @Description("If true, periodically perform timeline aggregation; if false, don't aggregate")
+    @Default("true")
+    boolean getTimelineAggregationEnabled();
 
     @Config("arecibo.collector.timelines.maxAggregationLevel")
     @Description("Max aggregation level")
