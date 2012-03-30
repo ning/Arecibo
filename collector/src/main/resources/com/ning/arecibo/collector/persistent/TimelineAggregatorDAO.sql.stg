@@ -13,7 +13,7 @@ getTimelineChunksForTimelineTimes(timelineTimesIds) ::= <<
   , blob_samples
   from timeline_chunks
   where timeline_times_id in (<timelineTimesIds>)
-  order by host_id, sample_kind_id, timeline_times_id
+  order by host_id, sample_kind_id, start_time
   ;
 >>
 

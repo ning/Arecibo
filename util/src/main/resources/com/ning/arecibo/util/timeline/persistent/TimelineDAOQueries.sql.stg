@@ -24,7 +24,7 @@ getHosts() ::= <<
   ;
 >>
 
-addHost() ::=<<
+addHost() ::= <<
   insert ignore into hosts (host_name, created_dt)
   values (:hostName, unix_timestamp());
 >>
