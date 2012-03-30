@@ -16,15 +16,17 @@
 
 package com.ning.arecibo.dashboard.resources;
 
+import com.ning.arecibo.collector.CollectorClient;
+import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
+import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.jersey.metrics.TimedResource;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Singleton;
-import com.ning.arecibo.collector.CollectorClient;
-import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
-import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.jersey.metrics.TimedResource;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.util.JSONPObject;
@@ -76,11 +78,11 @@ public class CollectorResource
 
             for (final String hostName : hosts) {
                 builder.add(ImmutableMap.<String, String>of(
-                    "hostName", hostName,
-                    "globalZone", Strings.nullToEmpty(manager.getGlobalZone(hostName)),
-                    "configPath", Strings.nullToEmpty(manager.getConfigPath(hostName)),
-                    "configSubPath", Strings.nullToEmpty(manager.getConfigSubPath(hostName)),
-                    "coreType", Strings.nullToEmpty(manager.getCoreType(hostName))
+                        "hostName", hostName,
+                        "globalZone", Strings.nullToEmpty(manager.getGlobalZone(hostName)),
+                        "configPath", Strings.nullToEmpty(manager.getConfigPath(hostName)),
+                        "configSubPath", Strings.nullToEmpty(manager.getConfigSubPath(hostName)),
+                        "coreType", Strings.nullToEmpty(manager.getCoreType(hostName))
                 ));
             }
 
@@ -101,7 +103,7 @@ public class CollectorResource
                                    @QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         try {
-            final Iterable<String> sampleKinds = client.getSampleKinds(hostNames);
+            final Iterable<CategoryAndSampleKinds> sampleKinds = client.getSampleKinds(hostNames);
             final JSONPObject object = new JSONPObject(callback, sampleKinds);
             return Response.ok(object).build();
         }

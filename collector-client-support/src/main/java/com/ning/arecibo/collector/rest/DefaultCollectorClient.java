@@ -16,10 +16,12 @@
 
 package com.ning.arecibo.collector.rest;
 
-import com.google.inject.Inject;
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.collector.discovery.CollectorFinder;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+
+import com.google.inject.Inject;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
@@ -99,9 +101,9 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Iterable<String> getSampleKinds() throws UniformInterfaceException
+    public Iterable<CategoryAndSampleKinds> getSampleKinds() throws UniformInterfaceException
     {
-        final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
+        final TypeReference<List<CategoryAndSampleKinds>> valueTypeRef = new TypeReference<List<CategoryAndSampleKinds>>()
         {
         };
         final InputStream stream = getSampleKindsAsStream();
@@ -110,9 +112,9 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public Iterable<String> getSampleKinds(final Iterable<String> hostNames) throws UniformInterfaceException
+    public Iterable<CategoryAndSampleKinds> getSampleKinds(final Iterable<String> hostNames) throws UniformInterfaceException
     {
-        final TypeReference<List<String>> valueTypeRef = new TypeReference<List<String>>()
+        final TypeReference<List<CategoryAndSampleKinds>> valueTypeRef = new TypeReference<List<CategoryAndSampleKinds>>()
         {
         };
         final InputStream stream = getSampleKindsAsStream(hostNames);

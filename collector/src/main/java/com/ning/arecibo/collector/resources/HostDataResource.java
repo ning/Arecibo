@@ -16,15 +16,28 @@
 
 package com.ning.arecibo.collector.resources;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimesDecoded;
+import com.ning.arecibo.util.timeline.TimelineChunksAndTimesViews;
+import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.jaxrs.DateTimeParameter;
+import com.ning.jersey.metrics.TimedResource;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheLoader;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Singleton;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.util.DefaultPrettyPrinter;
+import org.joda.time.DateTime;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -38,28 +51,17 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
-
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.util.DefaultPrettyPrinter;
-import org.joda.time.DateTime;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheLoader;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Singleton;
-import com.ning.arecibo.collector.persistent.TimelineEventHandler;
-import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesDecoded;
-import com.ning.arecibo.util.timeline.TimelineChunksAndTimesViews;
-import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.ning.jaxrs.DateTimeParameter;
-import com.ning.jersey.metrics.TimedResource;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Singleton
 @Path("/rest/1.0")
@@ -106,12 +108,14 @@ public class HostDataResource
         try {
             if (hostNames == null || hostNames.isEmpty()) {
                 final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = dao.getSampleKinds();
-                return streamResponse(sampleKinds.values(), pretty);
+                final Collection<CategoryAndSampleKinds> sampleKindsCollection = buildCategoryAndSampleKinds(sampleKinds.values());
+                return streamResponse(sampleKindsCollection, pretty);
             }
             else {
                 // Return the union of all sample kinds available for these hosts
-                final Set<CategoryIdAndSampleKind> sampleKinds = findCategoryIdsAndSampleKindsForHosts(hostNames);
-                return streamResponse(sampleKinds, pretty);
+                final Set<CategoryIdAndSampleKind> kindsForHosts = findCategoryIdsAndSampleKindsForHosts(hostNames);
+                final Collection<CategoryAndSampleKinds> sampleKindsCollection = buildCategoryAndSampleKinds(kindsForHosts);
+                return streamResponse(sampleKindsCollection, pretty);
             }
         }
         catch (CacheLoader.InvalidCacheLoadException e) {
@@ -284,7 +288,7 @@ public class HostDataResource
 
     private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIds,
                                        final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         // First, return all data in memory.
         // Data won't be merged with the on-disk one because we don't want to buffer samples in memory.
@@ -297,7 +301,7 @@ public class HostDataResource
     @VisibleForTesting
     void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
                                     final List<Integer> sampleKindIdsList, @Nullable final DateTime startTime, @Nullable final DateTime endTime, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         for (final Integer hostId : hostIdsList) {
             final Collection<? extends TimelineChunkAndTimes> inMemorySamples = processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindIdsList, startTime, endTime);
@@ -307,7 +311,7 @@ public class HostDataResource
 
     private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
                                           final List<Integer> sampleKindIdsList, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         final AtomicReference<Integer> lastHostId = new AtomicReference<Integer>(null);
         final AtomicReference<Integer> lastSampleKindId = new AtomicReference<Integer>(null);
@@ -353,7 +357,7 @@ public class HostDataResource
     }
 
     private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
-        throws IOException, ExecutionException
+            throws IOException, ExecutionException
     {
         for (final TimelineChunkAndTimes chunk : chunksForHostAndSampleKind) {
             if (decodeSamples) {
@@ -406,6 +410,19 @@ public class HostDataResource
         }
 
         return sampleKindIds;
+    }
+
+    private Collection<CategoryAndSampleKinds> buildCategoryAndSampleKinds(final Iterable<CategoryIdAndSampleKind> kindsForHosts)
+    {
+        final Map<Integer, CategoryAndSampleKinds> categoryAndSampleKinds = new HashMap<Integer, CategoryAndSampleKinds>();
+        for (final CategoryIdAndSampleKind kind : kindsForHosts) {
+            if (categoryAndSampleKinds.get(kind.getEventCategoryId()) == null) {
+                final String eventCategory = dao.getEventCategory(kind.getEventCategoryId());
+                categoryAndSampleKinds.put(kind.getEventCategoryId(), new CategoryAndSampleKinds(eventCategory));
+            }
+            categoryAndSampleKinds.get(kind.getEventCategoryId()).addSampleKind(kind.getSampleKind());
+        }
+        return categoryAndSampleKinds.values();
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)
