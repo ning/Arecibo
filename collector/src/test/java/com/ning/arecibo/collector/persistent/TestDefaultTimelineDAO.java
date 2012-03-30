@@ -16,14 +16,17 @@
 
 package com.ning.arecibo.collector.persistent;
 
-import com.google.common.collect.ImmutableList;
 import com.ning.arecibo.dao.MysqlTestingHelper;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineTimes;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -87,6 +90,18 @@ public class TestDefaultTimelineDAO
         final String sampleTwo = UUID.randomUUID().toString();
         final Integer sampleTwoId = dao.getOrAddSampleKind(hostId, eventCategoryId, sampleTwo);
         Assert.assertNotNull(sampleTwoId);
+
+        // Basic retrieval tests
+        final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = dao.getSampleKinds();
+        Assert.assertEquals(sampleKinds.size(), 2);
+        Assert.assertEquals(sampleKinds.get(sampleOneId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(sampleKinds.get(sampleOneId).getSampleKind(), sampleOne);
+        Assert.assertEquals(sampleKinds.get(sampleTwoId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(sampleKinds.get(sampleTwoId).getSampleKind(), sampleTwo);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleOneId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleOneId).getSampleKind(), sampleOne);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleTwoId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleTwoId).getSampleKind(), sampleTwo);
 
         // No samples yet
         Assert.assertEquals(ImmutableList.<Integer>copyOf(dao.getSampleKindIdsByHostId(hostId)).size(), 0);

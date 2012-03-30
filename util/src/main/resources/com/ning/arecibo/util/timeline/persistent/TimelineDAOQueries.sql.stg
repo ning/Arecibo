@@ -59,6 +59,15 @@ getSampleKindId() ::= <<
   ;
 >>
 
+getEventCategoryIdAndSampleKind() ::= <<
+  select
+    event_category_id
+  , sample_kind
+  from sample_kinds
+  where sample_kind_id = :sampleKindId
+  ;
+>>
+
 getSampleKind() ::= <<
   select
     sample_kind

@@ -17,12 +17,14 @@
 package com.ning.arecibo.util.timeline.persistent;
 
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKindMapper;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkBinder;
 import com.ning.arecibo.util.timeline.TimelineChunkMapper;
 import com.ning.arecibo.util.timeline.TimelineTimes;
 import com.ning.arecibo.util.timeline.TimelineTimesBinder;
 import com.ning.arecibo.util.timeline.TimelineTimesMapper;
+
 import org.skife.jdbi.v2.DefaultMapper;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -36,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 @ExternalizedSqlViaStringTemplate3()
-@RegisterMapper({TimelineTimesMapper.class, TimelineChunkMapper.class})
+@RegisterMapper({TimelineTimesMapper.class, TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class})
 public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 {
     @SqlQuery
