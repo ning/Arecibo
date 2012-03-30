@@ -58,7 +58,7 @@ public class TimelineHostEventAccumulator
 
     private final TimelineDAO dao;
     private final int hostId;
-    private final String eventCategory;
+    private final int eventCategoryId;
     private final boolean verboseStats;
     private DateTime startTime = null;
     private DateTime endTime = null;
@@ -73,11 +73,11 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId, final String eventCategory, final boolean verboseStats) throws IOException
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId, final int eventCategoryId, final boolean verboseStats) throws IOException
     {
         this.dao = dao;
         this.hostId = hostId;
-        this.eventCategory = eventCategory;
+        this.eventCategoryId = eventCategoryId;
         this.verboseStats = verboseStats;
     }
 
@@ -160,10 +160,10 @@ public class TimelineHostEventAccumulator
      */
     public void extractAndSaveTimelineChunks()
     {
-        final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, eventCategory, startTime, endTime, times);
+        final TimelineTimes dbTimelineTimes = new TimelineTimes(0, hostId, eventCategoryId, startTime, endTime, times);
         final int timelineTimesId = dao.insertTimelineTimes(dbTimelineTimes);
         for (final TimelineChunkAccumulator accumulator : timelines.values()) {
-            dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId, dbTimelineTimes.getStartTime()));
+            dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(timelineTimesId, startTime, endTime));
         }
 
         destroyStats();
@@ -202,9 +202,9 @@ public class TimelineHostEventAccumulator
         return hostId;
     }
 
-    public String getEventCategory()
+    public int getEventCategoryId()
     {
-        return eventCategory;
+        return eventCategoryId;
     }
 
     public DateTime getStartTime()
@@ -245,9 +245,10 @@ public class TimelineHostEventAccumulator
         CounterMetric counter = countersForSampleKindId.get(opcode.getOpcodeIndex());
         if (counter == null) {
             final String host = dao.getHost(hostId);
-            final String sampleKind = dao.getSampleKind(sampleKindId);
-            counter = Metrics.newCounter(TimelineHostEventAccumulator.class, getMetricName(host, sampleKind, opcode));
-            log.info("Created new CounterMetric for host: {}, sampleKind: {} and opcode {}", new Object[]{host, sampleKind, opcode});
+            final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(sampleKindId);
+            counter = Metrics.newCounter(TimelineHostEventAccumulator.class, getMetricName(host, categoryIdAndSampleKind.getSampleKind(), opcode));
+            log.info("Created new CounterMetric for host: {}, eventCategoryId: {}, sampleKind: {} and opcode {}",
+                    new Object[]{host, categoryIdAndSampleKind.getEventCategoryId(), categoryIdAndSampleKind.getSampleKind(), opcode});
             countersForSampleKindId.put(opcode.getOpcodeIndex(), counter);
         }
 
@@ -265,10 +266,11 @@ public class TimelineHostEventAccumulator
             final Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
             for (final Byte opcode : countersForSampleKindId.keySet()) {
                 final String host = dao.getHost(hostId);
-                final String sampleKind = dao.getSampleKind(sampleKindId);
+                final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(sampleKindId);
                 final SampleOpcode sampleOpcode = SampleOpcode.getOpcodeFromIndex(opcode);
-                log.info("Destroyed CounterMetric for host: {}, sampleKind: {} and opcode {}", new Object[]{host, sampleKind, sampleOpcode});
-                Metrics.removeMetric(TimelineHostEventAccumulator.class, getMetricName(host, sampleKind, sampleOpcode));
+                log.info("Destroyed CounterMetric for host: {}, eventCategoryId {}, sampleKind: {} and opcode {}",
+                        new Object[]{host, categoryIdAndSampleKind.getEventCategoryId(), categoryIdAndSampleKind.getSampleKind(), sampleOpcode});
+                Metrics.removeMetric(TimelineHostEventAccumulator.class, getMetricName(host, categoryIdAndSampleKind.getSampleKind(), sampleOpcode));
             }
         }
     }

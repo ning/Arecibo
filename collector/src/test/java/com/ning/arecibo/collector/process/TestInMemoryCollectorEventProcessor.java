@@ -41,17 +41,16 @@ public class TestInMemoryCollectorEventProcessor
 {
     private static final UUID HOST_UUID = UUID.randomUUID();
     private static final String EVENT_TYPE = "eventType";
-    private static final String KIND_A = "kindA";
-    private static final String KIND_B = "kindB";
-    private static final String SAMPLE_KIND_A = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, KIND_A);
-    private static final String SAMPLE_KIND_B = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, KIND_B);
-    private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(KIND_A, 12, KIND_B, 42);
+    private static final String SAMPLE_KIND_A = "kindA";
+    private static final String SAMPLE_KIND_B = "kindB";
+    private static final Map<String, Object> EVENT = ImmutableMap.<String, Object>of(SAMPLE_KIND_A, 12, SAMPLE_KIND_B, 42);
     private static final int NB_EVENTS = 5;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestInMemoryCollectorEventProcessor-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
     private CollectorEventProcessor processor;
     private TimelineEventHandler timelineEventHandler;
+    private int eventTypeId = 0;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
@@ -63,6 +62,7 @@ public class TestInMemoryCollectorEventProcessor
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
 
         dao.getOrAddHost(HOST_UUID.toString());
+        eventTypeId = dao.getOrAddEventCategory(EVENT_TYPE);
     }
 
     @Test(groups = "fast")
@@ -77,9 +77,9 @@ public class TestInMemoryCollectorEventProcessor
 
         final Integer hostId = dao.getHostId(HOST_UUID.toString());
         Assert.assertNotNull(hostId);
-        final Integer sampleKindAId = dao.getSampleKindId(SAMPLE_KIND_A);
+        final Integer sampleKindAId = dao.getSampleKindId(eventTypeId, SAMPLE_KIND_A);
         Assert.assertNotNull(sampleKindAId);
-        final Integer sampleKindBId = dao.getSampleKindId(SAMPLE_KIND_B);
+        final Integer sampleKindBId = dao.getSampleKindId(eventTypeId, SAMPLE_KIND_B);
         Assert.assertNotNull(sampleKindBId);
 
         // One per host and type

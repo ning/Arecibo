@@ -36,18 +36,22 @@ public class TimelineChunk extends CachedObject
     private final DateTime startTime;
     @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    private final DateTime endTime;
+    @JsonProperty
+    @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final byte[] samples;
     @JsonProperty
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final int sampleCount;
 
-    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final int timelineTimesId, final DateTime startTime, final byte[] samples, final int sampleCount)
+    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final int timelineTimesId, final DateTime startTime, final DateTime endTime, final byte[] samples, final int sampleCount)
     {
         super(sampleTimelineId);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
         this.timelineTimesId = timelineTimesId;
         this.startTime = startTime;
+        this.endTime = endTime;
         this.samples = samples;
         this.sampleCount = sampleCount;
     }
@@ -70,6 +74,11 @@ public class TimelineChunk extends CachedObject
     public DateTime getStartTime()
     {
         return startTime;
+    }
+
+    public DateTime getEndTime()
+    {
+        return endTime;
     }
 
     public byte[] getSamples()

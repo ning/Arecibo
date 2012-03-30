@@ -26,7 +26,7 @@ import java.util.List;
 public class TimelineTimes extends CachedObject
 {
     private final int hostId;
-    private final String eventCategory;
+    private final int eventCategoryId;
     private final DateTime startTime;
     private final DateTime endTime;
     private final int aggregationLevel;
@@ -39,11 +39,11 @@ public class TimelineTimes extends CachedObject
     @JsonView(TimelineChunksAndTimesViews.Compact.class)
     private final byte[] compressedTimes;
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final String eventCategory, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final int eventCategoryId, final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
-        this.eventCategory = eventCategory;
+        this.eventCategoryId = eventCategoryId;
         this.startTime = startTime;
         this.sampleCount = dateTimes.size();
         this.endTime = endTime;
@@ -57,11 +57,11 @@ public class TimelineTimes extends CachedObject
         notValid = false;
     }
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final String eventCategory, final DateTime startTime, final DateTime endTime, final byte[] compressedTimes, final int sampleCount)
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final int eventCategoryId, final DateTime startTime, final DateTime endTime, final byte[] compressedTimes, final int sampleCount)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
-        this.eventCategory = eventCategory;
+        this.eventCategoryId = eventCategoryId;
         this.startTime = startTime;
         this.endTime = endTime;
         this.sampleCount = sampleCount;
@@ -70,12 +70,12 @@ public class TimelineTimes extends CachedObject
         notValid = false;
     }
 
-    public TimelineTimes(final long timelineIntervalId, final int hostId, final String eventCategory, final DateTime startTime, final DateTime endTime,
+    public TimelineTimes(final long timelineIntervalId, final int hostId, final int eventCategoryId, final DateTime startTime, final DateTime endTime,
                          final byte[] compressedTimes, final int sampleCount, final int aggregationLevel, final boolean notValid)
     {
         super(timelineIntervalId);
         this.hostId = hostId;
-        this.eventCategory = eventCategory;
+        this.eventCategoryId = eventCategoryId;
         this.startTime = startTime;
         this.endTime = endTime;
         this.sampleCount = sampleCount;
@@ -89,9 +89,9 @@ public class TimelineTimes extends CachedObject
         return hostId;
     }
 
-    public String getEventCategory()
+    public int getEventCategoryId()
     {
-        return eventCategory;
+        return eventCategoryId;
     }
 
     public DateTime getStartTime()

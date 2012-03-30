@@ -20,6 +20,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
@@ -38,7 +39,8 @@ import java.util.Map;
 public final class MockTimelineDAO implements TimelineDAO
 {
     private final BiMap<Integer, String> hosts = HashBiMap.create();
-    private final BiMap<Integer, String> sampleKinds = HashBiMap.create();
+    private final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = HashBiMap.create();
+    private final BiMap<Integer, String> eventCategories = HashBiMap.create();
     private final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
     private final Multimap<Integer, Integer> hostSampleKindIds = HashMultimap.create();
@@ -47,13 +49,17 @@ public final class MockTimelineDAO implements TimelineDAO
     @Override
     public Integer getHostId(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        return hosts.inverse().get(host);
+        synchronized (hosts) {
+            return hosts.inverse().get(host);
+        }
     }
 
     @Override
     public String getHost(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        return hosts.get(hostId);
+        synchronized (hosts) {
+            return hosts.get(hostId);
+        }
     }
 
     @Override
@@ -78,31 +84,69 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getSampleKindId(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return sampleKinds.inverse().get(sampleKind);
+    public Integer getEventCategoryId(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+        synchronized (eventCategories) {
+            return eventCategories.inverse().get(eventCategory);
+        }
     }
 
     @Override
-    public String getSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return sampleKinds.get(sampleKindId);
+    public String getEventCategory(Integer eventCategoryId) throws UnableToObtainConnectionException, CallbackFailedException {
+        synchronized (eventCategories) {
+            return eventCategories.get(eventCategoryId);
+        }
     }
 
     @Override
-    public BiMap<Integer, String> getSampleKinds()
-    {
-        return sampleKinds;
+    public Integer getOrAddEventCategory( String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+        synchronized (eventCategories) {
+            Integer eventCategoryId = getEventCategoryId(eventCategory);
+            if (eventCategoryId == null) {
+                eventCategoryId = eventCategories.size() + 1;
+                eventCategories.put(eventCategoryId, eventCategory);
+            }
+
+            return eventCategoryId;
+        }
     }
 
     @Override
-    public Integer getOrAddSampleKind(final Integer hostId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public BiMap<Integer, String> getEventCategories() throws UnableToObtainConnectionException, CallbackFailedException {
+        return eventCategories;
+    }
+
+    @Override
+    public Integer getSampleKindId(final int eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         synchronized (sampleKinds) {
-            Integer sampleKindId = getSampleKindId(sampleKind);
+            return sampleKinds.inverse().get(new CategoryIdAndSampleKind(eventCategoryId, sampleKind));
+        }
+    }
+
+    @Override
+    public CategoryIdAndSampleKind getCategoryIdAndSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        synchronized (sampleKinds) {
+            return sampleKinds.get(sampleKindId);
+        }
+    }
+
+    @Override
+    public BiMap<Integer, CategoryIdAndSampleKind> getSampleKinds()
+    {
+        synchronized (sampleKinds) {
+            return sampleKinds;
+        }
+    }
+
+    @Override
+    public Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        synchronized (sampleKinds) {
+            Integer sampleKindId = getSampleKindId(eventCategoryId, sampleKind);
             if (sampleKindId == null) {
-                sampleKinds.put(sampleKinds.size(), sampleKind);
-                sampleKindId = sampleKinds.size() - 1;
+                sampleKindId = sampleKinds.size() + 1;
+                sampleKinds.put(sampleKindId, new CategoryIdAndSampleKind(eventCategoryId, sampleKind));
             }
 
             hostSampleKindIds.put(hostId, sampleKindId);
@@ -113,7 +157,9 @@ public final class MockTimelineDAO implements TimelineDAO
     @Override
     public Iterable<Integer> getSampleKindIdsByHostId(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        return hostSampleKindIds.get(hostId);
+        synchronized (sampleKinds) {
+            return hostSampleKindIds.get(hostId);
+        }
     }
 
     @Override

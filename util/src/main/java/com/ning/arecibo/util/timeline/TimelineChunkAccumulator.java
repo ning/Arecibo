@@ -83,11 +83,11 @@ public class TimelineChunkAccumulator
     /**
      * This method grabs the current encoded form, and resets the accumulator
      */
-    public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId, final DateTime startTime)
+    public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId, final DateTime startTime, final DateTime endTime)
     {
         // Extract the chunk
         final byte[] bytes = getEncodedSamples().getEncodedBytes();
-        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, timelineTimesId, startTime, bytes, sampleCount);
+        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, timelineTimesId, startTime, endTime, bytes, sampleCount);
 
         // Reset this current accumulator
         reset();

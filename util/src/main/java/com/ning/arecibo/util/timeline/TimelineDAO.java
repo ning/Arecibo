@@ -36,15 +36,25 @@ public interface TimelineDAO
 
     Integer getOrAddHost(String host) throws UnableToObtainConnectionException, CallbackFailedException;
 
+    // Event categories table
+
+    Integer getEventCategoryId(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    String getEventCategory(Integer eventCategoryId) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    BiMap<Integer, String> getEventCategories() throws UnableToObtainConnectionException, CallbackFailedException;
+
+    Integer getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException;
+
     // Sample kinds table
 
-    Integer getSampleKindId(String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
+    Integer getSampleKindId(int eventCategory, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    String getSampleKind(Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException;
+    CategoryIdAndSampleKind getCategoryIdAndSampleKind(Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException;
 
-    BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException;
+    BiMap<Integer, CategoryIdAndSampleKind> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    Integer getOrAddSampleKind(Integer hostId, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
+    Integer getOrAddSampleKind(Integer hostId, Integer eventCategoryId, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
     Iterable<Integer> getSampleKindIdsByHostId(Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException;
 

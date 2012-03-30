@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkBinder;
 import com.ning.arecibo.util.timeline.TimelineChunkMapper;
@@ -52,16 +53,29 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
     void addHost(@Bind("hostName") final String host);
 
     @SqlQuery
-    Integer getSampleKindId(@Bind("sampleKind") final String sampleKind);
+    Integer getEventCategoryId(@Bind("eventCategory") final String eventCategory);
 
     @SqlQuery
-    String getSampleKind(@Bind("sampleKindId") final Integer sampleKindId);
+    String getEventCategory(@Bind("eventCategoryId") final Integer eventCategoryId);
 
     @SqlUpdate
-    void addSampleKind(@Bind("sampleKind") final String sampleKind);
+    void addEventCategory(@Bind("eventCategory") final String eventCategory);
 
     @SqlQuery
     Iterable<Integer> getSampleKindIdsByHostId(@Bind("hostId") final Integer hostId);
+
+    @SqlQuery
+    Integer getSampleKindId(@Bind("eventCategoryId") final int eventCategoryId, @Bind("sampleKind") final String sampleKind);
+
+    @SqlQuery
+    CategoryIdAndSampleKind getEventCategoryIdAndSampleKind(@Bind("sampleKindId") final Integer sampleKindId);
+
+    @SqlUpdate
+    void addSampleKind(@Bind("eventCategoryId") final int eventCategoryId, @Bind("sampleKind") final String sampleKind);
+
+    @SqlQuery
+    @Mapper(DefaultMapper.class)
+    List<Map<String, Object>> getEventCategories();
 
     @SqlQuery
     @Mapper(DefaultMapper.class)

@@ -249,7 +249,7 @@ public class DefaultCollectorClient implements CollectorClient
     private <T> T readValue(final InputStream stream, final TypeReference<T> valueTypeRef)
     {
         try {
-            return mapper.readValue(stream, valueTypeRef);
+            return mapper.<T>readValue(stream, valueTypeRef);
         }
         catch (JsonMappingException e) {
             log.warn("Failed to map response from collector", e);

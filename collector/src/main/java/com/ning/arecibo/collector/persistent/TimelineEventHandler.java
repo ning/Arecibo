@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.healthchecks.DAOHealthCheck;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.process.EventsUtils;
 import com.ning.arecibo.eventlogger.Event;
@@ -161,6 +162,7 @@ public class TimelineEventHandler implements EventHandler
     {
         final int hostId = hostSamples.getHostId();
         final String category = hostSamples.getCategory();
+        final int categoryId = timelineDAO.getEventCategoryId(category);
 
         Map<String, TimelineHostEventAccumulator> hostAccumulators = accumulators.get(hostId);
         TimelineHostEventAccumulator accumulator = hostAccumulators.get(category);
@@ -170,7 +172,7 @@ public class TimelineEventHandler implements EventHandler
                 hostAccumulators = accumulators.get(hostId);
                 accumulator = hostAccumulators.get(category);
                 if (accumulator == null) {
-                    accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, category, config.getTimelinesVerboseStats());
+                    accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, categoryId, config.getTimelinesVerboseStats());
                     hostAccumulators.put(category, accumulator);
                     log.info("Created new Timeline for hostId [{}] and category [{}]", hostId, category);
                 }
@@ -215,9 +217,9 @@ public class TimelineEventHandler implements EventHandler
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
                 final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime);
+                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime, accumulatorEndTime);
                 // NOTE! Further time filtering needs to be done in the processing function
-                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulator.getEventCategory(), accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
+                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulator.getEventCategoryId(), accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 
                 if (!sampleKindIds.contains(timelineChunk.getSampleKindId())) {
                     // We don't care about this sample kind
@@ -237,10 +239,10 @@ public class TimelineEventHandler implements EventHandler
         if (inputSamples == null) {
             return;
         }
+        final Integer eventCategoryId = timelineDAO.getOrAddEventCategory(eventType);
 
         for (final String attributeName : inputSamples.keySet()) {
-            final String sampleKind = EventsUtils.getSampleKindFromEventAttribute(eventType, attributeName);
-            final Integer sampleKindId = timelineDAO.getOrAddSampleKind(hostId, sampleKind);
+            final Integer sampleKindId = timelineDAO.getOrAddSampleKind(hostId, eventCategoryId, attributeName);
             final Object sample = inputSamples.get(attributeName);
 
             outputSamples.put(sampleKindId, ScalarSample.fromObject(sample));

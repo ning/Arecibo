@@ -35,7 +35,7 @@ import java.util.List;
 public class TestTimelineChunkAndTimes
 {
     private static final int HOST_ID = 1242;
-    private static final String EVENT_CATEGORY = "JVM";
+    private static final int EVENT_CATEGORY_ID = 321;
     private static final int SAMPLE_KIND_ID = 12;
     private static final int SAMPLE_TIMELINE_ID = 30;
     private static final int TIMELINE_TIMES_ID = 11;
@@ -55,8 +55,9 @@ public class TestTimelineChunkAndTimes
             times.add(startTime.plusSeconds(1 + i));
         }
 
-        final TimelineTimes timelineTimes = new TimelineTimes(TIMELINE_TIMES_ID, HOST_ID, EVENT_CATEGORY, startTime, times.get(times.size() - 1), times);
-        final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, startTime, out.toByteArray(), sampleCount);
+        final DateTime endTime = times.get(times.size() - 1);
+        final TimelineTimes timelineTimes = new TimelineTimes(TIMELINE_TIMES_ID, HOST_ID, EVENT_CATEGORY_ID, startTime, endTime, times);
+        final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, TIMELINE_TIMES_ID, startTime, endTime, out.toByteArray(), sampleCount);
 
         final TimelineChunkAndTimes timelineChunkAndTimes = new TimelineChunkAndTimes(HOST_ID, SAMPLE_KIND_ID, timelineChunk, timelineTimes);
         Assert.assertEquals(timelineChunkAndTimes.toString(),

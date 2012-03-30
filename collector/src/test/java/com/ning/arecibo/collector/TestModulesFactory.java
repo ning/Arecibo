@@ -16,15 +16,16 @@
 
 package com.ning.arecibo.collector;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.AbstractModule;
-import com.google.inject.Module;
-import com.google.inject.name.Names;
 import com.ning.arecibo.collector.guice.CollectorRESTEventReceiverModule;
 import com.ning.arecibo.event.receiver.UDPEventReceiverModule;
 import com.ning.arecibo.util.EmbeddedJettyJerseyModule;
 import com.ning.arecibo.util.lifecycle.LifecycleModule;
 import com.ning.arecibo.util.rmi.RMIModule;
+
+import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Module;
+import com.google.inject.name.Names;
 import org.testng.IModuleFactory;
 import org.testng.ITestContext;
 
@@ -70,11 +71,11 @@ public class TestModulesFactory implements IModuleFactory
                 bind(String.class).annotatedWith(Names.named(TEST_JETTY_HOST)).toInstance("127.0.0.1");
                 bind(Integer.class).annotatedWith(Names.named(TEST_JETTY_PORT)).toInstance(port);
                 install(new LifecycleModule());
-                new EmbeddedJettyJerseyModule("(.)*/rest/.*",
-                    ImmutableList.<String>of("com.ning.arecibo.event.receiver",
-                        "com.ning.arecibo.collector.resources",
-                        "com.ning.arecibo.util.jaxrs"
-                    ));
+                install(new EmbeddedJettyJerseyModule("(.)*/rest/.*",
+                                                      ImmutableList.<String>of("com.ning.arecibo.event.receiver",
+                                                                               "com.ning.arecibo.collector.resources",
+                                                                               "com.ning.arecibo.util.jaxrs"
+                                                      )));
                 install(new UDPEventReceiverModule());
                 install(new RMIModule());
                 install(new CollectorTestModule());

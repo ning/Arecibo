@@ -35,11 +35,12 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
         final int timelineIntervalId = rs.getInt("timeline_times_id");
         final int sampleCount = rs.getInt("sample_count");
         final DateTime startTime = new DateTime(TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time")));
+        final DateTime endTime = new DateTime(TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time")));
         byte[] samples = rs.getBytes("in_row_samples");
         if (rs.wasNull()) {
             final Blob blobSamples = rs.getBlob("blob_samples");
             samples = blobSamples.getBytes(1, (int) blobSamples.length());
         }
-        return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, samples, sampleCount);
+        return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, endTime, samples, sampleCount);
     }
 }

@@ -16,28 +16,14 @@
 
 package com.ning.arecibo.collector;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.name.Names;
-import com.ning.arecibo.collector.persistent.TimelineEventHandler;
-import com.ning.arecibo.collector.process.CollectorEventProcessor;
-import com.ning.arecibo.collector.process.EventHandler;
-import com.ning.arecibo.collector.process.EventsUtils;
-import com.ning.arecibo.dao.MysqlTestingHelper;
-import com.ning.arecibo.event.MapEvent;
-import com.ning.arecibo.event.publisher.EventSenderType;
-import com.ning.arecibo.event.publisher.RESTEventService;
-import com.ning.arecibo.event.transport.EventSerializer;
-import com.ning.arecibo.event.transport.EventService;
-import com.ning.arecibo.event.transport.EventServiceRESTClient;
-import com.ning.arecibo.event.transport.JsonEventSerializer;
-import com.ning.arecibo.util.service.ServiceDescriptor;
-import com.ning.arecibo.util.timeline.TimeCursor;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.ning.http.client.AsyncHttpClient;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+
+import javax.inject.Inject;
+
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -47,19 +33,35 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import javax.inject.Inject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Executors;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
+import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.collector.process.CollectorEventProcessor;
+import com.ning.arecibo.collector.process.EventHandler;
+import com.ning.arecibo.dao.MysqlTestingHelper;
+import com.ning.arecibo.event.MapEvent;
+import com.ning.arecibo.event.publisher.EventSenderType;
+import com.ning.arecibo.event.publisher.RESTEventService;
+import com.ning.arecibo.event.transport.EventSerializer;
+import com.ning.arecibo.event.transport.EventService;
+import com.ning.arecibo.event.transport.EventServiceRESTClient;
+import com.ning.arecibo.event.transport.JsonEventSerializer;
+import com.ning.arecibo.util.service.ServiceDescriptor;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.TimeCursor;
+import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.http.client.AsyncHttpClient;
 
 @Guice(moduleFactory = TestModulesFactory.class)
 public class TestEventCollectorServer
 {
-    private static final String EVENT_TYPE = "myType";
-    private static final String MIN_HEAPUSED_KIND = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "min_heapUsed");
-    private static final String MAX_HEAPUSED_KIND = EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "max_heapUsed");
+    private static final String EVENT_TYPE = "JVM";
+    private static final String MIN_HEAPUSED_KIND = "min_heapUsed";
+    private static final String MAX_HEAPUSED_KIND = "max_heapUsed";
 
     @Inject
     MysqlTestingHelper helper;
@@ -128,12 +130,13 @@ public class TestEventCollectorServer
 
         final UUID hostUUID = UUID.randomUUID();
         final String hostName = hostUUID.toString();
+        final int eventTypeId = timelineDAO.getOrAddEventCategory(EVENT_TYPE);
         final Integer hostId = timelineDAO.getOrAddHost(hostName);
         Assert.assertNotNull(hostId);
 
-        final Integer minHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, MIN_HEAPUSED_KIND);
+        final Integer minHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, eventTypeId, MIN_HEAPUSED_KIND);
         Assert.assertNotNull(minHeapUserKindId);
-        final Integer maxHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, MAX_HEAPUSED_KIND);
+        final Integer maxHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, eventTypeId, MAX_HEAPUSED_KIND);
         Assert.assertNotNull(maxHeapUserKindId);
 
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
@@ -154,10 +157,11 @@ public class TestEventCollectorServer
             Assert.assertEquals(hosts.values().toArray()[0], hostName);
 
             // Make sure we saw all sample kinds
-            final BiMap<Integer, String> sampleKinds = timelineDAO.getSampleKinds();
-            Assert.assertEquals(sampleKinds.values().size(), event.getKeys().size());
-            Assert.assertTrue(sampleKinds.values().contains(MIN_HEAPUSED_KIND));
-            Assert.assertTrue(sampleKinds.values().contains(MAX_HEAPUSED_KIND));
+            final BiMap<Integer, CategoryIdAndSampleKind> categoryIdsAndSampleKinds = timelineDAO.getSampleKinds();
+            Assert.assertEquals(categoryIdsAndSampleKinds.values().size(), event.getKeys().size());
+            final List<String> sampleKinds = CategoryIdAndSampleKind.extractSampleKinds(categoryIdsAndSampleKinds.values());
+            Assert.assertTrue(sampleKinds.contains(MIN_HEAPUSED_KIND));
+            Assert.assertTrue(sampleKinds.contains(MAX_HEAPUSED_KIND));
         }
 
         timelineEventHandler.forceCommit();
