@@ -173,6 +173,7 @@
                                 <exclude>spool/**</exclude>
                                 <exclude>logs/**</exclude>
                                 <exclude>src/main/webapp/META-INF/MANIFEST.MF</exclude>
+                                <exclude>src/main/webapp/static/vendor/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
