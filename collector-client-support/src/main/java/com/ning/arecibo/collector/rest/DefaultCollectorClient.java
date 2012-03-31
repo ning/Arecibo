@@ -131,6 +131,10 @@ public class DefaultCollectorClient implements CollectorClient
         for (final String hostName : hostNames) {
             params.add("host", hostName);
         }
+        for (final String categoriesAndSampleKind : categoriesAndSampleKinds) {
+            params.add("category_and_sample_kind", categoriesAndSampleKind);
+        }
+
         params.add("from", from.toString());
         params.add("to", to.toString());
 
