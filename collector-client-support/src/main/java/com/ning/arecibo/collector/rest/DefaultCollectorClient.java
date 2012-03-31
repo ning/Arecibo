@@ -174,11 +174,11 @@ public class DefaultCollectorClient implements CollectorClient
 
             if (samplesForHostAndEventCategory.get(sample.getSampleKind()) == null) {
                 samplesForHostAndEventCategory.put(sample.getSampleKind(),
-                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getEventCategory(), sample.getSamples()));
+                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), sample.getSamples()));
             }
             else {
                 samplesForHostAndEventCategory.put(sample.getSampleKind(),
-                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getEventCategory(), samplesForHostAndEventCategory.get(sample.getSampleKind()) + "," + sample.getSamples()));
+                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), samplesForHostAndEventCategory.get(sample.getSampleKind()) + "," + sample.getSamples()));
             }
         }
 
