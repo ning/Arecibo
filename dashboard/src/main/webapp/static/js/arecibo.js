@@ -22,6 +22,28 @@ $(document).ready(function() {
 
     // UI setup (Ajax handlers, etc.)
     initializeUI();
+    setupDateTimePickers();
+
+    // Retrieve user's last input and populate the input fields
+    try {
+        $("#samples_start").val(localStorage.getItem("arecibo_latest_samples_start_lookup"));
+        $("#samples_end").val(localStorage.getItem("arecibo_latest_samples_end_lookup"));
+    } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
+
+    // Setup the Graph button
+    $("#crunch").click(function (event) {
+        // Store locally the latest search
+        var samples_start_lookup = $("#samples_start").val();
+        var samples_end_lookup = $("#samples_end").val();
+        try {
+            localStorage.setItem("arecibo_latest_samples_start_lookup", samples_start_lookup);
+            localStorage.setItem("arecibo_latest_samples_end_lookup", samples_end_lookup);
+        } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
+
+        window.location = buildGraphURL();
+        // Don't refresh the page
+        event.preventDefault();
+    });
 
     // Update hosts tree
     updateHostsTree();
@@ -79,14 +101,15 @@ function populateHostsTree(hosts) {
             var childNode = children[host.coreType];
             childNode.addChild({
                 title: host.hostName,
-                hideCheckbox: false
+                hideCheckbox: false,
+                icon: false
             });
         }
     }
 }
 
-function updateSampleKindsTree() {
-    var uri = '/rest/1.0/sample_kinds?';
+function buildHostsParamsFromTree() {
+    var uri = '';
     var tree = $("#hosts_tree").dynatree("getTree").getSelectedNodes();
     var hostsNb = 0;
 
@@ -104,17 +127,51 @@ function updateSampleKindsTree() {
         }
     }
 
+    return uri;
+}
+
+function buildCategoryAndSampleKindParamsFromTree() {
+    var uri = '';
+    var tree = $("#sample_kinds_tree").dynatree("getTree").getSelectedNodes();
+    var sampleKindsNb = 0;
+
+    for (var i in tree) {
+        var node = tree[i];
+        if (node.hasSubSel) {
+            continue;
+        } else {
+            if (sampleKindsNb > 0) {
+                uri += '&';
+            }
+
+            uri += 'category_and_sample_kind=';
+            var parent = node.getParent();
+            if (parent != null) {
+                uri += parent.data.title + ',';
+            }
+
+            uri += node.data.title;
+            sampleKindsNb++;
+        }
+    }
+
+    return uri;
+}
+
+function updateSampleKindsTree() {
+    var uri = buildHostsParamsFromTree();
+
     try {
         $("#sample_kinds_tree").dynatree("getRoot").removeChildren();
     } catch(e){
         // Ignore if the tree was empty
     }
 
-    if (hostsNb == 0) {
+    if (!uri) {
         return false;
     }
 
-    callArecibo(uri, 'populateSampleKindsTree');
+    callArecibo('/rest/1.0/sample_kinds?' + uri, 'populateSampleKindsTree');
     return false;
 }
 
@@ -148,82 +205,23 @@ function populateSampleKindsTree(kinds) {
             var kind = sampleKinds[j];
             childNode.addChild({
                 title: kind,
-                hideCheckbox: false
+                hideCheckbox: false,
+                icon: false
             });
         }
     }
 }
 
-function callArecibo(uri, callback, opts) {
-    var ajax_opts = {
-        url: window.arecibo['uri'] + uri,
-        dataType: "jsonp",
-        cache : false,
-        jsonp : "callback",
-        jsonpCallback: callback,
-        // Hacky error handling for JSONP requests
-        timeout : 20000
-    }
+function buildGraphURL() {
+    var from = new Date($("#samples_start").val());
+    var to = new Date($("#samples_end").val());
+    var uri = '/static/graph.html?' +
+                buildHostsParamsFromTree() + '&' +
+                buildCategoryAndSampleKindParamsFromTree() + '&' +
+                'from=' + ISODateString(from) + '&' +
+                'to=' + ISODateString(to);
 
-    if (!(opts === undefined)) {
-        for (var attrname in opts) {
-            ajax_opts[attrname] = opts[attrname];
-        }
-    }
-
-    // Populate the data
-    console.log("Calling " + ajax_opts.url);
-    $.ajax(ajax_opts);
-}
-
-function initializeUI() {
-    // Webkit browsers only
-    if (!window.location.origin) {
-        window.location.origin = window.location.protocol + "//" + window.location.host;
-    }
-
-    // See http://bugs.jquery.com/ticket/8338 - this is required for the Ajax feedback functions
-    jQuery.ajaxPrefilter(function(options) {
-        options.global = true;
-    });
-
-    // Setup the loading indicator for Ajax calls
-    $('#spinnerDiv')
-        .hide()  // hide it initially
-        .ajaxStart(function() {
-            $(this).show();
-        })
-        .ajaxStop(function() {
-            $(this).hide();
-        });
-
-    // Setup the error messages alert for Ajax calls
-    $('#errorDiv')
-        .hide()  // hide it initially
-        .ajaxError(function(event, jqXHR, settings) {
-            var message;
-            if (jqXHR.status === 0) {
-                message = 'Unable to connect to the remote host.';
-            } else if (jqXHR.status == 404) {
-                message = 'Requested resource not found [404].';
-            } else if (jqXHR.status == 500) {
-                message = 'Internal Server Error [500].';
-            } else if (jqXHR.exception === 'parsererror') {
-                message = 'Unable to parse the JSON response.';
-            } else if (jqXHR.exception === 'timeout') {
-                message = 'Connection timeout.';
-            } else if (jqXHR.exception === 'abort') {
-                message = 'Ajax request aborted.';
-            } else {
-                message = 'Uncaught Error. ' + jqXHR.responseText;
-            }
-
-            $(this).show();
-            $(this).append("<p>Error requesting " + settings.url + ". " + message + "<p>");
-            event.preventDefault();
-        });
-
-    setupDateTimePickers();
+    return uri;
 }
 
 /*
