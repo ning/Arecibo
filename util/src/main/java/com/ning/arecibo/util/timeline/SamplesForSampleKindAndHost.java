@@ -19,32 +19,35 @@ package com.ning.arecibo.util.timeline;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-public class CategoryAndSampleKinds
+public class SamplesForSampleKindAndHost
 {
     @JsonProperty
-    private final String eventCategory;
-    @JsonProperty
-    private final Set<String> sampleKinds = new HashSet<String>();
+    private final String hostName;
 
-    public CategoryAndSampleKinds(final String eventCategory)
-    {
-        this.eventCategory = eventCategory;
-    }
+    @JsonProperty
+    private final String eventCategory;
+
+    @JsonProperty
+    private final String sampleKind;
+
+    // TODO for now the dashboard consumes csv samples
+    // we should switch it to use the compact view (compressed)
+    @JsonProperty
+    private final String samples;
 
     @JsonCreator
-    public CategoryAndSampleKinds(@JsonProperty("eventCategory") final String eventCategory, @JsonProperty("sampleKinds") final List<String> sampleKinds)
+    public SamplesForSampleKindAndHost(@JsonProperty("hostName") final String hostName, @JsonProperty("eventCategory") final String eventCategory,
+                                       @JsonProperty("sampleKind") final String sampleKind, @JsonProperty("samples") final String samples)
     {
+        this.hostName = hostName;
         this.eventCategory = eventCategory;
-        this.sampleKinds.addAll(sampleKinds);
+        this.sampleKind = sampleKind;
+        this.samples = samples;
     }
 
-    public void addSampleKind(final String sampleKind)
+    public String getHostName()
     {
-        sampleKinds.add(sampleKind);
+        return hostName;
     }
 
     public String getEventCategory()
@@ -52,18 +55,25 @@ public class CategoryAndSampleKinds
         return eventCategory;
     }
 
-    public Set<String> getSampleKinds()
+    public String getSampleKind()
     {
-        return sampleKinds;
+        return sampleKind;
+    }
+
+    public String getSamples()
+    {
+        return samples;
     }
 
     @Override
     public String toString()
     {
         final StringBuilder sb = new StringBuilder();
-        sb.append("CategoryAndSampleKinds");
+        sb.append("SamplesForSampleKindAndHost");
         sb.append("{eventCategory='").append(eventCategory).append('\'');
-        sb.append(", sampleKinds=").append(sampleKinds);
+        sb.append(", hostName='").append(hostName).append('\'');
+        sb.append(", sampleKind='").append(sampleKind).append('\'');
+        sb.append(", samples='").append(samples).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -78,12 +88,18 @@ public class CategoryAndSampleKinds
             return false;
         }
 
-        final CategoryAndSampleKinds that = (CategoryAndSampleKinds) o;
+        final SamplesForSampleKindAndHost that = (SamplesForSampleKindAndHost) o;
 
         if (!eventCategory.equals(that.eventCategory)) {
             return false;
         }
-        if (!sampleKinds.equals(that.sampleKinds)) {
+        if (!hostName.equals(that.hostName)) {
+            return false;
+        }
+        if (!sampleKind.equals(that.sampleKind)) {
+            return false;
+        }
+        if (!samples.equals(that.samples)) {
             return false;
         }
 
@@ -93,8 +109,10 @@ public class CategoryAndSampleKinds
     @Override
     public int hashCode()
     {
-        int result = eventCategory.hashCode();
-        result = 31 * result + sampleKinds.hashCode();
+        int result = hostName.hashCode();
+        result = 31 * result + eventCategory.hashCode();
+        result = 31 * result + sampleKind.hashCode();
+        result = 31 * result + samples.hashCode();
         return result;
     }
 }

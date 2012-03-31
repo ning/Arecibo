@@ -16,28 +16,6 @@
 
 package com.ning.arecibo.collector.resources;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import javax.ws.rs.core.StreamingOutput;
-
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.skife.config.ConfigurationObjectFactory;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockFileBackedBuffer;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
@@ -49,6 +27,26 @@ import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.jaxrs.DateTimeParameter;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.skife.config.ConfigurationObjectFactory;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import javax.ws.rs.core.StreamingOutput;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 public class TestHostDataResource
 {
@@ -137,89 +135,98 @@ public class TestHostDataResource
     {
         final DateTime startTime = new DateTime(DateTimeZone.UTC).minusHours(2);
 
-        List<Map<String, Object>> timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
+        List<Map<String, Object>> samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
 
         // Send one sample first
         sendSamples(hostId1, sampleKindId1, startTime);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
 
         // Send the second sample to the same host
         sendSamples(hostId1, sampleKindId2, startTime);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId2);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 2);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 2);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_2);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
 
         // Send the first sample to the second host
         sendSamples(hostId2, sampleKindId1, startTime);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId2);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 2);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("hostId"), hostId2);
-        Assert.assertEquals(timlineChunkAndTimes.get(0).get("sampleKindId"), sampleKindId1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 0);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 2);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 1);
-        timlineChunkAndTimes = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
-        Assert.assertEquals(timlineChunkAndTimes.size(), 3);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_2);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_2);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
+        Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        Assert.assertEquals(samplesForSampleKindAndHost.size(), 3);
     }
 
     private void sendSamples(final Integer hostId, final Integer sampleKindId, final DateTime startTime) throws IOException
@@ -238,20 +245,20 @@ public class TestHostDataResource
     private Map<Integer, ScalarSample> createEvent(final Integer sampleKindId, final long ts)
     {
         return ImmutableMap.<Integer, ScalarSample>of(
-            sampleKindId, new ScalarSample(SampleOpcode.LONG, Long.MIN_VALUE + ts)
+                sampleKindId, new ScalarSample(SampleOpcode.LONG, Long.MIN_VALUE + ts)
         );
     }
 
     private List<Map<String, Object>> getSamplesSinceDateTime(final List<String> hosts, final List<String> categoriesAndSampleKinds, final DateTime startTime) throws IOException
     {
         final StreamingOutput output = resource.getHostSamples(
-            new DateTimeParameter(startTime.toString()),
-            new DateTimeParameter(null),
-            true,
-            false,
-            false,
-            hosts,
-            categoriesAndSampleKinds
+                new DateTimeParameter(startTime.toString()),
+                new DateTimeParameter(null),
+                true,
+                false,
+                false,
+                hosts,
+                categoriesAndSampleKinds
         );
         return parseOutput(output);
     }

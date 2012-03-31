@@ -19,6 +19,7 @@ package com.ning.arecibo.collector.resources;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesDecoded;
@@ -201,13 +202,13 @@ public class HostDataResource
      * <p/>
      * This entrypoint is expected to be the workhorse of the dashboard UI.
      *
-     * @param startTimeParameter start time for the samples
-     * @param endTimeParameter   end time for the samples
-     * @param pretty             whether pretty printing is enabled
-     * @param decodeSamples      whether samples should be decoded in human-readable form
-     * @param compact            whether compact representation should be used (csv default) - TODO
-     * @param hostNames          list of host names
-     * @param sampleKinds        list of sample kinds
+     * @param startTimeParameter       start time for the samples
+     * @param endTimeParameter         end time for the samples
+     * @param pretty                   whether pretty printing is enabled
+     * @param decodeSamples            whether samples should be decoded in human-readable form
+     * @param compact                  whether compact representation should be used (csv default) - TODO
+     * @param hostNames                list of host names
+     * @param categoriesAndSampleKinds list of samples kinds (format: category,sample_kind)
      * @return a StreamingOutput object whose write() method invokes the database query and
      *         processes the chunks retrieved.
      */
@@ -364,7 +365,13 @@ public class HostDataResource
                 writer.writeValue(generator, new TimelineChunkAndTimesDecoded(chunk));
             }
             else {
-                writer.writeValue(generator, chunk);
+                final String hostName = dao.getHost(chunk.getHostId());
+                final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(chunk.getSampleKindId());
+                final String eventCategory = dao.getEventCategory(categoryIdAndSampleKind.getEventCategoryId());
+                final String sampleKind = categoryIdAndSampleKind.getSampleKind();
+                // TODO pass compact form
+                final String samples = chunk.getSamplesAsCSV();
+                generator.writeObject(new SamplesForSampleKindAndHost(hostName, eventCategory, sampleKind, samples));
             }
         }
     }
