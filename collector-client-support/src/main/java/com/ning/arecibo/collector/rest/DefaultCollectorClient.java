@@ -182,7 +182,7 @@ public class DefaultCollectorClient implements CollectorClient
             }
             else {
                 samplesForHostAndEventCategory.put(sample.getSampleKind(),
-                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), samplesForHostAndEventCategory.get(sample.getSampleKind()) + "," + sample.getSamples()));
+                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), samplesForHostAndEventCategory.get(sample.getSampleKind()).getSamples() + "," + sample.getSamples()));
             }
         }
 
