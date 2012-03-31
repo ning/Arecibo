@@ -13,3 +13,14 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
+.rickshaw_legend {
+    background-color: white;
+}
+
+.rickshaw_legend span.label {
+    font-weight: normal;
+    background-color: white;
+    color: black;
+    text-transform: none;
+}
