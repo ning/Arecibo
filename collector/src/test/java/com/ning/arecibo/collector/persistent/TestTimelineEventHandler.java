@@ -45,11 +45,12 @@ public class TestTimelineEventHandler
         Assert.assertTrue(basePath.mkdir());
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        final int int2shortId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "int2short"));
-        final int long2intId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2int"));
-        final int long2shortId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2short"));
-        final int int2intId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "int2int"));
-        final int long2longId = dao.getOrAddSampleKind(1, EventsUtils.getSampleKindFromEventAttribute(EVENT_TYPE, "long2long"));
+        final int eventTypeId = dao.getOrAddEventCategory(EVENT_TYPE);
+        final int int2shortId = dao.getOrAddSampleKind(1, eventTypeId, "int2short");
+        final int long2intId = dao.getOrAddSampleKind(1, eventTypeId, "long2int");
+        final int long2shortId = dao.getOrAddSampleKind(1, eventTypeId, "long2short");
+        final int int2intId = dao.getOrAddSampleKind(1, eventTypeId, "int2int");
+        final int long2longId = dao.getOrAddSampleKind(1, eventTypeId, "long2long");
 
         final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new MockFileBackedBuffer());
 

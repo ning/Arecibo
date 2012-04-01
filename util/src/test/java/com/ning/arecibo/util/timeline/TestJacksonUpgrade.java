@@ -35,10 +35,6 @@ public class TestJacksonUpgrade
     @Test(groups = "fast")
     public void testVerySimple() throws Exception
     {
-        // With JodaModule:
-        // java.lang.AssertionError:
-        //  Expected :0
-        //  Actual   :PT0S
         final ObjectMapper mapper = new ObjectMapper().registerModule(new JodaModule());
         final Map<String, Object> map = ImmutableMap.<String, Object>of("A", new DateTime(DateTimeZone.UTC), "B", 0);
 

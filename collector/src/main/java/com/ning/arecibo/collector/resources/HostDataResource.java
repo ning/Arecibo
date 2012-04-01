@@ -17,6 +17,9 @@
 package com.ning.arecibo.collector.resources;
 
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesDecoded;
@@ -29,9 +32,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
-import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.CacheLoader;
 import com.google.common.collect.BiMap;
@@ -55,8 +56,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -107,13 +110,15 @@ public class HostDataResource
     {
         try {
             if (hostNames == null || hostNames.isEmpty()) {
-                final BiMap<Integer, String> sampleKinds = dao.getSampleKinds();
-                return streamResponse(sampleKinds.values(), pretty);
+                final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = dao.getSampleKinds();
+                final Collection<CategoryAndSampleKinds> sampleKindsCollection = buildCategoryAndSampleKinds(sampleKinds.values());
+                return streamResponse(sampleKindsCollection, pretty);
             }
             else {
                 // Return the union of all sample kinds available for these hosts
-                final Set<String> sampleKinds = findSampleKindsForHosts(hostNames);
-                return streamResponse(sampleKinds, pretty);
+                final Set<CategoryIdAndSampleKind> kindsForHosts = findCategoryIdsAndSampleKindsForHosts(hostNames);
+                final Collection<CategoryAndSampleKinds> sampleKindsCollection = buildCategoryAndSampleKinds(kindsForHosts);
+                return streamResponse(sampleKindsCollection, pretty);
             }
         }
         catch (CacheLoader.InvalidCacheLoadException e) {
@@ -138,15 +143,9 @@ public class HostDataResource
     {
         try {
             final Integer hostId = dao.getHostId(hostName);
-            final Iterable<Integer> sampleKindIds = dao.getSampleKindIdsByHostId(hostId);
+            final Iterable<Integer> sampleKindIdsIterable = dao.getSampleKindIdsByHostId(hostId);
 
-            // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
-            final ImmutableList.Builder<String> sampleKinds = ImmutableList.<String>builder();
-            for (final Integer sampleKindId : sampleKindIds) {
-                sampleKinds.add(dao.getSampleKind(sampleKindId));
-            }
-
-            return getHostSamples(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<String>of(hostName), sampleKinds.build());
+            return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>copyOf(sampleKindIdsIterable));
         }
         catch (CacheLoader.InvalidCacheLoadException e) {
             throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -158,7 +157,7 @@ public class HostDataResource
     }
 
     @GET
-    @Path("/{host}/{sample_kind}")
+    @Path("/{host}/{category_and_sample_kind}")
     @Produces(MediaType.APPLICATION_JSON)
     @TimedResource
     public StreamingOutput getSamplesByHostNameAndSampleKind(@QueryParam("from") @DefaultValue("") final DateTimeParameter startTimeParameter,
@@ -167,9 +166,14 @@ public class HostDataResource
                                                              @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                              @QueryParam("compact") @DefaultValue("false") final boolean compact,
                                                              @PathParam("host") final String hostName,
-                                                             @PathParam("sample_kind") final String sampleKind) throws IOException
+                                                             @PathParam("category_and_sample_kind") final String categoryAndSampleKind) throws IOException
     {
-        return getHostSamples(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<String>of(hostName), ImmutableList.<String>of(sampleKind));
+        final Integer hostId = dao.getHostId(hostName);
+        if (hostId == null) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+        final Integer sampleKindId = getSampleKindIdFromQueryParameter(categoryAndSampleKind);
+        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(sampleKindId));
     }
 
     /**
@@ -200,13 +204,13 @@ public class HostDataResource
      * <p/>
      * This entrypoint is expected to be the workhorse of the dashboard UI.
      *
-     * @param startTimeParameter start time for the samples
-     * @param endTimeParameter   end time for the samples
-     * @param pretty             whether pretty printing is enabled
-     * @param decodeSamples      whether samples should be decoded in human-readable form
-     * @param compact            whether compact representation should be used (csv default) - TODO
-     * @param hostNames          list of host names
-     * @param sampleKinds        list of sample kinds
+     * @param startTimeParameter       start time for the samples
+     * @param endTimeParameter         end time for the samples
+     * @param pretty                   whether pretty printing is enabled
+     * @param decodeSamples            whether samples should be decoded in human-readable form
+     * @param compact                  whether compact representation should be used (csv default) - TODO
+     * @param hostNames                list of host names
+     * @param categoriesAndSampleKinds list of samples kinds (format: category,sample_kind)
      * @return a StreamingOutput object whose write() method invokes the database query and
      *         processes the chunks retrieved.
      */
@@ -220,12 +224,28 @@ public class HostDataResource
                                           @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                           @QueryParam("compact") @DefaultValue("false") final boolean compact,
                                           @QueryParam("host") final List<String> hostNames,
-                                          @QueryParam("sample_kind") final List<String> sampleKinds)
+                                          @QueryParam("category_and_sample_kind") final List<String> categoriesAndSampleKinds)
     {
         if (hostNames == null || hostNames.isEmpty()) {
             throw new WebApplicationException(Response.Status.BAD_REQUEST);
         }
+        final List<Integer> hostIds = translateHostNamesToHostIds(hostNames);
+        final List<Integer> sampleKindIds = translateCategoriesAndSampleKindsToSampleKindIds(categoriesAndSampleKinds);
+        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, hostIds, sampleKindIds);
+    }
 
+    @GET
+    @Path("/host_samples_using_ids")
+    @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
+    public StreamingOutput getHostSamplesUsingIds(@QueryParam("from") @DefaultValue("") final DateTimeParameter startTimeParameter,
+                                                  @QueryParam("to") @DefaultValue("") final DateTimeParameter endTimeParameter,
+                                                  @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
+                                                  @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
+                                                  @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                  @QueryParam("host_id") final List<Integer> hostIds,
+                                                  @QueryParam("sample_kind_id") final List<Integer> sampleKindIds)
+    {
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
 
@@ -249,7 +269,7 @@ public class HostDataResource
 
                 generator.writeStartArray();
                 try {
-                    writeJsonForAllChunks(generator, writer, hostNames, sampleKinds, startTime, endTime, decodeSamples);
+                    writeJsonForAllChunks(generator, writer, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
                 }
                 catch (CacheLoader.InvalidCacheLoadException e) {
                     throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -269,31 +289,16 @@ public class HostDataResource
         };
     }
 
-    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final List<String> hostNames,
-                                       final List<String> sampleKinds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
+    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIds,
+                                       final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
-        // The first call is expensive, then all mappings are cached. This avoids a potentially costly join
-        final ImmutableList.Builder<Integer> hostIdsBuilder = new ImmutableList.Builder<Integer>();
-        for (final String hostName : hostNames) {
-            hostIdsBuilder.add(dao.getHostId(hostName));
-        }
-        final ImmutableList<Integer> hostIdsList = hostIdsBuilder.build();
-
-        final ImmutableList.Builder<Integer> sampleKindIdsBuilder = new ImmutableList.Builder<Integer>();
-        if (sampleKinds != null) {
-            for (final String sampleKind : sampleKinds) {
-                sampleKindIdsBuilder.add(dao.getSampleKindId(sampleKind));
-            }
-        }
-        final ImmutableList<Integer> sampleKindIdsList = sampleKindIdsBuilder.build();
-
         // First, return all data in memory.
         // Data won't be merged with the on-disk one because we don't want to buffer samples in memory.
-        writeJsonForInMemoryChunks(generator, writer, hostIdsList, sampleKindIdsList, startTime, endTime, decodeSamples);
+        writeJsonForInMemoryChunks(generator, writer, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
 
         // Now, return all data stored in the database
-        writeJsonForStoredChunks(generator, writer, hostIdsList, sampleKindIdsList, startTime, endTime, decodeSamples);
+        writeJsonForStoredChunks(generator, writer, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
     }
 
     @VisibleForTesting
@@ -362,16 +367,22 @@ public class HostDataResource
                 writer.writeValue(generator, new TimelineChunkAndTimesDecoded(chunk));
             }
             else {
-                writer.writeValue(generator, chunk);
+                final String hostName = dao.getHost(chunk.getHostId());
+                final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(chunk.getSampleKindId());
+                final String eventCategory = dao.getEventCategory(categoryIdAndSampleKind.getEventCategoryId());
+                final String sampleKind = categoryIdAndSampleKind.getSampleKind();
+                // TODO pass compact form
+                final String samples = chunk.getSamplesAsCSV();
+                generator.writeObject(new SamplesForSampleKindAndHost(hostName, eventCategory, sampleKind, samples));
             }
         }
     }
 
     @VisibleForTesting
-    Set<String> findSampleKindsForHosts(final List<String> hostNames) throws CacheLoader.InvalidCacheLoadException
+    Set<CategoryIdAndSampleKind> findCategoryIdsAndSampleKindsForHosts(final List<String> hostNames) throws CacheLoader.InvalidCacheLoadException
     {
         // Note: all of this is usually cached
-        final Set<String> sampleKinds = new HashSet<String>();
+        final Set<CategoryIdAndSampleKind> sampleKinds = new HashSet<CategoryIdAndSampleKind>();
 
         for (final String hostName : hostNames) {
             final Integer hostId = dao.getHostId(hostName);
@@ -380,14 +391,47 @@ public class HostDataResource
             }
 
             for (final Integer sampleKindId : dao.getSampleKindIdsByHostId(hostId)) {
-                final String sampleKind = dao.getSampleKind(sampleKindId);
-                if (sampleKind != null) {
-                    sampleKinds.add(sampleKind);
+                final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(sampleKindId);
+                if (categoryIdAndSampleKind != null) {
+                    sampleKinds.add(categoryIdAndSampleKind);
                 }
             }
         }
 
         return sampleKinds;
+    }
+
+    @VisibleForTesting
+    Set<Integer> findSampleKindIdsForHosts(final List<String> hostNames) throws CacheLoader.InvalidCacheLoadException
+    {
+        // Note: all of this is usually cached
+        final Set<Integer> sampleKindIds = new HashSet<Integer>();
+
+        for (final String hostName : hostNames) {
+            final Integer hostId = dao.getHostId(hostName);
+            if (hostId == null) {
+                continue;
+            }
+
+            for (final Integer sampleKindId : dao.getSampleKindIdsByHostId(hostId)) {
+                sampleKindIds.add(sampleKindId);
+            }
+        }
+
+        return sampleKindIds;
+    }
+
+    private Collection<CategoryAndSampleKinds> buildCategoryAndSampleKinds(final Iterable<CategoryIdAndSampleKind> kindsForHosts)
+    {
+        final Map<Integer, CategoryAndSampleKinds> categoryAndSampleKinds = new HashMap<Integer, CategoryAndSampleKinds>();
+        for (final CategoryIdAndSampleKind kind : kindsForHosts) {
+            if (categoryAndSampleKinds.get(kind.getEventCategoryId()) == null) {
+                final String eventCategory = dao.getEventCategory(kind.getEventCategoryId());
+                categoryAndSampleKinds.put(kind.getEventCategoryId(), new CategoryAndSampleKinds(eventCategory));
+            }
+            categoryAndSampleKinds.get(kind.getEventCategoryId()).addSampleKind(kind.getSampleKind());
+        }
+        return categoryAndSampleKinds.values();
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)
@@ -417,5 +461,42 @@ public class HostDataResource
     private Response buildServiceUnavailableResponse()
     {
         return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();
+    }
+
+    private int getSampleKindIdFromQueryParameter(final String categoryAndSampleKind)
+    {
+        final String[] parts = categoryAndSampleKind.split(",");
+        if (parts.length != 2) {
+            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        }
+        final String eventCategory = parts[0];
+        final String sampleKind = parts[1];
+        final Integer eventCategoryId = dao.getEventCategoryId(eventCategory);
+        if (eventCategoryId == null) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+        final Integer sampleKindId = dao.getSampleKindId(eventCategoryId, sampleKind);
+        if (sampleKindId == null) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+        return sampleKindId;
+    }
+
+    private List<Integer> translateHostNamesToHostIds(final List<String> hostNames)
+    {
+        final List<Integer> hostIds = new ArrayList<Integer>(hostNames.size());
+        for (final String hostName : hostNames) {
+            hostIds.add(dao.getHostId(hostName));
+        }
+        return hostIds;
+    }
+
+    private List<Integer> translateCategoriesAndSampleKindsToSampleKindIds(final List<String> categoriesAndSampleKinds)
+    {
+        final List<Integer> sampleKindIds = new ArrayList<Integer>(categoriesAndSampleKinds.size());
+        for (final String categoryAndSampleKind : categoriesAndSampleKinds) {
+            sampleKindIds.add(getSampleKindIdFromQueryParameter(categoryAndSampleKind));
+        }
+        return sampleKindIds;
     }
 }

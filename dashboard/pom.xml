@@ -77,6 +77,11 @@
             <artifactId>ning-service-skeleton-base</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.ning.jetty</groupId>
+            <artifactId>ning-service-skeleton-jaxrs</artifactId>
+            <version>0.0.22</version>
+        </dependency>
+        <dependency>
             <groupId>com.ning</groupId>
             <artifactId>async-http-client</artifactId>
         </dependency>
@@ -172,6 +177,7 @@
                                 <exclude>spool/**</exclude>
                                 <exclude>logs/**</exclude>
                                 <exclude>src/main/webapp/META-INF/MANIFEST.MF</exclude>
+                                <exclude>src/main/webapp/static/vendor/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>

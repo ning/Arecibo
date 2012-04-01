@@ -59,6 +59,11 @@ public interface CollectorConfig
     @Default("10000")
     int getMaxHosts();
 
+    @Config("arecibo.collector.timelines.maxEventCategories")
+    @Description("Max number of different event categories to keep in memory at the same time")
+    @Default("10000")
+    int getMaxEventCategories();
+
     @Config("arecibo.collector.timelines.maxSampleKinds")
     @Description("Max number of different sample kinds to keep in memory at the same time")
     @Default("10000")
@@ -66,13 +71,24 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.length")
     @Description("How long to buffer data in memory before flushing it to the database")
-    @Default("10m")
+    @Default("60m")
     TimeSpan getTimelineLength();
+
+    @Config("arecibo.collector.timelines.timelineAggregationEnabled")
+    @Description("If true, periodically perform timeline aggregation; if false, don't aggregate")
+    @Default("true")
+    boolean getTimelineAggregationEnabled();
 
     @Config("arecibo.collector.timelines.maxAggregationLevel")
     @Description("Max aggregation level")
-    @Default("2")
+    @Default("3")
     int getMaxAggregationLevel();
+
+    @Config("arecibo.collector.timelines.chunksToAggregate")
+    @Description("A string with a comma-separated set of integers, one for each aggregation level, giving the number of sequential TimelineTimes chunks with that aggregation level we must find to perform aggregation")
+    // These values translate to 12 hours; 7 days and 3 weeks
+    @Default("12,14,3")
+    String getChunksToAggregate();
 
     @Config("arecibo.collector.timelines.aggregationInterval")
     @Description("How often to check to see if there are timelines ready to be aggregated")
@@ -98,11 +114,6 @@ public interface CollectorConfig
     @Description("Spool directory for in-memory data")
     @Default("/var/tmp/arecibo")
     String getSpoolDir();
-
-    @Config("arecibo.collector.timelines.chunksToAggregate")
-    @Description("The number of unaggregated sequential TimelineTimes chunks we must find to perform aggregation")
-    @Default("12")
-    int getChunksToAggregate();
 
     @Config("arecibo.collector.timelines.verboseStats")
     @Description("Whether to expose in JMX verbose stats per timeline (host), sample kind and opcode")

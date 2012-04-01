@@ -52,9 +52,4 @@ public class EventsUtils
             return null;
         }
     }
-
-    public static String getSampleKindFromEventAttribute(final String eventType, final String attributeName)
-    {
-        return eventType + "." + attributeName;
-    }
 }

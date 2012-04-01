@@ -33,7 +33,7 @@ public class TestSampleCoder
     {
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
         final DateTime endTime = startTime.plusSeconds(5);
-        final TimelineTimes times = new TimelineTimes(-1, -1, "JVM", startTime, endTime,
+        final TimelineTimes times = new TimelineTimes(-1, -1, 123, startTime, endTime,
             ImmutableList.<DateTime>of(startTime.plusSeconds(1), startTime.plusSeconds(2), startTime.plusSeconds(3), startTime.plusSeconds(4)));
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -62,7 +62,7 @@ public class TestSampleCoder
         final DateTime endTime = new DateTime("2012-03-23T17:35:17.924Z");
         final int sampleCount = 2;
 
-        final TimelineTimes times = new TimelineTimes(0, -1, "JVM", startTime, endTime, ImmutableList.<DateTime>of(startTime, endTime));
+        final TimelineTimes times = new TimelineTimes(0, -1, 123, startTime, endTime, ImmutableList.<DateTime>of(startTime, endTime));
         final TimeCursor cursor = times.getTimeCursor();
         Assert.assertEquals(cursor.getNextTime(), TimelineTimes.unixSeconds(startTime));
         Assert.assertEquals(cursor.getNextTime(), TimelineTimes.unixSeconds(endTime));

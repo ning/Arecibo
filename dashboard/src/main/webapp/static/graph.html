@@ -1,0 +1,152 @@
+<!-- Copyright 2010-2012 Ning, Inc.
+
+Ning licenses this file to you under the Apache License, version 2.0
+(the "License"); you may not use this file except in compliance with the
+License.  You may obtain a copy of the License at:
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+License for the specific language governing permissions and limitations
+under the License. -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Arecibo dashboard</title>
+    <!-- See http://docs.jquery.com/Downloading_jQuery -->
+    <script type="text/javascript" src="./vendor/js/jquery-1.7.1.min.js"></script>
+
+    <!-- See http://jqueryui.com/download -->
+    <script type="text/javascript" src="./vendor/js/jquery-ui-1.8.17.custom.min.js"></script>
+
+    <!-- See https://github.com/trentrichardson/jQuery-Timepicker-Addon -->
+    <script type="text/javascript" src="./vendor/js/jquery-ui-timepicker-addon-v0.9.8.js"></script>
+    <!-- See http://addyosmani.github.com/jquery-ui-bootstrap/ -->
+    <link rel="stylesheet" href="./vendor/css/addyosmani-jquery-ui-1.8.16.custom-v0.23-2.css">
+
+    <!-- See https://github.com/twitter/bootstrap -->
+    <script type="text/javascript" src="./vendor/js/bootstrap-v2.0.0.min.js"></script>
+    <script type="text/javascript" src="./vendor/js/bootstrap-modal-v2.0.0.js"></script>
+    <link rel="stylesheet" href="./vendor/css/bootstrap-v2.0.0.min.css">
+
+    <!-- See https://github.com/shutterstock/rickshaw -->
+    <script type="text/javascript" src="./vendor/js/rickshaw-c25f467.min.js"></script>
+    <script type="text/javascript" src="./vendor/js/d3.rickshaw-c25f467.min.js"></script>
+    <script type="text/javascript" src="./vendor/js/d3.layout.rickshaw-c25f467.min.js"></script>
+    <link rel="stylesheet" href="./vendor/css/rickshaw-c25f467.min.css">
+
+    <!-- See http://code.google.com/p/dynatree/ -->
+    <script type="text/javascript" src="./vendor/js/jquery.cookie-1.2.1_rc3.js"></script>
+    <script type="text/javascript" src="./vendor/js/jquery.dynatree-1.2.1_rc3.min.js"></script>
+    <link rel="stylesheet" href="./vendor/css/ui.dynatree-1.2.1_rc3.css">
+
+    <script type="text/javascript" src="./js/utils.js"></script>
+    <script type="text/javascript" src="./js/graph.js"></script>
+    <link rel="stylesheet" href="./css/arecibo.css">
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>Arecibo <small>graph</small></h1>
+        </div>
+        <div class="row">
+            <div id="chart_container">
+                <div id="chart"></div>
+            </div>
+            <div id="slider"></div>
+        </div>
+        <div class="row">
+            <div class="span6">
+                <!--Sidebar content-->
+                <form class="form-inline" id="side_panel">
+                    <fieldset>
+                        <h6>Rendering</h6>
+                        <div class="control-group toggler" id="renderer_form">
+                            <div class="controls">
+                                <label for="area">
+                                    <input type="radio" name="renderer" id="area" value="area" checked>
+                                    area
+                                </label>
+                                <label for="bar">
+                                    <input type="radio" name="renderer" id="bar" value="bar">
+                                    bar
+                                </label>
+                                <label for="line">
+                                    <input type="radio" name="renderer" id="line" value="line">
+                                    line
+                                </label>
+                                <label for="scatter">
+                                    <input type="radio" name="renderer" id="scatter" value="scatterplot">
+                                    scatter
+                                </label>
+                            </div>
+                        </div>
+                        <div class="control-group" id="offset_form">
+                            <div class="controls">
+                                <label for="stack">
+                                    <input type="radio" name="offset" id="stack" value="zero" checked>
+                                    <span>stack</span>
+                                </label>
+                                <label for="stream">
+                                    <input type="radio" name="offset" id="stream" value="wiggle">
+                                    <span>stream</span>
+                                </label>
+                                <label for="pct">
+                                    <input type="radio" name="offset" id="pct" value="expand">
+                                    <span>pct</span>
+                                </label>
+                                <label for="value">
+                                    <input type="radio" name="offset" id="value" value="value">
+                                    <span>value</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="control-group" id="interpolation_form">
+                            <div class="controls">
+                                <label for="cardinal">
+                                    <input type="radio" name="interpolation" id="cardinal" value="cardinal" checked>
+                                    <span>cardinal</span>
+                                </label>
+                                <label for="linear">
+                                    <input type="radio" name="interpolation" id="linear" value="linear">
+                                    <span>linear</span>
+                                </label>
+                                <label for="step">
+                                    <input type="radio" name="interpolation" id="step" value="step-after">
+                                    <span>step</span>
+                                </label>
+                            </div>
+                        </div>
+                        <h6>Smoothing</h6>
+                        <div id="smoother"></div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="span6">
+                <div id="legend_container">
+                    <div id="legend"></div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div id="debug_container">
+            </div>
+        </div>
+        <div class="row">
+            <div class="span12">
+                <i id="spinnerDiv" class="icon-refresh"></i>
+            </div>
+        </div>
+        <div class="row">
+            <div class="span12">
+                <div id="errorDiv" class="alert alert-error">
+                    <p><strong>Oh no!</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

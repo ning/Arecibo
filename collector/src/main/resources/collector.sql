@@ -6,16 +6,23 @@ create table hosts (
 , index created_dt_host_id_dx (created_dt, host_id)
 ) engine = innodb default charset = latin1;
 
+create table event_categories (
+  event_category_id integer not null auto_increment primary key
+, event_category varchar(256) not null
+, unique index event_category_unq (event_category)
+) engine = innodb default charset = latin1;
+
 create table sample_kinds (
   sample_kind_id integer not null auto_increment primary key
+, event_category_id integer not null
 , sample_kind varchar(256) not null
-, unique index sample_kind_unq (sample_kind)
+, unique index sample_kind_unq (event_category_id, sample_kind)
 ) engine = innodb default charset = latin1;
 
 create table timeline_times (
   timeline_times_id bigint not null auto_increment primary key
 , host_id integer not null
-, event_category varchar(256)
+, event_category_id integer not null
 , start_time integer not null
 , end_time integer not null
 , count integer not null
@@ -24,7 +31,7 @@ create table timeline_times (
 , not_valid tinyint default 0
 , aggregation_level tinyint default 0
 , index host_id_start_time_end_time_idx (host_id, start_time, end_time)
-, index valid_agg_host_start_time (not_valid, aggregation_level, host_id, start_time)
+, index valid_agg_host_start_time (not_valid, aggregation_level, host_id, event_category_id, start_time)
 ) engine = innodb default charset = latin1;
 
 create table timeline_chunks (
@@ -34,7 +41,8 @@ create table timeline_chunks (
 , sample_count integer not null
 , timeline_times_id bigint not null
 , start_time integer not null
+, end_time integer not null
 , in_row_samples varbinary(400) default null
 , blob_samples mediumblob default null
-, unique index host_id_timeline_times_sample_kind_idx (host_id, timeline_times_id, sample_kind_id)
+, unique index host_id_timeline_times_sample_kind_idx (timeline_times_id, host_id, sample_kind_id, start_time)
 ) engine = innodb default charset = latin1;

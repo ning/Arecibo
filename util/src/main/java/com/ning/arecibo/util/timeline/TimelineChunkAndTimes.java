@@ -52,29 +52,29 @@ public class TimelineChunkAndTimes
             // Construct the TimelineChunk
             final int sampleTimelineId = rs.getInt("sample_timeline_id");
             final int hostId = rs.getInt("host_id");
-            final String eventCategory = rs.getString("event_category");
+            final int eventCategoryId = rs.getInt("event_category_id");
             final int sampleKindId = rs.getInt("sample_kind_id");
             final int timelineIntervalId = rs.getInt("timeline_times_id");
             final int sampleCount = rs.getInt("sample_count");
             final int aggregationLevel = rs.getInt("aggregation_level");
             final boolean notValid = rs.getInt("not_valid") != 0;
             final DateTime startTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time"));
+            final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
             byte[] samples = rs.getBytes("in_row_samples");
             if (rs.wasNull()) {
                 final Blob blobSamples = rs.getBlob("blob_samples");
                 samples = blobSamples.getBytes(1, (int) blobSamples.length());
             }
-            final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, samples, sampleCount);
+            final TimelineChunk timelineChunk = new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, endTime, samples, sampleCount);
 
             // Construct the TimelineTimes
-            final DateTime endTime = TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time"));
             final int count = rs.getInt("count");
             byte[] times = rs.getBytes("in_row_times");
             if (rs.wasNull()) {
                 final Blob blobTimes = rs.getBlob("blob_times");
                 times = blobTimes.getBytes(1, (int) blobTimes.length());
             }
-            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, eventCategory, startTime, endTime, times, count, aggregationLevel, notValid);
+            final TimelineTimes timelineTimesObject = new TimelineTimes(timelineIntervalId, hostId, eventCategoryId, startTime, endTime, times, count, aggregationLevel, notValid);
 
             return new TimelineChunkAndTimes(hostId, sampleKindId, timelineChunk, timelineTimesObject);
         }

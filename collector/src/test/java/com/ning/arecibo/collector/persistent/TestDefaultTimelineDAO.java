@@ -16,14 +16,17 @@
 
 package com.ning.arecibo.collector.persistent;
 
-import com.google.common.collect.ImmutableList;
 import com.ning.arecibo.dao.MysqlTestingHelper;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineTimes;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -69,6 +72,7 @@ public class TestDefaultTimelineDAO
     {
         final TimelineDAO dao = new DefaultTimelineDAO(helper.getDBI());
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
+        final DateTime endTime = startTime.plusSeconds(2);
 
         // Create the host
         final String hostName = UUID.randomUUID().toString();
@@ -76,32 +80,45 @@ public class TestDefaultTimelineDAO
         Assert.assertNotNull(hostId);
 
         // Create a timeline times (needed for the join in the dashboard query)
-        final Integer timelineTimesId = dao.insertTimelineTimes(new TimelineTimes(-1, hostId, UUID.randomUUID().toString(), startTime, startTime.plusSeconds(2), new byte[]{}, 0));
+        final Integer eventCategoryId = 123;
+        final Integer timelineTimesId = dao.insertTimelineTimes(new TimelineTimes(-1, hostId, eventCategoryId, startTime, endTime, new byte[]{}, 0));
 
         // Create the samples
         final String sampleOne = UUID.randomUUID().toString();
-        final Integer sampleOneId = dao.getOrAddSampleKind(hostId, sampleOne);
+        final Integer sampleOneId = dao.getOrAddSampleKind(hostId, eventCategoryId, sampleOne);
         Assert.assertNotNull(sampleOneId);
         final String sampleTwo = UUID.randomUUID().toString();
-        final Integer sampleTwoId = dao.getOrAddSampleKind(hostId, sampleTwo);
+        final Integer sampleTwoId = dao.getOrAddSampleKind(hostId, eventCategoryId, sampleTwo);
         Assert.assertNotNull(sampleTwoId);
+
+        // Basic retrieval tests
+        final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = dao.getSampleKinds();
+        Assert.assertEquals(sampleKinds.size(), 2);
+        Assert.assertEquals(sampleKinds.get(sampleOneId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(sampleKinds.get(sampleOneId).getSampleKind(), sampleOne);
+        Assert.assertEquals(sampleKinds.get(sampleTwoId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(sampleKinds.get(sampleTwoId).getSampleKind(), sampleTwo);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleOneId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleOneId).getSampleKind(), sampleOne);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleTwoId).getEventCategoryId(), (int) eventCategoryId);
+        Assert.assertEquals(dao.getCategoryIdAndSampleKind(sampleTwoId).getSampleKind(), sampleTwo);
 
         // No samples yet
         Assert.assertEquals(ImmutableList.<Integer>copyOf(dao.getSampleKindIdsByHostId(hostId)).size(), 0);
 
-        dao.insertTimelineChunk(new TimelineChunk(-1, hostId, sampleOneId, timelineTimesId, startTime, new byte[]{}, 0));
+        dao.insertTimelineChunk(new TimelineChunk(-1, hostId, sampleOneId, timelineTimesId, startTime, endTime, new byte[]{}, 0));
         final ImmutableList<Integer> firstFetch = ImmutableList.<Integer>copyOf(dao.getSampleKindIdsByHostId(hostId));
         Assert.assertEquals(firstFetch.size(), 1);
         Assert.assertEquals(firstFetch.get(0), sampleOneId);
 
-        dao.insertTimelineChunk(new TimelineChunk(-1, hostId, sampleTwoId, timelineTimesId, startTime, new byte[]{}, 0));
+        dao.insertTimelineChunk(new TimelineChunk(-1, hostId, sampleTwoId, timelineTimesId, startTime, endTime, new byte[]{}, 0));
         final ImmutableList<Integer> secondFetch = ImmutableList.<Integer>copyOf(dao.getSampleKindIdsByHostId(hostId));
         Assert.assertEquals(secondFetch.size(), 2);
         Assert.assertTrue(secondFetch.contains(sampleOneId));
         Assert.assertTrue(secondFetch.contains(sampleTwoId));
 
         // Random sampleKind for random host
-        dao.insertTimelineChunk(new TimelineChunk(-1, Integer.MAX_VALUE, Integer.MAX_VALUE, -1, startTime, new byte[]{}, 0));
+        dao.insertTimelineChunk(new TimelineChunk(-1, Integer.MAX_VALUE, Integer.MAX_VALUE, -1, startTime, endTime, new byte[]{}, 0));
         final ImmutableList<Integer> thirdFetch = ImmutableList.<Integer>copyOf(dao.getSampleKindIdsByHostId(hostId));
         Assert.assertEquals(secondFetch.size(), 2);
         Assert.assertTrue(thirdFetch.contains(sampleOneId));

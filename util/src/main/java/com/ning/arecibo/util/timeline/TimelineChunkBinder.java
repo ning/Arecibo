@@ -47,7 +47,8 @@ public @interface TimelineChunkBinder
                         .bind("sampleKindId", timelineChunk.getSampleKindId())
                         .bind("sampleCount", timelineChunk.getSampleCount())
                         .bind("timelineTimesId", timelineChunk.getTimelineTimesId())
-                        .bind("startTime", TimelineTimes.unixSeconds(timelineChunk.getStartTime()));
+                        .bind("startTime", TimelineTimes.unixSeconds(timelineChunk.getStartTime()))
+                        .bind("endTime", TimelineTimes.unixSeconds(timelineChunk.getEndTime()));
 
                     if (timelineChunk.getSamples().length > MAX_IN_ROW_BLOB_SIZE) {
                         query

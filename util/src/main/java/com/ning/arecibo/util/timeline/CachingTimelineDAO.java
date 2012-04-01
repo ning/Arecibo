@@ -44,12 +44,14 @@ public class CachingTimelineDAO implements TimelineDAO
     private final LoadingCache<Integer, String> hostsCache;
     private final LoadingCache<String, Integer> hostIdsCache;
     private final LoadingCache<Integer, Set<Integer>> hostIdsSampleKindIdsCache;
-    private final LoadingCache<Integer, String> sampleKindsCache;
-    private final LoadingCache<String, Integer> sampleKindIdsCache;
+    private final LoadingCache<Integer, CategoryIdAndSampleKind> sampleKindsCache;
+    private final LoadingCache<CategoryIdAndSampleKind, Integer> sampleKindIdsCache;
+    private final LoadingCache<Integer, String> eventCategoriesCache;
+    private final LoadingCache<String, Integer> eventCategoryIdsCache;
 
     private final TimelineDAO delegate;
 
-    public CachingTimelineDAO(final TimelineDAO delegate, final long maxNbHosts, final long maxNbSampleKinds)
+    public CachingTimelineDAO(final TimelineDAO delegate, final long maxNbHosts, final long maxNbEventCategories, final long maxNbSampleKinds)
     {
         this.delegate = delegate;
 
@@ -126,33 +128,34 @@ public class CachingTimelineDAO implements TimelineDAO
 
         sampleKindsCache = CacheBuilder.newBuilder()
             .maximumSize(maxNbSampleKinds)
-            .removalListener(new RemovalListener<Integer, String>()
+            .removalListener(new RemovalListener<Integer, CategoryIdAndSampleKind>()
             {
                 @Override
-                public void onRemoval(final RemovalNotification<Integer, String> removedObjectNotification)
+                public void onRemoval(final RemovalNotification<Integer, CategoryIdAndSampleKind> removedObjectNotification)
                 {
-                    final String sampleKind = removedObjectNotification.getValue();
-                    if (sampleKind != null) {
-                        log.info("{} was evicted from the sampleKinds cache", sampleKind);
+                    final CategoryIdAndSampleKind categoryIdAndSampleKind = removedObjectNotification.getValue();
+                    if (categoryIdAndSampleKind != null) {
+                        log.info("Event category id {} and sample kind {} was evicted from the sampleKinds cache",
+                                categoryIdAndSampleKind.getEventCategoryId(), categoryIdAndSampleKind.getSampleKind());
                     }
                 }
             })
-            .build(new CacheLoader<Integer, String>()
+            .build(new CacheLoader<Integer, CategoryIdAndSampleKind>()
             {
                 @Override
-                public String load(final Integer sampleKindId) throws Exception
+                public CategoryIdAndSampleKind load(final Integer sampleKindId) throws Exception
                 {
                     log.info("Loading sampleKinds cache for key {}", sampleKindId);
-                    return delegate.getSampleKind(sampleKindId);
+                    return delegate.getCategoryIdAndSampleKind(sampleKindId);
                 }
             });
 
         sampleKindIdsCache = CacheBuilder.newBuilder()
             .maximumSize(maxNbSampleKinds)
-            .removalListener(new RemovalListener<String, Integer>()
+            .removalListener(new RemovalListener<CategoryIdAndSampleKind, Integer>()
             {
                 @Override
-                public void onRemoval(final RemovalNotification<String, Integer> removedObjectNotification)
+                public void onRemoval(final RemovalNotification<CategoryIdAndSampleKind, Integer> removedObjectNotification)
                 {
                     final Integer sampleKindId = removedObjectNotification.getValue();
                     if (sampleKindId != null) {
@@ -160,15 +163,62 @@ public class CachingTimelineDAO implements TimelineDAO
                     }
                 }
             })
-            .build(new CacheLoader<String, Integer>()
+            .build(new CacheLoader<CategoryIdAndSampleKind, Integer>()
             {
                 @Override
-                public Integer load(final String sampleKind) throws Exception
+                public Integer load(final CategoryIdAndSampleKind categoryIdAndSampleKind) throws Exception
                 {
-                    log.info("Loading sampleKindIds cache for key {}", sampleKind);
-                    return delegate.getSampleKindId(sampleKind);
+                    log.info("Loading sampleKindIds cache for event category id {}, sample kind {}",
+                            categoryIdAndSampleKind.getEventCategoryId(), categoryIdAndSampleKind.getSampleKind());
+                    return delegate.getSampleKindId(categoryIdAndSampleKind.getEventCategoryId(), categoryIdAndSampleKind.getSampleKind());
                 }
             });
+
+    eventCategoriesCache = CacheBuilder.newBuilder()
+        .maximumSize(maxNbEventCategories)
+        .removalListener(new RemovalListener<Integer, String>()
+        {
+            @Override
+            public void onRemoval(final RemovalNotification<Integer, String> removedObjectNotification)
+            {
+                final String eventCategory = removedObjectNotification.getValue();
+                if (eventCategory != null) {
+                    log.info("{} was evicted from the eventCategories cache", eventCategory);
+                }
+            }
+        })
+        .build(new CacheLoader<Integer, String>()
+        {
+            @Override
+            public String load(final Integer eventCategoryId) throws Exception
+            {
+                log.info("Loading eventCategories cache for key {}", eventCategoryId);
+                return delegate.getEventCategory(eventCategoryId);
+            }
+        });
+
+    eventCategoryIdsCache = CacheBuilder.newBuilder()
+        .maximumSize(maxNbEventCategories)
+        .removalListener(new RemovalListener<String, Integer>()
+        {
+            @Override
+            public void onRemoval(final RemovalNotification<String, Integer> removedObjectNotification)
+            {
+                final Integer eventCategoryId = removedObjectNotification.getValue();
+                if (eventCategoryId != null) {
+                    log.info("{} was evicted from the eventCategories cache", eventCategoryId);
+                }
+            }
+        })
+        .build(new CacheLoader<String, Integer>()
+        {
+            @Override
+            public Integer load(final String eventCategory) throws Exception
+            {
+                log.info("Loading eventCategoryIds cache for key {}", eventCategory);
+                return delegate.getEventCategoryId(eventCategory);
+            }
+        });
     }
 
     @Override
@@ -212,10 +262,10 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getSampleKindId(final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public Integer getEventCategoryId(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException
     {
         try {
-            return sampleKindIdsCache.get(sampleKind);
+            return eventCategoryIdsCache.get(eventCategory);
         }
         catch (ExecutionException e) {
             throw new CallbackFailedException(e);
@@ -223,7 +273,45 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public String getSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
+    public String getEventCategory(Integer eventCategoryId) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        try {
+            return eventCategoriesCache.get(eventCategoryId);
+        }
+        catch (ExecutionException e) {
+            throw new CallbackFailedException(e);
+        }
+    }
+
+    @Override
+    public BiMap<Integer, String> getEventCategories() throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        return delegate.getEventCategories();
+    }
+
+    @Override
+    public Integer getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+        Integer eventCategoryId = eventCategoryIdsCache.getIfPresent(eventCategory);
+        if (eventCategoryId == null) {
+            eventCategoryId = delegate.getOrAddEventCategory(eventCategory);
+            eventCategoryIdsCache.put(eventCategory, eventCategoryId);
+        }
+        return eventCategoryId;
+    }
+
+    @Override
+    public Integer getSampleKindId(final int eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        try {
+            return sampleKindIdsCache.get(new CategoryIdAndSampleKind(eventCategoryId, sampleKind));
+        }
+        catch (ExecutionException e) {
+            throw new CallbackFailedException(e);
+        }
+    }
+
+    @Override
+    public CategoryIdAndSampleKind getCategoryIdAndSampleKind(final Integer sampleKindId) throws UnableToObtainConnectionException, CallbackFailedException
     {
         try {
             return sampleKindsCache.get(sampleKindId);
@@ -234,25 +322,25 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public BiMap<Integer, String> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException
+    public BiMap<Integer, CategoryIdAndSampleKind> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException
     {
         return delegate.getSampleKinds();
     }
 
     @Override
-    public synchronized Integer getOrAddSampleKind(final Integer hostId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public synchronized Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        Integer sampleKindId = sampleKindIdsCache.getIfPresent(sampleKind);
+        final CategoryIdAndSampleKind categoryIdAndSampleKind = new CategoryIdAndSampleKind(eventCategoryId, sampleKind);
+        Integer sampleKindId = sampleKindIdsCache.getIfPresent(categoryIdAndSampleKind);
         if (sampleKindId == null) {
-            sampleKindId = delegate.getOrAddSampleKind(hostId, sampleKind);
-            sampleKindIdsCache.put(sampleKind, sampleKindId);
+            sampleKindId = delegate.getOrAddSampleKind(hostId, eventCategoryId, sampleKind);
+            sampleKindIdsCache.put(categoryIdAndSampleKind, sampleKindId);
         }
 
         hostIdsSampleKindIdsCache.getUnchecked(hostId).add(sampleKindId);
 
         return sampleKindId;
     }
-
     @Override
     public Iterable<Integer> getSampleKindIdsByHostId(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
@@ -467,6 +555,126 @@ public class CachingTimelineDAO implements TimelineDAO
     public long getHostsSampleKindsCacheEvictionCount()
     {
         return hostIdsSampleKindIdsCache.stats().evictionCount();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times Cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoriesCacheHitCount()
+    {
+        return eventCategoriesCache.stats().hitCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of cache requests which were hits", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoriesCacheHitRate()
+    {
+        return eventCategoriesCache.stats().hitRate();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times cache lookup methods have returned an uncached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoriesCacheMissCount()
+    {
+        return eventCategoriesCache.stats().missCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of cache requests which were misses", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoriesCacheMissRate()
+    {
+        return eventCategoriesCache.stats().missRate();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times cache lookup methods have successfully loaded a new value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoriesCacheLoadSuccessCount()
+    {
+        return eventCategoriesCache.stats().loadSuccessCount();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times cache lookup methods threw an exception while loading a new value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoriesCacheLoadExceptionCount()
+    {
+        return eventCategoriesCache.stats().loadExceptionCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of cache loading attempts which threw exceptions", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoriesCacheLoadExceptionRate()
+    {
+        return eventCategoriesCache.stats().loadExceptionRate();
+    }
+
+    @MonitorableManaged(description = "Returns the total number of nanoseconds the cache has spent loading new values", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoriesCacheTotalLoadTime()
+    {
+        return eventCategoriesCache.stats().totalLoadTime();
+    }
+
+    @MonitorableManaged(description = "Returns the average time spent loading new values", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoriesCacheAverageLoadPenalty()
+    {
+        return eventCategoriesCache.stats().averageLoadPenalty();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times an entry has been evicted", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoriesCacheEvictionCount()
+    {
+        return eventCategoriesCache.stats().evictionCount();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times Cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoryIdsCacheHitCount()
+    {
+        return eventCategoryIdsCache.stats().hitCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of cache requests which were hits", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoryIdsCacheHitRate()
+    {
+        return eventCategoryIdsCache.stats().hitRate();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times cache lookup methods have returned an uncached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoryIdsCacheMissCount()
+    {
+        return eventCategoryIdsCache.stats().missCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of cache requests which were misses", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoryIdsCacheMissRate()
+    {
+        return eventCategoryIdsCache.stats().missRate();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times cache lookup methods have successfully loaded a new value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoryIdsCacheLoadSuccessCount()
+    {
+        return eventCategoryIdsCache.stats().loadSuccessCount();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times cache lookup methods threw an exception while loading a new value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoryIdsCacheLoadExceptionCount()
+    {
+        return eventCategoryIdsCache.stats().loadExceptionCount();
+    }
+
+    @MonitorableManaged(description = "Returns the ratio of cache loading attempts which threw exceptions", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoryIdsCacheLoadExceptionRate()
+    {
+        return eventCategoryIdsCache.stats().loadExceptionRate();
+    }
+
+    @MonitorableManaged(description = "Returns the total number of nanoseconds the cache has spent loading new values", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoryIdsCacheTotalLoadTime()
+    {
+        return eventCategoryIdsCache.stats().totalLoadTime();
+    }
+
+    @MonitorableManaged(description = "Returns the average time spent loading new values", monitored = true, monitoringType = {MonitoringType.VALUE})
+    public double getEventCategoryIdsCacheAverageLoadPenalty()
+    {
+        return eventCategoryIdsCache.stats().averageLoadPenalty();
+    }
+
+    @MonitorableManaged(description = "Returns the number of times an entry has been evicted", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})
+    public long getEventCategoryIdsCacheEvictionCount()
+    {
+        return eventCategoryIdsCache.stats().evictionCount();
     }
 
     @MonitorableManaged(description = "Returns the number of times Cache lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

@@ -32,14 +32,14 @@ import java.util.Map;
 public class TestTimelineHostEventAccumulator
 {
     private static final int HOST_ID = 1;
-    private static final String EVENT_CATEGORY = "JVM";
+    private static final int EVENT_CATEGORY_ID = 123;
 
     private static final MockTimelineDAO dao = new MockTimelineDAO();
 
     @Test(groups = "fast")
     public void testSimpleAggregate() throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY, false);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID, false);
 
         // Send a first type of data
         final DateTime startTime = new DateTime(DateTimeZone.UTC);

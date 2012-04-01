@@ -8,11 +8,12 @@ getTimelineChunksForTimelineTimes(timelineTimesIds) ::= <<
   , timeline_times_id
   , sample_count
   , start_time
+  , end_time
   , in_row_samples
   , blob_samples
   from timeline_chunks
   where timeline_times_id in (<timelineTimesIds>)
-  order by host_id, sample_kind_id, timeline_times_id
+  order by host_id, sample_kind_id, start_time
   ;
 >>
 
@@ -20,7 +21,7 @@ getTimelineTimesAggregationCandidates() ::= <<
   select
     timeline_times_id
   , host_id
-  , event_category
+  , event_category_id
   , start_time
   , end_time
   , in_row_times
@@ -31,13 +32,13 @@ getTimelineTimesAggregationCandidates() ::= <<
   from timeline_times
   where not_valid = 0
   and aggregation_level = :aggregationLevel
-  order by host_id, event_category, start_time
+  order by host_id, event_category_id, start_time
   ;
 >>
 
 insertNewInvalidTimelineTimes() ::= <<
-  insert into timeline_times (host_id, event_category, start_time, end_time, count, in_row_times, blob_times, aggregation_level, not_valid)
-  values (:hostId, :eventCategory, :startTime, :endTime, :count, :inRowTimes, :blobTimes, :aggregationLevel, 1);
+  insert into timeline_times (host_id, event_category_id, start_time, end_time, count, in_row_times, blob_times, aggregation_level, not_valid)
+  values (:hostId, :eventCategoryId, :startTime, :endTime, :count, :inRowTimes, :blobTimes, :aggregationLevel, 1);
 >>
 
 getLastInsertedId() ::= <<
