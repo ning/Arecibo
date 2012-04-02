@@ -115,10 +115,11 @@ public class CollectorResource
                                          @QueryParam("from") @DefaultValue("") final DateTimeParameter startTimeParameter,
                                          @QueryParam("to") @DefaultValue("") final DateTimeParameter endTimeParameter,
                                          @QueryParam("host") final List<String> hostNames,
+                                         @QueryParam("output_count") final Integer outputCount,
                                          @QueryParam("category_and_sample_kind") final List<String> categoriesAndSampleKinds)
     {
         try {
-            final Iterable<SamplesForSampleKindAndHost> samplesByHostName = client.getHostSamples(hostNames, categoriesAndSampleKinds, startTimeParameter.getValue(), endTimeParameter.getValue());
+            final Iterable<SamplesForSampleKindAndHost> samplesByHostName = client.getHostSamples(hostNames, categoriesAndSampleKinds, startTimeParameter.getValue(), endTimeParameter.getValue(), outputCount);
             final JSONPObject object = new JSONPObject(callback, samplesByHostName);
             return Response.ok(object).build();
         }

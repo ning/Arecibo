@@ -125,7 +125,7 @@ public class DefaultCollectorClient implements CollectorClient
     }
 
     @Override
-    public InputStream getHostSamplesAsStream(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to) throws UniformInterfaceException
+    public InputStream getHostSamplesAsStream(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to, final Integer outputCount) throws UniformInterfaceException
     {
         final MultivaluedMap<String, String> params = new MultivaluedMapImpl();
         for (final String hostName : hostNames) {
@@ -137,17 +137,18 @@ public class DefaultCollectorClient implements CollectorClient
 
         params.add("from", from.toString());
         params.add("to", to.toString());
+        params.add("output_count", String.valueOf(outputCount));
 
         return getPathAsStream("host_samples", params);
     }
 
     @Override
-    public Iterable<SamplesForSampleKindAndHost> getHostSamples(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to) throws UniformInterfaceException
+    public Iterable<SamplesForSampleKindAndHost> getHostSamples(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to, final Integer outputCount) throws UniformInterfaceException
     {
         final TypeReference<List<SamplesForSampleKindAndHost>> valueTypeRef = new TypeReference<List<SamplesForSampleKindAndHost>>()
         {
         };
-        final InputStream stream = getHostSamplesAsStream(hostNames, categoriesAndSampleKinds, from, to);
+        final InputStream stream = getHostSamplesAsStream(hostNames, categoriesAndSampleKinds, from, to, outputCount);
 
         // The streaming endpoint will send data out as fast as possible, so we may end up having
         // multiple SamplesForSampleKindAndHost per host and sample kind. Let's merge them for convenience.

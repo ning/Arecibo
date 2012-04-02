@@ -18,7 +18,6 @@ package com.ning.arecibo.collector;
 
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 
 import com.sun.jersey.api.client.UniformInterfaceException;
 import org.joda.time.DateTime;
@@ -39,7 +38,7 @@ public interface CollectorClient
 
     public Iterable<CategoryAndSampleKinds> getSampleKinds(final Iterable<String> hostNames) throws UniformInterfaceException;
 
-    public InputStream getHostSamplesAsStream(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to) throws UniformInterfaceException;
+    public InputStream getHostSamplesAsStream(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to, final Integer outputCount) throws UniformInterfaceException;
 
-    public Iterable<SamplesForSampleKindAndHost> getHostSamples(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to) throws UniformInterfaceException;
+    public Iterable<SamplesForSampleKindAndHost> getHostSamples(final Iterable<String> hostNames, final Iterable<String> categoriesAndSampleKinds, final DateTime from, final DateTime to, final Integer outputCount) throws UniformInterfaceException;
 }
