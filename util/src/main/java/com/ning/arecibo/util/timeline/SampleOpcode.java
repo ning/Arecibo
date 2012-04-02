@@ -29,7 +29,7 @@ public enum SampleOpcode {
     DOUBLE((byte)6, 8),
     STRING((byte)7, 0),
     NULL((byte)8, 0, true),
-    FLOAT_FOR_DOUBLE((byte)10, 4),
+    FLOAT_FOR_DOUBLE((byte)10, 4, DOUBLE),
     HALF_FLOAT_FOR_DOUBLE((byte)11, 2),
     BYTE_FOR_DOUBLE((byte)12, 1),
     SHORT_FOR_DOUBLE((byte)13, 2),
@@ -44,9 +44,18 @@ public enum SampleOpcode {
     private final int byteSize;
     private final boolean repeater;
     private final boolean noArgs;
+    private final SampleOpcode replacement;
 
     private SampleOpcode(byte opcodeIndex, int byteSize) {
         this(opcodeIndex, byteSize, false);
+    }
+
+    private SampleOpcode(byte opcodeIndex, int byteSize, SampleOpcode replacement) {
+        this.opcodeIndex = opcodeIndex;
+        this.byteSize = byteSize;
+        this.repeater = false;
+        this.noArgs = false;
+        this.replacement = replacement;
     }
 
     private SampleOpcode(byte opcodeIndex, int byteSize, boolean noArgs) {
@@ -58,6 +67,7 @@ public enum SampleOpcode {
         this.byteSize = byteSize;
         this.repeater = repeater;
         this.noArgs = noArgs;
+        this.replacement = this;
     }
 
     public byte getOpcodeIndex() {
@@ -85,5 +95,9 @@ public enum SampleOpcode {
 
     public boolean getRepeater() {
         return repeater;
+    }
+
+    public SampleOpcode getReplacement() {
+        return replacement;
     }
 }

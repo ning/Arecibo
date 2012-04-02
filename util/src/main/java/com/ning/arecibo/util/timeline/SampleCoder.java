@@ -359,11 +359,12 @@ public class SampleCoder {
                 final byte repeatCount = inputStream.readByte();
                 final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.readByte());
                 final Object value = decodeScalarValue(inputStream, repeatedOpcode);
-                processor.processSamples(timeCursor, repeatCount, repeatedOpcode, value);
+                final SampleOpcode replacementOpcode = repeatedOpcode.getReplacement();
+                processor.processSamples(timeCursor, repeatCount, replacementOpcode, value);
                 timeCursor.consumeRepeat();
                 break;
             default:
-                processor.processSamples(timeCursor, 1, opcode, decodeScalarValue(inputStream, opcode));
+                processor.processSamples(timeCursor, 1, opcode, decodeScalarValue(inputStream, opcode.getReplacement()));
                 break;
             }
         }
