@@ -224,7 +224,8 @@ function buildGraphURL() {
                 buildHostsParamsFromTree() + '&' +
                 buildCategoryAndSampleKindParamsFromTree() + '&' +
                 'from=' + ISODateString(from) + '&' +
-                'to=' + ISODateString(to);
+                'to=' + ISODateString(to) + '&' +
+                'output_count=' + screen.width;
 
     return uri;
 }
