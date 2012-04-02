@@ -113,12 +113,12 @@ public class TestHostDataResource
         final JsonGenerator generator = mapper.getJsonFactory().createJsonGenerator(output);
 
         // Check nothing is in memory
-        resource.writeJsonForInMemoryChunks(generator, mapper.writer(), ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, false);
+        resource.writeJsonForInMemoryChunks(generator, mapper.writer(), null, ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, false);
         Assert.assertEquals(output.size(), 0);
 
         // The test is fast enough, the event won't be committed
         handler.handle(new MapEvent(System.currentTimeMillis(), EVENT_TYPE, UUID.randomUUID(), ImmutableMap.<String, Object>of("hostName", HOST_NAME_3, SAMPLE_KIND_1, 12, SAMPLE_KIND_2, 42)));
-        resource.writeJsonForInMemoryChunks(generator, mapper.writer(), ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, false);
+        resource.writeJsonForInMemoryChunks(generator, mapper.writer(), null, ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, false);
         Assert.assertTrue(output.size() > 0);
 
         // Check the sample kinds for this host
@@ -257,6 +257,7 @@ public class TestHostDataResource
                 true,
                 false,
                 false,
+                null,
                 hosts,
                 categoriesAndSampleKinds
         );

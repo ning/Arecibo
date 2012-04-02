@@ -17,6 +17,7 @@
 package com.ning.arecibo.util.timeline;
 
 import com.ning.arecibo.util.Logger;
+
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.annotate.JsonUnwrapped;
@@ -128,11 +129,17 @@ public class TimelineChunkAndTimes
         return getSamplesAsCSV(null, null);
     }
 
+    public String getSamplesAsCSV(final DecimatingSampleFilter rangeSampleProcessor) throws IOException
+    {
+        SampleCoder.scan(timelineChunk.getSamples(), timelineTimes, rangeSampleProcessor);
+        return rangeSampleProcessor.getSampleConsumer().toString();
+    }
+
     public String getSamplesAsCSV(@Nullable final DateTime startTime, @Nullable final DateTime endTime) throws IOException
     {
         final CSVOutputProcessor processor = new CSVOutputProcessor(startTime, endTime);
         SampleCoder.scan(timelineChunk.getSamples(), timelineTimes, processor);
-        return processor.getSamplesCSV();
+        return processor.toString();
     }
 
     @Override
@@ -162,8 +169,8 @@ public class TimelineChunkAndTimes
 
     private static final class CSVOutputProcessor extends TimeRangeSampleProcessor
     {
-        private final StringBuilder builder = new StringBuilder();
-        private boolean firstSamples = true;
+        private final SampleConsumer delegate = new CSVSampleConsumer();
+        private int sampleNumber = 0;
 
         public CSVOutputProcessor(@Nullable final DateTime startTime, @Nullable final DateTime endTime)
         {
@@ -173,25 +180,14 @@ public class TimelineChunkAndTimes
         @Override
         public void processOneSample(final DateTime sampleTimestamp, final SampleOpcode opcode, final Object value)
         {
-            if (sampleTimestamp != null) {
-                final String valueString = value == null ? "0" : value.toString();
-                if (!firstSamples) {
-                    builder.append(",");
-                }
-                else {
-                    firstSamples = false;
-                }
-
-                builder
-                    .append(TimelineTimes.unixSeconds(sampleTimestamp))
-                    .append(",")
-                    .append(valueString);
-            }
+            delegate.consumeSample(sampleNumber, opcode, value, sampleTimestamp);
+            sampleNumber++;
         }
 
-        public String getSamplesCSV()
+        @Override
+        public String toString()
         {
-            return builder.toString();
+            return delegate.toString();
         }
     }
 }

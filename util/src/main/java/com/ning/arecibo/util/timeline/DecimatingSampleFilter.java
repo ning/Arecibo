@@ -149,6 +149,11 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
         }
     }
 
+    public SampleConsumer getSampleConsumer()
+    {
+        return sampleConsumer;
+    }
+
     private static class SampleState {
         private final SampleOpcode sampleOpcode;
         private final Object value;

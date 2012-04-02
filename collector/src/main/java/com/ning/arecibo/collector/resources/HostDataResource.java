@@ -17,8 +17,10 @@
 package com.ning.arecibo.collector.resources;
 
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.util.timeline.CSVSampleConsumer;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
@@ -137,13 +139,14 @@ public class HostDataResource
                                                 @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                                 @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                 @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                @QueryParam("output_count") final Integer outputCount,
                                                 @PathParam("host") final String hostName) throws IOException
     {
         try {
             final Integer hostId = dao.getHostId(hostName);
             final Iterable<Integer> sampleKindIdsIterable = dao.getSampleKindIdsByHostId(hostId);
 
-            return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>copyOf(sampleKindIdsIterable));
+            return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, outputCount, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>copyOf(sampleKindIdsIterable));
         }
         catch (CacheLoader.InvalidCacheLoadException e) {
             throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -163,6 +166,7 @@ public class HostDataResource
                                                              @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                                              @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                              @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                             @QueryParam("output_count") final Integer outputCount,
                                                              @PathParam("host") final String hostName,
                                                              @PathParam("category_and_sample_kind") final String categoryAndSampleKind) throws IOException
     {
@@ -171,7 +175,7 @@ public class HostDataResource
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
         final Integer sampleKindId = getSampleKindIdFromQueryParameter(categoryAndSampleKind);
-        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(sampleKindId));
+        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, outputCount, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(sampleKindId));
     }
 
     /**
@@ -207,6 +211,7 @@ public class HostDataResource
      * @param pretty                   whether pretty printing is enabled
      * @param decodeSamples            whether samples should be decoded in human-readable form
      * @param compact                  whether compact representation should be used (csv default) - TODO
+     * @param outputCount              number of samples to output
      * @param hostNames                list of host names
      * @param categoriesAndSampleKinds list of samples kinds (format: category,sample_kind)
      * @return a StreamingOutput object whose write() method invokes the database query and
@@ -221,6 +226,7 @@ public class HostDataResource
                                           @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                           @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                           @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                          @QueryParam("output_count") final Integer outputCount,
                                           @QueryParam("host") final List<String> hostNames,
                                           @QueryParam("category_and_sample_kind") final List<String> categoriesAndSampleKinds)
     {
@@ -229,7 +235,7 @@ public class HostDataResource
         }
         final List<Integer> hostIds = translateHostNamesToHostIds(hostNames);
         final List<Integer> sampleKindIds = translateCategoriesAndSampleKindsToSampleKindIds(categoriesAndSampleKinds);
-        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, hostIds, sampleKindIds);
+        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, outputCount, hostIds, sampleKindIds);
     }
 
     @GET
@@ -241,11 +247,22 @@ public class HostDataResource
                                                   @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                                   @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                   @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                  @QueryParam("output_count") final Integer outputCount,
                                                   @QueryParam("host_id") final List<Integer> hostIds,
                                                   @QueryParam("sample_kind_id") final List<Integer> sampleKindIds)
     {
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
+
+        final DecimatingSampleFilter rangeSampleProcessor;
+        if (outputCount == null) {
+            rangeSampleProcessor = null;
+        }
+        else {
+            // TODO assume 2 samples per minute
+            final int sampleCount = (int) (endTime.minus(startTime.getMillis()).getMillis() / 1000 / 60 * 2);
+            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, sampleCount, new CSVSampleConsumer());
+        }
 
         return new StreamingOutput()
         {
@@ -267,7 +284,7 @@ public class HostDataResource
 
                 generator.writeStartArray();
                 try {
-                    writeJsonForAllChunks(generator, writer, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+                    writeJsonForAllChunks(generator, writer, rangeSampleProcessor, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
                 }
                 catch (CacheLoader.InvalidCacheLoadException e) {
                     throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -287,30 +304,30 @@ public class HostDataResource
         };
     }
 
-    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIds,
+    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, @Nullable final DecimatingSampleFilter rangeSampleProcessor, final List<Integer> hostIds,
                                        final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
         // First, return all data in memory.
         // Data won't be merged with the on-disk one because we don't want to buffer samples in memory.
-        writeJsonForInMemoryChunks(generator, writer, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+        writeJsonForInMemoryChunks(generator, writer, rangeSampleProcessor, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
 
         // Now, return all data stored in the database
-        writeJsonForStoredChunks(generator, writer, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+        writeJsonForStoredChunks(generator, writer, rangeSampleProcessor, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
     }
 
     @VisibleForTesting
-    void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
+    void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, @Nullable final DecimatingSampleFilter rangeSampleProcessor, final List<Integer> hostIdsList,
                                     final List<Integer> sampleKindIdsList, @Nullable final DateTime startTime, @Nullable final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
         for (final Integer hostId : hostIdsList) {
             final Collection<? extends TimelineChunkAndTimes> inMemorySamples = processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindIdsList, startTime, endTime);
-            writeJsonForChunks(generator, writer, inMemorySamples, decodeSamples);
+            writeJsonForChunks(generator, writer, rangeSampleProcessor, inMemorySamples, decodeSamples);
         }
     }
 
-    private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, final List<Integer> hostIdsList,
+    private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, @Nullable final DecimatingSampleFilter rangeSampleProcessor, final List<Integer> hostIdsList,
                                           final List<Integer> sampleKindIdsList, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
@@ -331,7 +348,7 @@ public class HostDataResource
                 chunksForHostAndSampleKind.add(chunkAndTimes);
                 if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
                     try {
-                        writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, decodeSamples);
+                        writeJsonForChunks(generator, writer, rangeSampleProcessor, chunksForHostAndSampleKind, decodeSamples);
                     }
                     catch (RuntimeException e) {
                         // JDBI exception
@@ -352,12 +369,12 @@ public class HostDataResource
         });
 
         if (chunksForHostAndSampleKind.size() > 0) {
-            writeJsonForChunks(generator, writer, chunksForHostAndSampleKind, decodeSamples);
+            writeJsonForChunks(generator, writer, rangeSampleProcessor, chunksForHostAndSampleKind, decodeSamples);
             chunksForHostAndSampleKind.clear();
         }
     }
 
-    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
+    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final DecimatingSampleFilter rangeSampleProcessor, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
         for (final TimelineChunkAndTimes chunk : chunksForHostAndSampleKind) {
@@ -370,7 +387,7 @@ public class HostDataResource
                 final String eventCategory = dao.getEventCategory(categoryIdAndSampleKind.getEventCategoryId());
                 final String sampleKind = categoryIdAndSampleKind.getSampleKind();
                 // TODO pass compact form
-                final String samples = chunk.getSamplesAsCSV();
+                final String samples = rangeSampleProcessor == null ? chunk.getSamplesAsCSV() : chunk.getSamplesAsCSV(rangeSampleProcessor);
                 generator.writeObject(new SamplesForSampleKindAndHost(hostName, eventCategory, sampleKind, samples));
             }
         }
