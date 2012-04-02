@@ -15,14 +15,15 @@
  */
 
 $(document).ready(function() {
-    // Dashboard Configuration
-    window.arecibo = {
-        uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
-    }
-
     // UI setup (Ajax handlers, etc.)
     initializeUI();
     setupDateTimePickers();
+
+    // Dashboard Configuration
+    window.arecibo = {
+        // initializeUI() must be called first for window.location.origin to be set
+        uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
+    }
 
     // Retrieve user's last input and populate the input fields
     try {
