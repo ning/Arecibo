@@ -31,7 +31,9 @@ import org.slf4j.LoggerFactory;
 import org.weakref.jmx.Managed;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,8 +54,21 @@ public class TimelineAggregator
     private final TimelineAggregatorDAO aggregatorDao;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
 
+    private Map<String, CounterMetric> aggregatorCounters = new HashMap<String, CounterMetric>();
+
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
-    private final CounterMetric aggregatesCreated = Metrics.newCounter(TimelineAggregator.class, "aggregates-created");
+
+    private final CounterMetric aggregatesCreated = makeCounter("aggregatesCreated");
+
+    private final CounterMetric timelineTimesConsidered = makeCounter("timelineTimesConsidered");
+    private final CounterMetric timelineTimesCombined = makeCounter("timelineTimesCombined");
+    private final CounterMetric timelineTimesCreated = makeCounter("timelineTimesCreated");
+    private final CounterMetric timelineTimesBytesCreated = makeCounter("timelineTimesBytesCreated");
+
+    private final CounterMetric timelineChunksConsidered = makeCounter("timelineChunksConsidered");
+    private final CounterMetric timelineChunksCombined = makeCounter("timelineChunksCombined");
+    private final CounterMetric timelineChunksCreated = makeCounter("timelineChunksCreated");
+    private final CounterMetric timelineChunksBytesCreated = makeCounter("timelineChunksBytesCreated");
 
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
@@ -85,6 +100,7 @@ public class TimelineAggregator
         int lastSampleId = 0;
         List<TimelineChunk> hostSampleChunks = new ArrayList<TimelineChunk>();
         for (final TimelineChunk chunk : chunks) {
+            timelineChunksConsidered.inc();
             final int sampleId = chunk.getSampleKindId();
             final int hostId = chunk.getHostId();
             if (lastHostId == 0 || lastHostId != hostId || lastSampleId != sampleId) {
@@ -94,11 +110,8 @@ public class TimelineAggregator
                     orderedHostSampleChunks.add(hostSampleChunks);
                     hostSampleChunks = new ArrayList<TimelineChunk>();
                 }
-                hostSampleChunks.add(chunk);
             }
-            else {
-                hostSampleChunks.add(chunk);
-            }
+            hostSampleChunks.add(chunk);
         }
         if (hostSampleChunks.size() > 0) {
             orderedHostSampleChunks.add(hostSampleChunks);
@@ -115,6 +128,8 @@ public class TimelineAggregator
         int aggregatesCreated = 0;
         while (timelineTimesCandidates.size() >= chunksToAggregate) {
             final List<TimelineTimes> chunkCandidates = timelineTimesCandidates.subList(0, chunksToAggregate);
+            timelineTimesCombined.inc(chunksToAggregate);
+            timelineTimesCreated.inc();
             aggregateHostSampleChunks(chunkCandidates, aggregationLevel);
             aggregatesCreated++;
             chunkCandidates.clear();
@@ -159,7 +174,7 @@ public class TimelineAggregator
         }
         log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
             new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineTimesChunks.size(), totalTimelineSize, sampleCount, timelineTimesIds});
-
+        timelineTimesBytesCreated.inc(totalTimelineSize);
         final int totalSampleCount = sampleCount;
         final byte[] aggregatedTimes = new byte[totalTimelineSize];
         int timeChunkIndex = 0;
@@ -174,6 +189,7 @@ public class TimelineAggregator
                 aggregatedTimes, totalSampleCount), aggregationLevel + 1);
         final int newTimelineTimesId = aggregatorDao.getLastInsertedId();
         aggregatorDao.commit();
+        timelineTimesCreated.inc();
 
         aggregateSampleChunks(timelineTimesIds, newTimelineTimesId, totalSampleCount);
 
@@ -190,11 +206,7 @@ public class TimelineAggregator
         // Now (maybe) dispose of the old ones
         if (config.getDeleteAggregatedChunks()) {
             aggregatorDao.begin();
-            // TODO: Could leave these around rather than deleting them, for testing purposes, since
-            // they are already marked invalid
             aggregatorDao.deleteTimelineTimes(timelineTimesIds);
-            // TODO: Could just leave these around for testing purposes, since they are only referenced
-            // by timeline_times_id.
             aggregatorDao.deleteTimelineChunks(timelineTimesIds);
             aggregatorDao.commit();
         }
@@ -210,6 +222,9 @@ public class TimelineAggregator
             for (final TimelineChunk chunk : chunkList) {
                 totalChunkSize += chunk.getSamples().length;
             }
+            timelineChunksCombined.inc(chunkList.size());
+            timelineChunksBytesCreated.inc(totalChunkSize);
+            timelineChunksCreated.inc();
             final byte[] samples = new byte[totalChunkSize];
             int sampleChunkIndex = 0;
             for (final TimelineChunk chunk : chunkList) {
@@ -246,6 +261,7 @@ public class TimelineAggregator
 
         final String[] chunkCountsToAggregate = config.getChunksToAggregate().split(",");
         for (int aggregationLevel=0; aggregationLevel<config.getMaxAggregationLevel(); aggregationLevel++) {
+            final Map<String, Long> initialCounters = captureAggregatorCounters();
             final int chunkCountIndex = aggregationLevel >= chunkCountsToAggregate.length ? chunkCountsToAggregate.length - 1 : aggregationLevel;
             final int chunksToAggregate = Integer.parseInt(chunkCountsToAggregate[chunkCountIndex]);
             final List<TimelineTimes> timelineTimesCandidates = aggregatorDao.getTimelineTimesAggregationCandidates(aggregationLevel);
@@ -256,6 +272,7 @@ public class TimelineAggregator
             int lastEventCategoryId = 0;
             final List<TimelineTimes> hostTimelineCandidates = new ArrayList<TimelineTimes>();
             for (final TimelineTimes candidate : timelineTimesCandidates) {
+                timelineTimesConsidered.inc();
                 final int hostId = candidate.getHostId();
                 final int eventCategoryId = candidate.getEventCategoryId();
                 if (lastHostId == 0) {
@@ -273,10 +290,43 @@ public class TimelineAggregator
             if (hostTimelineCandidates.size() > 0) {
                 aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
             }
+            final Map<String, Long> counterDeltas = subtrackFromAggregatorCounters(initialCounters);
+            final StringBuilder builder = new StringBuilder();
+            builder.append("For aggregation level ").append(aggregationLevel);
+            for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
+                builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
+            }
+            log.info(builder.toString());
         }
 
         log.info("Aggregation done");
         isAggregating.set(false);
+    }
+
+    private CounterMetric makeCounter(final String counterName)
+    {
+        final CounterMetric counter = Metrics.newCounter(TimelineAggregator.class, counterName);
+        aggregatorCounters.put(counterName, counter);
+        return counter;
+    }
+
+    private Map<String, Long> captureAggregatorCounters()
+    {
+        final Map<String, Long> counterValues = new HashMap<String, Long>();
+        for (Map.Entry<String, CounterMetric> entry : aggregatorCounters.entrySet()) {
+            counterValues.put(entry.getKey(), entry.getValue().count());
+        }
+        return counterValues;
+    }
+
+    private Map<String, Long> subtrackFromAggregatorCounters(final Map<String, Long> initialCounters)
+    {
+        final Map<String, Long> counterValues = new HashMap<String, Long>();
+        for (Map.Entry<String, CounterMetric> entry : aggregatorCounters.entrySet()) {
+            final String key = entry.getKey();
+            counterValues.put(key, entry.getValue().count() - initialCounters.get(key));
+        }
+        return counterValues;
     }
 
     public void runAggregationThread()
