@@ -22,7 +22,7 @@ import com.ning.arecibo.eventlogger.Event;
 public interface EventService
 {
 	public String HOST = "host" ;
-	public String JETTY_PORT = "jetty.port" ;
+	public String JETTY_PORT = "port" ;
 	public String UDP_PORT = "udp.port" ;
     public String RMI_PORT = "rmi.port" ;
 	public String API_PATH = "/xn/rest/1.0/event";

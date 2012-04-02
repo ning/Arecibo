@@ -24,6 +24,7 @@ import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.dashboard.guice.DashboardModule;
 import com.ning.arecibo.event.publisher.HdfsEventPublisherModule;
+import com.ning.arecibo.event.transport.EventService;
 import com.ning.arecibo.util.galaxy.GalaxyModule;
 import com.ning.arecibo.util.lifecycle.Lifecycle;
 import com.ning.arecibo.util.lifecycle.LifecycleEvent;
@@ -81,8 +82,9 @@ public class DashboardStartupContextListener extends SetupServer
         final CoreConfig jettyConfig = injector.getInstance(CoreConfig.class);
         final DashboardConfig dashboardConfig = injector.getInstance(DashboardConfig.class);
         final Map<String, String> map = new HashMap<String, String>();
-        map.put("host", jettyConfig.getServerHost());
-        map.put("port", String.valueOf(jettyConfig.getServerPort()));
+        map.put(EventService.HOST, jettyConfig.getServerHost());
+        map.put(EventService.JETTY_PORT, String.valueOf(jettyConfig.getServerPort()));
+
         final ServiceDescriptor self = new ServiceDescriptor(dashboardConfig.getServiceName(), map);
         serviceLocator.advertiseLocalService(self);
 
