@@ -100,7 +100,7 @@ public class TimelineEventHandler implements EventHandler
                         for (final String eventType : accumulators.keySet()) {
                             final Integer hostId = removedObjectNotification.getKey();
                             final TimelineHostEventAccumulator accumulator = accumulators.get(eventType);
-                            log.info("Saving Timeline for hostId [{}] and category [{}]", hostId, eventType);
+                            log.debug("Saving Timeline for hostId [{}] and category [{}]", hostId, eventType);
                             accumulator.extractAndSaveTimelineChunks();
                         }
                     }
@@ -174,7 +174,7 @@ public class TimelineEventHandler implements EventHandler
                 if (accumulator == null) {
                     accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, categoryId, config.getTimelinesVerboseStats());
                     hostAccumulators.put(category, accumulator);
-                    log.info("Created new Timeline for hostId [{}] and category [{}]", hostId, category);
+                    log.debug("Created new Timeline for hostId [{}] and category [{}]", hostId, category);
                 }
             }
         }

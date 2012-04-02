@@ -109,7 +109,7 @@ public class TimelineAggregator
     private int aggregateTimelineCandidates(final List<TimelineTimes> timelineTimesCandidates, final int aggregationLevel, final int chunksToAggregate)
     {
         final TimelineTimes firstCandidate = timelineTimesCandidates.get(0);
-        log.info("For host_id {}, eventCategoryId {}, looking to aggregate {} candidates in {} chunks",
+        log.debug("For host_id {}, eventCategoryId {}, looking to aggregate {} candidates in {} chunks",
                 new Object[]{firstCandidate.getHostId(), firstCandidate.getEventCategoryId(), timelineTimesCandidates.size(), chunksToAggregate});
 
         int aggregatesCreated = 0;
@@ -157,7 +157,7 @@ public class TimelineAggregator
             sampleCount += timelineTimes.getSampleCount();
             timelineTimesIds.add(timelineTimes.getObjectId());
         }
-        log.info("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
+        log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
             new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineTimesChunks.size(), totalTimelineSize, sampleCount, timelineTimesIds});
 
         final int totalSampleCount = sampleCount;
