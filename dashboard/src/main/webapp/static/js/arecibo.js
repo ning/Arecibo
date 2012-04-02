@@ -40,7 +40,11 @@ $(document).ready(function() {
             localStorage.setItem("arecibo_latest_samples_end_lookup", samples_end_lookup);
         } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
 
-        window.location = buildGraphURL();
+        if (!samples_start_lookup || !samples_end_lookup) {
+            alert("Please specify a time range");
+        } else {
+            window.location = buildGraphURL();
+        }
         // Don't refresh the page
         event.preventDefault();
     });
