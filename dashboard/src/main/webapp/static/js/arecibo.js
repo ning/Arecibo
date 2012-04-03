@@ -132,6 +132,8 @@ function buildHostsParamsFromTree() {
         }
     }
 
+    window.arecibo.hosts_selected = hostsNb;
+
     return uri;
 }
 
@@ -159,6 +161,8 @@ function buildCategoryAndSampleKindParamsFromTree() {
             sampleKindsNb++;
         }
     }
+
+    window.arecibo.sample_kinds_selected = sampleKindsNb;
 
     return uri;
 }
@@ -220,12 +224,17 @@ function populateSampleKindsTree(kinds) {
 function buildGraphURL() {
     var from = new Date($("#samples_start").val());
     var to = new Date($("#samples_end").val());
+    var hosts_url = buildHostsParamsFromTree();
+    var sample_kinds_url = buildCategoryAndSampleKindParamsFromTree();
+
+    var nb_samples = Math.round(screen.width / (window.arecibo.hosts_selected * window.arecibo.sample_kinds_selected));
+
     var uri = '/static/graph.html?' +
-                buildHostsParamsFromTree() + '&' +
-                buildCategoryAndSampleKindParamsFromTree() + '&' +
+                hosts_url + '&' +
+                sample_kinds_url + '&' +
                 'from=' + ISODateString(from) + '&' +
                 'to=' + ISODateString(to) + '&' +
-                'output_count=' + screen.width;
+                'output_count=' + nb_samples;
 
     return uri;
 }
