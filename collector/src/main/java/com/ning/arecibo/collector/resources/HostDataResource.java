@@ -31,6 +31,7 @@ import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.cache.CacheLoader;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
@@ -401,7 +402,11 @@ public class HostDataResource
                 // TODO pass compact form
                 final DecimatingSampleFilter filter = filters.get(chunk.getHostId()).get(chunk.getSampleKindId());
                 final String samples = filter == null ? chunk.getSamplesAsCSV() : chunk.getSamplesAsCSV(filter);
-                generator.writeObject(new SamplesForSampleKindAndHost(hostName, eventCategory, sampleKind, samples));
+
+                // Don't write out empty samples
+                if (!Strings.isNullOrEmpty(samples)) {
+                    generator.writeObject(new SamplesForSampleKindAndHost(hostName, eventCategory, sampleKind, samples));
+                }
             }
         }
     }
