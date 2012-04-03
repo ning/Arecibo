@@ -103,12 +103,29 @@ function populateSamples(payload) {
     }
 
     // Make sure time series have the same number of data points
-    Rickshaw.Series.zeroFill(window.arecibo.timeseries);
+    fillSeries(window.arecibo.timeseries);
 
     // Draw the graph
     if (window.arecibo.timeseries.length > 0) {
         drawGraph();
     }
+}
+
+/*
+ * Normalize the number of data points per time series by repeating
+ * the last value.
+ */
+function fillSeries(series) {
+    var data = series.map(function(s) { return s.data });
+    var maxSeriesLength = Math.max.apply(null, data.map(function(d) { return d.length }));
+
+    data.forEach(function(d) {
+        var maxX = d[d.length - 1].x;
+        var y = d[d.length - 1].y;
+        while (d.length < maxSeriesLength) {
+            d.push({ x: maxX + d.length - maxSeriesLength, y: y });
+        }
+    });
 }
 
 /*
