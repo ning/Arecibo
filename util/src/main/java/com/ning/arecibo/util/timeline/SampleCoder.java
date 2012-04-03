@@ -364,7 +364,7 @@ public class SampleCoder {
                 timeCursor.consumeRepeat();
                 break;
             default:
-                processor.processSamples(timeCursor, 1, opcode, decodeScalarValue(inputStream, opcode.getReplacement()));
+                processor.processSamples(timeCursor, 1, opcode.getReplacement(), decodeScalarValue(inputStream, opcode));
                 break;
             }
         }
