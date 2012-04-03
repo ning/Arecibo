@@ -47,9 +47,6 @@ import java.util.Map;
 @Path("/rest/1.0")
 public class CollectorResource
 {
-    private static final Logger log = Logger.getLogger(CollectorResource.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
-
     private final CollectorClient client;
     private final GalaxyStatusManager manager;
 

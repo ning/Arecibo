@@ -254,14 +254,12 @@ public class HostDataResource
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
 
-        final DecimatingSampleFilter rangeSampleProcessor;
-        if (outputCount == null) {
-            rangeSampleProcessor = null;
-        }
-        else {
-            // TODO assume 2 samples per minute
-            final int sampleCount = (int) (endTime.minus(startTime.getMillis()).getMillis() / 1000 / 60 * 2);
-            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, sampleCount, new CSVSampleConsumer());
+        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = new HashMap<Integer, Map<Integer, DecimatingSampleFilter>>();
+        for (final Integer hostId : hostIds) {
+            filters.put(hostId, new HashMap<Integer, DecimatingSampleFilter>());
+            for (final Integer sampleKindId : sampleKindIds) {
+                filters.get(hostId).put(sampleKindId, createDecimatingSampleFilter(outputCount, startTime, endTime));
+            }
         }
 
         return new StreamingOutput()
@@ -284,7 +282,7 @@ public class HostDataResource
 
                 generator.writeStartArray();
                 try {
-                    writeJsonForAllChunks(generator, writer, rangeSampleProcessor, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+                    writeJsonForAllChunks(generator, writer, filters, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
                 }
                 catch (CacheLoader.InvalidCacheLoadException e) {
                     throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -304,30 +302,44 @@ public class HostDataResource
         };
     }
 
-    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, @Nullable final DecimatingSampleFilter rangeSampleProcessor, final List<Integer> hostIds,
+    private DecimatingSampleFilter createDecimatingSampleFilter(final Integer outputCount, final DateTime startTime, final DateTime endTime)
+    {
+        final DecimatingSampleFilter rangeSampleProcessor;
+        if (outputCount == null) {
+            rangeSampleProcessor = null;
+        }
+        else {
+            // TODO assume 2 samples per minute
+            final int sampleCount = (int) (endTime.minus(startTime.getMillis()).getMillis() / 1000 / 60 * 2);
+            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, sampleCount, new CSVSampleConsumer());
+        }
+        return rangeSampleProcessor;
+    }
+
+    private void writeJsonForAllChunks(final JsonGenerator generator, final ObjectWriter writer, final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters, final List<Integer> hostIds,
                                        final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
         // First, return all data in memory.
         // Data won't be merged with the on-disk one because we don't want to buffer samples in memory.
-        writeJsonForInMemoryChunks(generator, writer, rangeSampleProcessor, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+        writeJsonForInMemoryChunks(generator, writer, filters, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
 
         // Now, return all data stored in the database
-        writeJsonForStoredChunks(generator, writer, rangeSampleProcessor, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+        writeJsonForStoredChunks(generator, writer, filters, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
     }
 
     @VisibleForTesting
-    void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, @Nullable final DecimatingSampleFilter rangeSampleProcessor, final List<Integer> hostIdsList,
+    void writeJsonForInMemoryChunks(final JsonGenerator generator, final ObjectWriter writer, final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters, final List<Integer> hostIdsList,
                                     final List<Integer> sampleKindIdsList, @Nullable final DateTime startTime, @Nullable final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
         for (final Integer hostId : hostIdsList) {
             final Collection<? extends TimelineChunkAndTimes> inMemorySamples = processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindIdsList, startTime, endTime);
-            writeJsonForChunks(generator, writer, rangeSampleProcessor, inMemorySamples, decodeSamples);
+            writeJsonForChunks(generator, writer, filters, inMemorySamples, decodeSamples);
         }
     }
 
-    private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, @Nullable final DecimatingSampleFilter rangeSampleProcessor, final List<Integer> hostIdsList,
+    private void writeJsonForStoredChunks(final JsonGenerator generator, final ObjectWriter writer, final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters, final List<Integer> hostIdsList,
                                           final List<Integer> sampleKindIdsList, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
@@ -348,7 +360,7 @@ public class HostDataResource
                 chunksForHostAndSampleKind.add(chunkAndTimes);
                 if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
                     try {
-                        writeJsonForChunks(generator, writer, rangeSampleProcessor, chunksForHostAndSampleKind, decodeSamples);
+                        writeJsonForChunks(generator, writer, filters, chunksForHostAndSampleKind, decodeSamples);
                     }
                     catch (RuntimeException e) {
                         // JDBI exception
@@ -369,12 +381,12 @@ public class HostDataResource
         });
 
         if (chunksForHostAndSampleKind.size() > 0) {
-            writeJsonForChunks(generator, writer, rangeSampleProcessor, chunksForHostAndSampleKind, decodeSamples);
+            writeJsonForChunks(generator, writer, filters, chunksForHostAndSampleKind, decodeSamples);
             chunksForHostAndSampleKind.clear();
         }
     }
 
-    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final DecimatingSampleFilter rangeSampleProcessor, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
+    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
         for (final TimelineChunkAndTimes chunk : chunksForHostAndSampleKind) {
@@ -387,7 +399,8 @@ public class HostDataResource
                 final String eventCategory = dao.getEventCategory(categoryIdAndSampleKind.getEventCategoryId());
                 final String sampleKind = categoryIdAndSampleKind.getSampleKind();
                 // TODO pass compact form
-                final String samples = rangeSampleProcessor == null ? chunk.getSamplesAsCSV() : chunk.getSamplesAsCSV(rangeSampleProcessor);
+                final DecimatingSampleFilter filter = filters.get(chunk.getHostId()).get(chunk.getSampleKindId());
+                final String samples = filter == null ? chunk.getSamplesAsCSV() : chunk.getSamplesAsCSV(filter);
                 generator.writeObject(new SamplesForSampleKindAndHost(hostName, eventCategory, sampleKind, samples));
             }
         }
