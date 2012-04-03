@@ -21,6 +21,7 @@ import com.ning.arecibo.collector.discovery.CollectorFinder;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.UniformInterfaceException;
@@ -177,14 +178,23 @@ public class DefaultCollectorClient implements CollectorClient
             }
             final Map<String, SamplesForSampleKindAndHost> samplesForHostAndEventCategory = samplesForHost.get(sample.getEventCategory());
 
+            // Samples might be empty (especially with the DecimatingSampleFilter).
+            // Don't add empty coordinates (i.e. ,,) which would be misinterpreted by the UI as 0 values
+            if (Strings.isNullOrEmpty(sample.getSamples())) {
+                continue;
+            }
+
+            final String samples;
             if (samplesForHostAndEventCategory.get(sample.getSampleKind()) == null) {
-                samplesForHostAndEventCategory.put(sample.getSampleKind(),
-                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), sample.getSamples()));
+                samples = sample.getSamples();
             }
             else {
-                samplesForHostAndEventCategory.put(sample.getSampleKind(),
-                                                   new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), samplesForHostAndEventCategory.get(sample.getSampleKind()).getSamples() + "," + sample.getSamples()));
+                samples = samplesForHostAndEventCategory.get(sample.getSampleKind()).getSamples() +
+                        "," + sample.getSamples();
             }
+
+            final SamplesForSampleKindAndHost newSamples = new SamplesForSampleKindAndHost(sample.getHostName(), sample.getEventCategory(), sample.getSampleKind(), samples);
+            samplesForHostAndEventCategory.put(sample.getSampleKind(), newSamples);
         }
 
         final List<SamplesForSampleKindAndHost> mergedSamples = new ArrayList<SamplesForSampleKindAndHost>();
