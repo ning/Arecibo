@@ -320,7 +320,8 @@ public class HostDataResource
         else {
             // TODO assume 2 samples per minute
             final int sampleCount = (int) (endTime.minus(startTime.getMillis()).getMillis() / 1000 / 60 * 2);
-            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, sampleCount, new CSVSampleConsumer());
+            final int adjustedOutputCount = Math.min(sampleCount, outputCount);
+            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, adjustedOutputCount, sampleCount, new CSVSampleConsumer());
         }
         return rangeSampleProcessor;
     }
