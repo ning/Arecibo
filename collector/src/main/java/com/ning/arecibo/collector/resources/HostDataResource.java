@@ -255,13 +255,7 @@ public class HostDataResource
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
 
-        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = new HashMap<Integer, Map<Integer, DecimatingSampleFilter>>();
-        for (final Integer hostId : hostIds) {
-            filters.put(hostId, new HashMap<Integer, DecimatingSampleFilter>());
-            for (final Integer sampleKindId : sampleKindIds) {
-                filters.get(hostId).put(sampleKindId, createDecimatingSampleFilter(outputCount, startTime, endTime));
-            }
-        }
+        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = createDecimatingSampleFilters(hostIds, sampleKindIds, startTime, endTime, outputCount);
 
         return new StreamingOutput()
         {
@@ -301,6 +295,20 @@ public class HostDataResource
                 generator.close();
             }
         };
+    }
+
+    @VisibleForTesting
+    Map<Integer, Map<Integer, DecimatingSampleFilter>> createDecimatingSampleFilters(final List<Integer> hostIds, final List<Integer> sampleKindIds,
+                                                                                     final DateTime startTime, final DateTime endTime, final Integer outputCount)
+    {
+        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = new HashMap<Integer, Map<Integer, DecimatingSampleFilter>>();
+        for (final Integer hostId : hostIds) {
+            filters.put(hostId, new HashMap<Integer, DecimatingSampleFilter>());
+            for (final Integer sampleKindId : sampleKindIds) {
+                filters.get(hostId).put(sampleKindId, createDecimatingSampleFilter(outputCount, startTime, endTime));
+            }
+        }
+        return filters;
     }
 
     private DecimatingSampleFilter createDecimatingSampleFilter(final Integer outputCount, final DateTime startTime, final DateTime endTime)
