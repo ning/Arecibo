@@ -16,6 +16,19 @@
 
 package com.ning.arecibo.util.timeline;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
+import javax.annotation.Nullable;
+
+import org.joda.time.DateTime;
+import org.skife.jdbi.v2.exceptions.CallbackFailedException;
+import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -25,17 +38,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
-import org.joda.time.DateTime;
-import org.skife.jdbi.v2.exceptions.CallbackFailedException;
-import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 public class CachingTimelineDAO implements TimelineDAO
 {
@@ -369,6 +371,24 @@ public class CachingTimelineDAO implements TimelineDAO
                                                     final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds, startTime, endTime, chunkConsumer);
+    }
+
+    @Override
+    public Integer insertLastStartTimes(final StartTimes startTimes)
+    {
+        return delegate.insertLastStartTimes(startTimes);
+    }
+
+    @Override
+    public StartTimes getLastStartTimes()
+    {
+        return delegate.getLastStartTimes();
+    }
+
+    @Override
+    public void deleteLastStartTimes()
+    {
+        delegate.deleteLastStartTimes();
     }
 
     @Override

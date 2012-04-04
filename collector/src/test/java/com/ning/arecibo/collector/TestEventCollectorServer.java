@@ -164,7 +164,7 @@ public class TestEventCollectorServer
             Assert.assertTrue(sampleKinds.contains(MAX_HEAPUSED_KIND));
         }
 
-        timelineEventHandler.forceCommit();
+        timelineEventHandler.forceCommit(false);
         // Might take a while
         Thread.sleep(100);
 

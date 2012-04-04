@@ -46,3 +46,8 @@ create table timeline_chunks (
 , blob_samples mediumblob default null
 , unique index host_id_timeline_times_sample_kind_idx (timeline_times_id, host_id, sample_kind_id, start_time)
 ) engine = innodb default charset = latin1;
+
+create table last_start_times (
+  time_inserted int not null primary key
+, start_times mediumtext not null
+) engine = innodb default charset = latin1;

@@ -21,6 +21,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class MockTimelineDAO implements TimelineDAO
 {
@@ -45,6 +47,7 @@ public final class MockTimelineDAO implements TimelineDAO
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
     private final Multimap<Integer, Integer> hostSampleKindIds = HashMultimap.create();
     private final Map<Integer, Map<Integer, List<TimelineChunkAndTimes>>> samplesPerHostAndSampleKind = new HashMap<Integer, Map<Integer, List<TimelineChunkAndTimes>>>();
+    private final AtomicReference<StartTimes> lastStartTimes = new AtomicReference<StartTimes>();
 
     @Override
     public Integer getHostId(final String host) throws UnableToObtainConnectionException, CallbackFailedException
@@ -223,6 +226,23 @@ public final class MockTimelineDAO implements TimelineDAO
                 }
             }
         }
+    }
+
+    @Override
+    public StartTimes getLastStartTimes() {
+        return lastStartTimes.get();
+    }
+
+    @Override
+    public Integer insertLastStartTimes(StartTimes startTimes) {
+        lastStartTimes.set(startTimes);
+        return 1;
+    }
+
+    @Override
+    public void deleteLastStartTimes()
+    {
+        lastStartTimes.set(null);
     }
 
     @Override

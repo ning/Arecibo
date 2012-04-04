@@ -16,13 +16,15 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.google.common.collect.BiMap;
+import java.util.List;
+
+import javax.annotation.Nullable;
+
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 
-import javax.annotation.Nullable;
-import java.util.List;
+import com.google.common.collect.BiMap;
 
 public interface TimelineDAO
 {
@@ -69,6 +71,12 @@ public interface TimelineDAO
                                              DateTime startTime,
                                              DateTime endTime,
                                              TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    Integer insertLastStartTimes(StartTimes startTimes);
+
+    StartTimes getLastStartTimes();
+
+    void deleteLastStartTimes();
 
     void test() throws UnableToObtainConnectionException, CallbackFailedException;
 }

@@ -100,6 +100,11 @@ public interface CollectorConfig
     @Default("false")
     boolean getDeleteAggregatedChunks();
 
+    @Config("arecibo.collector.timelines.shutdownSaveMode")
+    @Description("What to save on shut down; either all timelines (save_all_timelines) or just the accumulator start times (save_start_times)")
+    @Default("save_all_timelines")
+    String getShutdownSaveMode();
+
     @Config("arecibo.collector.timelines.segmentsSize")
     @Description("Direct memory segments size in bytes to allocate when buffering incoming events")
     @Default("1048576")

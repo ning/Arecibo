@@ -16,14 +16,8 @@
 
 package com.ning.arecibo.util.timeline.persistent;
 
-import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
-import com.ning.arecibo.util.timeline.CategoryIdAndSampleKindMapper;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkBinder;
-import com.ning.arecibo.util.timeline.TimelineChunkMapper;
-import com.ning.arecibo.util.timeline.TimelineTimes;
-import com.ning.arecibo.util.timeline.TimelineTimesBinder;
-import com.ning.arecibo.util.timeline.TimelineTimesMapper;
+import java.util.List;
+import java.util.Map;
 
 import org.skife.jdbi.v2.DefaultMapper;
 import org.skife.jdbi.v2.sqlobject.Bind;
@@ -34,11 +28,20 @@ import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
 import org.skife.jdbi.v2.sqlobject.mixins.Transactional;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.ExternalizedSqlViaStringTemplate3;
 
-import java.util.List;
-import java.util.Map;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKindMapper;
+import com.ning.arecibo.util.timeline.StartTimes;
+import com.ning.arecibo.util.timeline.StartTimesBinder;
+import com.ning.arecibo.util.timeline.StartTimesMapper;
+import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.TimelineChunkBinder;
+import com.ning.arecibo.util.timeline.TimelineChunkMapper;
+import com.ning.arecibo.util.timeline.TimelineTimes;
+import com.ning.arecibo.util.timeline.TimelineTimesBinder;
+import com.ning.arecibo.util.timeline.TimelineTimesMapper;
 
 @ExternalizedSqlViaStringTemplate3()
-@RegisterMapper({TimelineTimesMapper.class, TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class})
+@RegisterMapper({TimelineTimesMapper.class, TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class})
 public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 {
     @SqlQuery
@@ -91,6 +94,16 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 
     @SqlUpdate
     void insertTimelineChunk(@TimelineChunkBinder final TimelineChunk timelineChunk);
+
+    @SqlUpdate
+    Integer insertLastStartTimes(@StartTimesBinder final StartTimes startTimes);
+
+    @SqlQuery
+    @Mapper(DefaultMapper.class)
+    StartTimes getLastStartTimes();
+
+    @SqlUpdate
+    void deleteLastStartTimes();
 
     @SqlUpdate
     void test();

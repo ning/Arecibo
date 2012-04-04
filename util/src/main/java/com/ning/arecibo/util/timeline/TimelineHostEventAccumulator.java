@@ -105,6 +105,9 @@ public class TimelineHostEventAccumulator
                 new Object[]{hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime)});
             return;
         }
+        // TODO: Doing finding missing attributes with a Set is probably
+        // expensive at the per-host samples level.  See if it is, and if so,
+        // replace with bitvector lookup.
         final Set<Integer> currentKinds = Sets.newHashSet(timelines.keySet());
         for (final Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
             final Integer sampleKindId = entry.getKey();

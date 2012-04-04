@@ -27,7 +27,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
-import com.ning.arecibo.collector.healthchecks.DAOHealthCheck;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.process.EventsUtils;
 import com.ning.arecibo.eventlogger.Event;
@@ -35,6 +34,8 @@ import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.ScalarSample;
+import com.ning.arecibo.util.timeline.ShutdownSaveMode;
+import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
 import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
@@ -59,7 +60,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TimelineEventHandler implements EventHandler
 {
@@ -72,13 +75,18 @@ public class TimelineEventHandler implements EventHandler
     private final Object accumulatorsMonitor = new Object();
 
     private final CollectorConfig config;
+    private final ShutdownSaveMode shutdownSaveMode;
     private final TimelineDAO timelineDAO;
     private final FileBackedBuffer backingBuffer;
+    private final AtomicBoolean fastShutdown;
+    private final AtomicReference<StartTimes> startTimesReference = new AtomicReference<StartTimes>();
 
     @Inject
     public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final FileBackedBuffer fileBackedBuffer) throws IOException
     {
         this.config = config;
+        this.shutdownSaveMode = ShutdownSaveMode.fromString(config.getShutdownSaveMode());
+        this.fastShutdown = new AtomicBoolean(false);
         this.timelineDAO = timelineDAO;
         this.backingBuffer = fileBackedBuffer;
 
@@ -100,8 +108,15 @@ public class TimelineEventHandler implements EventHandler
                         for (final String eventType : accumulators.keySet()) {
                             final Integer hostId = removedObjectNotification.getKey();
                             final TimelineHostEventAccumulator accumulator = accumulators.get(eventType);
-                            log.debug("Saving Timeline for hostId [{}] and category [{}]", hostId, eventType);
-                            accumulator.extractAndSaveTimelineChunks();
+                            if (fastShutdown.get()) {
+                                log.debug("Saving Timeline start time for hostId [{}] and category [{}]", hostId, eventType);
+                                final int categoryId = timelineDAO.getEventCategoryId(eventType);
+                                startTimesReference.get().addTime(hostId, categoryId, accumulator.getStartTime());
+                            }
+                            else {
+                                log.debug("Saving Timeline for hostId [{}] and category [{}]", hostId, eventType);
+                                accumulator.extractAndSaveTimelineChunks();
+                            }
                         }
                     }
                 }
@@ -123,7 +138,7 @@ public class TimelineEventHandler implements EventHandler
                 // Ideally we would use the CachBuilder and do:
                 //  .expireAfterWrite(config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS)
                 // Unfortunately, this is won't work as eviction only occurs at access time.
-                forceCommit();
+                forceCommit(false);
             }
         }, config.getTimelineLength().getMillis(), config.getTimelineLength().getMillis(), TimeUnit.MILLISECONDS);
     }
@@ -168,6 +183,9 @@ public class TimelineEventHandler implements EventHandler
         TimelineHostEventAccumulator accumulator = hostAccumulators.get(category);
 
         if (accumulator == null) {
+            // TODO: It seems to me that this synchronization either doesn't work or isn't
+            // necessary, because there is no synchronization on getting accumulators.
+            // But I think we'll need a different data structure anyway to support
             synchronized (accumulatorsMonitor) {
                 hostAccumulators = accumulators.get(hostId);
                 accumulator = hostAccumulators.get(category);
@@ -253,27 +271,49 @@ public class TimelineEventHandler implements EventHandler
     {
         log.info("Starting replay of files in {}", spoolDir);
         final Replayer replayer = new Replayer(spoolDir);
+        final StartTimes startTimes = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES ? timelineDAO.getLastStartTimes() : null;
 
         try {
             // Read all files in the spool directory and delete them after process
+            // NOTE: The replay process creates new replay files, so we can restart if
+            // we crash before the accumulators are sent to the db.
             replayer.readAll(new Function<HostSamplesForTimestamp, Void>()
             {
                 @Override
-                public Void apply(@Nullable final HostSamplesForTimestamp input)
+                public Void apply(@Nullable final HostSamplesForTimestamp hostSamples)
                 {
-                    if (input != null) {
+                    if (hostSamples != null) {
+                        boolean useSamples = true;
                         try {
-                            processSamples(input);
+                            final int hostId = hostSamples.getHostId();
+                            final String category = hostSamples.getCategory();
+                            final int categoryId = timelineDAO.getEventCategoryId(category);
+                            // If startTimes is non-null and the samples come from before the first time for
+                            // the given host and event category, ignore the samples
+                            if (startTimes != null) {
+                                final DateTime timestamp = hostSamples.getTimestamp();
+                                final DateTime categoryStartTime = startTimes.getStartTimeForHostIdAndCategoryId(hostId, categoryId);
+                                if (timestamp == null ||
+                                        timestamp.isBefore(startTimes.getMinStartTime()) ||
+                                        (categoryStartTime != null && timestamp.isBefore(categoryStartTime))) {
+                                    useSamples = false;
+                                }
+                            }
+                            if (useSamples) {
+                                processSamples(hostSamples);
+                            }
                         }
                         catch (Exception e) {
-                            log.warn("Got exception replaying sample, data potentially lost! {}", input.toString());
+                            log.warn("Got exception replaying sample, data potentially lost! {}", hostSamples.toString());
                         }
                     }
 
                     return null;
                 }
             });
-
+            if (shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES) {
+                timelineDAO.deleteLastStartTimes();
+            }
             log.info("Replay completed");
         }
         catch (RuntimeException e) {
@@ -295,16 +335,25 @@ public class TimelineEventHandler implements EventHandler
     }
 
     @Managed
-    public void forceCommit()
+    public void forceCommit(final boolean shutdown)
     {
-        accumulators.invalidateAll();
-
-        // All the samples have been saved, discard the local buffer
-        // There is a window of doom here but it is fine if we end up storing dups at replay time
-        // TODO: make replayer discard dups
+        final boolean doingFastShutdown = shutdown && shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES;
+        fastShutdown.set(doingFastShutdown);
+        StartTimes startTimes = null;
+        if (doingFastShutdown) {
+            startTimes = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES ? new StartTimes() : null;
+            startTimesReference.set(startTimes);
+            accumulators.invalidateAll();
+            timelineDAO.insertLastStartTimes(startTimes);
+        }
+        else {
+            startTimesReference.set(null);
+            accumulators.invalidateAll();
+        }
+        // All the samples have been saved, or else the start times have been saved.  Discard the local buffer
         backingBuffer.discard();
 
-        log.info("Timelines committed");
+        log.info(doingFastShutdown ? "Timeline start times committed" : "Timelines committed");
     }
 
     @MonitorableManaged(description = "Returns the number of times a host accumulator lookup methods have returned a cached value", monitored = true, monitoringType = {MonitoringType.COUNTER, MonitoringType.RATE})

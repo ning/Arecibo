@@ -170,7 +170,7 @@ public class CollectorModule extends AbstractModule
             public void doAction(final TimelineEventHandler handler)
             {
                 log.info("STOP event received: forcing commit of timelines");
-                handler.forceCommit();
+                handler.forceCommit(true);
             }
         });
         bind(TimelineEventHandler.class).toProvider(lifecycledProvider).asEagerSingleton();

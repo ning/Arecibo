@@ -111,7 +111,7 @@ insertTimelineChunk() ::=<<
   values (:hostId, :sampleKindId, :sampleCount, :timelineTimesId, :startTime, :endTime, :inRowSamples, :blobSamples);
 >>
 
-getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::=<<
+getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::= <<
   select
     c.host_id
   , c.sample_kind_id
@@ -139,6 +139,22 @@ getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::=<<
   and t.not_valid = 0
   order by c.host_id, sample_kind_id, t.start_time asc
   ;
+>>
+
+insertLastStartTimes() ::= <<
+  insert into last_start_times (time_inserted, start_times)
+                        values (:timeInserted, :startTimes)
+>>
+
+getLastStartTimes() ::= <<
+  select time_inserted, start_times
+  from last_start_times
+  order by time_inserted desc
+  limit 1
+>>
+
+deleteLastStartTimes() ::= <<
+  delete from last_start_times
 >>
 
 test() ::=<<

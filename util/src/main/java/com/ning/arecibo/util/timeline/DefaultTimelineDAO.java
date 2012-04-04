@@ -227,6 +227,25 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
+    public Integer insertLastStartTimes(final StartTimes startTimes)
+    {
+        return delegate.insertLastStartTimes(startTimes);
+    }
+
+
+    @Override
+    public StartTimes getLastStartTimes()
+    {
+        return delegate.getLastStartTimes();
+    }
+
+    @Override
+    public void deleteLastStartTimes()
+    {
+        delegate.deleteLastStartTimes();
+    }
+
+    @Override
     public void test() throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.test();
