@@ -35,8 +35,6 @@ public @interface TimelineTimesBinder
 {
     public static class SomethingBinderFactory implements BinderFactory
     {
-        private static final int MAX_IN_ROW_BLOB_SIZE = 400;
-
         public Binder build(final Annotation annotation)
         {
             return new Binder<TimelineTimesBinder, TimelineTimes>()
@@ -48,9 +46,14 @@ public @interface TimelineTimesBinder
                         .bind("startTime", TimelineTimes.unixSeconds(timelineTimes.getStartTime()))
                         .bind("endTime", TimelineTimes.unixSeconds(timelineTimes.getEndTime()))
                         .bind("count", timelineTimes.getSampleCount());
-
+                    if (timelineTimes.getObjectId() == 0) {
+                        query.bindNull("timelineTimesId", Types.BIGINT);
+                    }
+                    else {
+                        query.bind("timelineTimesId", timelineTimes.getObjectId());
+                    }
                     // Use the in-row field if the blob is small enough
-                    if (timelineTimes.getCompressedTimes().length > MAX_IN_ROW_BLOB_SIZE) {
+                    if (timelineTimes.getCompressedTimes().length > TimelineTimesMapper.MAX_IN_ROW_BLOB_SIZE) {
                         query
                             .bindNull("inRowTimes", Types.VARBINARY)
                             .bind("blobTimes", timelineTimes.getCompressedTimes());

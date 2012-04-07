@@ -26,7 +26,9 @@ import java.sql.SQLException;
 
 public class TimelineTimesMapper implements ResultSetMapper<TimelineTimes>
 {
-    @Override
+    public static final int MAX_IN_ROW_BLOB_SIZE = 400;
+
+	@Override
     public TimelineTimes map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
     {
         final int timelineIntervalId = rs.getInt("timeline_times_id");

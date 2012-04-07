@@ -254,4 +254,43 @@ public final class MockTimelineDAO implements TimelineDAO
     {
         return timelineChunks;
     }
+
+    @Override
+    public void bulkInsertEventCategories(List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException {
+        for (String eventCategory : categoryNames) {
+            getOrAddEventCategory(eventCategory);
+        }
+    }
+
+    @Override
+    public void bulkInsertHosts(List<String> hosts) throws UnableToObtainConnectionException, CallbackFailedException {
+        for (String host : hosts) {
+            getOrAddHost(host);
+        }
+    }
+
+    @Override
+    public void bulkInsertSampleKinds(List<CategoryIdAndSampleKind> categoryAndKinds) {
+        for (CategoryIdAndSampleKind c : categoryAndKinds) {
+            getOrAddSampleKind(0, c.getEventCategoryId(), c.getSampleKind());
+        }
+    }
+
+    @Override
+    public List<TimelineChunk> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
+        final List<TimelineChunk> returnedChunks = new ArrayList<TimelineChunk>(timelineChunkList.size());
+        for (TimelineChunk chunk : timelineChunkList) {
+            returnedChunks.add(new TimelineChunk(insertTimelineChunk(chunk), chunk));
+        }
+        return returnedChunks;
+    }
+
+    @Override
+    public List<TimelineTimes> bulkInsertTimelineTimes(List<TimelineTimes> timelineTimesList) {
+        final List<TimelineTimes> returnedTimes = new ArrayList<TimelineTimes>(timelineTimesList.size());
+        for (TimelineTimes times : timelineTimesList) {
+            returnedTimes.add(new TimelineTimes(insertTimelineTimes(times), times));
+        }
+        return returnedTimes;
+    }
 }

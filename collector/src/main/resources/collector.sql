@@ -51,3 +51,8 @@ create table last_start_times (
   time_inserted int not null primary key
 , start_times mediumtext not null
 ) engine = innodb default charset = latin1;
+
+insert into timeline_times(timeline_times_id, host_id, event_category_id, start_time, end_time, count, in_row_times, blob_times)
+                   values (0, 0, 0, 0, 0, 0, null, null);
+insert into timeline_chunks(sample_timeline_id, host_id, sample_kind_id, sample_count, timeline_times_id, start_time, end_time, in_row_samples, blob_samples)
+                   values (0, 0, 0, 0, 0, 0, 0, null, null);

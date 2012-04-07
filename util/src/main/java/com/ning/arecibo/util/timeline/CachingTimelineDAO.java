@@ -339,7 +339,9 @@ public class CachingTimelineDAO implements TimelineDAO
             sampleKindIdsCache.put(categoryIdAndSampleKind, sampleKindId);
         }
 
-        hostIdsSampleKindIdsCache.getUnchecked(hostId).add(sampleKindId);
+        if (hostId != null) {
+            hostIdsSampleKindIdsCache.getUnchecked(hostId).add(sampleKindId);
+        }
 
         return sampleKindId;
     }
@@ -815,5 +817,30 @@ public class CachingTimelineDAO implements TimelineDAO
     public long getSampleKindIdsCacheEvictionCount()
     {
         return sampleKindIdsCache.stats().evictionCount();
+    }
+
+    @Override
+    public void bulkInsertEventCategories(List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException {
+        delegate.bulkInsertEventCategories(categoryNames);
+    }
+
+    @Override
+    public void bulkInsertHosts(List<String> hosts) throws UnableToObtainConnectionException, CallbackFailedException {
+        delegate.bulkInsertHosts(hosts);
+    }
+
+    @Override
+    public void bulkInsertSampleKinds(List<CategoryIdAndSampleKind> categoryAndKinds) {
+        delegate.bulkInsertSampleKinds(categoryAndKinds);
+    }
+
+    @Override
+    public List<TimelineChunk> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
+        return delegate.bulkInsertTimelineChunks(timelineChunkList);
+    }
+
+    @Override
+    public List<TimelineTimes> bulkInsertTimelineTimes(List<TimelineTimes> timelineTimesList) {
+        return delegate.bulkInsertTimelineTimes(timelineTimesList);
     }
 }

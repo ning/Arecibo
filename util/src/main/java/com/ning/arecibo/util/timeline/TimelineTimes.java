@@ -21,7 +21,9 @@ import org.codehaus.jackson.map.annotate.JsonView;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class TimelineTimes extends CachedObject
 {
@@ -82,6 +84,19 @@ public class TimelineTimes extends CachedObject
         this.compressedTimes = compressedTimes;
         this.aggregationLevel = aggregationLevel;
         this.notValid = notValid;
+    }
+
+    public TimelineTimes(final long timelineTimesIntervalId, final TimelineTimes other)
+    {
+        super(timelineTimesIntervalId);
+        this.hostId = other.hostId;
+        this.eventCategoryId = other.eventCategoryId;
+        this.startTime = other.startTime;
+        this.endTime = other.endTime;
+        this.sampleCount = other.sampleCount;
+        this.compressedTimes = other.compressedTimes;
+        this.aggregationLevel = other.aggregationLevel;
+        this.notValid = other.notValid;
     }
 
     public int getHostId()

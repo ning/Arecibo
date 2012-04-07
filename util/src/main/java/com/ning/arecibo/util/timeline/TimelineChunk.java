@@ -56,6 +56,18 @@ public class TimelineChunk extends CachedObject
         this.sampleCount = sampleCount;
     }
 
+    public TimelineChunk(final long sampleTimelineId, final TimelineChunk other)
+    {
+        super(sampleTimelineId);
+        this.hostId = other.hostId;
+        this.sampleKindId = other.sampleKindId;
+        this.timelineTimesId = other.timelineTimesId;
+        this.startTime = other.startTime;
+        this.endTime = other.endTime;
+        this.samples = other.samples;
+        this.sampleCount = other.sampleCount;
+    }
+
     public int getHostId()
     {
         return hostId;

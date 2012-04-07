@@ -78,5 +78,15 @@ public interface TimelineDAO
 
     void deleteLastStartTimes();
 
+    void bulkInsertHosts(final List<String> hosts) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    void bulkInsertEventCategories(final List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException;
+
+    void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds);
+
+    List<TimelineTimes> bulkInsertTimelineTimes(final List<TimelineTimes> timelineTimesList);
+
+    List<TimelineChunk> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList);
+
     void test() throws UnableToObtainConnectionException, CallbackFailedException;
 }

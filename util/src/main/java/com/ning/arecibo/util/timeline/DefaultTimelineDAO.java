@@ -24,6 +24,8 @@ import com.ning.arecibo.util.timeline.persistent.TimelineDAOQueries;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
+import org.skife.jdbi.v2.PreparedBatch;
+import org.skife.jdbi.v2.PreparedBatchPart;
 import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultIterator;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
@@ -34,6 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
+import java.sql.Types;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -250,4 +255,56 @@ public class DefaultTimelineDAO implements TimelineDAO
     {
         delegate.test();
     }
+
+    @Override
+    public synchronized void bulkInsertHosts(final List<String> hosts) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        delegate.bulkInsertHosts(hosts.iterator());
+    }
+
+    @Override
+    public synchronized void bulkInsertEventCategories(final List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        delegate.bulkInsertEventCategories(categoryNames.iterator());
+
+    }
+
+    @Override
+    public synchronized void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds)
+    {
+        delegate.bulkInsertSampleKinds(categoryAndKinds.iterator());
+    }
+
+    @Override
+    public synchronized List<TimelineTimes> bulkInsertTimelineTimes(final List<TimelineTimes> timelineTimesList)
+    {
+        delegate.begin();
+        Long lastTimelineTimesId = delegate.getHighestTimelineTimesId();
+        final int count = timelineTimesList.size();
+        final List<TimelineTimes> timesWithIds = new ArrayList<TimelineTimes>(count);
+        long timesId = lastTimelineTimesId + 1;
+        for (TimelineTimes timelineTimes : timelineTimesList) {
+            timesWithIds.add(new TimelineTimes(timesId++, timelineTimes));
+        }
+        delegate.bulkInsertTimelineTimes(timesWithIds.iterator());
+        delegate.commit();
+        return timesWithIds;
+    }
+
+    @Override
+    public synchronized List<TimelineChunk> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList)
+    {
+        delegate.begin();
+        Long lastTimelineChunkId = delegate.getHighestTimelineChunkId();
+        final int count = timelineChunkList.size();
+        final List<TimelineChunk> chunksWithIds = new ArrayList<TimelineChunk>(count);
+        long chunkId = lastTimelineChunkId + 1;
+        for (TimelineChunk timelineChunk : timelineChunkList) {
+            chunksWithIds.add(new TimelineChunk(chunkId++, timelineChunk));
+        }
+        delegate.bulkInsertTimelineChunks(chunksWithIds.iterator());
+        delegate.commit();
+        return chunksWithIds;
+    }
+
 }

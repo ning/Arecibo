@@ -49,7 +49,12 @@ public @interface TimelineChunkBinder
                         .bind("timelineTimesId", timelineChunk.getTimelineTimesId())
                         .bind("startTime", TimelineTimes.unixSeconds(timelineChunk.getStartTime()))
                         .bind("endTime", TimelineTimes.unixSeconds(timelineChunk.getEndTime()));
-
+                    if (timelineChunk.getObjectId() == 0) {
+                        query.bindNull("sampleTimelineId", Types.BIGINT);
+                    }
+                    else {
+                        query.bind("sampleTimelineId", timelineChunk.getObjectId());
+                    }
                     if (timelineChunk.getSamples().length > MAX_IN_ROW_BLOB_SIZE) {
                         query
                             .bindNull("inRowSamples", Types.VARBINARY)
