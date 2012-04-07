@@ -281,6 +281,17 @@ public class SampleCoder {
         }
     }
 
+    public static boolean isDefaultValue(final SampleOpcode opcode, final Object sampleValue) {
+        switch (opcode) {
+        case NULL:
+        case STRING:
+        case REPEAT:
+            return false;
+        default:
+            return getDoubleValue(opcode, sampleValue) == 0.0;
+        }
+    }
+
     public static Object decodeScalarValue(final DataInputStream inputStream, final SampleOpcode opcode) throws IOException {
         switch (opcode) {
         case NULL:
