@@ -23,10 +23,8 @@ import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
+import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineTimes;
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
@@ -43,10 +41,9 @@ public final class MockTimelineDAO implements TimelineDAO
     private final BiMap<Integer, String> hosts = HashBiMap.create();
     private final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = HashBiMap.create();
     private final BiMap<Integer, String> eventCategories = HashBiMap.create();
-    private final BiMap<Integer, TimelineTimes> timelineTimes = HashBiMap.create();
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
     private final Multimap<Integer, Integer> hostSampleKindIds = HashMultimap.create();
-    private final Map<Integer, Map<Integer, List<TimelineChunkAndTimes>>> samplesPerHostAndSampleKind = new HashMap<Integer, Map<Integer, List<TimelineChunkAndTimes>>>();
+    private final Map<Integer, Map<Integer, List<TimelineChunk>>> samplesPerHostAndSampleKind = new HashMap<Integer, Map<Integer, List<TimelineChunk>>>();
     private final AtomicReference<StartTimes> lastStartTimes = new AtomicReference<StartTimes>();
 
     @Override
@@ -166,15 +163,6 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer insertTimelineTimes(final TimelineTimes timeline)
-    {
-        synchronized (timelineTimes) {
-            timelineTimes.put(timelineTimes.size(), timeline);
-            return timelineTimes.size() - 1;
-        }
-    }
-
-    @Override
     public Integer insertTimelineChunk(final TimelineChunk chunk)
     {
         final Integer timelineChunkId;
@@ -184,17 +172,17 @@ public final class MockTimelineDAO implements TimelineDAO
         }
 
         synchronized (samplesPerHostAndSampleKind) {
-            Map<Integer, List<TimelineChunkAndTimes>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(chunk.getHostId());
+            Map<Integer, List<TimelineChunk>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(chunk.getHostId());
             if (samplesPerSampleKind == null) {
-                samplesPerSampleKind = new HashMap<Integer, List<TimelineChunkAndTimes>>();
+                samplesPerSampleKind = new HashMap<Integer, List<TimelineChunk>>();
             }
 
-            List<TimelineChunkAndTimes> chunkAndTimes = samplesPerSampleKind.get(chunk.getSampleKindId());
+            List<TimelineChunk> chunkAndTimes = samplesPerSampleKind.get(chunk.getSampleKindId());
             if (chunkAndTimes == null) {
-                chunkAndTimes = new ArrayList<TimelineChunkAndTimes>();
+                chunkAndTimes = new ArrayList<TimelineChunk>();
             }
 
-            chunkAndTimes.add(new TimelineChunkAndTimes(chunk.getHostId(), chunk.getSampleKindId(), chunk, timelineTimes.get(chunk.getTimelineTimesId())));
+            chunkAndTimes.add(chunk);
             samplesPerSampleKind.put(chunk.getSampleKindId(), chunkAndTimes);
 
             samplesPerHostAndSampleKind.put(chunk.getHostId(), samplesPerSampleKind);
@@ -204,25 +192,25 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public void getSamplesByHostIdsAndSampleKindIds(final List<Integer> hostIds, @Nullable final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
+    public void getSamplesByHostIdsAndSampleKindIds(final List<Integer> hostIds, @Nullable final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final TimelineChunkConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
         for (final Integer hostId : samplesPerHostAndSampleKind.keySet()) {
             if (hostIds.indexOf(hostId) == -1) {
                 continue;
             }
 
-            final Map<Integer, List<TimelineChunkAndTimes>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(hostId);
+            final Map<Integer, List<TimelineChunk>> samplesPerSampleKind = samplesPerHostAndSampleKind.get(hostId);
             for (final Integer sampleKindId : samplesPerSampleKind.keySet()) {
                 if (sampleKindIds != null && sampleKindIds.indexOf(sampleKindId) == -1) {
                     continue;
                 }
 
-                for (final TimelineChunkAndTimes chunkAndTimes : samplesPerSampleKind.get(sampleKindId)) {
-                    if (chunkAndTimes.getTimelineTimes().getStartTime().isAfter(endTime) || chunkAndTimes.getTimelineTimes().getEndTime().isBefore(startTime)) {
+                for (final TimelineChunk chunk : samplesPerSampleKind.get(sampleKindId)) {
+                    if (chunk.getStartTime().isAfter(endTime) || chunk.getEndTime().isBefore(startTime)) {
                         continue;
                     }
 
-                    chunkConsumer.processTimelineChunkAndTimes(chunkAndTimes);
+                    chunkConsumer.processTimelineChunk(chunk);
                 }
             }
         }
@@ -283,14 +271,5 @@ public final class MockTimelineDAO implements TimelineDAO
             returnedChunks.add(new TimelineChunk(insertTimelineChunk(chunk), chunk));
         }
         return returnedChunks;
-    }
-
-    @Override
-    public List<TimelineTimes> bulkInsertTimelineTimes(List<TimelineTimes> timelineTimesList) {
-        final List<TimelineTimes> returnedTimes = new ArrayList<TimelineTimes>(timelineTimesList.size());
-        for (TimelineTimes times : timelineTimesList) {
-            returnedTimes.add(new TimelineTimes(insertTimelineTimes(times), times));
-        }
-        return returnedTimes;
     }
 }

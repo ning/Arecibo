@@ -24,6 +24,7 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSampleCoder
@@ -33,8 +34,8 @@ public class TestSampleCoder
     {
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
         final DateTime endTime = startTime.plusSeconds(5);
-        final TimelineTimes times = new TimelineTimes(-1, -1, 123, startTime, endTime,
-            ImmutableList.<DateTime>of(startTime.plusSeconds(1), startTime.plusSeconds(2), startTime.plusSeconds(3), startTime.plusSeconds(4)));
+        final List<DateTime> dateTimes = ImmutableList.<DateTime>of(startTime.plusSeconds(1), startTime.plusSeconds(2), startTime.plusSeconds(3), startTime.plusSeconds(4));
+        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
 
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -44,7 +45,7 @@ public class TestSampleCoder
         SampleCoder.encodeSample(dataOutputStream, new RepeatSample<Short>((byte) 3, sample));
         dataOutputStream.close();
 
-        SampleCoder.scan(outputStream.toByteArray(), times, new TimeRangeSampleProcessor(startTime, endTime)
+        SampleCoder.scan(outputStream.toByteArray(), compressedTimes, dateTimes.size(), new TimeRangeSampleProcessor(startTime, endTime)
         {
             @Override
             public void processOneSample(final DateTime time, final SampleOpcode opcode, final Object value)
@@ -63,25 +64,26 @@ public class TestSampleCoder
         final DateTime endTime = new DateTime("2012-03-23T17:35:17.924Z");
         final int sampleCount = 2;
 
-        final TimelineTimes times = new TimelineTimes(0, -1, 123, startTime, endTime, ImmutableList.<DateTime>of(startTime, endTime));
-        final TimeCursor cursor = times.getTimeCursor();
-        Assert.assertEquals(cursor.getNextTime(), TimelineTimes.unixSeconds(startTime));
-        Assert.assertEquals(cursor.getNextTime(), TimelineTimes.unixSeconds(endTime));
+        final List<DateTime> dateTimes = ImmutableList.<DateTime>of(startTime, endTime);
+        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final TimeCursor cursor = new TimeCursor(compressedTimes, sampleCount);
+        Assert.assertEquals(cursor.getNextTime(), DateTimeUtils.unixSeconds(startTime));
+        Assert.assertEquals(cursor.getNextTime(), DateTimeUtils.unixSeconds(endTime));
 
         // 2 x the value 12: REPEAT, SHORT, 2, SHORT, 12 (2 bytes)
         final byte[] samples = new byte[]{127, 2, 2, 0, 12};
 
         final AtomicInteger samplesCount = new AtomicInteger(0);
-        SampleCoder.scan(samples, times, new TimeRangeSampleProcessor(startTime, endTime)
+        SampleCoder.scan(samples, compressedTimes, sampleCount, new TimeRangeSampleProcessor(startTime, endTime)
         {
             @Override
             public void processOneSample(final DateTime time, final SampleOpcode opcode, final Object value)
             {
                 if (samplesCount.get() == 0) {
-                    Assert.assertEquals(TimelineTimes.unixSeconds(time), TimelineTimes.unixSeconds(startTime));
+                    Assert.assertEquals(DateTimeUtils.unixSeconds(time), DateTimeUtils.unixSeconds(startTime));
                 }
                 else {
-                    Assert.assertEquals(TimelineTimes.unixSeconds(time), TimelineTimes.unixSeconds(endTime));
+                    Assert.assertEquals(DateTimeUtils.unixSeconds(time), DateTimeUtils.unixSeconds(endTime));
                 }
                 samplesCount.incrementAndGet();
             }

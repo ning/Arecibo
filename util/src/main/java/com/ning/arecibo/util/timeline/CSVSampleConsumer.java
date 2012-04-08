@@ -38,7 +38,7 @@ public class CSVSampleConsumer implements SampleConsumer
             }
 
             builder
-                    .append(TimelineTimes.unixSeconds(time))
+                    .append(DateTimeUtils.unixSeconds(time))
                     .append(",")
                     .append(valueString);
             builderSampleNumber++;

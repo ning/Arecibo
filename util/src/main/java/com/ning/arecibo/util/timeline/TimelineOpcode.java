@@ -21,8 +21,8 @@ package com.ning.arecibo.util.timeline;
  */
 
 enum TimelineOpcode {
-    FULL_TIME(0xff),                 // Followed by 4 bytes of int value
-    REPEATED_DELTA_TIME(0xfe);       // Followed by a repeat count byte, 1-255, and then by a 1-byte delta whose value is 1-127
+    FULL_TIME(0x7f),                 // Followed by 4 bytes of int value
+    REPEATED_DELTA_TIME(0x7e);       // Followed by a repeat count byte, 1-255, and then by a 1-byte delta whose value is 1-127
 
     private int opcodeIndex;
 

@@ -16,6 +16,9 @@
 
 package com.ning.arecibo.util.timeline;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -30,28 +33,35 @@ public class TestTimelineChunkAccumulator {
         final int sampleKindId = 456;
         final int timelineTimesId = 789;
         final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
-
-        accum.addSample(new ScalarSample(SampleOpcode.INT, new Integer(25)));
-        for (int i=0; i<5; i++) {
-            accum.addSample(new ScalarSample(SampleOpcode.INT, new Integer(10)));
-        }
-        accum.addSample(new ScalarSample(SampleOpcode.DOUBLE, new Double(100.0)));
-        accum.addSample(new ScalarSample(SampleOpcode.DOUBLE, new Double(100.0)));
-
-        accum.addSample(new ScalarSample(SampleOpcode.STRING, new String("Hiya!")));
+        final List<DateTime> dateTimes = new ArrayList<DateTime>();
         final DateTime startTime = new DateTime();
         final DateTime endTime = startTime.plus(1000);
-        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(timelineTimesId, startTime, endTime);
+
+        accum.addSample(new ScalarSample(SampleOpcode.INT, new Integer(25)));
+        int timesCounter = 0;
+        dateTimes.add(startTime.plusSeconds(30 * timesCounter++));
+        for (int i=0; i<5; i++) {
+            accum.addSample(new ScalarSample(SampleOpcode.INT, new Integer(10)));
+            dateTimes.add(startTime.plusSeconds(30 * timesCounter++));
+        }
+        accum.addSample(new ScalarSample(SampleOpcode.DOUBLE, new Double(100.0)));
+        dateTimes.add(startTime.plusSeconds(30 * timesCounter++));
+        accum.addSample(new ScalarSample(SampleOpcode.DOUBLE, new Double(100.0)));
+        dateTimes.add(startTime.plusSeconds(30 * timesCounter++));
+
+        accum.addSample(new ScalarSample(SampleOpcode.STRING, new String("Hiya!")));
+        dateTimes.add(startTime.plusSeconds(30 * timesCounter++));
+
+        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
         Assert.assertEquals(chunk.getSampleCount(), 9);
-        final TimelineTimes times = makeTimelineTimesBytes(TimelineTimes.unixSeconds(startTime), 30, timelineTimesId, 9, hostId, eventCategoryId);
-        Assert.assertEquals(times.getSampleCount(), 9);
         // Now play them back
-        SampleCoder.scan(chunk.getSamples(), times, new SampleProcessor() {
+        SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
             private int sampleNumber = 0;
 
             @Override
             public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
-                timeCursor.consumeRepeat();
+                timeCursor.consumeRepeat(sampleCount);
                 if (sampleNumber == 0) {
                     Assert.assertEquals(opcode, SampleOpcode.INT);
                     Assert.assertEquals(value, new Integer(25));
@@ -74,24 +84,7 @@ public class TestTimelineChunkAccumulator {
                 sampleNumber += sampleCount;
             }
         });
-        final TimelineChunkAndTimes chunkAndTimes = new TimelineChunkAndTimes(Integer.MIN_VALUE, Integer.MAX_VALUE, chunk, times);
-        final TimelineChunkAndTimesDecoded chunkDecoded = new TimelineChunkAndTimesDecoded(chunkAndTimes);
+        final TimelineChunkDecoded chunkDecoded = new TimelineChunkDecoded(chunk);
         System.out.printf("%s\n", chunkDecoded.toString());
-    }
-
-    private TimelineTimes makeTimelineTimesBytes(final int initialUnixTime, final int secondsBetweenSamples, final int timelineTimesId,
-            final int sampleCount, final int hostId, final int eventCategoryId)
-    {
-        final int[] times = new int[sampleCount];
-        for (int i=0; i<sampleCount; i++) {
-            times[i] = initialUnixTime + i * secondsBetweenSamples;
-        }
-        return new TimelineTimes(timelineTimesId,
-                                 hostId,
-                                 eventCategoryId,
-                                 TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime),
-                                 TimelineTimes.dateTimeFromUnixSeconds(initialUnixTime + secondsBetweenSamples * sampleCount),
-                                 TimelineCoder.compressTimes(times),
-                                 sampleCount);
     }
 }

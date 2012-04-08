@@ -16,13 +16,13 @@
 
 package com.ning.arecibo.util.timeline;
 
-import org.joda.time.DateTime;
-import org.skife.jdbi.v2.StatementContext;
-import org.skife.jdbi.v2.tweak.ResultSetMapper;
-
 import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.joda.time.DateTime;
+import org.skife.jdbi.v2.StatementContext;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
 {
@@ -32,15 +32,22 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
         final int sampleTimelineId = rs.getInt("sample_timeline_id");
         final int hostId = rs.getInt("host_id");
         final int sampleKindId = rs.getInt("sample_kind_id");
-        final int timelineIntervalId = rs.getInt("timeline_times_id");
         final int sampleCount = rs.getInt("sample_count");
-        final DateTime startTime = new DateTime(TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("start_time")));
-        final DateTime endTime = new DateTime(TimelineTimes.dateTimeFromUnixSeconds(rs.getInt("end_time")));
-        byte[] samples = rs.getBytes("in_row_samples");
+        final DateTime startTime = new DateTime(DateTimeUtils.dateTimeFromUnixSeconds(rs.getInt("start_time")));
+        final DateTime endTime = new DateTime(DateTimeUtils.dateTimeFromUnixSeconds(rs.getInt("end_time")));
+        final int aggregationLevel = rs.getInt("aggregation_level");
+        final boolean notValid = rs.getInt("not_valid") == 0 ? false : true;
+        byte[] samplesAndTimes = rs.getBytes("in_row_samples");
         if (rs.wasNull()) {
             final Blob blobSamples = rs.getBlob("blob_samples");
-            samples = blobSamples.getBytes(1, (int) blobSamples.length());
+            if (rs.wasNull()) {
+                samplesAndTimes = new byte[4];
+            }
+            else {
+                samplesAndTimes = blobSamples.getBytes(1, (int) blobSamples.length());
+            }
         }
-        return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, timelineIntervalId, startTime, endTime, samples, sampleCount);
+        final TimeBytesAndSampleBytes bytesPair = TimesAndSamplesCoder.getTimesBytesAndSampleBytes(samplesAndTimes);
+        return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(), sampleCount, aggregationLevel, notValid);
     }
 }

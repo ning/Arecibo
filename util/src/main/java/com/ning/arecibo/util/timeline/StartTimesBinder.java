@@ -31,7 +31,7 @@ import org.skife.jdbi.v2.sqlobject.BindingAnnotation;
 
 import com.ning.arecibo.util.Logger;
 
-@BindingAnnotation(TimelineTimesBinder.SomethingBinderFactory.class)
+@BindingAnnotation(StartTimesBinder.SomethingBinderFactory.class)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.PARAMETER})
 public @interface StartTimesBinder {

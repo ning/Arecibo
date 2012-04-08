@@ -21,6 +21,7 @@ import com.ning.arecibo.util.Logger;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import org.joda.time.DateTime;
 
@@ -80,14 +81,20 @@ public class TimelineChunkAccumulator
         }
     }
 
+    public synchronized TimelineChunk extractTimelineChunkAndReset(final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
+    {
+        final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
+        return extractTimelineChunkAndReset(startTime, endTime, timeBytes);
+    }
+
     /**
      * This method grabs the current encoded form, and resets the accumulator
      */
-    public synchronized TimelineChunk extractTimelineChunkAndReset(final int timelineTimesId, final DateTime startTime, final DateTime endTime)
+    public synchronized TimelineChunk extractTimelineChunkAndReset(final DateTime startTime, final DateTime endTime, final byte[] timeBytes)
     {
         // Extract the chunk
-        final byte[] bytes = getEncodedSamples().getEncodedBytes();
-        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, timelineTimesId, startTime, endTime, bytes, sampleCount);
+        final byte[] sampleBytes = getEncodedSamples().getEncodedBytes();
+        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, startTime, endTime, timeBytes, sampleBytes, sampleCount);
 
         // Reset this current accumulator
         reset();

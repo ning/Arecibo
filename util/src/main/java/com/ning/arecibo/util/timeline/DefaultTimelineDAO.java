@@ -16,16 +16,15 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.inject.Inject;
-import com.ning.arecibo.util.timeline.persistent.TimelineDAOQueries;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
-import org.skife.jdbi.v2.PreparedBatch;
-import org.skife.jdbi.v2.PreparedBatchPart;
 import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultIterator;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
@@ -35,17 +34,17 @@ import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.google.common.base.Joiner;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.inject.Inject;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAOQueries;
 
 public class DefaultTimelineDAO implements TimelineDAO
 {
     private static final Logger log = LoggerFactory.getLogger(DefaultTimelineDAO.class);
     private static final Joiner JOINER = Joiner.on(",");
+    private static final TimelineChunkMapper timelineChunkMapper = new TimelineChunkMapper();
 
     final IDBI dbi;
     final TimelineDAOQueries delegate;
@@ -160,17 +159,6 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer insertTimelineTimes(final TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        delegate.begin();
-        delegate.insertTimelineTimes(timelineTimes);
-        final Integer timelineTimesId = delegate.getLastInsertedId();
-        delegate.commit();
-
-        return timelineTimesId;
-    }
-
-    @Override
     public synchronized Integer insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.begin();
@@ -186,7 +174,7 @@ public class DefaultTimelineDAO implements TimelineDAO
                                                     @Nullable final List<Integer> sampleKindIdList,
                                                     final DateTime startTime,
                                                     final DateTime endTime,
-                                                    final TimelineChunkAndTimesConsumer chunkConsumer)
+                                                    final TimelineChunkConsumer chunkConsumer)
     {
         dbi.withHandle(new HandleCallback<Void>()
         {
@@ -195,12 +183,12 @@ public class DefaultTimelineDAO implements TimelineDAO
             {
                 handle.setStatementLocator(new StringTemplate3StatementLocator(TimelineDAOQueries.class));
 
-                ResultIterator<TimelineChunkAndTimes> iterator = null;
+                ResultIterator<TimelineChunk> iterator = null;
                 try {
                     final Query<Map<String, Object>> query = handle
                         .createQuery("getSamplesByHostIdsAndSampleKindIds")
-                        .bind("startTime", TimelineTimes.unixSeconds(startTime))
-                        .bind("endTime", TimelineTimes.unixSeconds(endTime))
+                        .bind("startTime", DateTimeUtils.unixSeconds(startTime))
+                        .bind("endTime", DateTimeUtils.unixSeconds(endTime))
                         .define("hostIds", JOINER.join(hostIdList));
 
                     if (sampleKindIdList != null && !sampleKindIdList.isEmpty()) {
@@ -208,11 +196,11 @@ public class DefaultTimelineDAO implements TimelineDAO
                     }
 
                     iterator = query
-                        .map(TimelineChunkAndTimes.mapper)
+                        .map(timelineChunkMapper)
                         .iterator();
 
                     while (iterator.hasNext()) {
-                        chunkConsumer.processTimelineChunkAndTimes(iterator.next());
+                        chunkConsumer.processTimelineChunk(iterator.next());
                     }
                     return null;
                 }
@@ -273,22 +261,6 @@ public class DefaultTimelineDAO implements TimelineDAO
     public synchronized void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds)
     {
         delegate.bulkInsertSampleKinds(categoryAndKinds.iterator());
-    }
-
-    @Override
-    public synchronized List<TimelineTimes> bulkInsertTimelineTimes(final List<TimelineTimes> timelineTimesList)
-    {
-        delegate.begin();
-        Long lastTimelineTimesId = delegate.getHighestTimelineTimesId();
-        final int count = timelineTimesList.size();
-        final List<TimelineTimes> timesWithIds = new ArrayList<TimelineTimes>(count);
-        long timesId = lastTimelineTimesId + 1;
-        for (TimelineTimes timelineTimes : timelineTimesList) {
-            timesWithIds.add(new TimelineTimes(timesId++, timelineTimes));
-        }
-        delegate.bulkInsertTimelineTimes(timesWithIds.iterator());
-        delegate.commit();
-        return timesWithIds;
     }
 
     @Override

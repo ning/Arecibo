@@ -14,26 +14,19 @@
  * under the License.
  */
 
-package com.ning.arecibo.collector;
+package com.ning.arecibo.util.timeline;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-
-public class AccumulatorConsumer implements TimelineChunkConsumer
+public class TimelineChunksViews
 {
-    private final List<TimelineChunk> accumulator = new ArrayList<TimelineChunk>();
-
-    @Override
-    public void processTimelineChunk(final TimelineChunk chunk)
+    public static class Base
     {
-        accumulator.add(chunk);
     }
 
-    public List<TimelineChunk> getAccumulator()
+    public static class Compact extends Base
     {
-        return accumulator;
+    }
+
+    public static class Loose extends Base
+    {
     }
 }

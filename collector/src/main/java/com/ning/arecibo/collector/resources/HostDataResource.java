@@ -22,10 +22,10 @@ import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesDecoded;
-import com.ning.arecibo.util.timeline.TimelineChunksAndTimesViews;
+import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.TimelineChunkDecoded;
+import com.ning.arecibo.util.timeline.TimelineChunksViews;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
@@ -195,8 +195,8 @@ public class HostDataResource
      * <p><p>
      * This entrypoint does real streaming, so that very large queries will still have a small memory
      * footprints.  It gets this done by returning a StreamingOutput object that does the query inside
-     * the DAO's createHandle() method, invokes the TimelineChunkAndTimesConsumer method
-     * processTimelineChunkAndTimes() to process each TimelineChunkAndTimes instance.  This
+     * the DAO's createHandle() method, invokes the TimelineChunkConsumer method
+     * processTimelineChunk() to process each TimelineChunk instance.  This
      * approach provides guarantees that the database connection will get closed in the StreamingOutput's
      * try/finally clause.
      * <p><p>
@@ -264,10 +264,10 @@ public class HostDataResource
             {
                 final ObjectWriter writer;
                 if (compact) {
-                    writer = objectMapper.writerWithView(TimelineChunksAndTimesViews.Compact.class);
+                    writer = objectMapper.writerWithView(TimelineChunksViews.Compact.class);
                 }
                 else {
-                    writer = objectMapper.writerWithView(TimelineChunksAndTimesViews.Loose.class);
+                    writer = objectMapper.writerWithView(TimelineChunksViews.Loose.class);
                 }
                 final JsonGenerator generator = objectMapper.getJsonFactory().createJsonGenerator(output);
 
@@ -344,7 +344,7 @@ public class HostDataResource
             throws IOException, ExecutionException
     {
         for (final Integer hostId : hostIdsList) {
-            final Collection<? extends TimelineChunkAndTimes> inMemorySamples = processor.getInMemoryTimelineChunkAndTimes(hostId, sampleKindIdsList, startTime, endTime);
+            final Collection<? extends TimelineChunk> inMemorySamples = processor.getInMemoryTimelineChunk(hostId, sampleKindIdsList, startTime, endTime);
             writeJsonForChunks(generator, writer, filters, inMemorySamples, decodeSamples);
         }
     }
@@ -355,19 +355,19 @@ public class HostDataResource
     {
         final AtomicReference<Integer> lastHostId = new AtomicReference<Integer>(null);
         final AtomicReference<Integer> lastSampleKindId = new AtomicReference<Integer>(null);
-        final List<TimelineChunkAndTimes> chunksForHostAndSampleKind = new ArrayList<TimelineChunkAndTimes>();
+        final List<TimelineChunk> chunksForHostAndSampleKind = new ArrayList<TimelineChunk>();
 
-        dao.getSamplesByHostIdsAndSampleKindIds(hostIdsList, sampleKindIdsList, startTime, endTime, new TimelineChunkAndTimesConsumer()
+        dao.getSamplesByHostIdsAndSampleKindIds(hostIdsList, sampleKindIdsList, startTime, endTime, new TimelineChunkConsumer()
         {
             @Override
-            public void processTimelineChunkAndTimes(final TimelineChunkAndTimes chunkAndTimes)
+            public void processTimelineChunk(final TimelineChunk chunks)
             {
                 final Integer previousHostId = lastHostId.get();
                 final Integer previousSampleKindId = lastSampleKindId.get();
-                final Integer currentHostId = chunkAndTimes.getHostId();
-                final Integer currentSampleKindId = chunkAndTimes.getSampleKindId();
+                final Integer currentHostId = chunks.getHostId();
+                final Integer currentSampleKindId = chunks.getSampleKindId();
 
-                chunksForHostAndSampleKind.add(chunkAndTimes);
+                chunksForHostAndSampleKind.add(chunks);
                 if (previousHostId != null && (!previousHostId.equals(currentHostId) || !previousSampleKindId.equals(currentSampleKindId))) {
                     try {
                         writeJsonForChunks(generator, writer, filters, chunksForHostAndSampleKind, decodeSamples);
@@ -396,12 +396,12 @@ public class HostDataResource
         }
     }
 
-    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters, final Iterable<? extends TimelineChunkAndTimes> chunksForHostAndSampleKind, final boolean decodeSamples)
+    private void writeJsonForChunks(final JsonGenerator generator, final ObjectWriter writer, final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters, final Iterable<? extends TimelineChunk> chunksForHostAndSampleKind, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
-        for (final TimelineChunkAndTimes chunk : chunksForHostAndSampleKind) {
+        for (final TimelineChunk chunk : chunksForHostAndSampleKind) {
             if (decodeSamples) {
-                writer.writeValue(generator, new TimelineChunkAndTimesDecoded(chunk));
+                writer.writeValue(generator, new TimelineChunkDecoded(chunk));
             }
             else {
                 final String hostName = dao.getHost(chunk.getHostId());

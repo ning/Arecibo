@@ -27,14 +27,16 @@ public class TimeCursor
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
 
     private final DataInputStream timelineDataStream;
+    private int sampleCount;
     private int byteCursor;
     private int lastValue;
     private int delta;
     private int repeatCount;
 
-    public TimeCursor(final TimelineTimes timelineTimes)
+    public TimeCursor(final byte[] times, final int sampleCount)
     {
-        this.timelineDataStream = new DataInputStream(new ByteArrayInputStream(timelineTimes.getCompressedTimes()));
+        this.timelineDataStream = new DataInputStream(new ByteArrayInputStream(times));
+        this.sampleCount = sampleCount;
         this.byteCursor = 0;
         this.lastValue = 0;
         this.delta = 0;
@@ -80,7 +82,8 @@ public class TimeCursor
         }
     }
 
-    public void consumeRepeat() {
+    // TODO: This is broken
+    public void consumeRepeat(final int samplesToAdvance) {
         lastValue += repeatCount * delta;
     }
 

@@ -34,7 +34,7 @@ public class StartTimesMapper implements ResultSetMapper<StartTimes> {
     public StartTimes map(int index, ResultSet r, StatementContext ctx) throws SQLException
     {
         try {
-            return new StartTimes(TimelineTimes.dateTimeFromUnixSeconds(r.getInt("time_inserted")),
+            return new StartTimes(DateTimeUtils.dateTimeFromUnixSeconds(r.getInt("time_inserted")),
                     (Map<Integer, Map<Integer, DateTime>>)mapper.readValue(r.getBlob("start_times").getBinaryStream(), new TypeReference<Map<Integer, Map<Integer, DateTime>>>() {}));
         }
         catch (IOException e) {

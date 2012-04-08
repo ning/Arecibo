@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.util.timeline;
 
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class TimelineCoder {
     public static final int MAX_REPEAT_COUNT = 0xFF;
 
     public static byte[] compressTimes(final int[] times) {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(times.length / 3);
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final DataOutputStream dataStream = new DataOutputStream(outputStream);
         try {
             int lastTime = times[0];
@@ -79,7 +80,7 @@ public class TimelineCoder {
             if (repeatCount > 0) {
                 writeRepeatedDelta(lastDelta, repeatCount, dataStream);
             }
-            outputStream.flush();
+            dataStream.flush();
             return outputStream.toByteArray();
         }
         catch (IOException e) {
@@ -129,6 +130,17 @@ public class TimelineCoder {
             intArray[i] = intList.get(i);
         }
         return intArray;
+    }
+
+    // TODO: This conversion to int[] isn't necessary - - eliminate it.
+    public static byte[] compressDateTimes(final List<DateTime> dateTimes)
+    {
+        final int[] times = new int[dateTimes.size()];
+        int i = 0;
+        for (final DateTime dateTime : dateTimes) {
+            times[i++] = DateTimeUtils.unixSeconds(dateTime);
+        }
+        return compressTimes(times);
     }
 
     private static void writeRepeatedDelta(final int delta, final int repeatCount, final DataOutputStream dataStream) throws IOException {

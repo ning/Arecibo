@@ -351,11 +351,16 @@ public class SampleCoder {
      * @param processor the callback to which values value counts are passed to be processed.
      * @throws IOException
      */
-    public static void scan(final byte[] bytes, final TimelineTimes timestamps, final SampleProcessor processor) throws IOException{
+    public static void scan(final TimelineChunk chunk, final SampleProcessor processor) throws IOException {
         //System.out.printf("Decoded: %s\n", new String(Hex.encodeHex(bytes)));
-        final ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);
+        scan(chunk.getSamples(), chunk.getTimes(), chunk.getSampleCount(), processor);
+    }
+
+    public static void scan(final byte[] samples, final byte[] times, final int sampleCount, final SampleProcessor processor) throws IOException
+    {
+        final ByteArrayInputStream byteStream = new ByteArrayInputStream(samples);
         final DataInputStream inputStream = new DataInputStream(byteStream);
-        final TimeCursor timeCursor = new TimeCursor(timestamps);
+        final TimeCursor timeCursor = new TimeCursor(times, sampleCount);
         while (true) {
             final byte opcodeByte;
             try {
@@ -372,7 +377,7 @@ public class SampleCoder {
                 final Object value = decodeScalarValue(inputStream, repeatedOpcode);
                 final SampleOpcode replacementOpcode = repeatedOpcode.getReplacement();
                 processor.processSamples(timeCursor, repeatCount, replacementOpcode, value);
-                timeCursor.consumeRepeat();
+                timeCursor.consumeRepeat(repeatCount);
                 break;
             default:
                 processor.processSamples(timeCursor, 1, opcode.getReplacement(), decodeScalarValue(inputStream, opcode));

@@ -16,17 +16,17 @@
 
 package com.ning.arecibo.util.timeline;
 
-import org.skife.jdbi.v2.SQLStatement;
-import org.skife.jdbi.v2.sqlobject.Binder;
-import org.skife.jdbi.v2.sqlobject.BinderFactory;
-import org.skife.jdbi.v2.sqlobject.BindingAnnotation;
-
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.sql.Types;
+
+import org.skife.jdbi.v2.SQLStatement;
+import org.skife.jdbi.v2.sqlobject.Binder;
+import org.skife.jdbi.v2.sqlobject.BinderFactory;
+import org.skife.jdbi.v2.sqlobject.BindingAnnotation;
 
 @BindingAnnotation(TimelineChunkBinder.SomethingBinderFactory.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -46,9 +46,11 @@ public @interface TimelineChunkBinder
                     query.bind("hostId", timelineChunk.getHostId())
                         .bind("sampleKindId", timelineChunk.getSampleKindId())
                         .bind("sampleCount", timelineChunk.getSampleCount())
-                        .bind("timelineTimesId", timelineChunk.getTimelineTimesId())
-                        .bind("startTime", TimelineTimes.unixSeconds(timelineChunk.getStartTime()))
-                        .bind("endTime", TimelineTimes.unixSeconds(timelineChunk.getEndTime()));
+                        .bind("startTime", DateTimeUtils.unixSeconds(timelineChunk.getStartTime()))
+                        .bind("endTime", DateTimeUtils.unixSeconds(timelineChunk.getEndTime()))
+                        .bind("aggregationLevel", timelineChunk.getAggregationLevel())
+                        .bind("notValid", timelineChunk.getNotValid() ? 1 : 0);
+                    final byte[] timesAndSamples = TimesAndSamplesCoder.combineTimesAndSamples(timelineChunk.getTimes(), timelineChunk.getSamples());
                     if (timelineChunk.getObjectId() == 0) {
                         query.bindNull("sampleTimelineId", Types.BIGINT);
                     }
@@ -58,11 +60,11 @@ public @interface TimelineChunkBinder
                     if (timelineChunk.getSamples().length > MAX_IN_ROW_BLOB_SIZE) {
                         query
                             .bindNull("inRowSamples", Types.VARBINARY)
-                            .bind("blobSamples", timelineChunk.getSamples());
+                            .bind("blobSamples", timesAndSamples);
                     }
                     else {
                         query
-                            .bind("inRowSamples", timelineChunk.getSamples())
+                            .bind("inRowSamples", timesAndSamples)
                             .bindNull("blobSamples", Types.BLOB);
                     }
                 }

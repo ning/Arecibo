@@ -52,7 +52,7 @@ import com.ning.arecibo.event.transport.JsonEventSerializer;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.TimeCursor;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.http.client.AsyncHttpClient;
 
@@ -171,47 +171,44 @@ public class TestEventCollectorServer
         final AccumulatorConsumer consumer = new AccumulatorConsumer();
         timelineDAO.getSamplesByHostIdsAndSampleKindIds(ImmutableList.<Integer>of(hostId),
             ImmutableList.<Integer>of(minHeapUserKindId, maxHeapUserKindId), startTime, endTime, consumer);
-        final List<TimelineChunkAndTimes> chunkAndTimes = consumer.getAccumulator();
+        final List<TimelineChunk> chunks = consumer.getAccumulator();
         // 1 host x 2 sample kinds
-        Assert.assertEquals(chunkAndTimes.size(), 2);
+        Assert.assertEquals(chunks.size(), 2);
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getHostId(), hostId);
-        Assert.assertEquals(chunkAndTimes.get(1).getHostId(), hostId);
+        Assert.assertEquals((Integer)chunks.get(0).getHostId(), hostId);
+        Assert.assertEquals((Integer)chunks.get(1).getHostId(), hostId);
         // Two types
-        Assert.assertTrue(chunkAndTimes.get(0).getSampleKindId().equals(minHeapUserKindId) || chunkAndTimes.get(0).getSampleKindId().equals(maxHeapUserKindId));
-        Assert.assertTrue(chunkAndTimes.get(1).getSampleKindId().equals(minHeapUserKindId) || chunkAndTimes.get(1).getSampleKindId().equals(maxHeapUserKindId));
+        Assert.assertTrue((chunks.get(0).getSampleKindId() == minHeapUserKindId) || chunks.get(0).getSampleKindId() == maxHeapUserKindId);
+        Assert.assertTrue((chunks.get(1).getSampleKindId() == minHeapUserKindId) || chunks.get(1).getSampleKindId() == maxHeapUserKindId);
 
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getHostId(), (int) hostId);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getHostId(), (int) hostId);
+        Assert.assertEquals(chunks.get(0).getHostId(), (int) hostId);
+        Assert.assertEquals(chunks.get(1).getHostId(), (int) hostId);
         // Two types
-        Assert.assertTrue(chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == minHeapUserKindId || chunkAndTimes.get(0).getTimelineChunk().getSampleKindId() == maxHeapUserKindId);
-        Assert.assertTrue(chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == minHeapUserKindId || chunkAndTimes.get(1).getTimelineChunk().getSampleKindId() == maxHeapUserKindId);
+        Assert.assertTrue(chunks.get(0).getSampleKindId() == minHeapUserKindId || chunks.get(0).getSampleKindId() == maxHeapUserKindId);
+        Assert.assertTrue(chunks.get(1).getSampleKindId() == minHeapUserKindId || chunks.get(1).getSampleKindId() == maxHeapUserKindId);
 
-        // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getTimelineTimesId(), 1);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getTimelineTimesId(), 1);
         // Number of events sent
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineChunk().getSampleCount(), sampleCount);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineChunk().getSampleCount(), sampleCount);
+        Assert.assertEquals(chunks.get(0).getSampleCount(), sampleCount);
+        Assert.assertEquals(chunks.get(1).getSampleCount(), sampleCount);
 
         // Only one
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getHostId(), (int) hostId);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getHostId(), (int) hostId);
+        Assert.assertEquals(chunks.get(0).getHostId(), (int) hostId);
+        Assert.assertEquals(chunks.get(1).getHostId(), (int) hostId);
         // When we started sending events (we store seconds granularity)
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
+        Assert.assertEquals(chunks.get(0).getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
+        Assert.assertEquals(chunks.get(1).getStartTime().getMillis() / 1000, startTime.getMillis() / 1000);
         // When we finished sending events (we store seconds granularity)
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getEndTime().getMillis() / 1000, endTime.getMillis() / 1000);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getEndTime().getMillis() / 1000, endTime.getMillis() / 1000);
+        Assert.assertEquals(chunks.get(0).getEndTime().getMillis() / 1000, endTime.getMillis() / 1000);
+        Assert.assertEquals(chunks.get(1).getEndTime().getMillis() / 1000, endTime.getMillis() / 1000);
         // Each event was sent at a separate time
-        Assert.assertEquals(chunkAndTimes.get(0).getTimelineTimes().getSampleCount(), sampleCount);
-        Assert.assertEquals(chunkAndTimes.get(1).getTimelineTimes().getSampleCount(), sampleCount);
+        Assert.assertEquals(chunks.get(0).getSampleCount(), sampleCount);
+        Assert.assertEquals(chunks.get(1).getSampleCount(), sampleCount);
         // Check all the timelines events
-        final TimeCursor timeCursor0 = new TimeCursor(chunkAndTimes.get(0).getTimelineTimes());
-        final TimeCursor timeCursor1 = new TimeCursor(chunkAndTimes.get(1).getTimelineTimes());
+        final TimeCursor timeCursor0 = new TimeCursor(chunks.get(0).getTimes(), chunks.get(0).getSampleCount());
+        final TimeCursor timeCursor1 = new TimeCursor(chunks.get(1).getTimes(), chunks.get(1).getSampleCount());
         for (int i = 0; i < sampleCount; i++) {
-            Assert.assertEquals(timeCursor0.getNextTime(), startTime.plusMinutes(i).getMillis() / 1000);
+            Assert.assertEquals(timeCursor0.getNextTime(), (int)(startTime.plusMinutes(i).getMillis() / 1000));
             Assert.assertEquals(timeCursor1.getNextTime(), startTime.plusMinutes(i).getMillis() / 1000);
         }
     }

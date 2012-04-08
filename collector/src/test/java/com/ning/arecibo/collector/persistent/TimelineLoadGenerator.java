@@ -33,11 +33,11 @@ import com.ning.arecibo.util.timeline.CachingTimelineDAO;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineTimes;
+import com.ning.arecibo.util.timeline.TimelineCoder;
 
 /**
  * This class simulates the database load due to insertions and deletions of
- * TimelineTimes and TimelineChunks rows, as required by sample processing and
+ * TimelineChunks rows, as required by sample processing and
  * aggregation.  Each is single-threaded.
  */
 public class TimelineLoadGenerator {
@@ -67,7 +67,6 @@ public class TimelineLoadGenerator {
     private final CachingTimelineDAO timelineDAO;
     private final DBI dbi;
 
-    private final AtomicInteger timelineTimesIdCounter = new AtomicInteger(0);
     private final AtomicInteger timelineChunkIdCounter = new AtomicInteger(0);
 
     public TimelineLoadGenerator()
@@ -139,16 +138,6 @@ public class TimelineLoadGenerator {
         log.info("Finished creating hosts, categories and sample kinds");
     }
 
-    private void addTimelineAndMaybeSave(final List<TimelineTimes> timelineTimesList, final TimelineTimes timelineTimes)
-    {
-        timelineTimesList.add(timelineTimes);
-        if (timelineTimesList.size() >= CREATE_BATCH_SIZE) {
-            defaultTimelineDAO.bulkInsertTimelineTimes(timelineTimesList);
-            timelineTimesList.clear();
-            log.info("Inserted %d TimelineTimes rows", timelineTimesIdCounter.get());
-        }
-    }
-
     private void addChunkAndMaybeSave(final List<TimelineChunk> timelineChunkList, final TimelineChunk timelineChunk)
     {
         timelineChunkList.add(timelineChunk);
@@ -164,7 +153,6 @@ public class TimelineLoadGenerator {
      */
     private void insertManyTimelines() throws Exception
     {
-        final List<TimelineTimes> timelineTimesList = new ArrayList<TimelineTimes>();
         final List<TimelineChunk> timelineChunkList = new ArrayList<TimelineChunk>();
         DateTime startTime = new DateTime().minusDays(1);
         DateTime endTime = startTime.plusHours(1);
@@ -172,39 +160,31 @@ public class TimelineLoadGenerator {
         for (int i=0; i<12; i++) {
             for (int hostId : hostIds) {
                 for (int categoryId : categoriesForHostId.get(hostId)) {
-                    final TimelineTimes timelineTimes = makeTimelineTimes(hostId, categoryId, startTime, endTime, sampleCount);
-                    final int timelineTimesId = timelineDAO.insertTimelineTimes(timelineTimes);
-                    //addTimelineAndMaybeSave(timelineTimesList, timelineTimes);
-                    //log.info("Iterating over host category samples; hostId %d, categoryId %d, timelineTimesId %d", hostId, timelineTimesId, timelineTimesId);
+                    final List<DateTime> dateTimes = new ArrayList<DateTime>(sampleCount);
+                    for (int sc=0; sc<sampleCount; sc++) {
+                        dateTimes.add(startTime.plusSeconds(sc * 30));
+                    }
+                    final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
                     for (int sampleKindId : categorySampleKindIds.get(categoryId)) {
-                        final TimelineChunk timelineChunk = makeTimelineChunk(hostId, timelineTimesId, sampleKindId, startTime, endTime, sampleCount);
+                        final TimelineChunk timelineChunk = makeTimelineChunk(hostId, sampleKindId, startTime, endTime, timeBytes, sampleCount);
                         addChunkAndMaybeSave(timelineChunkList, timelineChunk);
 
                     }
                 }
             }
-            if (timelineTimesList.size() > 0) {
-                defaultTimelineDAO.bulkInsertTimelineTimes(timelineTimesList);
-            }
             if (timelineChunkList.size() > 0) {
                 defaultTimelineDAO.bulkInsertTimelineChunks(timelineChunkList);
             }
-            log.info("After hour %d, inserted %d TimelineTimes rows and %d TimelineChunk rows", i, timelineTimesIdCounter.get(), timelineChunkIdCounter.get());
+            log.info("After hour %d, inserted %d TimelineChunk rows", i, timelineChunkIdCounter.get());
             startTime = endTime;
             endTime = endTime.plusHours(1);
         }
     }
 
-    private TimelineTimes makeTimelineTimes(final int hostId, final int categoryId, final DateTime startTime, final DateTime endTime, final int timesCount)
-    {
-        final byte[] times = new byte[3 + rand.nextInt(timesCount) / 10];
-        return new TimelineTimes(0, hostId, categoryId, startTime, endTime, times, timesCount);
-    }
-
-    private TimelineChunk makeTimelineChunk(final int hostId, final int timelineTimesId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final int sampleCount)
+    private TimelineChunk makeTimelineChunk(final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] timeBytes, final int sampleCount)
     {
         final byte[] samples = new byte[3 + rand.nextInt(sampleCount) * 2];
-        return new TimelineChunk(timelineChunkIdCounter.incrementAndGet(), hostId, sampleKindId, timelineTimesId, startTime, endTime, samples, sampleCount);
+        return new TimelineChunk(timelineChunkIdCounter.incrementAndGet(), hostId, sampleKindId, startTime, endTime, timeBytes, samples, sampleCount);
     }
 
     public static void main(String[] args) throws Exception

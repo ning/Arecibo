@@ -26,14 +26,14 @@ import org.joda.time.DateTime;
 
 import com.ning.arecibo.util.Logger;
 
-public class TimelineChunkAndTimesDecoded {
-    private static final Logger log = Logger.getLogger(TimelineChunkAndTimesDecoded.class);
+public class TimelineChunkDecoded {
+    private static final Logger log = Logger.getLogger(TimelineChunkDecoded.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final TimelineChunkAndTimes chunkAndTimes;
+    private final TimelineChunk chunk;
 
-    public TimelineChunkAndTimesDecoded(TimelineChunkAndTimes chunkAndTimes) {
-        this.chunkAndTimes = chunkAndTimes;
+    public TimelineChunkDecoded(TimelineChunk chunk) {
+        this.chunk = chunk;
     }
 
     @JsonValue
@@ -46,7 +46,7 @@ public class TimelineChunkAndTimesDecoded {
             generator.writeStartObject();
 
             generator.writeFieldName("sampleKind");
-            generator.writeNumber(chunkAndTimes.getSampleKindId());
+            generator.writeNumber(chunk.getSampleKindId());
 
             generator.writeFieldName("decodedSamples");
             generator.writeString(getDecodedSamples());
@@ -64,7 +64,7 @@ public class TimelineChunkAndTimesDecoded {
 
     private String getDecodedSamples() throws IOException {
         final DecodedSampleOutputProcessor processor = new DecodedSampleOutputProcessor();
-        SampleCoder.scan(chunkAndTimes.getTimelineChunk().getSamples(), chunkAndTimes.getTimelineTimes(), processor);
+        SampleCoder.scan(chunk, processor);
         return processor.getDecodedSamples();
     }
 
@@ -78,9 +78,9 @@ public class TimelineChunkAndTimesDecoded {
             }
             final int nextTime = timeCursor.getNextTime();
             if (sampleCount > 1) {
-                timeCursor.consumeRepeat();
+                timeCursor.consumeRepeat(sampleCount);
             }
-            final DateTime timestamp = TimelineTimes.dateTimeFromUnixSeconds(nextTime);
+            final DateTime timestamp = DateTimeUtils.dateTimeFromUnixSeconds(nextTime);
             builder.append("at ").append(timestamp.toString("yyyy-MM-dd HH:mm:ss")).append(" ");
             if (sampleCount > 1) {
                 builder.append(sampleCount).append(" of ");

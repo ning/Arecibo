@@ -16,9 +16,18 @@
 
 package com.ning.arecibo.util.timeline;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import javax.annotation.Nullable;
+
+import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonView;
 import org.joda.time.DateTime;
+
+import com.ning.arecibo.util.Logger;
 
 /**
  * Instances of this class represent timeline sequences read from the database
@@ -27,33 +36,64 @@ import org.joda.time.DateTime;
  */
 public class TimelineChunk extends CachedObject
 {
-    private final int hostId;
-    private final int sampleKindId;
-    private final int timelineTimesId;
+    private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @JsonProperty
-    @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    @JsonView(TimelineChunksViews.Base.class)
+    private final Integer hostId;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Base.class)
+    private final Integer sampleKindId;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Compact.class)
     private final DateTime startTime;
     @JsonProperty
-    @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    @JsonView(TimelineChunksViews.Compact.class)
     private final DateTime endTime;
     @JsonProperty
-    @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    @JsonView(TimelineChunksViews.Compact.class)
+    private final byte[] times;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Compact.class)
     private final byte[] samples;
     @JsonProperty
-    @JsonView(TimelineChunksAndTimesViews.Compact.class)
+    @JsonView(TimelineChunksViews.Compact.class)
     private final int sampleCount;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Compact.class)
+    private final int aggregationLevel;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Compact.class)
+    private final boolean notValid;
 
-    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final int timelineTimesId, final DateTime startTime, final DateTime endTime, final byte[] samples, final int sampleCount)
+    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
     {
         super(sampleTimelineId);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
-        this.timelineTimesId = timelineTimesId;
         this.startTime = startTime;
         this.endTime = endTime;
+        this.times = times;
         this.samples = samples;
         this.sampleCount = sampleCount;
+        aggregationLevel = 0;
+        notValid = false;
+    }
+
+    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
+            final byte[] times, final byte[] samples, final int sampleCount, final int aggregationLevel, final boolean notValid)
+    {
+        super(sampleTimelineId);
+        this.hostId = hostId;
+        this.sampleKindId = sampleKindId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.times = times;
+        this.samples = samples;
+        this.sampleCount = sampleCount;
+        this.aggregationLevel = aggregationLevel;
+        this.notValid = notValid;
     }
 
     public TimelineChunk(final long sampleTimelineId, final TimelineChunk other)
@@ -61,11 +101,81 @@ public class TimelineChunk extends CachedObject
         super(sampleTimelineId);
         this.hostId = other.hostId;
         this.sampleKindId = other.sampleKindId;
-        this.timelineTimesId = other.timelineTimesId;
         this.startTime = other.startTime;
         this.endTime = other.endTime;
+        this.times = other.times;
         this.samples = other.samples;
         this.sampleCount = other.sampleCount;
+        this.aggregationLevel = other.aggregationLevel;
+        this.notValid = other.notValid;
+    }
+
+    @JsonView(TimelineChunksViews.Loose.class)
+    public String getSamplesAsCSV() throws IOException
+    {
+        return getSamplesAsCSV(null, null);
+    }
+
+    public String getSamplesAsCSV(final DecimatingSampleFilter rangeSampleProcessor) throws IOException
+    {
+        SampleCoder.scan(this, rangeSampleProcessor);
+        return rangeSampleProcessor.getSampleConsumer().toString();
+    }
+
+    public String getSamplesAsCSV(@Nullable final DateTime startTime, @Nullable final DateTime endTime) throws IOException
+    {
+        final CSVOutputProcessor processor = new CSVOutputProcessor(startTime, endTime);
+        SampleCoder.scan(this, processor);
+        return processor.toString();
+    }
+
+    @Override
+    public String toString()
+    {
+        try {
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            final JsonGenerator generator = objectMapper.getJsonFactory().createJsonGenerator(out);
+            generator.writeStartObject();
+
+            generator.writeFieldName("sampleKindId");
+            generator.writeNumber(sampleKindId);
+
+            generator.writeFieldName("samples");
+            generator.writeString(getSamplesAsCSV());
+
+            generator.writeEndObject();
+            generator.close();
+            return out.toString();
+        }
+        catch (IOException e) {
+            log.error(e);
+        }
+
+        return null;
+    }
+
+    private static final class CSVOutputProcessor extends TimeRangeSampleProcessor
+    {
+        private final SampleConsumer delegate = new CSVSampleConsumer();
+        private int sampleNumber = 0;
+
+        public CSVOutputProcessor(@Nullable final DateTime startTime, @Nullable final DateTime endTime)
+        {
+            super(startTime, endTime);
+        }
+
+        @Override
+        public void processOneSample(final DateTime sampleTimestamp, final SampleOpcode opcode, final Object value)
+        {
+            delegate.consumeSample(sampleNumber, opcode, value, sampleTimestamp);
+            sampleNumber++;
+        }
+
+        @Override
+        public String toString()
+        {
+            return delegate.toString();
+        }
     }
 
     public int getHostId()
@@ -76,11 +186,6 @@ public class TimelineChunk extends CachedObject
     public int getSampleKindId()
     {
         return sampleKindId;
-    }
-
-    public int getTimelineTimesId()
-    {
-        return timelineTimesId;
     }
 
     public DateTime getStartTime()
@@ -98,8 +203,23 @@ public class TimelineChunk extends CachedObject
         return samples;
     }
 
+    public byte[] getTimes()
+    {
+        return times;
+    }
+
     public int getSampleCount()
     {
         return sampleCount;
+    }
+
+    public int getAggregationLevel()
+    {
+        return aggregationLevel;
+    }
+
+    public boolean getNotValid()
+    {
+        return notValid;
     }
 }

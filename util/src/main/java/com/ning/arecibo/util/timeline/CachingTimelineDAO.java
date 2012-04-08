@@ -357,12 +357,6 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer insertTimelineTimes(final TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        return delegate.insertTimelineTimes(timelineTimes);
-    }
-
-    @Override
     public Integer insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
     {
         return delegate.insertTimelineChunk(timelineChunk);
@@ -370,7 +364,7 @@ public class CachingTimelineDAO implements TimelineDAO
 
     @Override
     public void getSamplesByHostIdsAndSampleKindIds(final List<Integer> hostIds, @Nullable final List<Integer> sampleKindIds,
-                                                    final DateTime startTime, final DateTime endTime, final TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
+                                                    final DateTime startTime, final DateTime endTime, final TimelineChunkConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds, startTime, endTime, chunkConsumer);
     }
@@ -837,10 +831,5 @@ public class CachingTimelineDAO implements TimelineDAO
     @Override
     public List<TimelineChunk> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
         return delegate.bulkInsertTimelineChunks(timelineChunkList);
-    }
-
-    @Override
-    public List<TimelineTimes> bulkInsertTimelineTimes(List<TimelineTimes> timelineTimesList) {
-        return delegate.bulkInsertTimelineTimes(timelineTimesList);
     }
 }

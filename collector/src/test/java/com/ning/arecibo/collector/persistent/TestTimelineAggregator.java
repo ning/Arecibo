@@ -40,8 +40,8 @@ import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimesConsumer;
+import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 
@@ -139,13 +139,13 @@ public class TestTimelineAggregator
         final AtomicLong timelineChunkSeen = new AtomicLong(0);
 
         timelineDAO.getSamplesByHostIdsAndSampleKindIds(ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(minHeapUsedKindId, maxHeapUsedKindId),
-            START_TIME.minusMinutes(startTimeMinutesAgo), START_TIME.minusMinutes(endTimeMinutesAgo), new TimelineChunkAndTimesConsumer()
-        {
+            START_TIME.minusMinutes(startTimeMinutesAgo), START_TIME.minusMinutes(endTimeMinutesAgo), new TimelineChunkConsumer() {
+
             @Override
-            public void processTimelineChunkAndTimes(final TimelineChunkAndTimes chunkAndTimes)
+            public void processTimelineChunk(final TimelineChunk chunk)
             {
-                Assert.assertEquals(chunkAndTimes.getHostId(), hostId);
-                Assert.assertTrue(chunkAndTimes.getSampleKindId().equals(minHeapUsedKindId) || chunkAndTimes.getSampleKindId().equals(maxHeapUsedKindId));
+                Assert.assertEquals((Integer)chunk.getHostId(), hostId);
+                Assert.assertTrue(chunk.getSampleKindId() == minHeapUsedKindId || chunk.getSampleKindId() == maxHeapUsedKindId);
                 timelineChunkSeen.incrementAndGet();
             }
         });

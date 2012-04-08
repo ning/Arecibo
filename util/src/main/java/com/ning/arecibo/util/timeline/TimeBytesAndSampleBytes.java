@@ -16,17 +16,20 @@
 
 package com.ning.arecibo.util.timeline;
 
-public class TimelineChunksAndTimesViews
-{
-    public static class Base
-    {
+public class TimeBytesAndSampleBytes {
+    private final byte[] timeBytes;
+    private final byte[] sampleBytes;
+
+    public TimeBytesAndSampleBytes(byte[] timeBytes, byte[] sampleBytes) {
+        this.timeBytes = timeBytes;
+        this.sampleBytes = sampleBytes;
     }
 
-    public static class Compact extends Base
-    {
+    public byte[] getTimeBytes() {
+        return timeBytes;
     }
 
-    public static class Loose extends Base
-    {
+    public byte[] getSampleBytes() {
+        return sampleBytes;
     }
 }

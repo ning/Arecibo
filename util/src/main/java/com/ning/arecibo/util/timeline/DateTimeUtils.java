@@ -16,6 +16,20 @@
 
 package com.ning.arecibo.util.timeline;
 
-public interface TimelineChunkAndTimesConsumer {
-    public void processTimelineChunkAndTimes(TimelineChunkAndTimes chunkAndTimes);
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
+public class DateTimeUtils {
+
+    public static DateTime dateTimeFromUnixSeconds(final int unixTime)
+    {
+        return new DateTime(((long) unixTime) * 1000L, DateTimeZone.UTC);
+    }
+
+    public static int unixSeconds(final DateTime dateTime)
+    {
+        final long millis = dateTime.toDateTime(DateTimeZone.UTC).getMillis();
+        return (int) (millis / 1000L);
+    }
+
 }

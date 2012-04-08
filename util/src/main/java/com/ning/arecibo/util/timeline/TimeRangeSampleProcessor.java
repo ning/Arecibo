@@ -41,13 +41,13 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
     @Override
     public void processSamples(final TimeCursor timeCursor, final int sampleCount, final SampleOpcode opcode, final Object value)
     {
-        final int unixStartTime = startTime == null ? Integer.MIN_VALUE : TimelineTimes.unixSeconds(startTime);
-        final int unixEndTime = endTime == null ? Integer.MAX_VALUE : TimelineTimes.unixSeconds(endTime);
+        final int unixStartTime = startTime == null ? Integer.MIN_VALUE : DateTimeUtils.unixSeconds(startTime);
+        final int unixEndTime = endTime == null ? Integer.MAX_VALUE : DateTimeUtils.unixSeconds(endTime);
         for (int i = 0; i < sampleCount; i++) {
             // Check if the sample is in the right time range
             final int unixSampleTime = timeCursor.getNextTime();
             if (unixSampleTime >= unixStartTime && unixSampleTime <= unixEndTime) {
-                processOneSample(TimelineTimes.dateTimeFromUnixSeconds(unixSampleTime), opcode, value);
+                processOneSample(DateTimeUtils.dateTimeFromUnixSeconds(unixSampleTime), opcode, value);
             }
         }
     }

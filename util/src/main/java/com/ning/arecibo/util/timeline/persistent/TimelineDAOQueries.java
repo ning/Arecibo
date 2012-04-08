@@ -30,7 +30,6 @@ import org.skife.jdbi.v2.sqlobject.customizers.Mapper;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapper;
 import org.skife.jdbi.v2.sqlobject.mixins.Transactional;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.ExternalizedSqlViaStringTemplate3;
-import org.skife.jdbi.v2.util.LongMapper;
 
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKindBinder;
@@ -41,12 +40,9 @@ import com.ning.arecibo.util.timeline.StartTimesMapper;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkBinder;
 import com.ning.arecibo.util.timeline.TimelineChunkMapper;
-import com.ning.arecibo.util.timeline.TimelineTimes;
-import com.ning.arecibo.util.timeline.TimelineTimesBinder;
-import com.ning.arecibo.util.timeline.TimelineTimesMapper;
 
 @ExternalizedSqlViaStringTemplate3()
-@RegisterMapper({TimelineTimesMapper.class, TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class})
+@RegisterMapper({TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class})
 public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 {
     @SqlQuery
@@ -106,20 +102,8 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
     @SqlQuery
     int getLastInsertedId();
 
-    @SqlUpdate
-    void insertTimelineTimes(@TimelineTimesBinder final TimelineTimes timelineTimes);
-
-    @SqlQuery
-    long getHighestTimelineTimesId();
-
     @SqlQuery
     long getHighestTimelineChunkId();
-
-    @SqlBatch
-    @BatchChunkSize(1000)
-    // Note: These timelineTimes have their timelineTimesId field filled in, and do
-    // not use the db's autoincrement mechanism to get the timelineTimesId
-    void bulkInsertTimelineTimes(@TimelineTimesBinder Iterator<TimelineTimes> timesIterator);
 
     @SqlUpdate
     void insertTimelineChunk(@TimelineChunkBinder final TimelineChunk timelineChunk);

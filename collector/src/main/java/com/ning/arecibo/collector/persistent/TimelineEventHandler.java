@@ -38,10 +38,9 @@ import com.ning.arecibo.util.timeline.ShutdownSaveMode;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.TimelineChunkAndTimes;
+import com.ning.arecibo.util.timeline.TimelineCoder;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
-import com.ning.arecibo.util.timeline.TimelineTimes;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.joda.time.DateTime;
@@ -200,17 +199,17 @@ public class TimelineEventHandler implements EventHandler
         accumulator.addHostSamples(hostSamples);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final Integer hostId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunk> getInMemoryTimelineChunk(final Integer hostId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunkAndTimes(hostId, ImmutableList.copyOf(timelineDAO.getSampleKindIdsByHostId(hostId)), filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunk(hostId, ImmutableList.copyOf(timelineDAO.getSampleKindIdsByHostId(hostId)), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final Integer hostId, final Integer sampleKindId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunk> getInMemoryTimelineChunk(final Integer hostId, final Integer sampleKindId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunkAndTimes(hostId, ImmutableList.<Integer>of(sampleKindId), filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunk(hostId, ImmutableList.<Integer>of(sampleKindId), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunkAndTimes> getInMemoryTimelineChunkAndTimes(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunk> getInMemoryTimelineChunk(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
         // Check first if there is an in-memory accumulator for this host
         final Map<String, TimelineHostEventAccumulator> hostAccumulators = accumulators.getIfPresent(hostId);
@@ -219,7 +218,7 @@ public class TimelineEventHandler implements EventHandler
         }
 
         // Now, filter each accumulator for this host
-        final List<TimelineChunkAndTimes> samplesByHostName = new ArrayList<TimelineChunkAndTimes>();
+        final List<TimelineChunk> samplesByHostName = new ArrayList<TimelineChunk>();
         for (final TimelineHostEventAccumulator accumulator : hostAccumulators.values()) {
             final List<DateTime> accumulatorTimes = accumulator.getTimes();
             final DateTime accumulatorStartTime = accumulator.getStartTime();
@@ -231,20 +230,19 @@ public class TimelineEventHandler implements EventHandler
                 continue;
             }
 
+
             // This accumulator is in the right time range, now return only the sample kinds specified
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
                 final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(-1, accumulatorStartTime, accumulatorEndTime);
-                // NOTE! Further time filtering needs to be done in the processing function
-                final TimelineTimes timelineTimes = new TimelineTimes(-1, hostId, accumulator.getEventCategoryId(), accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
+                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
 
                 if (!sampleKindIds.contains(timelineChunk.getSampleKindId())) {
                     // We don't care about this sample kind
                     continue;
                 }
 
-                samplesByHostName.add(new TimelineChunkAndTimes(hostId, timelineChunk.getSampleKindId(), timelineChunk, timelineTimes));
+                samplesByHostName.add(timelineChunk);
             }
         }
 

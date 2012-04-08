@@ -62,15 +62,13 @@ public interface TimelineDAO
 
     // Timelines tables
 
-    Integer insertTimelineTimes(TimelineTimes timelineTimes) throws UnableToObtainConnectionException, CallbackFailedException;
-
     Integer insertTimelineChunk(TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException;
 
     void getSamplesByHostIdsAndSampleKindIds(List<Integer> hostIds,
                                              @Nullable List<Integer> sampleKindIds,
                                              DateTime startTime,
                                              DateTime endTime,
-                                             TimelineChunkAndTimesConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException;
+                                             TimelineChunkConsumer chunkConsumer) throws UnableToObtainConnectionException, CallbackFailedException;
 
     Integer insertLastStartTimes(StartTimes startTimes);
 
@@ -83,8 +81,6 @@ public interface TimelineDAO
     void bulkInsertEventCategories(final List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException;
 
     void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds);
-
-    List<TimelineTimes> bulkInsertTimelineTimes(final List<TimelineTimes> timelineTimesList);
 
     List<TimelineChunk> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList);
 
