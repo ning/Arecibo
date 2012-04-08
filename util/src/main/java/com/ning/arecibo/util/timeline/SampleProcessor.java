@@ -26,8 +26,7 @@ public interface SampleProcessor {
      * @param sampleNumber the number of the sample within the timeline, used to index timestamps
      * @param sampleCount the count of sequential, identical values
      * @param opcode the opcode of the sample value, which may not be a REPEAT opcode
-     * @param value the value of this kind of sample over the count of samples starting at the time
-     * given by the sampleNumber indexing the TimelineTimestamps.
+     * @param value the value of this kind of sample over the count of samples
      */
     public void processSamples(final TimeCursor timeCursor,
                                final int sampleCount,

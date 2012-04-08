@@ -101,21 +101,15 @@ public class TimelineAggregator
     /**
      * The sequence of events is:
      * <ul>
-     * <li>Build the aggregated TimelineTimes object, and save it, setting not_valid to true, and
+     * <li>Build the aggregated TimelineChunk object, and save it, setting not_valid to true, and
      * aggregation_level to 1.  This means that it won't be noticed by any of the dashboard
      * queries.  The save operation returns the new timeline_times_id</li>
-     * <li>Retrieve all sample chunks associated with the TimelineTimes objects were aggregating,
-     * ordered by host_id, sample_kind_id and start_time.  Aggregate and save those, with
-     * timeline_time_id of the newly-created aggregated TimelineTimes object</li>
-     * <li>Then, in a single transaction, update the aggregated TimelineTimes object to have not_valid = 0,
-     * and also delete the TimelineTimes objects that were the basis of the aggregation, and flush
-     * any TimelineTime chunks that happen to be in the cache.</li>
-     * <li>Finally, delete the sample chunks that we aggregated.  Since sample chunks are only accessed
-     * by timeline_time_id, so the old sample chunks can no longer be referenced  Therefore they don't
-     * need to be deleted.</li>
+     * <li>Then, in a single transaction, update the aggregated TimelineChunk object to have not_valid = 0,
+     * and also delete the TimelineChunk objects that were the basis of the aggregation, and flush
+     * any TimelineChunks that happen to be in the cache.</li>
      * <p/>
      *
-     * @param timelineTimesChunks the TimelineTimes chunks to be aggregated
+     * @param timelineChunks the TimelineChunks to be aggregated
      */
     private void aggregateHostSampleChunks(final List<TimelineChunk> timelineChunks, final int aggregationLevel) throws IOException
     {
@@ -158,7 +152,7 @@ public class TimelineAggregator
         aggregatorDao.commit();
         timelineChunksCreated.inc();
 
-        // This is the atomic operation: set the new aggregated TimelineTimes object valid, and the
+        // This is the atomic operation: set the new aggregated TimelineChunk object valid, and the
         // ones that were aggregated invalid.  This should be very fast.
         aggregatorDao.begin();
         aggregatorDao.makeTimelineChunkValid(newTimelineChunkId);

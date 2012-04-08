@@ -103,8 +103,8 @@ public class TestTimelineAggregator
         Assert.assertEquals(timelineDAO.getSampleKinds().values().size(), 2);
 
         // Create two sets of times: T - 125 ... T - 65 ; T - 60 ... T (note the gap!)
-        createAOneHourTimelineTimes(125);
-        createAOneHourTimelineTimes(60);
+        createAOneHourTimelineChunk(125);
+        createAOneHourTimelineChunk(60);
 
         // Check the getSamplesByHostIdsAndSampleKindIds DAO method works as expected
         // You might want to draw timelines on a paper and remember boundaries are inclusive to understand these numbers
@@ -153,7 +153,7 @@ public class TestTimelineAggregator
         Assert.assertEquals(timelineChunkSeen.get(), expectedChunks);
     }
 
-    private void createAOneHourTimelineTimes(final int startTimeMinutesAgo) throws IOException
+    private void createAOneHourTimelineChunk(final int startTimeMinutesAgo) throws IOException
     {
         final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE_ID, false);
         // 120 samples per hour

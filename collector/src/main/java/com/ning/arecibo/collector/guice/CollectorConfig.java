@@ -85,7 +85,7 @@ public interface CollectorConfig
     int getMaxAggregationLevel();
 
     @Config("arecibo.collector.timelines.chunksToAggregate")
-    @Description("A string with a comma-separated set of integers, one for each aggregation level, giving the number of sequential TimelineTimes chunks with that aggregation level we must find to perform aggregation")
+    @Description("A string with a comma-separated set of integers, one for each aggregation level, giving the number of sequential TimelineChunks with that aggregation level we must find to perform aggregation")
     // These values translate to 12 hours; 7 days and 3 weeks
     @Default("12,14,3")
     String getChunksToAggregate();
@@ -96,7 +96,7 @@ public interface CollectorConfig
     TimeSpan getAggregationInterval();
 
     @Config("arecibo.collector.timelines.deleteAggregatedChunks")
-    @Description("If true, blast the old TimelineTimes and TimelineChunk rows; if false, leave them in peace, since they won't be accessed")
+    @Description("If true, blast the old TimelineChunk rows; if false, leave them in peace, since they won't be accessed")
     @Default("false")
     boolean getDeleteAggregatedChunks();
 

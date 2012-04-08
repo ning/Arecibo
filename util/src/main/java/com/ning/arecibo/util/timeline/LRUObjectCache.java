@@ -37,11 +37,10 @@ import com.ning.arecibo.util.LRUCache;
  * objects as they accumulate to copy their samples arrays and return the
  * copies.
  * <p>
- * The cache manager caches two kinds of data: TimelineTimestamps, and
- * TimelineChunks.  It provides LRU behavior by keeping the live objects
- * in a linked list, moving them to the head of the list when they are
- * referenced; and removing them from the end of the list when newer ones
- * are referenced.
+ * The cache manager caches TimelineChunks.  It provides LRU behavior
+ * by keeping the live objects in a linked list, moving them to the
+ * head of the list when they are referenced; and removing them from
+ * the end of the list when newer ones are referenced.
  */
 public class LRUObjectCache {
     @SuppressWarnings("unused")

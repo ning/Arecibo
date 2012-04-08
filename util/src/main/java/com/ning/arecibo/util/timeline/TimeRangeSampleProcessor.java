@@ -35,8 +35,7 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
      * @param timeCursor   a TimeCursor instance, which supplies successive int UNIX times
      * @param sampleCount  the count of sequential, identical values
      * @param opcode       the opcode of the sample value, which may not be a REPEAT opcode
-     * @param value        the value of this kind of sample over the count of samples starting at the time
-     *                     given by the sampleNumber indexing the TimelineTimestamps.
+     * @param value        the value of this kind of sample over the sampleCount samples
      */
     @Override
     public void processSamples(final TimeCursor timeCursor, final int sampleCount, final SampleOpcode opcode, final Object value)
