@@ -33,18 +33,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class represents a collection of timeline chunks, one
- * for each sample kind, each over a specific time period,
+ * This class represents a collection of timeline chunks, one for each sample
+ * kind belonging to one event category, each over a specific time period,
  * from a single host.  This class is used to accumulate samples
  * to be written to the database; a separate streaming class with
  * much less overhead is used to "play back" the samples read from
  * the db in response to dashboard queries.
  * <p/>
- * TODO: There is no synchronization in this class, so either prove that
- * the caller is single-threaded or add it.
- * <p/>
- * All subordinate timelines contain the same number of samples,
- * but repeat opcodes may collapse adjacent identical values.
+ * All subordinate timelines contain the same number of samples.
  */
 public class TimelineHostEventAccumulator
 {
@@ -55,6 +51,8 @@ public class TimelineHostEventAccumulator
 
     // One counter sample kind and resulting opcode
     private final Map<Integer, Map<Byte, CounterMetric>> countersCache = new HashMap<Integer, Map<Byte, CounterMetric>>();
+
+    private final Map<Integer, SampleCounter> sampleKindIdCounters = new HashMap<Integer, SampleCounter>();
 
     private final TimelineDAO dao;
     private final int hostId;
@@ -68,8 +66,9 @@ public class TimelineHostEventAccumulator
      * Maps the sample kind id to the accumulator for that sample kind
      */
     private final Map<Integer, TimelineChunkAccumulator> timelines = new HashMap<Integer, TimelineChunkAccumulator>();
+
     /**
-     * Holds the time of the samples
+     * Holds the sampling times of the samples
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
@@ -105,13 +104,16 @@ public class TimelineHostEventAccumulator
                 new Object[]{hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime)});
             return;
         }
-        // TODO: Doing finding missing attributes with a Set is probably
-        // expensive at the per-host samples level.  See if it is, and if so,
-        // replace with bitvector lookup.
-        final Set<Integer> currentKinds = Sets.newHashSet(timelines.keySet());
         for (final Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
+            sampleCount++;
             final Integer sampleKindId = entry.getKey();
-            currentKinds.remove(sampleKindId);
+            final SampleCounter counter = sampleKindIdCounters.get(sampleKindId);
+            if (counter != null) {
+                counter.setSampleCounter(sampleCount);
+            }
+            else {
+                sampleKindIdCounters.put(sampleKindId, new SampleCounter(sampleCount));
+            }
             final ScalarSample sample = entry.getValue();
             TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
             if (timeline == null) {
@@ -126,16 +128,18 @@ public class TimelineHostEventAccumulator
             // Keep stats of compressed samples
             updateStats(sampleKindId, compressedSample);
         }
-        // Now make sure to advance the timelines we haven't added samples to,
-        // since the samples for a given sample kind can come and go
-        for (final Integer sampleKindId : currentKinds) {
-            final TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
-            timeline.addSample(nullSample);
+        for (Map.Entry<Integer, SampleCounter> entry : sampleKindIdCounters.entrySet()) {
+            final SampleCounter counter = entry.getValue();
+            if (counter.getSampleCounter() < sampleCount) {
+                counter.setSampleCounter(sampleCount);
+                final int sampleKindId = entry.getKey();
+                final TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
+                timeline.addSample(nullSample);
+            }
         }
         // Now we can update the state
         endTime = timestamp;
         times.add(timestamp);
-        sampleCount++;
 
         if (checkEveryAccess) {
             checkSampleCounts(sampleCount);
@@ -273,6 +277,26 @@ public class TimelineHostEventAccumulator
                         new Object[]{host, categoryIdAndSampleKind.getEventCategoryId(), categoryIdAndSampleKind.getSampleKind(), sampleOpcode});
                 Metrics.removeMetric(TimelineHostEventAccumulator.class, getMetricName(host, categoryIdAndSampleKind.getSampleKind(), sampleOpcode));
             }
+        }
+    }
+
+    private static class SampleCounter
+    {
+        private long sampleCounter;
+
+        public SampleCounter(long sampleCounter)
+        {
+            this.sampleCounter = sampleCounter;
+        }
+
+        public long getSampleCounter()
+        {
+            return sampleCounter;
+        }
+
+        public void setSampleCounter(int sampleCounter)
+        {
+            this.sampleCounter = sampleCounter;
         }
     }
 }

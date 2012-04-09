@@ -38,7 +38,6 @@ import com.ning.arecibo.util.timeline.ShutdownSaveMode;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.TimelineCoder;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
