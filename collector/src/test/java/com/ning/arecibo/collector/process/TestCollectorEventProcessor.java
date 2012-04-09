@@ -115,8 +115,8 @@ public class TestCollectorEventProcessor
         // One per host
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
         // One per host and type
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindAId, null, null).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, null, null).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, null, null).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, null, null).size(), 1);
         Assert.assertEquals(dao.getHosts().size(), 1);
         final BiMap<Integer, CategoryIdAndSampleKind> categoriesAndSampleKinds = dao.getSampleKinds();
         Assert.assertEquals(categoriesAndSampleKinds.size(), 2);
@@ -130,8 +130,8 @@ public class TestCollectorEventProcessor
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
         // Should have been flushed
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindAId, null, null).size(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, null, null).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, null, null).size(), 0);
     }
 
     private void checkProcessorState(final Integer hostId, final Integer sampleKindAId, final Integer sampleKindBId,
@@ -141,11 +141,11 @@ public class TestCollectorEventProcessor
         Assert.assertEquals(processor.getEventsReceived(), eventSent);
 
         // One per host and per type (two types here: kindA and kindB)
-        final Collection<? extends TimelineChunk> inMemoryTimelineChunkA = timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindAId, null, null);
+        final Collection<? extends TimelineChunk> inMemoryTimelineChunkA = timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, null, null);
         Assert.assertEquals(inMemoryTimelineChunkA.size(), 1);
         Assert.assertEquals(inMemoryTimelineChunkA.iterator().next().getSamplesAsCSV(), csvSamplesKindA);
 
-        final Collection<? extends TimelineChunk> inMemoryTimelineChunkB = timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, null, null);
+        final Collection<? extends TimelineChunk> inMemoryTimelineChunkB = timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, null, null);
         Assert.assertEquals(inMemoryTimelineChunkB.size(), 1);
         Assert.assertEquals(inMemoryTimelineChunkB.iterator().next().getSamplesAsCSV(), csvSamplesKindB);
     }

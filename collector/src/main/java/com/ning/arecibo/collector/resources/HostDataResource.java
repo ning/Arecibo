@@ -344,7 +344,7 @@ public class HostDataResource
             throws IOException, ExecutionException
     {
         for (final Integer hostId : hostIdsList) {
-            final Collection<? extends TimelineChunk> inMemorySamples = processor.getInMemoryTimelineChunk(hostId, sampleKindIdsList, startTime, endTime);
+            final Collection<? extends TimelineChunk> inMemorySamples = processor.getInMemoryTimelineChunks(hostId, sampleKindIdsList, startTime, endTime);
             writeJsonForChunks(generator, writer, filters, inMemorySamples, decodeSamples);
         }
     }

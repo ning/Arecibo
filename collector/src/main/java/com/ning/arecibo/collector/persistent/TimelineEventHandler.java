@@ -198,17 +198,17 @@ public class TimelineEventHandler implements EventHandler
         accumulator.addHostSamples(hostSamples);
     }
 
-    public Collection<? extends TimelineChunk> getInMemoryTimelineChunk(final Integer hostId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunk> getInMemoryTimelineChunks(final Integer hostId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunk(hostId, ImmutableList.copyOf(timelineDAO.getSampleKindIdsByHostId(hostId)), filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunks(hostId, ImmutableList.copyOf(timelineDAO.getSampleKindIdsByHostId(hostId)), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunk> getInMemoryTimelineChunk(final Integer hostId, final Integer sampleKindId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunk> getInMemoryTimelineChunks(final Integer hostId, final Integer sampleKindId, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        return getInMemoryTimelineChunk(hostId, ImmutableList.<Integer>of(sampleKindId), filterStartTime, filterEndTime);
+        return getInMemoryTimelineChunks(hostId, ImmutableList.<Integer>of(sampleKindId), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunk> getInMemoryTimelineChunk(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public Collection<? extends TimelineChunk> getInMemoryTimelineChunks(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
         // Check first if there is an in-memory accumulator for this host
         final Map<String, TimelineHostEventAccumulator> hostAccumulators = accumulators.getIfPresent(hostId);
