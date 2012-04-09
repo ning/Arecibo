@@ -83,23 +83,23 @@ public class TestInMemoryCollectorEventProcessor
         Assert.assertNotNull(sampleKindBId);
 
         // One per host and type
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, null, null).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, startTime, null).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, null, endTime).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, startTime, endTime).size(), 2);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindAId, startTime, endTime).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, startTime, endTime).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, null, null).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, startTime, null).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, null, endTime).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, startTime, endTime).size(), 2);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, startTime, endTime).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, startTime, endTime).size(), 1);
         // Wider ranges should be supported
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, startTime.minusSeconds(1), endTime).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, startTime, endTime.plusSeconds(1)).size(), 1);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, sampleKindBId, startTime.minusSeconds(1), endTime.plusSeconds(1)).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, startTime.minusSeconds(1), endTime).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, startTime, endTime.plusSeconds(1)).size(), 1);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, startTime.minusSeconds(1), endTime.plusSeconds(1)).size(), 1);
         // Buggy kind
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, Integer.MAX_VALUE, startTime, endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, Integer.MAX_VALUE, startTime, endTime).size(), 0);
         // Buggy start date
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, startTime.plusMinutes(1), endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, startTime.plusMinutes(1), endTime).size(), 0);
         // Buggy end date
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(hostId, startTime, endTime.minusMinutes(1)).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, startTime, endTime.minusMinutes(1)).size(), 0);
         // Buggy host
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunk(Integer.MAX_VALUE, startTime, endTime).size(), 0);
+        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(Integer.MAX_VALUE, startTime, endTime).size(), 0);
     }
 }
