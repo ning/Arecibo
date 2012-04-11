@@ -217,7 +217,7 @@ public class TimelineAggregator
             if (hostTimelineCandidates.size() > 0) {
                 aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
             }
-            final Map<String, Long> counterDeltas = subtrackFromAggregatorCounters(initialCounters);
+            final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
             final StringBuilder builder = new StringBuilder();
             builder.append("For aggregation level ").append(aggregationLevel);
             for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
@@ -246,7 +246,7 @@ public class TimelineAggregator
         return counterValues;
     }
 
-    private Map<String, Long> subtrackFromAggregatorCounters(final Map<String, Long> initialCounters)
+    private Map<String, Long> subtractFromAggregatorCounters(final Map<String, Long> initialCounters)
     {
         final Map<String, Long> counterValues = new HashMap<String, Long>();
         for (Map.Entry<String, CounterMetric> entry : aggregatorCounters.entrySet()) {

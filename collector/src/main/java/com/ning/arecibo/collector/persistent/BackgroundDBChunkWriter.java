@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2012 Ning, Inc.
+x * Copyright 2010-2012 Ning, Inc.
  *
  * Ning licenses this file to you under the Apache License, version 2.0
  * (the "License"); you may not use this file except in compliance with the
@@ -60,7 +60,7 @@ public class BackgroundDBChunkWriter
     private final boolean performForegroundWrites;
 
     private final AtomicInteger pendingChunkCount = new AtomicInteger();
-    private final AtomicBoolean finishBackgroundWritingAndExit = new AtomicBoolean();
+    private final AtomicBoolean shuttingDown = new AtomicBoolean();
     private List<PendingChunkMap> pendingChunks = new ArrayList<PendingChunkMap>();
     private DateTime lastWriteTime = new DateTime();
     private AtomicBoolean doingWritesNow = new AtomicBoolean();
@@ -93,14 +93,14 @@ public class BackgroundDBChunkWriter
 
     private CounterMetric makeCounter(final String counterName)
     {
-        final CounterMetric counter = Metrics.newCounter(TimelineAggregator.class, counterName);
+        final CounterMetric counter = Metrics.newCounter(BackgroundDBChunkWriter.class, counterName);
         backgroundWriteCounters.put(counterName, counter);
         return counter;
     }
 
     public synchronized void addPendingChunkMap(final PendingChunkMap chunkMap)
     {
-        if (finishBackgroundWritingAndExit.get()) {
+        if (shuttingDown.get()) {
             log.error("In addPendingChunkMap(), but finishBackgroundWritingAndExit is true!");
         }
         else {
@@ -152,7 +152,7 @@ public class BackgroundDBChunkWriter
         }
         else {
             try {
-                if (finishBackgroundWritingAndExit.get()) {
+                if (shuttingDown.get()) {
                     performBackgroundWrites();
                 }
                 final int pendingCount = pendingChunkCount.get();
@@ -170,9 +170,14 @@ public class BackgroundDBChunkWriter
         }
     }
 
-    public void finishBackgroundWriting()
+    public synchronized boolean getShutdownFinished()
     {
-        finishBackgroundWritingAndExit.set(true);
+        return doingWritesNow.get() == false && pendingChunks.size() == 0;
+    }
+
+    public void initiateShutdown()
+    {
+        shuttingDown.set(true);
     }
 
     public void runBackgroundWriteThread() {
@@ -193,7 +198,6 @@ public class BackgroundDBChunkWriter
 
     public void stopBackgroundWriteThread() {
         if (!performForegroundWrites) {
-            finishBackgroundWritingAndExit.set(true);
             backgroundWriteThread.shutdown();
         }
     }

@@ -48,6 +48,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,11 +58,44 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TimelineEventHandler implements EventHandler
 {
     private static final Logger log = LoggerFactory.getLogger(TimelineEventHandler.class);
+    private static Comparator<TimelineChunk> CHUNK_COMPARATOR = new Comparator<TimelineChunk>() {
+
+        @Override
+        public int compare(TimelineChunk o1, TimelineChunk o2) {
+            final int hostDiff = o1.getHostId() - o1.getHostId();
+            if (hostDiff < 0) {
+                return -1;
+            }
+            else if (hostDiff > 0) {
+                return 1;
+            }
+            else {
+                final int sampleKindIdDiff = o1.getSampleKindId() - o2.getSampleKindId();
+                if (sampleKindIdDiff < 0) {
+                    return -1;
+                }
+                else if (sampleKindIdDiff > 0) {
+                    return 1;
+                }
+                else {
+                    final long startTimeDiff = o1.getStartTime().getMillis() - o2.getStartTime().getMillis();
+                    if (startTimeDiff < 0) {
+                        return -1;
+                    }
+                    else if (startTimeDiff > 0) {
+                        return 1;
+                    }
+                    else {
+                        return 0;
+                    }
+                }
+            }
+        }
+    };
 
     // A TimelineHostEventAccumulator records attributes for a specific host and event type.
     // This cache maps hostId -> categoryId -> accumulator
@@ -75,11 +110,11 @@ public class TimelineEventHandler implements EventHandler
     private final FileBackedBuffer backingBuffer;
 
     private final ShutdownSaveMode shutdownSaveMode;
-    private final AtomicBoolean fastShutdown;
-
-    private final AtomicReference<StartTimes> startTimesReference = new AtomicReference<StartTimes>();
+    private final AtomicBoolean shuttingDown = new AtomicBoolean();
+    private final AtomicBoolean fastShutdown = new AtomicBoolean();
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
+    private final CounterMetric eventsReceivedAfterShuttingDown = makeCounter("eventsReceivedAfterShuttingDown");
     private final CounterMetric handledEventCount = makeCounter("handledEventCount");
     private final CounterMetric addedHostEventAccumulatorMapCount = makeCounter("addedHostEventAccumulatorMapCount");
     private final CounterMetric addedHostEventAccumulatorCount = makeCounter("addedHostEventAccumulatorCount");
@@ -92,6 +127,7 @@ public class TimelineEventHandler implements EventHandler
     private final CounterMetric replaySamplesProcessedCount = makeCounter("replaySamplesProcessedCount");
     private final CounterMetric forceCommitCallCount = makeCounter("forceCommitCallCount");
 
+    private StartTimes startTimes = null;
 
     @Inject
     public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final BackgroundDBChunkWriter backgroundWriter, final FileBackedBuffer fileBackedBuffer)
@@ -101,7 +137,6 @@ public class TimelineEventHandler implements EventHandler
         this.backgroundWriter = backgroundWriter;
         this.backingBuffer = fileBackedBuffer;
         this.shutdownSaveMode = ShutdownSaveMode.fromString(config.getShutdownSaveMode());
-        this.fastShutdown = new AtomicBoolean(false);
     }
 
     private CounterMetric makeCounter(final String counterName)
@@ -119,7 +154,7 @@ public class TimelineEventHandler implements EventHandler
                 final TimelineHostEventAccumulator accumulator = accumulatorEntry.getValue();
                 if (fastShutdown.get()) {
                     log.debug("Saving Timeline start time for hostId [{}] and category [{}]", hostId, categoryId);
-                    startTimesReference.get().addTime(hostId, categoryId, accumulator.getStartTime());
+                    startTimes.addTime(hostId, categoryId, accumulator.getStartTime());
                 }
                 else {
                     log.debug("Saving Timeline for hostId [{}] and categoryId [{}]", hostId, categoryId);
@@ -132,6 +167,10 @@ public class TimelineEventHandler implements EventHandler
     @Override
     public void handle(final Event event)
     {
+        if (shuttingDown.get()) {
+            eventsReceivedAfterShuttingDown.inc();
+            return;
+        }
         try {
             handledEventCount.inc();
             // Lookup the host id
@@ -248,6 +287,7 @@ public class TimelineEventHandler implements EventHandler
             }
         }
         inMemoryChunksReturnedCount.inc(samplesByHostName.size());
+        Collections.sort(samplesByHostName, CHUNK_COMPARATOR);
         return samplesByHostName;
     }
 
@@ -329,19 +369,31 @@ public class TimelineEventHandler implements EventHandler
     @Managed
     public void forceCommit(final boolean shutdown)
     {
+        if (shutdown) {
+            shuttingDown.set(true);
+        }
         forceCommitCallCount.inc();
         final boolean doingFastShutdown = shutdown && shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES;
         fastShutdown.set(doingFastShutdown);
-        StartTimes startTimes = null;
         if (doingFastShutdown) {
             startTimes = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES ? new StartTimes() : null;
-            startTimesReference.set(startTimes);
             saveAccumulatorsOrStartTimes();
             timelineDAO.insertLastStartTimes(startTimes);
         }
         else {
-            startTimesReference.set(null);
+            startTimes = null;
             saveAccumulatorsOrStartTimes();
+        }
+        if (shutdown) {
+            backgroundWriter.initiateShutdown();
+            while (!backgroundWriter.getShutdownFinished()) {
+                try {
+                    Thread.currentThread().sleep(100);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
         // All the samples have been saved, or else the start times have been saved.  Discard the local buffer
         backingBuffer.discard();

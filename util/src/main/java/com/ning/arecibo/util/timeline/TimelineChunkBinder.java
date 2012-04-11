@@ -57,7 +57,7 @@ public @interface TimelineChunkBinder
                     else {
                         query.bind("sampleTimelineId", timelineChunk.getObjectId());
                     }
-                    if (timelineChunk.getSamples().length > MAX_IN_ROW_BLOB_SIZE) {
+                    if (TimesAndSamplesCoder.getEncodedLength(timelineChunk) > MAX_IN_ROW_BLOB_SIZE) {
                         query
                             .bindNull("inRowSamples", Types.VARBINARY)
                             .bind("blobSamples", timesAndSamples);

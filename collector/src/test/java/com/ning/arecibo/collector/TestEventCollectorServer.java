@@ -169,7 +169,7 @@ public class TestEventCollectorServer
         }
 
         timelineEventHandler.forceCommit(false);
-        backgroundWriter.finishBackgroundWriting();
+        backgroundWriter.initiateShutdown();
 
         final AccumulatorConsumer consumer = new AccumulatorConsumer();
         timelineDAO.getSamplesByHostIdsAndSampleKindIds(ImmutableList.<Integer>of(hostId),

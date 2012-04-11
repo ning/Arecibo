@@ -25,8 +25,6 @@ import java.util.Arrays;
 
 import org.apache.commons.codec.binary.Hex;
 
-import com.ning.arecibo.util.Pair;
-
 public class TimesAndSamplesCoder {
 
     public static int getSizeOfTimeBytes(final byte[] timesAndSamples)
@@ -39,6 +37,11 @@ public class TimesAndSamplesCoder {
             throw new IllegalStateException(String.format("Exception reading timeByteCount in TimelineChunkMapper.map() for timesAndSamples %s",
                     Hex.encodeHex(timesAndSamples)), e);
         }
+    }
+
+    public static int getEncodedLength(final TimelineChunk chunk)
+    {
+        return 4 + chunk.getTimes().length + chunk.getSamples().length;
     }
 
     public static byte[] getTimeBytes(final byte[] timesAndSamples)

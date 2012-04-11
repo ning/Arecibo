@@ -133,20 +133,13 @@ public class CollectorModule extends AbstractModule
     protected void configureBackgroundDBChunkWriter()
     {
         final LifecycledProvider<BackgroundDBChunkWriter> lifecycledProvider = new LifecycledProvider<BackgroundDBChunkWriter>(binder(), BackgroundDBChunkWriter.class);
+        // The stop is done as a consequence of TimelineEventHandler.forceCommit(true), done in the STOP listener for TimelineEventHandler
         lifecycledProvider.addListener(LifecycleEvent.START, new LifecycleAction<BackgroundDBChunkWriter>()
         {
             public void doAction(final BackgroundDBChunkWriter backgroundWriter)
             {
                 log.info("START event received: starting backgroundWriter thread");
                 backgroundWriter.runBackgroundWriteThread();
-            }
-        });
-        lifecycledProvider.addListener(LifecycleEvent.STOP, new LifecycleAction<BackgroundDBChunkWriter>()
-        {
-            public void doAction(final BackgroundDBChunkWriter backgroundWriter)
-            {
-                log.info("STOP event received: stopping backgroundWriter thread");
-                backgroundWriter.stopBackgroundWriteThread();
             }
         });
         bind(BackgroundDBChunkWriter.class).toProvider(lifecycledProvider).asEagerSingleton();
