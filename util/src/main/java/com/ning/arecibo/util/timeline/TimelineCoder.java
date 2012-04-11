@@ -29,6 +29,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * TODO: Add another scanner used to combine successive time timelines.  Such a
+ * scanner would greatly improve compaction for aggregated timelines with lots
+ * of identical repeats`
+ */
 public class TimelineCoder {
     public static final Logger log = LoggerFactory.getLogger(TimelineCoder.class);
     public static final int MAX_DELTA_TIME = 0x7F;

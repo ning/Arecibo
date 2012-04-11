@@ -44,7 +44,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * When it finds them, it creates a single new timeline_times object representing the
  * full sequence, then searches for all TimelineChunks referring to the original
  * timeline_times_ids and aggregates them
- * TODO: Use string templates rather than open-coding the SQL
+ * TODO: When combining timelines, don't just concat the time and the samples.
+ * Instead, run a scanner so we can compress the case of successive identical repeats
+ * in adjacent timelines.
  */
 public class TimelineAggregator
 {

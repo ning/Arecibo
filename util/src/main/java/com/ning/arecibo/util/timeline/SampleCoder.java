@@ -28,6 +28,9 @@ import com.ning.arecibo.util.Logger;
 /**
  * This class contains a collection of static methods used to encode samples, and also
  * play back streams of samples
+ * TODO: Add another scanner used to combine successive sample timelines.  Such a
+ * scanner would greatly improve compaction for aggregated timelines with lots
+ * of identical repeats`
  */
 public class SampleCoder {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();

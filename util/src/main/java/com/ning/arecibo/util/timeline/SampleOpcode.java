@@ -18,8 +18,10 @@ package com.ning.arecibo.util.timeline;
 
 import com.ning.arecibo.util.Logger;
 
-
-
+/**
+ * TODO: Add multiple repeat opcodes with different count widths - - byte, short and int - -
+ * so that timeline aggregation can combine sucessive identical repeats across timelines.
+ */
 public enum SampleOpcode {
     BYTE((byte)1, 1),
     SHORT((byte)2, 2),

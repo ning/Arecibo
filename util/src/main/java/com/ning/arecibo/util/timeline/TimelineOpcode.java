@@ -20,6 +20,10 @@ package com.ning.arecibo.util.timeline;
  * as a time delta to be added to the previous time value.
  */
 
+/**
+ * TODO: Add multiple repeat opcodes with different count widths - - byte, short and int - -
+ * so that timeline aggregation can combine sucessive identical repeats across timelines.
+ */
 enum TimelineOpcode {
     FULL_TIME(0x7f),                 // Followed by 4 bytes of int value
     REPEATED_DELTA_TIME(0x7e);       // Followed by a repeat count byte, 1-255, and then by a 1-byte delta whose value is 1-127
