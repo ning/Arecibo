@@ -14,23 +14,33 @@
  * under the License.
  */
 
-package com.ning.arecibo.util.timeline;
+package com.ning.arecibo.collector.persistent;
 
-import com.google.common.collect.Sets;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+import com.ning.arecibo.util.timeline.NullSample;
+import com.ning.arecibo.util.timeline.RepeatSample;
+import com.ning.arecibo.util.timeline.SampleCoder;
+import com.ning.arecibo.util.timeline.SampleOpcode;
+import com.ning.arecibo.util.timeline.ScalarSample;
+import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
+import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.CounterMetric;
 
 /**
  * This class represents a collection of timeline chunks, one for each sample
@@ -41,6 +51,19 @@ import java.util.Set;
  * the db in response to dashboard queries.
  * <p/>
  * All subordinate timelines contain the same number of samples.
+ * <p/>
+ * When enough samples have accumulated, typically one hour's worth,
+ * in-memory samples are made into TimelineChunks, one chunk for each sampleKindId
+ * maintained by the accumulator.
+ * <p/>
+ * These new chunks are organized as PendingChunkMaps, kept in a local list and also
+ * handed off to a PendingChunkMapConsumer to written to the db by a background process.  At some
+ * in the future, that background process will call markPendingChunkMapConsumed(),
+ * passing the id of a PendingChunkMap.  This causes the PendingChunkMap
+ * to be removed from the local list maintained by the TimelineHostEventAccumulator.
+ * <p/>
+ * Queries that cause the TimelineHostEventAccumulator instance to return memory
+ * chunks also return any chunks in PendingChunkMaps in the local list of pending chunks.
  */
 public class TimelineHostEventAccumulator
 {
@@ -48,49 +71,74 @@ public class TimelineHostEventAccumulator
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
+    private static final Random rand = new Random(System.currentTimeMillis());
 
     // One counter sample kind and resulting opcode
     private final Map<Integer, Map<Byte, CounterMetric>> countersCache = new HashMap<Integer, Map<Byte, CounterMetric>>();
 
-    private final Map<Integer, SampleCounter> sampleKindIdCounters = new HashMap<Integer, SampleCounter>();
+    private final Map<Integer, SampleSequenceNumber> sampleKindIdCounters = new HashMap<Integer, SampleSequenceNumber>();
+    private final List<PendingChunkMap> pendingChunkMaps = new ArrayList<PendingChunkMap>();
+    private long pendingChunkMapIdCounter = 1;
 
     private final TimelineDAO dao;
+    private final BackgroundDBChunkWriter backgroundWriter;
+    private final Integer timelineLengthMillis;
     private final int hostId;
     private final int eventCategoryId;
     private final boolean verboseStats;
+    // This is the time when we want to end the chunk.  Setting the value randomly
+    // when the TimelineHostEventAccumulator  is created provides a mechanism to
+    // distribute the db writes during the 1 hour when
+    private DateTime chunkEndTime = null;
     private DateTime startTime = null;
     private DateTime endTime = null;
+    private long sampleSequenceNumber = 0;
     private int sampleCount = 0;
 
     /**
      * Maps the sample kind id to the accumulator for that sample kind
      */
-    private final Map<Integer, TimelineChunkAccumulator> timelines = new HashMap<Integer, TimelineChunkAccumulator>();
+    private final Map<Integer, TimelineChunkAccumulator> timelines = new ConcurrentHashMap<Integer, TimelineChunkAccumulator>();
 
     /**
      * Holds the sampling times of the samples
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final TimelineDAO dao, final int hostId, final int eventCategoryId, final boolean verboseStats) throws IOException
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final BackgroundDBChunkWriter backgroundWriter,
+            final int hostId, final int eventCategoryId, final boolean verboseStats, Integer timelineLengthMillis)
     {
         this.dao = dao;
+        this.timelineLengthMillis = timelineLengthMillis;
+        this.backgroundWriter = backgroundWriter;
         this.hostId = hostId;
         this.eventCategoryId = eventCategoryId;
         this.verboseStats = verboseStats;
+        // Set the end-of-chunk time by tossing a random number, to evenly distribute the db writeback load.
+        this.chunkEndTime = timelineLengthMillis != null ? new DateTime().plusMillis(rand.nextInt(timelineLengthMillis)) : null;;
+    }
+
+    /*
+     * This constructor is used for testing; it writes chunks as soon as they are
+     * created, but because the chunkEndTime is way in the future, doesn't initiate
+     * chunk writes.
+     */
+    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, Integer hostId, int eventTypeId, boolean verboseStats)
+    {
+        this(timelineDAO, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, verboseStats, Integer.MAX_VALUE);
     }
 
     @SuppressWarnings("unchecked")
     // TODO - we can probably do better than synchronize the whole method
     public synchronized void addHostSamples(final HostSamplesForTimestamp samples)
     {
-        // You can only add samples at the end of a timeline;
-        // If sample time is not >= endtime, log a warning
-        // TODO: Figure out if this constraint is realistic, or if
-        // we need a reordering pipeline to eliminate the constraint.
-        // The reasoning is that these samples only apply to this host,
-        // so we shouldn't get essentially simultaneous adds
         final DateTime timestamp = samples.getTimestamp();
+
+        if (chunkEndTime != null && chunkEndTime.isBefore(timestamp)) {
+            extractAndQueueTimelineChunks();
+            startTime = timestamp;
+            chunkEndTime = new DateTime().plusMillis(timelineLengthMillis);
+        }
 
         if (startTime == null) {
             startTime = timestamp;
@@ -104,15 +152,15 @@ public class TimelineHostEventAccumulator
                 new Object[]{hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime)});
             return;
         }
+        sampleSequenceNumber++;
         for (final Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
-            sampleCount++;
             final Integer sampleKindId = entry.getKey();
-            final SampleCounter counter = sampleKindIdCounters.get(sampleKindId);
+            final SampleSequenceNumber counter = sampleKindIdCounters.get(sampleKindId);
             if (counter != null) {
-                counter.setSampleCounter(sampleCount);
+                counter.setSequenceNumber(sampleSequenceNumber);
             }
             else {
-                sampleKindIdCounters.put(sampleKindId, new SampleCounter(sampleCount));
+                sampleKindIdCounters.put(sampleKindId, new SampleSequenceNumber(sampleSequenceNumber));
             }
             final ScalarSample sample = entry.getValue();
             TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
@@ -128,10 +176,10 @@ public class TimelineHostEventAccumulator
             // Keep stats of compressed samples
             updateStats(sampleKindId, compressedSample);
         }
-        for (Map.Entry<Integer, SampleCounter> entry : sampleKindIdCounters.entrySet()) {
-            final SampleCounter counter = entry.getValue();
-            if (counter.getSampleCounter() < sampleCount) {
-                counter.setSampleCounter(sampleCount);
+        for (Map.Entry<Integer, SampleSequenceNumber> entry : sampleKindIdCounters.entrySet()) {
+            final SampleSequenceNumber counter = entry.getValue();
+            if (counter.getSequenceNumber() < sampleSequenceNumber) {
+                counter.setSequenceNumber(sampleSequenceNumber);
                 final int sampleKindId = entry.getKey();
                 final TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
                 timeline.addSample(nullSample);
@@ -139,6 +187,7 @@ public class TimelineHostEventAccumulator
         }
         // Now we can update the state
         endTime = timestamp;
+        sampleCount++;
         times.add(timestamp);
 
         if (checkEveryAccess) {
@@ -159,19 +208,50 @@ public class TimelineHostEventAccumulator
     }
 
     /**
-     * This method "rotates" the accumulators in this set, creating and saving the
-     * db representation of the timelines, and clearing the accumulators so they
-     * have no samples in them.
-     * TODO: I'm not clear on the synchronization paradigm.  Is it reasonable to
-     * have just one thread adding samples, and writing stuff to the db?
+     * This method queues a map of TimelineChunks extracted from the TimelineChunkAccumulators
+     * to be written to the db.  When memory chunks are requested, any queued chunk will be included
+     * in the list.
      */
-    public void extractAndSaveTimelineChunks()
+    public synchronized void extractAndQueueTimelineChunks()
     {
-        for (final TimelineChunkAccumulator accumulator : timelines.values()) {
-            dao.insertTimelineChunk(accumulator.extractTimelineChunkAndReset(startTime, endTime, times));
+        final Map<Integer, TimelineChunk> chunkMap = new HashMap<Integer, TimelineChunk>();
+        for (final Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
+            final int sampleKindId = entry.getKey();
+            final TimelineChunkAccumulator accumulator = entry.getValue();
+            final TimelineChunk chunk = accumulator.extractTimelineChunkAndReset(startTime, endTime, times);
+            chunkMap.put(sampleKindId, chunk);
         }
-
+        times.clear();
+        sampleCount = 0;
+        final long counter = pendingChunkMapIdCounter++;
+        final PendingChunkMap newChunkMap = new PendingChunkMap(this, counter, chunkMap);
+        pendingChunkMaps.add(newChunkMap);
+        backgroundWriter.addPendingChunkMap(newChunkMap);
         destroyStats();
+    }
+
+    public synchronized void markPendingChunkMapConsumed(final long pendingChunkMapId)
+    {
+        final PendingChunkMap pendingChunkMap = pendingChunkMaps.size() > 0 ? pendingChunkMaps.get(0) : null;
+        if (pendingChunkMap == null) {
+            log.error("In TimelineHostEventAccumulator.markPendingChunkMapConsumed(), could not find the map for %d", pendingChunkMapId);
+        }
+        else if (pendingChunkMapId != pendingChunkMap.getPendingChunkMapId()) {
+            log.error("In TimelineHostEventAccumulator.markPendingChunkMapConsumed(), the next map has id %d, but we're consuming id %d",
+                    pendingChunkMap.getPendingChunkMapId(), pendingChunkMap);
+        }
+        else {
+            pendingChunkMaps.remove(0);
+        }
+    }
+
+    public synchronized List<TimelineChunk> getPendingTimelineChunks()
+    {
+        final List<TimelineChunk> timelineChunks = new ArrayList<TimelineChunk>();
+        for (PendingChunkMap pendingChunkMap : pendingChunkMaps) {
+            timelineChunks.addAll(pendingChunkMap.getChunkMap().values());
+        }
+        return timelineChunks;
     }
 
     /**
@@ -239,6 +319,7 @@ public class TimelineHostEventAccumulator
         }
     }
 
+    // TODO: What should be done about these things?  I don't see these metrics in jconsole
     private synchronized CounterMetric getOrCreateCounterMetric(final Integer sampleKindId, final SampleOpcode opcode)
     {
         Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
@@ -280,23 +361,23 @@ public class TimelineHostEventAccumulator
         }
     }
 
-    private static class SampleCounter
+    private static class SampleSequenceNumber
     {
-        private long sampleCounter;
+        private long sequenceNumber;
 
-        public SampleCounter(long sampleCounter)
+        public SampleSequenceNumber(long sequenceNumber)
         {
-            this.sampleCounter = sampleCounter;
+            this.sequenceNumber = sequenceNumber;
         }
 
-        public long getSampleCounter()
+        public long getSequenceNumber()
         {
-            return sampleCounter;
+            return sequenceNumber;
         }
 
-        public void setSampleCounter(int sampleCounter)
+        public void setSequenceNumber(long sequenceNumber)
         {
-            this.sampleCounter = sampleCounter;
+            this.sequenceNumber = sequenceNumber;
         }
     }
 }

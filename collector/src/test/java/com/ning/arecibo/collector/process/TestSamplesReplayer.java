@@ -18,11 +18,11 @@ package com.ning.arecibo.collector.process;
 
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
+import com.ning.arecibo.collector.persistent.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import org.joda.time.DateTime;
@@ -93,7 +93,7 @@ public class TestSamplesReplayer
         Assert.assertTrue(accumulator.checkSampleCounts(EVENTS_ON_DISK));
 
         // This will check the SampleCode can encode value correctly
-        accumulator.extractAndSaveTimelineChunks();
+        accumulator.extractAndQueueTimelineChunks();
         Assert.assertEquals(dao.getTimelineChunks().keySet().size(), 7);
         for (final TimelineChunk chunk : dao.getTimelineChunks().values()) {
             Assert.assertEquals(chunk.getHostId(), HOST_ID);

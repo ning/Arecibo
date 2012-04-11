@@ -43,7 +43,6 @@ import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 
 @Guice(moduleFactory = TestModulesFactory.class)
 public class TestTimelineAggregator
@@ -164,7 +163,7 @@ public class TestTimelineAggregator
             accumulator.addHostSamples(samples);
         }
 
-        accumulator.extractAndSaveTimelineChunks();
+        accumulator.extractAndQueueTimelineChunks();
     }
 
     private Map<Integer, ScalarSample> createEvent(final long ts)

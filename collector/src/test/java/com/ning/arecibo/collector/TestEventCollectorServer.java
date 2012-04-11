@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.name.Names;
+import com.ning.arecibo.collector.persistent.BackgroundDBChunkWriter;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.CollectorEventProcessor;
 import com.ning.arecibo.collector.process.EventHandler;
@@ -79,6 +80,9 @@ public class TestEventCollectorServer
 
     @Inject
     TimelineDAO timelineDAO;
+
+    @Inject
+    BackgroundDBChunkWriter backgroundWriter;
 
     @Inject
     Injector injector;
@@ -165,8 +169,7 @@ public class TestEventCollectorServer
         }
 
         timelineEventHandler.forceCommit(false);
-        // Might take a while
-        Thread.sleep(100);
+        backgroundWriter.finishBackgroundWriting();
 
         final AccumulatorConsumer consumer = new AccumulatorConsumer();
         timelineDAO.getSamplesByHostIdsAndSampleKindIds(ImmutableList.<Integer>of(hostId),

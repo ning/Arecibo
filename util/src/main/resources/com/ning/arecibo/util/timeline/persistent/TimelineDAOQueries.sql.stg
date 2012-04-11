@@ -170,7 +170,7 @@ bulkInsertSampleKinds() ::= <<
 
 bulkInsertTimelineChunks() ::= <<
   insert into timeline_chunks (sample_timeline_id, host_id, sample_kind_id, sample_count, start_time, end_time, not_valid, aggregation_level, in_row_samples, blob_samples)
-  values (:sampleTimelineId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :not_valid, :aggregation_level, :inRowSamples, :blobSamples);
+  values (:sampleTimelineId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :notValid, :aggregationLevel, :inRowSamples, :blobSamples);
 >>
 
 getHighestTimelineChunkId() ::= <<

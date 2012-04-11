@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.persistent.BackgroundDBChunkWriter;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.eventlogger.Event;
@@ -55,6 +56,7 @@ public class TestCollectorEventProcessor
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestCollectorEventProcessor-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
+    private BackgroundDBChunkWriter backgroundWriter;
     private CollectorEventProcessor processor;
     private TimelineEventHandler timelineEventHandler;
     private int eventCategoryId = 0;
@@ -66,7 +68,8 @@ public class TestCollectorEventProcessor
         Assert.assertTrue(basePath.mkdir());
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
+        backgroundWriter = new BackgroundDBChunkWriter(dao, config, config.getPerformForegroundWrites());
+        timelineEventHandler = new TimelineEventHandler(config, dao, backgroundWriter, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
         eventCategoryId = dao.getOrAddEventCategory(EVENT_TYPE);
     }
@@ -76,7 +79,7 @@ public class TestCollectorEventProcessor
     {
         // Check initial state
         Assert.assertEquals(processor.getEventsReceived(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
+        Assert.assertEquals(timelineEventHandler.getHostEventAccumulatorCount(), 0);
         Assert.assertEquals(dao.getHosts().size(), 0);
         Assert.assertEquals(dao.getSampleKinds().size(), 0);
 
@@ -113,7 +116,7 @@ public class TestCollectorEventProcessor
         // Check the state before the flush to the db
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
         // One per host
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
+        Assert.assertEquals(timelineEventHandler.getHostEventAccumulatorCount(), 1);
         // One per host and type
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, null, null).size(), 1);
         Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, null, null).size(), 1);
@@ -128,16 +131,19 @@ public class TestCollectorEventProcessor
 
         // Check the state after the flush to the db
         Assert.assertEquals(processor.getEventsReceived(), NB_EVENTS);
-        // Should have been flushed
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, null, null).size(), 0);
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, null, null).size(), 0);
+
+        // These tests are bogus, because the new system doesn't use cache flushing - - accumulators stay around forever.
+
+//        // Should have been flushed
+//        Assert.assertEquals(timelineEventHandler.getHostEventAccumulatorCount(), 0);
+//        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindAId, null, null).size(), 0);
+//        Assert.assertEquals(timelineEventHandler.getInMemoryTimelineChunks(hostId, sampleKindBId, null, null).size(), 0);
     }
 
     private void checkProcessorState(final Integer hostId, final Integer sampleKindAId, final Integer sampleKindBId,
                                      final String csvSamplesKindA, final String csvSamplesKindB, final int eventSent) throws IOException, ExecutionException
     {
-        Assert.assertEquals(timelineEventHandler.getInMemoryTimelines(), 1);
+        Assert.assertEquals(timelineEventHandler.getHostEventAccumulatorCount(), 1);
         Assert.assertEquals(processor.getEventsReceived(), eventSent);
 
         // One per host and per type (two types here: kindA and kindB)

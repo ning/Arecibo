@@ -17,6 +17,7 @@
 package com.ning.arecibo.collector.resources;
 
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.CSVSampleConsumer;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
@@ -71,6 +72,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Path("/rest/1.0")
 public class HostDataResource
 {
+    private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private static final ObjectMapper objectMapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
 
     private final TimelineDAO dao;
@@ -283,6 +285,7 @@ public class HostDataResource
                     throw new WebApplicationException(e, Response.Status.NOT_FOUND);
                 }
                 catch (RuntimeException e) {
+                    log.error(e, "Exception writing StreamingOutput");
                     // JDBI exception
                     throw new WebApplicationException(e, buildServiceUnavailableResponse());
                 }

@@ -16,10 +16,10 @@
 
 package com.ning.arecibo.collector;
 
+import com.ning.arecibo.collector.persistent.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.Assert;

@@ -19,14 +19,15 @@ package com.ning.arecibo.collector.resources;
 import com.ning.arecibo.collector.MockFileBackedBuffer;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.persistent.BackgroundDBChunkWriter;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
+import com.ning.arecibo.collector.persistent.TimelineHostEventAccumulator;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineHostEventAccumulator;
 import com.ning.jaxrs.DateTimeParameter;
 
 import com.google.common.collect.ImmutableList;
@@ -73,13 +74,14 @@ public class TestHostDataResource
     private Integer eventTypeId = 0;
     private Integer sampleKindId1 = null;
     private Integer sampleKindId2 = null;
+    private CollectorConfig config = null;
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
     {
         dao = new MockTimelineDAO();
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        handler = new TimelineEventHandler(config, dao, new MockFileBackedBuffer());
+        handler = new TimelineEventHandler(config, dao, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
         resource = new HostDataResource(dao, handler);
 
         // Create the hosts. host1 and host2 are used in testGetHostSamplesParsing, host3 in testWriteJsonForInMemoryChunks
@@ -233,7 +235,7 @@ public class TestHostDataResource
 
     private void sendSamples(final Integer hostId, final Integer sampleKindId, final DateTime startTime) throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, hostId, eventTypeId, false);
+        final TimelineHostEventAccumulator accumulator = handler.getOrAddHostEventAccumulator(hostId, eventTypeId);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = startTime.plusSeconds(i * 30);
@@ -241,7 +243,7 @@ public class TestHostDataResource
             final HostSamplesForTimestamp samples = new HostSamplesForTimestamp(hostId, EVENT_TYPE, eventDateTime, event);
             accumulator.addHostSamples(samples);
         }
-        accumulator.extractAndSaveTimelineChunks();
+        accumulator.extractAndQueueTimelineChunks();
     }
 
     private Map<Integer, ScalarSample> createEvent(final Integer sampleKindId, final long ts)

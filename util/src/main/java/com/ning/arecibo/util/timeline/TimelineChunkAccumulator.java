@@ -78,6 +78,7 @@ public class TimelineChunkAccumulator
             addLastSample();
             lastSample = new RepeatSample<Void>(repeatCount, new NullSample());
             sampleCount += repeatCount;
+            log.debug("In addPlaceholder(), for sampleKindId %d, sampleCount %d", sampleKindId, sampleCount);
         }
     }
 
@@ -94,6 +95,7 @@ public class TimelineChunkAccumulator
     {
         // Extract the chunk
         final byte[] sampleBytes = getEncodedSamples().getEncodedBytes();
+        log.debug("Creating TimelineChunk for sampleKindId %d, sampleCount %d", sampleKindId, sampleCount);
         final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, startTime, endTime, timeBytes, sampleBytes, sampleCount);
 
         // Reset this current accumulator
@@ -141,6 +143,7 @@ public class TimelineChunkAccumulator
         }
         // In all cases, we got 1 more sample
         sampleCount++;
+        log.debug("In addSample(), for sampleKindId %d, sampleCount %d", sampleKindId, sampleCount);
     }
 
     public int getHostId()

@@ -74,8 +74,8 @@ public final class MockTimelineDAO implements TimelineDAO
         synchronized (hosts) {
             final Integer hostId = getHostId(host);
             if (hostId == null) {
-                hosts.put(hosts.size(), host);
-                return hosts.size() - 1;
+                hosts.put(hosts.size() + 1, host);
+                return hosts.size();
             }
             else {
                 return hostId;

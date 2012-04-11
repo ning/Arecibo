@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.ning.arecibo.collector.MockTimelineDAO;
 import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.collector.persistent.BackgroundDBChunkWriter;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.eventlogger.Event;
@@ -68,7 +69,7 @@ public class TestFileBackedBuffer
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
+        timelineEventHandler = new TimelineEventHandler(config, dao, new BackgroundDBChunkWriter(dao, config, true), new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
 
         dao.getOrAddHost(HOST_UUID.toString());

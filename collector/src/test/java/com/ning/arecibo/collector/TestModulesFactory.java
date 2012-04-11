@@ -59,6 +59,9 @@ public class TestModulesFactory implements IModuleFactory
             throw new IllegalStateException(e);
         }
 
+        if (System.getProperty("arecibo.collector.timelines.performForegroundWrites") == null) {
+            System.setProperty("arecibo.collector.timelines.performForegroundWrites", "true");
+        }
         System.setProperty("arecibo.collector.timelines.chunksToAggregate", "2");
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.jetty.port", String.valueOf(port));

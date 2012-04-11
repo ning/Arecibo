@@ -74,6 +74,26 @@ public interface CollectorConfig
     @Default("60m")
     TimeSpan getTimelineLength();
 
+    @Config("arecibo.collector.timelines.performForegroundWrites")
+    @Description("If true, perform database writes in the foreground; if false, in the background")
+    @Default("false")
+    boolean getPerformForegroundWrites();
+
+    @Config("arecibo.collector.timelines.backgroundWriteBatchSize")
+    @Description("The number of TimelineChunks that must accumulate before we perform background writes, unless the max delay has been exceeded")
+    @Default("1000")
+    int getBackgroundWriteBatchSize();
+
+    @Config("arecibo.collector.timelines.backgroundWriteCheckInterval")
+    @Description("The time interval between checks to see if we should perform background writes")
+    @Default("1s")
+    TimeSpan getBackgroundWriteCheckInterval();
+
+    @Config("arecibo.collector.timelines.backgroundWriteMaxDelay")
+    @Description("The maximum timespan after a pending chunks are added before we perform background writes")
+    @Default("1m")
+    TimeSpan getBackgroundWriteMaxDelay();
+
     @Config("arecibo.collector.timelines.timelineAggregationEnabled")
     @Description("If true, periodically perform timeline aggregation; if false, don't aggregate")
     @Default("true")

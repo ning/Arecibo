@@ -52,7 +52,7 @@ public class TestTimelineEventHandler
         final int int2intId = dao.getOrAddSampleKind(1, eventTypeId, "int2int");
         final int long2longId = dao.getOrAddSampleKind(1, eventTypeId, "long2long");
 
-        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new MockFileBackedBuffer());
+        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
 
         // Test downsizing of values
         final Map<String, Object> input = ImmutableMap.<String, Object>of(

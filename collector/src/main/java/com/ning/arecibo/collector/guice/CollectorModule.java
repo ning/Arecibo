@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
 import com.ning.arecibo.collector.healthchecks.DAOHealthCheck;
 import com.ning.arecibo.collector.healthchecks.TimelineEventHandlerHealthCheck;
+import com.ning.arecibo.collector.persistent.BackgroundDBChunkWriter;
 import com.ning.arecibo.collector.persistent.TimelineAggregator;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.collector.process.EventHandler;
@@ -68,6 +69,7 @@ public class CollectorModule extends AbstractModule
         configureFileBackedBuffer(config);
         configureDao();
         configureTimelineAggregator();
+        configureBackgroundDBChunkWriter();
         configureStats();
         configureServiceLocator(config);
         configureEventHandlers(config);
@@ -126,6 +128,31 @@ public class CollectorModule extends AbstractModule
 
         final ExportBuilder builder = MBeanModule.newExporter(binder());
         builder.export(TimelineAggregator.class).withGeneratedName();
+    }
+
+    protected void configureBackgroundDBChunkWriter()
+    {
+        final LifecycledProvider<BackgroundDBChunkWriter> lifecycledProvider = new LifecycledProvider<BackgroundDBChunkWriter>(binder(), BackgroundDBChunkWriter.class);
+        lifecycledProvider.addListener(LifecycleEvent.START, new LifecycleAction<BackgroundDBChunkWriter>()
+        {
+            public void doAction(final BackgroundDBChunkWriter backgroundWriter)
+            {
+                log.info("START event received: starting backgroundWriter thread");
+                backgroundWriter.runBackgroundWriteThread();
+            }
+        });
+        lifecycledProvider.addListener(LifecycleEvent.STOP, new LifecycleAction<BackgroundDBChunkWriter>()
+        {
+            public void doAction(final BackgroundDBChunkWriter backgroundWriter)
+            {
+                log.info("STOP event received: stopping backgroundWriter thread");
+                backgroundWriter.stopBackgroundWriteThread();
+            }
+        });
+        bind(BackgroundDBChunkWriter.class).toProvider(lifecycledProvider).asEagerSingleton();
+
+        final ExportBuilder builder = MBeanModule.newExporter(binder());
+        builder.export(BackgroundDBChunkWriter.class).withGeneratedName();
     }
 
     protected void configureStats()
