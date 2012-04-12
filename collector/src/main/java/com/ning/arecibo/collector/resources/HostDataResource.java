@@ -333,12 +333,11 @@ public class HostDataResource
                                        final List<Integer> sampleKindIds, final DateTime startTime, final DateTime endTime, final boolean decodeSamples)
             throws IOException, ExecutionException
     {
-        // First, return all data in memory.
-        // Data won't be merged with the on-disk one because we don't want to buffer samples in memory.
-        writeJsonForInMemoryChunks(generator, writer, filters, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
-
-        // Now, return all data stored in the database
+        // First, return all data stored in the database
         writeJsonForStoredChunks(generator, writer, filters, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
+
+        // Now return all data in memory.
+        writeJsonForInMemoryChunks(generator, writer, filters, hostIds, sampleKindIds, startTime, endTime, decodeSamples);
     }
 
     @VisibleForTesting
