@@ -115,8 +115,8 @@ getLastInsertedId() ::= <<
 >>
 
 insertTimelineChunk() ::= <<
-  insert into timeline_chunks (chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, in_row_samples, blob_samples)
-  values (:chunkId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :inRowSamples, :blobSamples);
+  insert into timeline_chunks (chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, in_row_samples, blob_samples, aggregation_level, not_valid)
+  values (:chunkId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :inRowSamples, :blobSamples, :aggregationLevel, :notValid);
 >>
 
 getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::= <<

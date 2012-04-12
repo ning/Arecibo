@@ -115,9 +115,14 @@ public interface CollectorConfig
     @Default("1h")
     TimeSpan getAggregationInterval();
 
+    @Config("arecibo.collector.timelines.maxChunkIdsToInvalidateOrDelete")
+    @Description("If the number of queued chunkIds to invalidate or delete is greater than or equal to this count, perform aggregated timeline writes and delete or invalidate the chunks aggregated")
+    @Default("1000")
+    int getMaxChunkIdsToInvalidateOrDelete();
+
     @Config("arecibo.collector.timelines.deleteAggregatedChunks")
     @Description("If true, blast the old TimelineChunk rows; if false, leave them in peace, since they won't be accessed")
-    @Default("false")
+    @Default("true")
     boolean getDeleteAggregatedChunks();
 
     @Config("arecibo.collector.timelines.shutdownSaveMode")

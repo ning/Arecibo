@@ -44,7 +44,7 @@ public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorD
     int getLastInsertedId();
 
     @SqlUpdate
-    void makeTimelineChunkValid(@Bind("chunkId") final int chunkId);
+    void makeTimelineChunkValid(@Bind("chunkId") final long chunkId);
 
     @SqlUpdate
     void makeTimelineChunksInvalid(@BindIn("chunkIds") final List<Long> chunkIds);

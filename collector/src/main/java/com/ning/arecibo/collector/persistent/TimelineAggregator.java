@@ -65,8 +65,14 @@ public class TimelineAggregator
 
     private final CounterMetric timelineChunksConsidered = makeCounter("timelineChunksConsidered");
     private final CounterMetric timelineChunksCombined = makeCounter("timelineChunksCombined");
-    private final CounterMetric timelineChunksCreated = makeCounter("timelineChunksCreated");
+    private final CounterMetric timelineChunksQueuedForCreation = makeCounter("timelineChunksQueuedForCreation");
+    private final CounterMetric timelineChunksWritten = makeCounter("timelineChunksWritten");
+    private final CounterMetric timelineChunksInvalidatedOrDeleted = makeCounter("timelineChunksInvalidatedOrDeleted");
     private final CounterMetric timelineChunksBytesCreated = makeCounter("timelineChunksBytesCreated");
+
+    // These lists support batching of aggregated chunk writes and updates or deletes of the chunks aggregated
+    private final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>();
+    private final List<Long> chunkIdsToInvalidateOrDelete = new ArrayList<Long>();
 
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
@@ -86,7 +92,6 @@ public class TimelineAggregator
         while (timelineChunkCandidates.size() >= chunksToAggregate) {
             final List<TimelineChunk> chunkCandidates = timelineChunkCandidates.subList(0, chunksToAggregate);
             timelineChunksCombined.inc(chunksToAggregate);
-            timelineChunksCreated.inc();
             try {
                 aggregateHostSampleChunks(chunkCandidates, aggregationLevel);
             }
@@ -148,28 +153,32 @@ public class TimelineAggregator
         outputSamplesStream.flush();
         final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
                 baTimeStream.toByteArray(), baSamplesStream.toByteArray(), totalSampleCount, aggregationLevel + 1, false);
-        aggregatorDao.begin();
-        aggregatorDao.insertNewInvalidTimelineChunk(chunk);
-        final int newTimelineChunkId = aggregatorDao.getLastInsertedId();
-        aggregatorDao.commit();
-        timelineChunksCreated.inc();
+        chunksToWrite.add(chunk);
+        chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);
+        timelineChunksQueuedForCreation.inc();
 
+        if (chunkIdsToInvalidateOrDelete.size() >= config.getMaxChunkIdsToInvalidateOrDelete()) {
+            performWrites();
+        }
+    }
+
+    private void performWrites()
+    {
         // This is the atomic operation: set the new aggregated TimelineChunk object valid, and the
         // ones that were aggregated invalid.  This should be very fast.
         aggregatorDao.begin();
-        aggregatorDao.makeTimelineChunkValid(newTimelineChunkId);
-        aggregatorDao.makeTimelineChunksInvalid(timelineChunkIds);
-        aggregatorDao.commit();
-
-        // TODO: Flush the cache of all entities with the given timelineTimesIds.
-        // This will require remodularization of the LRUObjectCache, afaict.
-
-        // Now (maybe) dispose of the old ones
+        timelineDao.bulkInsertTimelineChunks(chunksToWrite);
         if (config.getDeleteAggregatedChunks()) {
-            aggregatorDao.begin();
-            aggregatorDao.deleteTimelineChunks(timelineChunkIds);
-            aggregatorDao.commit();
+            aggregatorDao.deleteTimelineChunks(chunkIdsToInvalidateOrDelete);
         }
+        else {
+            aggregatorDao.makeTimelineChunksInvalid(chunkIdsToInvalidateOrDelete);
+        }
+        aggregatorDao.commit();
+        timelineChunksWritten.inc(chunksToWrite.size());
+        timelineChunksInvalidatedOrDeleted.inc(chunkIdsToInvalidateOrDelete.size());
+        chunksToWrite.clear();
+        chunkIdsToInvalidateOrDelete.clear();
     }
 
     /**
@@ -216,6 +225,9 @@ public class TimelineAggregator
             }
             if (hostTimelineCandidates.size() > 0) {
                 aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
+            }
+            if (chunkIdsToInvalidateOrDelete.size() > 0) {
+                performWrites();
             }
             final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
             final StringBuilder builder = new StringBuilder();
