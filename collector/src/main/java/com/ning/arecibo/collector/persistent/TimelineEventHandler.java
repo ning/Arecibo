@@ -251,7 +251,7 @@ public class TimelineEventHandler implements EventHandler
         final List<TimelineChunk> samplesByHostName = new ArrayList<TimelineChunk>();
         for (final TimelineHostEventAccumulator accumulator : hostAccumulators.values()) {
             for (TimelineChunk chunk : accumulator.getPendingTimelineChunks()) {
-                if ((filterStartTime != null && chunk.getEndTime().isBefore(filterStartTime)) || (filterStartTime != null && chunk.getStartTime().isAfter(filterEndTime))) {
+                if ((filterStartTime != null && chunk.getEndTime().isBefore(filterStartTime)) || (filterEndTime != null && chunk.getStartTime().isAfter(filterEndTime))) {
                     continue;
                 }
                 else {
@@ -266,7 +266,7 @@ public class TimelineEventHandler implements EventHandler
             final DateTime accumulatorEndTime = accumulator.getEndTime();
 
             // Check if the time filters apply
-            if ((filterStartTime != null && accumulatorEndTime.isBefore(filterStartTime)) || (filterStartTime != null && accumulatorStartTime.isAfter(filterEndTime))) {
+            if ((filterStartTime != null && accumulatorEndTime.isBefore(filterStartTime)) || (filterEndTime != null && accumulatorStartTime.isAfter(filterEndTime))) {
                 // Ignore this accumulator
                 continue;
             }
