@@ -67,9 +67,9 @@ public class TimelineChunk extends CachedObject
     @JsonView(TimelineChunksViews.Compact.class)
     private final boolean notValid;
 
-    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
+    public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
     {
-        super(sampleTimelineId);
+        super(chunkId);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
         this.startTime = startTime;
@@ -81,10 +81,10 @@ public class TimelineChunk extends CachedObject
         notValid = false;
     }
 
-    public TimelineChunk(final long sampleTimelineId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
+    public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
             final byte[] times, final byte[] samples, final int sampleCount, final int aggregationLevel, final boolean notValid)
     {
-        super(sampleTimelineId);
+        super(chunkId);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
         this.startTime = startTime;
@@ -96,9 +96,9 @@ public class TimelineChunk extends CachedObject
         this.notValid = notValid;
     }
 
-    public TimelineChunk(final long sampleTimelineId, final TimelineChunk other)
+    public TimelineChunk(final long chunkId, final TimelineChunk other)
     {
-        super(sampleTimelineId);
+        super(chunkId);
         this.hostId = other.hostId;
         this.sampleKindId = other.sampleKindId;
         this.startTime = other.startTime;
@@ -176,6 +176,11 @@ public class TimelineChunk extends CachedObject
         {
             return delegate.toString();
         }
+    }
+
+    public long getChunkId()
+    {
+        return getObjectId();
     }
 
     public int getHostId()

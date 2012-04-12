@@ -52,10 +52,10 @@ public @interface TimelineChunkBinder
                         .bind("notValid", timelineChunk.getNotValid() ? 1 : 0);
                     final byte[] timesAndSamples = TimesAndSamplesCoder.combineTimesAndSamples(timelineChunk.getTimes(), timelineChunk.getSamples());
                     if (timelineChunk.getObjectId() == 0) {
-                        throw new IllegalArgumentException(String.format("In TimelineChunkBinder.bind(), the sampleTimelineId of the chunk is 0!"));
+                        throw new IllegalArgumentException(String.format("In TimelineChunkBinder.bind(), the chunkId of the chunk is 0!"));
                     }
                     else {
-                        query.bind("sampleTimelineId", timelineChunk.getObjectId());
+                        query.bind("chunkId", timelineChunk.getChunkId());
                     }
                     if (timesAndSamples.length > MAX_IN_ROW_BLOB_SIZE) {
                         query

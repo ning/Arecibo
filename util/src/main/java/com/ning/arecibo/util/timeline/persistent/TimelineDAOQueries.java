@@ -115,8 +115,6 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 
     @SqlBatch
     @BatchChunkSize(1000)
-    // Note: These timelineChunks have their sampleTimelineId field filled in, and do
-    // not use the db's autoincrement mechanism to get the sampleTimelineId
     void bulkInsertTimelineChunks(@TimelineChunkBinder Iterator<TimelineChunk> chunkIterator);
 
     @SqlUpdate

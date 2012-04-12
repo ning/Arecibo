@@ -44,11 +44,11 @@ public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorD
     int getLastInsertedId();
 
     @SqlUpdate
-    void makeTimelineChunkValid(@Bind("sampleTimelineId") final int sampleTimelineId);
+    void makeTimelineChunkValid(@Bind("chunkId") final int chunkId);
 
     @SqlUpdate
-    void makeTimelineChunksInvalid(@BindIn("sampleTimelineIds") final List<Long> sampleTimelineIds);
+    void makeTimelineChunksInvalid(@BindIn("chunkIds") final List<Long> chunkIds);
 
     @SqlUpdate
-    void deleteTimelineChunks(@BindIn("sampleTimelineIds") final List<Long> sampleTimelineIds);
+    void deleteTimelineChunks(@BindIn("chunkIds") final List<Long> chunkIds);
 }

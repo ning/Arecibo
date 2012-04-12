@@ -272,14 +272,14 @@ public class DefaultTimelineDAO implements TimelineDAO
     @Override
     public List<Long> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList)
     {
-        final List<Long> sampleTimelineIds = new ArrayList<Long>(timelineChunkList.size());
+        final List<Long> chunkIds = new ArrayList<Long>(timelineChunkList.size());
         final List<TimelineChunk> chunksWithIds = new ArrayList<TimelineChunk>(timelineChunkList.size());
         for (final TimelineChunk chunk : timelineChunkList) {
-            final long sampleTimelineId = timelineChunkIdCounter.incrementAndGet();
-            sampleTimelineIds.add(sampleTimelineId);
-            chunksWithIds.add(new TimelineChunk(sampleTimelineId, chunk));
+            final long chunkId = timelineChunkIdCounter.incrementAndGet();
+            chunkIds.add(chunkId);
+            chunksWithIds.add(new TimelineChunk(chunkId, chunk));
         }
         delegate.bulkInsertTimelineChunks(chunksWithIds.iterator());
-        return sampleTimelineIds;
+        return chunkIds;
     }
 }

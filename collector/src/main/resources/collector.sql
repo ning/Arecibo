@@ -20,7 +20,7 @@ create table sample_kinds (
 ) engine = innodb default charset = latin1;
 
 create table timeline_chunks (
-  sample_timeline_id bigint not null primary key
+  chunk_id bigint not null primary key
 , host_id integer not null
 , sample_kind_id integer not null
 , sample_count integer not null
@@ -39,5 +39,5 @@ create table last_start_times (
 , start_times mediumtext not null
 ) engine = innodb default charset = latin1;
 
-insert ignore into timeline_chunks(sample_timeline_id, host_id, sample_kind_id, sample_count, start_time, end_time, in_row_samples, blob_samples)
+insert ignore into timeline_chunks(chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, in_row_samples, blob_samples)
                            values (0, 0, 0, 0, 0, 0, null, null);

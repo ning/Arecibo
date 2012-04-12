@@ -36,7 +36,7 @@ public class TestTimelineChunkAndTimes
 {
     private static final int HOST_ID = 1242;
     private static final int SAMPLE_KIND_ID = 12;
-    private static final int SAMPLE_TIMELINE_ID = 30;
+    private static final int CHUNK_ID = 30;
 
     @Test(groups = "fast")
     public void testToString() throws Exception
@@ -55,7 +55,7 @@ public class TestTimelineChunkAndTimes
 
         final DateTime endTime = dateTimes.get(dateTimes.size() - 1);
         final byte[] times = TimelineCoder.compressDateTimes(dateTimes);
-        final TimelineChunk timelineChunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, startTime, endTime, times, out.toByteArray(), sampleCount);
+        final TimelineChunk timelineChunk = new TimelineChunk(CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, startTime, endTime, times, out.toByteArray(), sampleCount);
         // Test CSV filtering
         Assert.assertEquals(timelineChunk.getSamplesAsCSV(), "1326749039,12345,1326749040,12346,1326749041,12347");
         Assert.assertEquals(timelineChunk.getSamplesAsCSV(null, null), "1326749039,12345,1326749040,12346,1326749041,12347");

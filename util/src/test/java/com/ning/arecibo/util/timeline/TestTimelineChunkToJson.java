@@ -35,7 +35,7 @@ public class TestTimelineChunkToJson
 {
     private static final ObjectMapper mapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
 
-    private static final long SAMPLE_TIMELINE_ID = 1242L;
+    private static final long CHUNK_ID = 1242L;
     private static final int HOST_ID = 1422;
     private static final int SAMPLE_KIND_ID = 1224;
     private static final int SAMPLE_COUNT = 2142;
@@ -61,7 +61,7 @@ public class TestTimelineChunkToJson
 
         final DateTime endTime = dateTimes.get(dateTimes.size() - 1);
         final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
-        chunk = new TimelineChunk(SAMPLE_TIMELINE_ID, HOST_ID, SAMPLE_KIND_ID, START_TIME, endTime, timeBytes, samples, SAMPLE_COUNT);
+        chunk = new TimelineChunk(CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, START_TIME, endTime, timeBytes, samples, SAMPLE_COUNT);
     }
 
     @Test(groups = "fast")

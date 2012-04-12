@@ -2,7 +2,7 @@ group TimelineAggregatorDAO;
 
 getTimelineAggregationCandidates() ::= <<
   select
-    sample_timeline_id
+    chunk_id
   , host_id
   , sample_kind_id
   , start_time
@@ -33,7 +33,7 @@ getHostIdsAndSampleIdsOfAggregationCandidates() ::= <<
 
  getAggregationCandidatesForHostIdAndSampleKindIds(sampleKindIds) ::= <<
   select
-    sample_timeline_id
+    chunk_id
   , host_id
   , sample_kind_id
   , start_time
@@ -60,17 +60,17 @@ getLastInsertedId() ::= <<
 makeTimelineChunkValid() ::= <<
   update timeline_chunks
   set not_valid = 0
-  where sample_timeline_id = :sampleTimelineId
+  where chunk_id = :chunkId
   ;
 >>
 
-makeTimelineChunksInvalid(sampleTimelineIds) ::=<<
+makeTimelineChunksInvalid(chunkIds) ::=<<
   update timeline_chunks
   set not_valid = 1
-  where sample_timeline_id in (<sampleTimelineIds>)
+  where chunk_id in (<chunkIds>)
   ;
 >>
 
-deleteTimelineChunks(sampleTimelineIds) ::=<<
-  delete from timeline_chunks where sample_timeline_id in (<sampleTimelineIds>);
+deleteTimelineChunks(chunkIds) ::=<<
+  delete from timeline_chunks where chunk_id in (<chunkIds>);
 >>

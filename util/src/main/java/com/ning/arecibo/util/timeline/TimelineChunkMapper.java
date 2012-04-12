@@ -29,7 +29,7 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
     @Override
     public TimelineChunk map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
     {
-        final int sampleTimelineId = rs.getInt("sample_timeline_id");
+        final int chunkId = rs.getInt("chunk_id");
         final int hostId = rs.getInt("host_id");
         final int sampleKindId = rs.getInt("sample_kind_id");
         final int sampleCount = rs.getInt("sample_count");
@@ -48,6 +48,6 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
             }
         }
         final TimeBytesAndSampleBytes bytesPair = TimesAndSamplesCoder.getTimesBytesAndSampleBytes(samplesAndTimes);
-        return new TimelineChunk(sampleTimelineId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(), sampleCount, aggregationLevel, notValid);
+        return new TimelineChunk(chunkId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(), sampleCount, aggregationLevel, notValid);
     }
 }
