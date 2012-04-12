@@ -20,7 +20,7 @@ create table sample_kinds (
 ) engine = innodb default charset = latin1;
 
 create table timeline_chunks (
-  chunk_id bigint not null primary key
+  chunk_id bigint not null auto_increment primary key
 , host_id integer not null
 , sample_kind_id integer not null
 , sample_count integer not null

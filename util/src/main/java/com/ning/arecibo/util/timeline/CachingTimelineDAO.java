@@ -218,8 +218,8 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public List<Long> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
-        return delegate.bulkInsertTimelineChunks(timelineChunkList);
+    public void bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
+        delegate.bulkInsertTimelineChunks(timelineChunkList);
     }
 
     @Override

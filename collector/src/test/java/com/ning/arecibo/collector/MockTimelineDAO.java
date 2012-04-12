@@ -294,11 +294,9 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public List<Long> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
-        final List<Long> sampleKindIds = new ArrayList<Long>(timelineChunkList.size());
+    public void bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
         for (TimelineChunk chunk : timelineChunkList) {
-            sampleKindIds.add(insertTimelineChunk(chunk));
+            insertTimelineChunk(chunk);
         }
-        return sampleKindIds;
     }
 }

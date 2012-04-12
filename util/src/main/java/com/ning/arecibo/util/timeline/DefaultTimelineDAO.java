@@ -47,7 +47,6 @@ public class DefaultTimelineDAO implements TimelineDAO
     private static final Joiner JOINER = Joiner.on(",");
     private static final TimelineChunkMapper timelineChunkMapper = new TimelineChunkMapper();
 
-    private final AtomicLong timelineChunkIdCounter;
     private final IDBI dbi;
     private final TimelineDAOQueries delegate;
 
@@ -56,7 +55,6 @@ public class DefaultTimelineDAO implements TimelineDAO
     {
         this.dbi = dbi;
         this.delegate = dbi.onDemand(TimelineDAOQueries.class);
-        this.timelineChunkIdCounter = new AtomicLong(delegate.getHighestTimelineChunkId() + 1);
     }
 
     @Override
@@ -169,9 +167,10 @@ public class DefaultTimelineDAO implements TimelineDAO
     @Override
     public Long insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        final long timelineChunkId = timelineChunkIdCounter.incrementAndGet();
-        final TimelineChunk chunkWithId = new TimelineChunk(timelineChunkId, timelineChunk);
-        delegate.insertTimelineChunk(chunkWithId);
+        delegate.begin();
+        delegate.insertTimelineChunk(timelineChunk);
+        final long timelineChunkId = delegate.getLastInsertedId();
+        delegate.commit();
         return timelineChunkId;
     }
 
@@ -270,16 +269,8 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public List<Long> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList)
+    public void bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList)
     {
-        final List<Long> chunkIds = new ArrayList<Long>(timelineChunkList.size());
-        final List<TimelineChunk> chunksWithIds = new ArrayList<TimelineChunk>(timelineChunkList.size());
-        for (final TimelineChunk chunk : timelineChunkList) {
-            final long chunkId = timelineChunkIdCounter.incrementAndGet();
-            chunkIds.add(chunkId);
-            chunksWithIds.add(new TimelineChunk(chunkId, chunk));
-        }
-        delegate.bulkInsertTimelineChunks(chunksWithIds.iterator());
-        return chunkIds;
+        delegate.bulkInsertTimelineChunks(timelineChunkList.iterator());
     }
 }

@@ -84,7 +84,7 @@ public interface TimelineDAO
 
     void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds);
 
-    List<Long> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList);
+    void bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList);
 
     void test() throws UnableToObtainConnectionException, CallbackFailedException;
 }
