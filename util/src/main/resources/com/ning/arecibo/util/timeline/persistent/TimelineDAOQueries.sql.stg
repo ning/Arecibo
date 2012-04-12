@@ -95,6 +95,12 @@ getSampleKindIdsByHostId() ::= <<
   ;
 >>
 
+getSampleKindIdsForAllHosts() ::= <<
+  select distinct sample_kind_id, host_id
+  from timeline_chunks c
+  ;
+>>
+
 getSampleKinds() ::= <<
   select
     sample_kind_id

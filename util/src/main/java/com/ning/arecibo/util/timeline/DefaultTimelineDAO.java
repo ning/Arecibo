@@ -19,6 +19,7 @@ package com.ning.arecibo.util.timeline;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
@@ -46,14 +47,16 @@ public class DefaultTimelineDAO implements TimelineDAO
     private static final Joiner JOINER = Joiner.on(",");
     private static final TimelineChunkMapper timelineChunkMapper = new TimelineChunkMapper();
 
-    final IDBI dbi;
-    final TimelineDAOQueries delegate;
+    private final AtomicLong timelineChunkIdCounter;
+    private final IDBI dbi;
+    private final TimelineDAOQueries delegate;
 
     @Inject
     public DefaultTimelineDAO(final IDBI dbi)
     {
         this.dbi = dbi;
         this.delegate = dbi.onDemand(TimelineDAOQueries.class);
+        this.timelineChunkIdCounter = new AtomicLong(delegate.getHighestTimelineChunkId() + 1);
     }
 
     @Override
@@ -159,13 +162,16 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
-    {
-        delegate.begin();
-        delegate.insertTimelineChunk(timelineChunk);
-        final Integer timelineChunkId = delegate.getLastInsertedId();
-        delegate.commit();
+    public Iterable<HostIdAndSampleKindId> getSampleKindIdsForAllHosts() throws UnableToObtainConnectionException, CallbackFailedException {
+        return delegate.getSampleKindIdsForAllHosts();
+    }
 
+    @Override
+    public Long insertTimelineChunk(final TimelineChunk timelineChunk) throws UnableToObtainConnectionException, CallbackFailedException
+    {
+        final long timelineChunkId = timelineChunkIdCounter.incrementAndGet();
+        final TimelineChunk chunkWithId = new TimelineChunk(timelineChunkId, timelineChunk);
+        delegate.insertTimelineChunk(chunkWithId);
         return timelineChunkId;
     }
 
@@ -245,38 +251,35 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized void bulkInsertHosts(final List<String> hosts) throws UnableToObtainConnectionException, CallbackFailedException
+    public void bulkInsertHosts(final List<String> hosts) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.bulkInsertHosts(hosts.iterator());
     }
 
     @Override
-    public synchronized void bulkInsertEventCategories(final List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException
+    public void bulkInsertEventCategories(final List<String> categoryNames) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.bulkInsertEventCategories(categoryNames.iterator());
 
     }
 
     @Override
-    public synchronized void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds)
+    public void bulkInsertSampleKinds(final List<CategoryIdAndSampleKind> categoryAndKinds)
     {
         delegate.bulkInsertSampleKinds(categoryAndKinds.iterator());
     }
 
     @Override
-    public synchronized List<TimelineChunk> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList)
+    public List<Long> bulkInsertTimelineChunks(final List<TimelineChunk> timelineChunkList)
     {
-        delegate.begin();
-        Long lastTimelineChunkId = delegate.getHighestTimelineChunkId();
-        final int count = timelineChunkList.size();
-        final List<TimelineChunk> chunksWithIds = new ArrayList<TimelineChunk>(count);
-        long chunkId = lastTimelineChunkId + 1;
-        for (TimelineChunk timelineChunk : timelineChunkList) {
-            chunksWithIds.add(new TimelineChunk(chunkId++, timelineChunk));
+        final List<Long> sampleTimelineIds = new ArrayList<Long>(timelineChunkList.size());
+        final List<TimelineChunk> chunksWithIds = new ArrayList<TimelineChunk>(timelineChunkList.size());
+        for (final TimelineChunk chunk : timelineChunkList) {
+            final long sampleTimelineId = timelineChunkIdCounter.incrementAndGet();
+            sampleTimelineIds.add(sampleTimelineId);
+            chunksWithIds.add(new TimelineChunk(sampleTimelineId, chunk));
         }
         delegate.bulkInsertTimelineChunks(chunksWithIds.iterator());
-        delegate.commit();
-        return chunksWithIds;
+        return sampleTimelineIds;
     }
-
 }

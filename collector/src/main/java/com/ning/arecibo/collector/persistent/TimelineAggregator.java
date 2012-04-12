@@ -146,7 +146,7 @@ public class TimelineAggregator
         }
         outputTimeStream.flush();
         outputSamplesStream.flush();
-        final TimelineChunk chunk = new TimelineChunk(-1, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
+        final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
                 baTimeStream.toByteArray(), baSamplesStream.toByteArray(), totalSampleCount, aggregationLevel + 1, false);
         aggregatorDao.begin();
         aggregatorDao.insertNewInvalidTimelineChunk(chunk);

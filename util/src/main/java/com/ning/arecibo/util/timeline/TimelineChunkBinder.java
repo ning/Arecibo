@@ -52,12 +52,12 @@ public @interface TimelineChunkBinder
                         .bind("notValid", timelineChunk.getNotValid() ? 1 : 0);
                     final byte[] timesAndSamples = TimesAndSamplesCoder.combineTimesAndSamples(timelineChunk.getTimes(), timelineChunk.getSamples());
                     if (timelineChunk.getObjectId() == 0) {
-                        query.bindNull("sampleTimelineId", Types.BIGINT);
+                        throw new IllegalArgumentException(String.format("In TimelineChunkBinder.bind(), the sampleTimelineId of the chunk is 0!"));
                     }
                     else {
                         query.bind("sampleTimelineId", timelineChunk.getObjectId());
                     }
-                    if (TimesAndSamplesCoder.getEncodedLength(timelineChunk) > MAX_IN_ROW_BLOB_SIZE) {
+                    if (timesAndSamples.length > MAX_IN_ROW_BLOB_SIZE) {
                         query
                             .bindNull("inRowSamples", Types.VARBINARY)
                             .bind("blobSamples", timesAndSamples);

@@ -20,6 +20,34 @@ getTimelineAggregationCandidates() ::= <<
   ;
 >>
 
+getHostIdsAndSampleIdsOfAggregationCandidates() ::= <<
+  select * from
+    (select count(*) as chunk_count, hostId, sampleKindId
+     from timeline_chunks
+     where aggregation_level = :aggregationLevel and not_valid = 0) t
+   where chunk_count >= :chunksNeeded
+   order by host_id, sample_kind_id
+   limit :limit
+   ;
+ >>
+
+ getAggregationCandidatesForHostIdAndSampleKindIds(sampleKindIds) ::= <<
+  select
+    sample_timeline_id
+  , host_id
+  , sample_kind_id
+  , start_time
+  , end_time
+  , in_row_samples
+  , blob_samples
+  , sample_count
+  , aggregation_level
+  , not_valid
+  from timeline_chunks
+  where host_id = :host_id
+  and sample_kind_id in (<sampleKindIds>)
+  ;
+>>
 insertNewInvalidTimelineChunk() ::= <<
   insert into timeline_chunks (host_id, sample_kind_id, start_time, end_time, sample_count, in_row_samples, blob_samples, aggregation_level, not_valid)
   values (:hostId, :sampleKindId, :startTime, :endTime, :sampleCount, :inRowSamples, :blobSamples, :aggregationLevel, 1);

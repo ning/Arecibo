@@ -82,12 +82,6 @@ public class TimelineChunkAccumulator
         }
     }
 
-    public synchronized TimelineChunk extractTimelineChunkAndReset(final DateTime startTime, final DateTime endTime, final List<DateTime> dateTimes)
-    {
-        final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
-        return extractTimelineChunkAndReset(startTime, endTime, timeBytes);
-    }
-
     /**
      * This method grabs the current encoded form, and resets the accumulator
      */

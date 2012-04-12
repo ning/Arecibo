@@ -61,7 +61,8 @@ public class TestSampleCompression {
         final DateTime now = new DateTime();
         final List<DateTime> dateTimes = new ArrayList<DateTime>();
         dateTimes.add(now);
-        final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(now, now, dateTimes).getSamples();
+        final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(now, now, timeBytes).getSamples();
         Assert.assertEquals(encodedSampleBytes.length, expectedSize);
     }
 }

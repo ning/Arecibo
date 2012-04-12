@@ -32,6 +32,7 @@ import com.ning.arecibo.util.timeline.ShutdownSaveMode;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
+import com.ning.arecibo.util.timeline.TimelineCoder;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
@@ -237,7 +238,7 @@ public class TimelineEventHandler implements EventHandler
         return getInMemoryTimelineChunks(hostId, ImmutableList.<Integer>of(sampleKindId), filterStartTime, filterEndTime);
     }
 
-    public Collection<? extends TimelineChunk> getInMemoryTimelineChunks(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
+    public synchronized Collection<? extends TimelineChunk> getInMemoryTimelineChunks(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
         getInMemoryChunksCallCount.inc();
         // Check first if there is an in-memory accumulator for this host
@@ -270,13 +271,13 @@ public class TimelineEventHandler implements EventHandler
                 continue;
             }
 
-
             // This accumulator is in the right time range, now return only the sample kinds specified
+            final byte[] timeBytes = TimelineCoder.compressDateTimes(accumulatorTimes);
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
                 accumulatorDeepCopyCount.inc();
                 final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(accumulatorStartTime, accumulatorEndTime, accumulatorTimes);
+                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(accumulatorStartTime, accumulatorEndTime, timeBytes);
 
                 if (!sampleKindIds.contains(timelineChunk.getSampleKindId())) {
                     // We don't care about this sample kind

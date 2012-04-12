@@ -38,6 +38,7 @@ import com.ning.arecibo.util.timeline.SampleOpcode;
 import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
+import com.ning.arecibo.util.timeline.TimelineCoder;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.CounterMetric;
@@ -215,10 +216,11 @@ public class TimelineHostEventAccumulator
     public synchronized void extractAndQueueTimelineChunks()
     {
         final Map<Integer, TimelineChunk> chunkMap = new HashMap<Integer, TimelineChunk>();
+        final byte[] timeBytes = TimelineCoder.compressDateTimes(times);
         for (final Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
             final int sampleKindId = entry.getKey();
             final TimelineChunkAccumulator accumulator = entry.getValue();
-            final TimelineChunk chunk = accumulator.extractTimelineChunkAndReset(startTime, endTime, times);
+            final TimelineChunk chunk = accumulator.extractTimelineChunkAndReset(startTime, endTime, timeBytes);
             chunkMap.put(sampleKindId, chunk);
         }
         times.clear();
@@ -234,11 +236,11 @@ public class TimelineHostEventAccumulator
     {
         final PendingChunkMap pendingChunkMap = pendingChunkMaps.size() > 0 ? pendingChunkMaps.get(0) : null;
         if (pendingChunkMap == null) {
-            log.error("In TimelineHostEventAccumulator.markPendingChunkMapConsumed(), could not find the map for %d", pendingChunkMapId);
+            log.error("In TimelineHostEventAccumulator.markPendingChunkMapConsumed(), could not find the map for {}", pendingChunkMapId);
         }
         else if (pendingChunkMapId != pendingChunkMap.getPendingChunkMapId()) {
-            log.error("In TimelineHostEventAccumulator.markPendingChunkMapConsumed(), the next map has id %d, but we're consuming id %d",
-                    pendingChunkMap.getPendingChunkMapId(), pendingChunkMap);
+            log.error("In TimelineHostEventAccumulator.markPendingChunkMapConsumed(), the next map has id {}, but we're consuming id {}",
+                    pendingChunkMap.getPendingChunkMapId(), pendingChunkMapId);
         }
         else {
             pendingChunkMaps.remove(0);

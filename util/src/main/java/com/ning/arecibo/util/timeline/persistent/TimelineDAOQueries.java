@@ -34,6 +34,8 @@ import org.skife.jdbi.v2.sqlobject.stringtemplate.ExternalizedSqlViaStringTempla
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKindBinder;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKindMapper;
+import com.ning.arecibo.util.timeline.HostIdAndSampleKindId;
+import com.ning.arecibo.util.timeline.HostIdAndSampleKindIdMapper;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.StartTimesBinder;
 import com.ning.arecibo.util.timeline.StartTimesMapper;
@@ -42,7 +44,7 @@ import com.ning.arecibo.util.timeline.TimelineChunkBinder;
 import com.ning.arecibo.util.timeline.TimelineChunkMapper;
 
 @ExternalizedSqlViaStringTemplate3()
-@RegisterMapper({TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class})
+@RegisterMapper({TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class, HostIdAndSampleKindIdMapper.class})
 public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 {
     @SqlQuery
@@ -77,6 +79,9 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 
     @SqlQuery
     Iterable<Integer> getSampleKindIdsByHostId(@Bind("hostId") final Integer hostId);
+
+    @SqlQuery
+    Iterable<HostIdAndSampleKindId> getSampleKindIdsForAllHosts();
 
     @SqlQuery
     Integer getSampleKindId(@Bind("eventCategoryId") final int eventCategoryId, @Bind("sampleKind") final String sampleKind);

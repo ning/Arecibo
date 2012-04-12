@@ -21,6 +21,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
+import com.ning.arecibo.util.timeline.HostIdAndSampleKindId;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
@@ -32,8 +33,10 @@ import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MockTimelineDAO implements TimelineDAO
@@ -42,7 +45,7 @@ public final class MockTimelineDAO implements TimelineDAO
     private final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = HashBiMap.create();
     private final BiMap<Integer, String> eventCategories = HashBiMap.create();
     private final BiMap<Integer, TimelineChunk> timelineChunks = HashBiMap.create();
-    private final Multimap<Integer, Integer> hostSampleKindIds = HashMultimap.create();
+    private final Map<Integer, Set<Integer>> sampleKindIdsForHostId = new HashMap<Integer, Set<Integer>>();
     private final Map<Integer, Map<Integer, List<TimelineChunk>>> samplesPerHostAndSampleKind = new HashMap<Integer, Map<Integer, List<TimelineChunk>>>();
     private final AtomicReference<StartTimes> lastStartTimes = new AtomicReference<StartTimes>();
 
@@ -148,8 +151,14 @@ public final class MockTimelineDAO implements TimelineDAO
                 sampleKindId = sampleKinds.size() + 1;
                 sampleKinds.put(sampleKindId, new CategoryIdAndSampleKind(eventCategoryId, sampleKind));
             }
-
-            hostSampleKindIds.put(hostId, sampleKindId);
+            if (hostId != null) {
+                Set<Integer> sampleKindIds = sampleKindIdsForHostId.get(hostId);
+                if (sampleKindIds == null) {
+                    sampleKindIds = new HashSet<Integer>();
+                    sampleKindIdsForHostId.put(hostId, sampleKindIds);
+                }
+                sampleKindIds.add(sampleKindId);
+            }
             return sampleKindId;
         }
     }
@@ -157,18 +166,38 @@ public final class MockTimelineDAO implements TimelineDAO
     @Override
     public Iterable<Integer> getSampleKindIdsByHostId(final Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException
     {
-        synchronized (sampleKinds) {
-            return hostSampleKindIds.get(hostId);
+        final List<Integer> sampleKindIds = new ArrayList<Integer>();
+        synchronized (sampleKindIdsForHostId) {
+            final Set<Integer> sampleKindIdsSet = sampleKindIdsForHostId.get(hostId);
+            if (sampleKindIdsSet != null) {
+                sampleKindIds.addAll(sampleKindIdsSet);
+            }
         }
+        return sampleKindIds;
     }
 
     @Override
-    public Integer insertTimelineChunk(final TimelineChunk chunk)
+    public Iterable<HostIdAndSampleKindId> getSampleKindIdsForAllHosts() throws UnableToObtainConnectionException, CallbackFailedException {
+        final List<HostIdAndSampleKindId> hostIdsAndSampleKindIds = new ArrayList<HostIdAndSampleKindId>();
+        synchronized (sampleKindIdsForHostId) {
+            for (Map.Entry<Integer, Set<Integer>> entry : sampleKindIdsForHostId.entrySet()) {
+                final int hostId = entry.getKey();
+                final Set<Integer> sampleKindIds = entry.getValue();
+                for (int sampleKindId : sampleKindIds) {
+                    hostIdsAndSampleKindIds.add(new HostIdAndSampleKindId(hostId, sampleKindId));
+                }
+            }
+        }
+        return hostIdsAndSampleKindIds;
+    }
+
+    @Override
+    public Long insertTimelineChunk(final TimelineChunk chunk)
     {
-        final Integer timelineChunkId;
+        final Long timelineChunkId;
         synchronized (timelineChunks) {
             timelineChunks.put(timelineChunks.size(), chunk);
-            timelineChunkId = timelineChunks.size() - 1;
+            timelineChunkId = (long)timelineChunks.size() - 1;
         }
 
         synchronized (samplesPerHostAndSampleKind) {
@@ -265,11 +294,11 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public List<TimelineChunk> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
-        final List<TimelineChunk> returnedChunks = new ArrayList<TimelineChunk>(timelineChunkList.size());
+    public List<Long> bulkInsertTimelineChunks(List<TimelineChunk> timelineChunkList) {
+        final List<Long> sampleKindIds = new ArrayList<Long>(timelineChunkList.size());
         for (TimelineChunk chunk : timelineChunkList) {
-            returnedChunks.add(new TimelineChunk(insertTimelineChunk(chunk), chunk));
+            sampleKindIds.add(insertTimelineChunk(chunk));
         }
-        return returnedChunks;
+        return sampleKindIds;
     }
 }
