@@ -124,7 +124,7 @@ public class ScalarSample<T> extends SampleBase
         if (getOpcode() != otherSample.getOpcode()) {
             return false;
         }
-        else if (!opcode.getNoArgs() && !(sampleValue.equals(otherValue))) {
+        else if (!opcode.getNoArgs() && !(SampleCoder.sameSampleValues(sampleValue, otherValue))) {
             return false;
         }
         return true;

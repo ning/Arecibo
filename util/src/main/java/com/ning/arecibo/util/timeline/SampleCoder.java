@@ -92,7 +92,7 @@ public class SampleCoder {
                 final RepeatSample repeatSample = (RepeatSample)lastSample;
                 final ScalarSample sampleRepeated = repeatSample.getSampleRepeated();
                 if (sampleRepeated.getOpcode() == sampleOpcode &&
-                    (sampleOpcode.getNoArgs() || sampleRepeated.getSampleValue().equals(sample.getSampleValue())) &&
+                    (sampleOpcode.getNoArgs() || sameSampleValues(sampleRepeated.getSampleValue(), sample.getSampleValue())) &&
                     repeatSample.getRepeatCount() < RepeatSample.MAX_SHORT_REPEAT_COUNT) {
                     // We can just increment the count in the repeat instance
                     repeatSample.incrementRepeatCount();
@@ -106,7 +106,7 @@ public class SampleCoder {
             else {
                 final ScalarSample lastScalarSample = (ScalarSample)lastSample;
                 if (sampleOpcode == lastOpcode &&
-                    (sampleOpcode.getNoArgs() || sample.getSampleValue().equals(lastScalarSample.getSampleValue()))) {
+                    (sampleOpcode.getNoArgs() || sameSampleValues(sample.getSampleValue(), lastScalarSample.getSampleValue()))) {
                     // Replace lastSample with repeat group
                     lastSample = new RepeatSample(2, lastScalarSample);
                 }
@@ -519,6 +519,19 @@ public class SampleCoder {
         }
     }
 
+    public static boolean sameSampleValues(final Object o1, final Object o2)
+    {
+        if (o1 == o2) {
+            return true;
+        }
+        else if (o1.getClass() == o2.getClass()) {
+            return o1.equals(o2);
+        }
+        else {
+            return false;
+        }
+    }
+
     public static byte[] combineSampleBytes(final List<byte[]> sampleBytesList)
     {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -548,8 +561,9 @@ public class SampleCoder {
                             final RepeatSample repeatSample = (RepeatSample)lastSample;
                             final ScalarSample repeatedScalarSample = repeatSample.getSampleRepeated();
                             if (repeatedScalarSample.getOpcode() == newRepeatedOpcode &&
-                                    (newRepeatedOpcode.getNoArgs() || repeatedScalarSample.getSampleValue().equals(newValue)) &&
-                                    repeatSample.getRepeatCount() + newRepeatCount < RepeatSample.MAX_SHORT_REPEAT_COUNT) {
+                                    (newRepeatedOpcode.getNoArgs() ||
+                                     (sameSampleValues(repeatedScalarSample.getSampleValue(), newValue) &&
+                                       repeatSample.getRepeatCount() + newRepeatCount < RepeatSample.MAX_SHORT_REPEAT_COUNT))) {
                                 // We can just increment the count in the repeat instance
                                 repeatSample.incrementRepeatCount(newRepeatCount);
                             }

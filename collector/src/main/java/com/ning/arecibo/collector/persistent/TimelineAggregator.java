@@ -200,6 +200,7 @@ public class TimelineAggregator
             // Loop pulling off the candidates for the first hostId and eventCategory
             int lastHostId = 0;
             int lastSampleKindId = 0;
+            final long startingAggregatesCreated = aggregatesCreated.count();
             final List<TimelineChunk> hostTimelineCandidates = new ArrayList<TimelineChunk>();
             for (final TimelineChunk candidate : timelineChunkCandidates) {
                 timelineChunksConsidered.inc();
@@ -230,6 +231,11 @@ public class TimelineAggregator
                 builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
             }
             log.info(builder.toString());
+            final long netAggregatesCreated = aggregatesCreated.count() - startingAggregatesCreated;
+            if (netAggregatesCreated == 0) {
+                log.info("Created no new aggregates, so skipping higher-level aggregations");
+                break;
+            }
         }
 
         log.info("Aggregation done");
