@@ -16,14 +16,13 @@
 
 package com.ning.arecibo.util.timeline;
 
-import com.ning.arecibo.util.Logger;
-
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.List;
 
 import org.joda.time.DateTime;
+
+import com.ning.arecibo.util.Logger;
 
 /**
  * This class represents a sequence of values for a single attribute,
@@ -34,52 +33,29 @@ import org.joda.time.DateTime;
  * It accumulates samples in a byte array object. Readers can call
  * getEncodedSamples() at any time to get the latest data.
  */
-public class TimelineChunkAccumulator
+public class TimelineChunkAccumulator extends SampleCoder
 {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
-    private static final int DEFAULT_CHUNK_BYTE_ARRAY_SIZE = 300;
     private final int hostId;
     private final int sampleKindId;
-    private ByteArrayOutputStream byteStream;
-    /**
-     * Any operation that writes to the outputStream must synchronize on it!
-     */
-    private DataOutputStream outputStream;
-
-    private int sampleCount;
-    private SampleBase lastSample;
 
     public TimelineChunkAccumulator(final int hostId, final int sampleKindId)
     {
+        super();
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
-        reset();
     }
 
     private TimelineChunkAccumulator(final int hostId, final int sampleKindId, final byte[] bytes, final SampleBase lastSample, final int sampleCount) throws IOException
     {
+        super(bytes, lastSample, sampleCount);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
-
-        reset();
-        this.byteStream.write(bytes);
-        this.lastSample = lastSample;
-        this.sampleCount = sampleCount;
     }
 
     public TimelineChunkAccumulator deepCopy() throws IOException
     {
-        return new TimelineChunkAccumulator(hostId, sampleKindId, byteStream.toByteArray(), lastSample, sampleCount);
-    }
-
-    public synchronized void addPlaceholder(final byte repeatCount)
-    {
-        if (repeatCount > 0) {
-            addLastSample();
-            lastSample = new RepeatSample<Void>(repeatCount, new NullSample());
-            sampleCount += repeatCount;
-            log.debug("In addPlaceholder(), for sampleKindId %d, sampleCount %d", sampleKindId, sampleCount);
-        }
+        return new TimelineChunkAccumulator(hostId, sampleKindId, getByteStream().toByteArray(), getLastSample(), getSampleCount());
     }
 
     /**
@@ -89,55 +65,13 @@ public class TimelineChunkAccumulator
     {
         // Extract the chunk
         final byte[] sampleBytes = getEncodedSamples().getEncodedBytes();
-        log.debug("Creating TimelineChunk for sampleKindId %d, sampleCount %d", sampleKindId, sampleCount);
-        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, startTime, endTime, timeBytes, sampleBytes, sampleCount);
+        log.debug("Creating TimelineChunk for sampleKindId %d, sampleCount %d", sampleKindId, getSampleCount());
+        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, startTime, endTime, timeBytes, sampleBytes, getSampleCount());
 
         // Reset this current accumulator
         reset();
 
         return chunk;
-    }
-
-    @SuppressWarnings("unchecked")
-    public synchronized void addSample(final ScalarSample sample)
-    {
-        if (lastSample == null) {
-            lastSample = sample;
-        }
-        else {
-            final SampleOpcode lastOpcode = lastSample.getOpcode();
-            final SampleOpcode sampleOpcode = sample.getOpcode();
-            if (lastOpcode == SampleOpcode.REPEAT) {
-                final RepeatSample repeatSample = (RepeatSample)lastSample;
-                final ScalarSample sampleRepeated = repeatSample.getSampleRepeated();
-                if (sampleRepeated.getOpcode() == sampleOpcode &&
-                    (sampleOpcode.getNoArgs() || sampleRepeated.getSampleValue().equals(sample.getSampleValue())) &&
-                    repeatSample.getRepeatCount() < RepeatSample.MAX_REPEAT_COUNT) {
-                    // We can just increment the count in the repeat instance
-                    repeatSample.incrementRepeatCount();
-                }
-                else {
-                    // A non-matching repeat - - just add it
-                    addLastSample();
-                    lastSample = sample;
-                }
-            }
-            else {
-                final ScalarSample lastScalarSample = (ScalarSample)lastSample;
-                if (sampleOpcode == lastOpcode &&
-                    (sampleOpcode.getNoArgs() || sample.getSampleValue().equals(lastScalarSample.getSampleValue()))) {
-                    // Replace lastSample with repeat group
-                    lastSample = new RepeatSample((byte) 2, lastScalarSample);
-                }
-                else {
-                    addLastSample();
-                    lastSample = sample;
-                }
-            }
-        }
-        // In all cases, we got 1 more sample
-        sampleCount++;
-        log.debug("In addSample(), for sampleKindId %d, sampleCount %d", sampleKindId, sampleCount);
     }
 
     public int getHostId()
@@ -148,48 +82,5 @@ public class TimelineChunkAccumulator
     public int getSampleKindId()
     {
         return sampleKindId;
-    }
-
-    public synchronized int getSampleCount()
-    {
-        return sampleCount;
-    }
-
-    private void reset()
-    {
-        byteStream = new ByteArrayOutputStream(DEFAULT_CHUNK_BYTE_ARRAY_SIZE);
-        outputStream = new DataOutputStream(byteStream);
-        lastSample = null;
-        sampleCount = 0;
-    }
-
-    /**
-     * The log scanner can safely call this method, and know that the byte
-     * array will always end in a complete sample
-     *
-     * @return an instance containing the bytes and the counts of samples
-     */
-    private synchronized EncodedBytesAndSampleCount getEncodedSamples()
-    {
-        if (lastSample != null) {
-            SampleCoder.encodeSample(outputStream, lastSample);
-        }
-        try {
-            outputStream.flush();
-            return new EncodedBytesAndSampleCount(byteStream.toByteArray(), sampleCount);
-        }
-        catch (IOException e) {
-            log.error(e, "In getEncodedSamples, IOException flushing outputStream");
-            // Do no harm - - this at least won't corrupt the encoding
-            return new EncodedBytesAndSampleCount(new byte[0], 0);
-        }
-    }
-
-    private synchronized void addLastSample()
-    {
-        if (lastSample != null) {
-            SampleCoder.encodeSample(outputStream, lastSample);
-            lastSample = null;
-        }
     }
 }

@@ -27,7 +27,6 @@ import org.skife.jdbi.v2.sqlobject.stringtemplate.ExternalizedSqlViaStringTempla
 import org.skife.jdbi.v2.unstable.BindIn;
 
 import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkBinder;
 import com.ning.arecibo.util.timeline.TimelineChunkMapper;
 
 @ExternalizedSqlViaStringTemplate3()
@@ -35,10 +34,7 @@ import com.ning.arecibo.util.timeline.TimelineChunkMapper;
 public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorDAO>
 {
     @SqlQuery
-    List<TimelineChunk> getTimelineAggregationCandidates(@Bind("aggregationLevel") final int aggregationLevel);
-
-    @SqlUpdate
-    void insertNewInvalidTimelineChunk(@TimelineChunkBinder final TimelineChunk chunk);
+    List<TimelineChunk> getTimelineAggregationCandidates(@Bind("aggregationLevel") final int aggregationLevel, @Bind("chunksNeeded") final int chunksNeeded);
 
     @SqlQuery
     int getLastInsertedId();

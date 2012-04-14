@@ -17,23 +17,24 @@
 package com.ning.arecibo.util.timeline;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.ning.arecibo.util.Logger;
 
 /**
- * This class contains a collection of static methods used to encode samples, and also
- * play back streams of samples
- * TODO: Add another scanner used to combine successive sample timelines.  Such a
- * scanner would greatly improve compaction for aggregated timelines with lots
- * of identical repeats`
+ * Instances of this class encode sample streams.  In addition, this class
+ * contains a collection of static methods providing lower-level encoding plumbing
  */
+@SuppressWarnings("unchecked")
 public class SampleCoder {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
+    private static final int DEFAULT_CHUNK_BYTE_ARRAY_SIZE = 100;
     private static final BigInteger BIGINTEGER_ZERO_VALUE = new BigInteger("0");
     private static final ScalarSample<Void> DOUBLE_ZERO_SAMPLE = new ScalarSample<Void>(SampleOpcode.DOUBLE_ZERO, null);
     private static final ScalarSample<Void> INT_ZERO_SAMPLE = new ScalarSample<Void>(SampleOpcode.INT_ZERO, null);
@@ -53,21 +54,193 @@ public class SampleCoder {
     @SuppressWarnings("unused")
     private static final double INVERSE_MAX_FRACTION_ERROR = 1.0 / MAX_FRACTION_ERROR;
 
+    private ByteArrayOutputStream byteStream;
+    private DataOutputStream outputStream;
+    private int sampleCount;
+    private SampleBase lastSample;
+
+    public SampleCoder()
+    {
+        reset();
+    }
+
+    public SampleCoder(final byte[] bytes, final SampleBase lastSample, final int sampleCount) throws IOException
+    {
+        reset();
+        this.byteStream.write(bytes);
+        this.lastSample = lastSample;
+        this.sampleCount = sampleCount;
+
+    }
+
+    public void addSampleList(final List<ScalarSample> samples)
+    {
+        for (final ScalarSample sample : samples) {
+            addSample(sample);
+        }
+    }
+
+    public synchronized void addSample(final ScalarSample sample)
+    {
+        if (lastSample == null) {
+            lastSample = sample;
+        }
+        else {
+            final SampleOpcode lastOpcode = lastSample.getOpcode();
+            final SampleOpcode sampleOpcode = sample.getOpcode();
+            if (lastSample instanceof RepeatSample) {
+                final RepeatSample repeatSample = (RepeatSample)lastSample;
+                final ScalarSample sampleRepeated = repeatSample.getSampleRepeated();
+                if (sampleRepeated.getOpcode() == sampleOpcode &&
+                    (sampleOpcode.getNoArgs() || sampleRepeated.getSampleValue().equals(sample.getSampleValue())) &&
+                    repeatSample.getRepeatCount() < RepeatSample.MAX_SHORT_REPEAT_COUNT) {
+                    // We can just increment the count in the repeat instance
+                    repeatSample.incrementRepeatCount();
+                }
+                else {
+                    // A non-matching repeat - - just add it
+                    addLastSample();
+                    lastSample = sample;
+                }
+            }
+            else {
+                final ScalarSample lastScalarSample = (ScalarSample)lastSample;
+                if (sampleOpcode == lastOpcode &&
+                    (sampleOpcode.getNoArgs() || sample.getSampleValue().equals(lastScalarSample.getSampleValue()))) {
+                    // Replace lastSample with repeat group
+                    lastSample = new RepeatSample(2, lastScalarSample);
+                }
+                else {
+                    addLastSample();
+                    lastSample = sample;
+                }
+            }
+        }
+        // In all cases, we got 1 more sample
+        sampleCount++;
+    }
+
+    public int getSampleCount()
+    {
+        return sampleCount;
+    }
+
+    protected ByteArrayOutputStream getByteStream()
+    {
+        return byteStream;
+    }
+
+    protected SampleBase getLastSample()
+    {
+        return lastSample;
+    }
+
+    /**
+     * The log scanner can safely call this method, and know that the byte
+     * array will always end in a complete sample
+     *
+     * @return an instance containing the bytes and the counts of samples
+     */
+    public synchronized EncodedBytesAndSampleCount getEncodedSamples()
+    {
+        if (lastSample != null) {
+            SampleCoder.encodeSample(outputStream, lastSample);
+            lastSample = null;
+        }
+        try {
+            outputStream.flush();
+            return new EncodedBytesAndSampleCount(byteStream.toByteArray(), sampleCount);
+        }
+        catch (IOException e) {
+            log.error(e, "In getEncodedSamples, IOException flushing outputStream");
+            // Do no harm - - this at least won't corrupt the encoding
+            return new EncodedBytesAndSampleCount(new byte[0], 0);
+        }
+    }
+
+    private synchronized void addLastSample()
+    {
+        if (lastSample != null) {
+            SampleCoder.encodeSample(outputStream, lastSample);
+            lastSample = null;
+        }
+    }
+
+    public synchronized void reset()
+    {
+        byteStream = new ByteArrayOutputStream(DEFAULT_CHUNK_BYTE_ARRAY_SIZE);
+        outputStream = new DataOutputStream(byteStream);
+        lastSample = null;
+        sampleCount = 0;
+    }
+
+    public synchronized void addPlaceholder(final int repeatCount)
+    {
+        if (repeatCount > 0) {
+            addLastSample();
+            lastSample = new RepeatSample<Void>(repeatCount, new NullSample());
+            sampleCount += repeatCount;
+        }
+    }
+
+    public static byte[] compressSamples(final List<ScalarSample> samples)
+    {
+        final SampleCoder coder = new SampleCoder();
+        coder.addSampleList(samples);
+        return coder.getEncodedSamples().getEncodedBytes();
+    }
+
+    public static List<ScalarSample> decompressSamples(final byte[] sampleBytes) throws IOException
+    {
+        final List<ScalarSample> returnedSamples = new ArrayList<ScalarSample>();
+        final ByteArrayInputStream byteStream = new ByteArrayInputStream(sampleBytes);
+        final DataInputStream inputStream = new DataInputStream(byteStream);
+        while (true) {
+            final int opcodeByte;
+            opcodeByte = inputStream.read();
+            if (opcodeByte == -1) {
+                break; // At "eof"
+            }
+            final SampleOpcode opcode = SampleOpcode.getOpcodeFromIndex(opcodeByte);
+            switch(opcode) {
+            case REPEAT_BYTE:
+            case REPEAT_SHORT:
+                final int repeatCount = opcode == SampleOpcode.REPEAT_BYTE ? inputStream.readUnsignedByte() : inputStream.readUnsignedShort();
+                final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.read());
+                final Object value = decodeScalarValue(inputStream, repeatedOpcode);
+                for (int i=0; i<repeatCount; i++) {
+                    returnedSamples.add(new ScalarSample(repeatedOpcode, value));
+                }
+                break;
+            default:
+                returnedSamples.add(new ScalarSample(opcode, decodeScalarValue(inputStream, opcode)));
+            break;
+            }
+        }
+        return returnedSamples;
+    }
+
+
     /**
      * This method writes the binary encoding of the sample to the outputStream.  This encoding
      * is the form saved in the db and scanned when read from the db.
      */
-    @SuppressWarnings("unchecked")
     public static void encodeSample(final DataOutputStream outputStream, final SampleBase sample) {
         final SampleOpcode opcode = sample.getOpcode();
         try {
             // First put out the opcode value
             switch (opcode) {
-            case REPEAT:
+            case REPEAT_BYTE:
+            case REPEAT_SHORT:
                 final RepeatSample r = (RepeatSample)sample;
                 final ScalarSample repeatee = r.getSampleRepeated();
                 outputStream.write(opcode.getOpcodeIndex());
-                outputStream.write(r.getRepeatCount());
+                if (opcode == SampleOpcode.REPEAT_BYTE) {
+                    outputStream.write(r.getRepeatCount());
+                }
+                else {
+                    outputStream.writeShort(r.getRepeatCount());
+                }
                 encodeScalarValue(outputStream, repeatee.getOpcode(), repeatee.getSampleValue());
             case NULL:
                 break;
@@ -155,7 +328,6 @@ public class SampleCoder {
      * @return Either the same ScalarSample is that input, for for some cases of opcode DOUBLE,
      * a more compact ScalarSample which when processed returns a double value.
      */
-    @SuppressWarnings("unchecked")
     public static ScalarSample compressSample(final ScalarSample sample) {
         switch (sample.getOpcode()) {
         case INT:
@@ -219,7 +391,6 @@ public class SampleCoder {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static ScalarSample encodeFloatOrDoubleSample(final ScalarSample sample, final double value) {
         // We prefer representations in the following order: byte, HalfFloat, short, float and int
         // The criterion for using each representation is the fractional error
@@ -247,7 +418,6 @@ public class SampleCoder {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public static double getDoubleValue(final ScalarSample sample) {
         final Object sampleValue = sample.getSampleValue();
         return getDoubleValue(sample.getOpcode(), sampleValue);
@@ -288,7 +458,8 @@ public class SampleCoder {
         switch (opcode) {
         case NULL:
         case STRING:
-        case REPEAT:
+        case REPEAT_BYTE:
+        case REPEAT_SHORT:
             return false;
         default:
             return getDoubleValue(opcode, sampleValue) == 0.0;
@@ -348,6 +519,91 @@ public class SampleCoder {
         }
     }
 
+    public static byte[] combineSampleBytes(final List<byte[]> sampleBytesList)
+    {
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final DataOutputStream dataStream = new DataOutputStream(outputStream);
+        try {
+            SampleBase lastSample = null;
+            for (byte[] samples : sampleBytesList) {
+                final ByteArrayInputStream byteStream = new ByteArrayInputStream(samples);
+                final DataInputStream byteDataStream = new DataInputStream(byteStream);
+                while (true) {
+                    final int opcodeByte = byteDataStream.read();
+                    if (opcodeByte == -1) {
+                        break;
+                    }
+                    final SampleOpcode opcode = SampleOpcode.getOpcodeFromIndex(opcodeByte);
+                    switch (opcode) {
+                    case REPEAT_BYTE:
+                    case REPEAT_SHORT:
+                        final int newRepeatCount = opcode == SampleOpcode.REPEAT_BYTE ? byteDataStream.read() : byteDataStream.readUnsignedShort();
+                        final SampleOpcode newRepeatedOpcode = SampleOpcode.getOpcodeFromIndex(byteDataStream.read());
+                        final Object newValue = decodeScalarValue(byteDataStream, newRepeatedOpcode);
+                        final ScalarSample newRepeatedSample = new ScalarSample(newRepeatedOpcode, newValue);
+                        if (lastSample == null) {
+                            lastSample = new RepeatSample(newRepeatCount, new ScalarSample(newRepeatedOpcode, newValue));
+                        }
+                        else if (lastSample instanceof RepeatSample) {
+                            final RepeatSample repeatSample = (RepeatSample)lastSample;
+                            final ScalarSample repeatedScalarSample = repeatSample.getSampleRepeated();
+                            if (repeatedScalarSample.getOpcode() == newRepeatedOpcode &&
+                                    (newRepeatedOpcode.getNoArgs() || repeatedScalarSample.getSampleValue().equals(newValue)) &&
+                                    repeatSample.getRepeatCount() + newRepeatCount < RepeatSample.MAX_SHORT_REPEAT_COUNT) {
+                                // We can just increment the count in the repeat instance
+                                repeatSample.incrementRepeatCount(newRepeatCount);
+                            }
+                            else {
+                                encodeSample(dataStream, lastSample);
+                                lastSample = new RepeatSample(newRepeatCount, newRepeatedSample);
+                            }
+                        }
+                        else if (lastSample.equals(newRepeatedSample)) {
+                            lastSample = new RepeatSample(newRepeatCount + 1, newRepeatedSample);
+                        }
+                        else {
+                            encodeSample(dataStream, lastSample);
+                            lastSample = new RepeatSample(newRepeatCount, newRepeatedSample);
+                        }
+                        break;
+                    default:
+                        final ScalarSample newSample = new ScalarSample(opcode, decodeScalarValue(byteDataStream, opcode));
+                        if (lastSample == null) {
+                            lastSample = newSample;
+                        }
+                        else if (lastSample instanceof RepeatSample) {
+                            final RepeatSample repeatSample = (RepeatSample)lastSample;
+                            final ScalarSample repeatedScalarSample = repeatSample.getSampleRepeated();
+                            if (newSample.equals(repeatedScalarSample)) {
+                                repeatSample.incrementRepeatCount();
+                            }
+                            else {
+                                encodeSample(dataStream, lastSample);
+                                lastSample = newSample;
+                            }
+                        }
+                        else if (lastSample.equals(newSample)) {
+                            lastSample = new RepeatSample(2, newSample);
+                        }
+                        else {
+                            encodeSample(dataStream, lastSample);
+                            lastSample = newSample;
+                        }
+                    }
+                }
+            }
+            if (lastSample != null) {
+                encodeSample(dataStream, lastSample);
+            }
+            dataStream.flush();
+            return outputStream.toByteArray();
+        }
+        catch (Exception e) {
+            log.error(e, "In combineSampleBytes(), exception combining sample byte arrays");
+            return new byte[0];
+        }
+    }
+
     /**
      * This invokes the processor on the values in the timeline bytes.
      * @param bytes the byte representation of a timeline
@@ -365,18 +621,17 @@ public class SampleCoder {
         final DataInputStream inputStream = new DataInputStream(byteStream);
         final TimeCursor timeCursor = new TimeCursor(times, sampleCount);
         while (true) {
-            final byte opcodeByte;
-            try {
-                opcodeByte = inputStream.readByte();
-            }
-            catch (EOFException e) {
-                return;
+            final int opcodeByte;
+            opcodeByte = inputStream.read();
+            if (opcodeByte == -1) {
+                return; // At "eof"
             }
             final SampleOpcode opcode = SampleOpcode.getOpcodeFromIndex(opcodeByte);
             switch(opcode) {
-            case REPEAT:
-                final byte repeatCount = inputStream.readByte();
-                final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.readByte());
+            case REPEAT_BYTE:
+            case REPEAT_SHORT:
+                final int repeatCount = opcode == SampleOpcode.REPEAT_BYTE ? inputStream.readUnsignedByte() : inputStream.readUnsignedShort();
+                final SampleOpcode repeatedOpcode = SampleOpcode.getOpcodeFromIndex(inputStream.read());
                 final Object value = decodeScalarValue(inputStream, repeatedOpcode);
                 final SampleOpcode replacementOpcode = repeatedOpcode.getReplacement();
                 processor.processSamples(timeCursor, repeatCount, replacementOpcode, value);

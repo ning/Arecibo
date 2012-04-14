@@ -17,6 +17,8 @@
 package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.ImmutableList;
+
+import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.Assert;
@@ -24,7 +26,9 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSampleCoder
@@ -42,7 +46,7 @@ public class TestSampleCoder
         final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
         final ScalarSample<Short> sample = new ScalarSample<Short>(SampleOpcode.SHORT, (short) 4);
         SampleCoder.encodeSample(dataOutputStream, sample);
-        SampleCoder.encodeSample(dataOutputStream, new RepeatSample<Short>((byte) 3, sample));
+        SampleCoder.encodeSample(dataOutputStream, new RepeatSample<Short>(3, sample));
         dataOutputStream.close();
 
         SampleCoder.scan(outputStream.toByteArray(), compressedTimes, dateTimes.size(), new TimeRangeSampleProcessor(startTime, endTime)
@@ -70,8 +74,8 @@ public class TestSampleCoder
         Assert.assertEquals(cursor.getNextTime(), DateTimeUtils.unixSeconds(startTime));
         Assert.assertEquals(cursor.getNextTime(), DateTimeUtils.unixSeconds(endTime));
 
-        // 2 x the value 12: REPEAT, SHORT, 2, SHORT, 12 (2 bytes)
-        final byte[] samples = new byte[]{127, 2, 2, 0, 12};
+        // 2 x the value 12: REPEAT_BYTE, SHORT, 2, SHORT, 12 (2 bytes)
+        final byte[] samples = new byte[]{(byte)0xff, 2, 2, 0, 12};
 
         final AtomicInteger samplesCount = new AtomicInteger(0);
         SampleCoder.scan(samples, compressedTimes, sampleCount, new TimeRangeSampleProcessor(startTime, endTime)
@@ -89,5 +93,83 @@ public class TestSampleCoder
             }
         });
         Assert.assertEquals(samplesCount.get(), sampleCount);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test(groups = "fast")
+    public void testCombineSampleBytes() throws Exception
+    {
+        final ScalarSample[] samplesToChoose = new ScalarSample[] { new ScalarSample(SampleOpcode.DOUBLE, 2.0),
+                                                                    new ScalarSample(SampleOpcode.DOUBLE, 1.0),
+                                                                    new ScalarSample(SampleOpcode.INT_ZERO, 0) };
+        final int[] repetitions = new int[] { 1, 2, 3, 4, 5, 240, 250, 300 };
+        final Random rand = new Random(0);
+        int count = 0;
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(0, 0);
+        final List<ScalarSample> samples = new ArrayList<ScalarSample>();
+        for (int i=0; i<20; i++) {
+            final ScalarSample sample = samplesToChoose[rand.nextInt(samplesToChoose.length)];
+            final int repetition = repetitions[rand.nextInt(repetitions.length)];
+            for (int r=0; r<repetition; r++) {
+                samples.add(sample);
+                accum.addSample(sample);
+                count++;
+            }
+        }
+        final byte[] sampleBytes = SampleCoder.compressSamples(samples);
+        final byte[] accumBytes = accum.getEncodedSamples().getEncodedBytes();
+        Assert.assertEquals(accumBytes, sampleBytes);
+        final List<ScalarSample> restoredSamples = SampleCoder.decompressSamples(sampleBytes);
+        Assert.assertEquals(restoredSamples.size(), samples.size());
+        for (int i=0; i<count; i++) {
+            Assert.assertEquals(restoredSamples.get(i), samples.get(i));
+        }
+        for (int fragmentLength=2; fragmentLength<count/2; fragmentLength++) {
+            final List<byte[]> fragments = new ArrayList<byte[]>();
+            final int fragmentCount = (int)Math.ceil((double)count / (double)fragmentLength);
+            for (int fragCounter=0; fragCounter<fragmentCount; fragCounter++) {
+                final int fragIndex = fragCounter * fragmentLength;
+                final List<ScalarSample> fragment = samples.subList(fragIndex, Math.min(count, fragIndex + fragmentLength));
+                fragments.add(SampleCoder.compressSamples(fragment));
+            }
+            final byte[] combined = SampleCoder.combineSampleBytes(fragments);
+            final List<ScalarSample> restored = SampleCoder.decompressSamples(combined);
+            Assert.assertEquals(restored.size(), samples.size());
+            for (int i=0; i<count; i++) {
+                Assert.assertEquals(restored.get(i), samples.get(i));
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test(groups = "fast")
+    public void testCombineMoreThan65KSamples() throws Exception
+    {
+        int count = 0;
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(0, 0);
+        final List<ScalarSample> samples = new ArrayList<ScalarSample>();
+        final ScalarSample sample1 = new ScalarSample(SampleOpcode.BYTE, (byte)1);
+        final ScalarSample sample2 = new ScalarSample(SampleOpcode.BYTE, (byte)2);
+        for (int i=0; i<20; i++) {
+            samples.add(sample1);
+            accum.addSample(sample1);
+        }
+        for (int i=0; i<0xFFFF + 100; i++) {
+            samples.add(sample2);
+            accum.addSample(sample2);
+        }
+        final byte[] sampleBytes = SampleCoder.compressSamples(samples);
+        final String hex = new String(Hex.encodeHex(sampleBytes));
+        // Here are the compressed samples: ff140101feffff0102ff640102
+        // Translation:
+        // [ff 14 01 01] means repeat 20 times BYTE value 1
+        // [fe ff ff 01 02] means repeat 65525 times BYTE value 2
+        // [ff 64 01 02] means repeat 100 times BYTE value 2
+        Assert.assertEquals(sampleBytes, Hex.decodeHex("ff140101feffff0102ff640102".toCharArray()));
+        final List<ScalarSample> restoredSamples = SampleCoder.decompressSamples(sampleBytes);
+        Assert.assertEquals(restoredSamples.size(), samples.size());
+        for (int i=0; i<count; i++) {
+            Assert.assertEquals(restoredSamples.get(i), samples.get(i));
+        }
     }
 }

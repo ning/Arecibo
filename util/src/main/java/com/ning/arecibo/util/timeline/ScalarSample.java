@@ -114,6 +114,23 @@ public class ScalarSample<T> extends SampleBase
     }
 
     @Override
+    public boolean equals(final Object other)
+    {
+        if (other == null || !(other instanceof SampleBase)) {
+            return false;
+        }
+        final ScalarSample otherSample = (ScalarSample)other;
+        final Object otherValue = otherSample.getSampleValue();
+        if (getOpcode() != otherSample.getOpcode()) {
+            return false;
+        }
+        else if (!opcode.getNoArgs() && !(sampleValue.equals(otherValue))) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
     public String toString()
     {
         return sampleValue.toString();

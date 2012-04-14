@@ -60,15 +60,21 @@ public class TimeCursor
                     lastValue = timelineDataStream.readInt();
                     byteCursor += 4;
                 }
-                else if (nextOpcode == TimelineOpcode.REPEATED_DELTA_TIME.getOpcodeIndex()) {
-                    repeatCount = timelineDataStream.read() - 1;
+                else if (nextOpcode == TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex()) {
+                    repeatCount = timelineDataStream.readUnsignedByte() - 1;
                     delta = timelineDataStream.read();
                     byteCursor += 2;
                     lastValue += delta;
                 }
-                else if (nextOpcode <= TimelineCoder.MAX_DELTA_TIME) {
+                else if (nextOpcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
+                    repeatCount = timelineDataStream.readUnsignedShort() - 1;
+                    delta = timelineDataStream.read();
+                    byteCursor += 3;
+                    lastValue += delta;
+                }
+                else if (nextOpcode <= TimelineOpcode.MAX_DELTA_TIME) {
                     byteCursor++;
-                    lastValue += timelineDataStream.read();
+                    lastValue += nextOpcode;
                 }
                 else {
                     throw new IllegalStateException(String.format("In TimeIterator.getNextTime(), unknown opcode %x at offset %d", nextOpcode, byteCursor));

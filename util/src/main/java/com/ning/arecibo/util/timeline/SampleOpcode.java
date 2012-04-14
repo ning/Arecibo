@@ -18,41 +18,38 @@ package com.ning.arecibo.util.timeline;
 
 import com.ning.arecibo.util.Logger;
 
-/**
- * TODO: Add multiple repeat opcodes with different count widths - - byte, short and int - -
- * so that timeline aggregation can combine sucessive identical repeats across timelines.
- */
 public enum SampleOpcode {
-    BYTE((byte)1, 1),
-    SHORT((byte)2, 2),
-    INT((byte)3, 4),
-    LONG((byte)4, 8),
-    FLOAT((byte)5, 4),
-    DOUBLE((byte)6, 8),
-    STRING((byte)7, 0),
-    NULL((byte)8, 0, true),
-    FLOAT_FOR_DOUBLE((byte)10, 4, DOUBLE),
-    HALF_FLOAT_FOR_DOUBLE((byte)11, 2, DOUBLE),
-    BYTE_FOR_DOUBLE((byte)12, 1, DOUBLE),
-    SHORT_FOR_DOUBLE((byte)13, 2, DOUBLE),
-    BIGINT((byte)14, 0),
-    DOUBLE_ZERO((byte)15, 0, true),
-    INT_ZERO((byte)16, 0, true),
-    REPEAT((byte)0x7f, 1, true);
+    BYTE(1, 1),
+    SHORT(2, 2),
+    INT(3, 4),
+    LONG(4, 8),
+    FLOAT(5, 4),
+    DOUBLE(6, 8),
+    STRING(7, 0),
+    NULL(8, 0, true),
+    FLOAT_FOR_DOUBLE(10, 4, DOUBLE),
+    HALF_FLOAT_FOR_DOUBLE(11, 2, DOUBLE),
+    BYTE_FOR_DOUBLE(12, 1, DOUBLE),
+    SHORT_FOR_DOUBLE(13, 2, DOUBLE),
+    BIGINT(14, 0),
+    DOUBLE_ZERO(15, 0, true),
+    INT_ZERO(16, 0, true),
+    REPEAT_BYTE(0xff, 1, true),   // A repeat operation in which the repeat count fits in an unsigned byte
+    REPEAT_SHORT(0xfe, 2, true);  // A repeat operation in which the repeat count fits in an unsigned short
 
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
 
-    private byte opcodeIndex;
+    private int opcodeIndex;
     private final int byteSize;
     private final boolean repeater;
     private final boolean noArgs;
     private final SampleOpcode replacement;
 
-    private SampleOpcode(byte opcodeIndex, int byteSize) {
+    private SampleOpcode(int opcodeIndex, int byteSize) {
         this(opcodeIndex, byteSize, false);
     }
 
-    private SampleOpcode(byte opcodeIndex, int byteSize, SampleOpcode replacement) {
+    private SampleOpcode(int opcodeIndex, int byteSize, SampleOpcode replacement) {
         this.opcodeIndex = opcodeIndex;
         this.byteSize = byteSize;
         this.repeater = false;
@@ -60,11 +57,11 @@ public enum SampleOpcode {
         this.replacement = replacement;
     }
 
-    private SampleOpcode(byte opcodeIndex, int byteSize, boolean noArgs) {
+    private SampleOpcode(int opcodeIndex, int byteSize, boolean noArgs) {
         this(opcodeIndex, byteSize, noArgs, false);
     }
 
-    private SampleOpcode(byte opcodeIndex, int byteSize, boolean noArgs, boolean repeater) {
+    private SampleOpcode(int opcodeIndex, int byteSize, boolean noArgs, boolean repeater) {
         this.opcodeIndex = opcodeIndex;
         this.byteSize = byteSize;
         this.repeater = repeater;
@@ -72,11 +69,11 @@ public enum SampleOpcode {
         this.replacement = this;
     }
 
-    public byte getOpcodeIndex() {
+    public int getOpcodeIndex() {
         return opcodeIndex;
     }
 
-    public static SampleOpcode getOpcodeFromIndex(final byte index) {
+    public static SampleOpcode getOpcodeFromIndex(final int index) {
         for (SampleOpcode opcode : values()) {
             if (opcode.getOpcodeIndex() == index) {
                 return opcode;

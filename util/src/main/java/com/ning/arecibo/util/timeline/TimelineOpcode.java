@@ -16,17 +16,16 @@
 
 package com.ning.arecibo.util.timeline;
 /**
- * Opcodes are 1-byte entities.  Any "opcode" whose value is 127 or less is treated
+ * Opcodes are 1-byte entities.  Any "opcode" whose value is 240 or less is treated
  * as a time delta to be added to the previous time value.
  */
 
-/**
- * TODO: Add multiple repeat opcodes with different count widths - - byte, short and int - -
- * so that timeline aggregation can combine sucessive identical repeats across timelines.
- */
-enum TimelineOpcode {
-    FULL_TIME(0x7f),                 // Followed by 4 bytes of int value
-    REPEATED_DELTA_TIME(0x7e);       // Followed by a repeat count byte, 1-255, and then by a 1-byte delta whose value is 1-127
+public enum TimelineOpcode {
+    FULL_TIME(0xFF),                 // Followed by 4 bytes of int value
+    REPEATED_DELTA_TIME_BYTE(0xFE),  // Followed by a byte repeat count byte, 1-255, and then by a 1-byte delta whose value is 1-240
+    REPEATED_DELTA_TIME_SHORT(0xFD); // Followed by a repeat count short, 1-65535, and then by a 1-byte delta whose value is 1-240
+
+    public static final int MAX_DELTA_TIME = 0xF0;      // 240: Leaves room for 16 other opcodes, of which 3 are used
 
     private int opcodeIndex;
 

@@ -29,9 +29,7 @@ public class TestTimelineChunkAccumulator {
     @Test(groups="fast")
     public void testBasicAccumulator() throws Exception {
         final int hostId = 123;
-        final int eventCategoryId = 345;
         final int sampleKindId = 456;
-        final int timelineTimesId = 789;
         final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
         final List<DateTime> dateTimes = new ArrayList<DateTime>();
         final DateTime startTime = new DateTime();
@@ -86,5 +84,75 @@ public class TestTimelineChunkAccumulator {
         });
         final TimelineChunkDecoded chunkDecoded = new TimelineChunkDecoded(chunk);
         System.out.printf("%s\n", chunkDecoded.toString());
+    }
+
+
+    @Test(groups = "fast")
+    public void testByteRepeater() throws Exception
+    {
+        final int hostId = 123;
+        final int sampleKindId = 456;
+        final DateTime startTime = new DateTime();
+        final List<DateTime> dateTimes = new ArrayList<DateTime>();
+        final int byteRepeaterCount = 255;
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
+        for (int i=0; i<byteRepeaterCount; i++) {
+            dateTimes.add(startTime.plusSeconds(i * 5));
+            accum.addSample(SampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
+        }
+        final DateTime endTime = startTime.plusSeconds(5 * byteRepeaterCount);
+        byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
+        final byte[] samples = chunk.getSamples();
+        // Should be 0xFF 0xFF 0x12 0x02
+        Assert.assertEquals(samples.length, 4);
+        Assert.assertEquals(((int)samples[0]) & 0xff, SampleOpcode.REPEAT_BYTE.getOpcodeIndex());
+        Assert.assertEquals(((int)samples[1]) & 0xff, byteRepeaterCount);
+        Assert.assertEquals(((int)samples[2]) & 0xff, SampleOpcode.BYTE_FOR_DOUBLE.getOpcodeIndex());
+        Assert.assertEquals(((int)samples[3]) & 0xff, 0x02);
+        Assert.assertEquals(chunk.getSampleCount(), byteRepeaterCount);
+        SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
+
+            @Override
+            public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+                Assert.assertEquals(sampleCount, byteRepeaterCount);
+                Assert.assertEquals(value, 2.0);
+            }
+        });
+    }
+
+    @Test(groups = "fast")
+    public void testShortRepeater() throws Exception
+    {
+        final int hostId = 123;
+        final int sampleKindId = 456;
+        final DateTime startTime = new DateTime();
+        final List<DateTime> dateTimes = new ArrayList<DateTime>();
+        final int shortRepeaterCount = 256;
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
+        for (int i=0; i<shortRepeaterCount; i++) {
+            dateTimes.add(startTime.plusSeconds(i * 5));
+            accum.addSample(SampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
+        }
+        final DateTime endTime = startTime.plusSeconds(5 * shortRepeaterCount);
+        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
+        final byte[] samples = chunk.getSamples();
+        Assert.assertEquals(samples.length, 5);
+        Assert.assertEquals(((int)samples[0]) & 0xff, SampleOpcode.REPEAT_SHORT.getOpcodeIndex());
+        final int count = ((samples[1] & 0xff) << 8) | (samples[2] & 0xff);
+        Assert.assertEquals(count, shortRepeaterCount);
+        Assert.assertEquals(((int)samples[3]) & 0xff, SampleOpcode.BYTE_FOR_DOUBLE.getOpcodeIndex());
+        Assert.assertEquals(((int)samples[4]) & 0xff, 0x02);
+        Assert.assertEquals(chunk.getSampleCount(), shortRepeaterCount);
+
+        SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
+
+            @Override
+            public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+                Assert.assertEquals(sampleCount, shortRepeaterCount);
+                Assert.assertEquals(value, 2.0);
+            }
+        });
     }
 }

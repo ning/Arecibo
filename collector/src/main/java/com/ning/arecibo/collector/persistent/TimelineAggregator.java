@@ -16,20 +16,6 @@
 
 package com.ning.arecibo.collector.persistent;
 
-import com.google.inject.Inject;
-import com.mogwee.executors.Executors;
-import com.ning.arecibo.collector.guice.CollectorConfig;
-import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
-import org.joda.time.DateTime;
-import org.skife.jdbi.v2.IDBI;
-import org.weakref.jmx.Managed;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +24,21 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.joda.time.DateTime;
+import org.skife.jdbi.v2.IDBI;
+import org.weakref.jmx.Managed;
+
+import com.google.inject.Inject;
+import com.mogwee.executors.Executors;
+import com.ning.arecibo.collector.guice.CollectorConfig;
+import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.SampleCoder;
+import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.TimelineCoder;
+import com.yammer.metrics.Metrics;
+import com.yammer.metrics.core.CounterMetric;
 
 /**
  * This class runs a thread that periodically looks for unaggregated timeline_times.
@@ -122,37 +123,30 @@ public class TimelineAggregator
     {
         final TimelineChunk firstTimesChunk = timelineChunks.get(0);
         final TimelineChunk lastTimesChunk = timelineChunks.get(timelineChunks.size() - 1);
+        final int chunkCount = timelineChunks.size();
         final int hostId = firstTimesChunk.getHostId();
         final DateTime startTime = firstTimesChunk.getStartTime();
         final DateTime endTime = lastTimesChunk.getEndTime();
-        // Compute the total size of the aggregated stuff
-        int totalTimeBytesSize = 0;
-        int totalSampleBytesSize = 0;
+        final List<byte[]> timeParts = new ArrayList<byte[]>(chunkCount);
+        final List<byte[]> sampleParts = new ArrayList<byte[]>(chunkCount);
+        final List<Long> timelineChunkIds = new ArrayList<Long>(chunkCount);
         int sampleCount = 0;
-        final List<Long> timelineChunkIds = new ArrayList<Long>(timelineChunks.size());
         for (final TimelineChunk timelineChunk : timelineChunks) {
-            totalTimeBytesSize += timelineChunk.getTimes().length;
-            totalSampleBytesSize += timelineChunk.getSamples().length;
+            timeParts.add(timelineChunk.getTimes());
+            sampleParts.add(timelineChunk.getSamples());
             sampleCount += timelineChunk.getSampleCount();
             timelineChunkIds.add(timelineChunk.getObjectId());
         }
-        final int totalSize = 4 + totalTimeBytesSize + totalSampleBytesSize;
+        final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts);
+        final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);
+        final int timeBytesLength = combinedTimeBytes.length;
+        final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;
         log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
             new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineChunks.size(), totalSize, sampleCount});
         timelineChunksBytesCreated.inc(totalSize);
         final int totalSampleCount = sampleCount;
-        final ByteArrayOutputStream baTimeStream = new ByteArrayOutputStream(totalTimeBytesSize);
-        final DataOutputStream outputTimeStream = new DataOutputStream(baTimeStream);
-        final ByteArrayOutputStream baSamplesStream = new ByteArrayOutputStream(totalSampleBytesSize);
-        final DataOutputStream outputSamplesStream = new DataOutputStream(baSamplesStream);
-        for (final TimelineChunk chunk : timelineChunks) {
-            outputTimeStream.write(chunk.getTimes());
-            outputSamplesStream.write(chunk.getSamples());
-        }
-        outputTimeStream.flush();
-        outputSamplesStream.flush();
         final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
-                baTimeStream.toByteArray(), baSamplesStream.toByteArray(), totalSampleCount, aggregationLevel + 1, false);
+                combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false);
         chunksToWrite.add(chunk);
         chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);
         timelineChunksQueuedForCreation.inc();
@@ -200,7 +194,7 @@ public class TimelineAggregator
             final Map<String, Long> initialCounters = captureAggregatorCounters();
             final int chunkCountIndex = aggregationLevel >= chunkCountsToAggregate.length ? chunkCountsToAggregate.length - 1 : aggregationLevel;
             final int chunksToAggregate = Integer.parseInt(chunkCountsToAggregate[chunkCountIndex]);
-            final List<TimelineChunk> timelineChunkCandidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel);
+            final List<TimelineChunk> timelineChunkCandidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel, chunksToAggregate);
 
             // The candidates are ordered first by host_id, then by event_category, and finally by start_time
             // Loop pulling off the candidates for the first hostId and eventCategory

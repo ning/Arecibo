@@ -75,7 +75,7 @@ public class TimelineHostEventAccumulator
     private static final Random rand = new Random(System.currentTimeMillis());
 
     // One counter sample kind and resulting opcode
-    private final Map<Integer, Map<Byte, CounterMetric>> countersCache = new HashMap<Integer, Map<Byte, CounterMetric>>();
+    private final Map<Integer, Map<Integer, CounterMetric>> countersCache = new HashMap<Integer, Map<Integer, CounterMetric>>();
 
     private final Map<Integer, SampleSequenceNumber> sampleKindIdCounters = new HashMap<Integer, SampleSequenceNumber>();
     private final List<PendingChunkMap> pendingChunkMaps = new ArrayList<PendingChunkMap>();
@@ -198,7 +198,7 @@ public class TimelineHostEventAccumulator
 
     private void addPlaceholders(final TimelineChunkAccumulator timeline, int countToAdd)
     {
-        final int maxRepeatSamples = RepeatSample.MAX_REPEAT_COUNT;
+        final int maxRepeatSamples = RepeatSample.MAX_SHORT_REPEAT_COUNT;
         while (countToAdd >= maxRepeatSamples) {
             timeline.addPlaceholder((byte) maxRepeatSamples);
             countToAdd -= maxRepeatSamples;
@@ -324,9 +324,9 @@ public class TimelineHostEventAccumulator
     // TODO: What should be done about these things?  I don't see these metrics in jconsole
     private synchronized CounterMetric getOrCreateCounterMetric(final Integer sampleKindId, final SampleOpcode opcode)
     {
-        Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
+        Map<Integer, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
         if (countersForSampleKindId == null) {
-            countersForSampleKindId = new HashMap<Byte, CounterMetric>();
+            countersForSampleKindId = new HashMap<Integer, CounterMetric>();
             countersCache.put(sampleKindId, countersForSampleKindId);
         }
 
@@ -351,8 +351,8 @@ public class TimelineHostEventAccumulator
     private synchronized void destroyStats()
     {
         for (final Integer sampleKindId : countersCache.keySet()) {
-            final Map<Byte, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
-            for (final Byte opcode : countersForSampleKindId.keySet()) {
+            final Map<Integer, CounterMetric> countersForSampleKindId = countersCache.get(sampleKindId);
+            for (final int opcode : countersForSampleKindId.keySet()) {
                 final String host = dao.getHost(hostId);
                 final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(sampleKindId);
                 final SampleOpcode sampleOpcode = SampleOpcode.getOpcodeFromIndex(opcode);

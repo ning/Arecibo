@@ -17,8 +17,8 @@
 package com.ning.arecibo.util.timeline;
 
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.ning.arecibo.util.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,9 +35,9 @@ import java.util.List;
  * of identical repeats`
  */
 public class TimelineCoder {
-    public static final Logger log = LoggerFactory.getLogger(TimelineCoder.class);
-    public static final int MAX_DELTA_TIME = 0x7F;
-    public static final int MAX_REPEAT_COUNT = 0xFF;
+    public static final Logger log = Logger.getLoggerViaExpensiveMagic();
+    public static final int MAX_SHORT_REPEAT_COUNT = 0xFFFF;
+    public static final int MAX_BYTE_REPEAT_COUNT = 0xFF;
 
     public static byte[] compressTimes(final int[] times) {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -54,12 +54,12 @@ public class TimelineCoder {
                     continue;
                 }
                 final int delta = newTime - lastTime;
-                final boolean deltaWorks = delta <= MAX_DELTA_TIME;
+                final boolean deltaWorks = delta <= TimelineOpcode.MAX_DELTA_TIME;
                 final boolean sameDelta = repeatCount > 0 && delta == lastDelta;
                 if (deltaWorks) {
                     if (sameDelta) {
                         repeatCount++;
-                        if (repeatCount == MAX_REPEAT_COUNT) {
+                        if (repeatCount == MAX_SHORT_REPEAT_COUNT) {
                             writeRepeatedDelta(delta, repeatCount, dataStream);
                             repeatCount = 0;
                         }
@@ -94,6 +94,102 @@ public class TimelineCoder {
         }
     }
 
+    public static byte[] combineTimelines(final List<byte[]> timesList)
+    {
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        final DataOutputStream dataStream = new DataOutputStream(outputStream);
+        try {
+            int lastTime = 0;
+            int lastDelta = 0;
+            int repeatCount = 0;
+            for (byte[] times : timesList) {
+                final ByteArrayInputStream byteStream = new ByteArrayInputStream(times);
+                final DataInputStream byteDataStream = new DataInputStream(byteStream);
+                while (true) {
+                    final int opcode = byteDataStream.read();
+                    if (opcode == -1) {
+                        break;
+                    }
+                    int newTime = 0;
+                    int newCount = 0;
+                    int newDelta = 0;
+                    if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
+                        newTime = byteDataStream.readInt();
+                        if (lastTime == 0) {
+                            writeTime(0, newTime, dataStream);
+                            lastTime = newTime;
+                            lastDelta = 0;
+                            repeatCount = 0;
+                            continue;
+                        }
+                        else {
+                            newDelta = lastTime != 0 ? newTime - lastTime : 0;
+                            newCount = 1;
+                        }
+                    }
+                    else if (opcode <= TimelineOpcode.MAX_DELTA_TIME) {
+                        newTime = lastTime + opcode;
+                        newDelta = opcode;
+                        newCount = 1;
+                    }
+                    else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex()) {
+                        newCount = byteDataStream.read();
+                        newDelta = byteDataStream.read();
+                        if (lastTime != 0) {
+                            newTime = lastTime + newDelta * newCount;
+                        }
+                        else {
+                            throw new IllegalStateException(String.format("In TimelineCoder.combineTimelines, lastTime is 0 byte opcode = %d", opcode));
+                        }
+                    }
+                    else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
+                        newCount = byteDataStream.readUnsignedShort();
+                        newDelta = byteDataStream.read();
+                        if (lastTime != 0) {
+                            newTime = lastTime + newDelta * newCount;
+                        }
+                    }
+                    if (lastTime == 0) {
+                        log.error("In combineTimelines(), lastTime is 0!");
+                    }
+                    else if (repeatCount > 0) {
+                        if (lastDelta == newDelta) {
+                            if (newCount > 0) {
+                                repeatCount += newCount;
+                                lastTime = newTime;
+                            }
+                            else {
+                                repeatCount++;
+                                lastTime += lastDelta;
+                            }
+                        }
+                        else {
+                            writeRepeatedDelta(lastDelta, repeatCount, dataStream);
+                            lastDelta = newDelta;
+                            repeatCount = newCount;
+                            lastTime = newTime;
+                        }
+                    }
+                    else if (lastDelta == 0) {
+                        lastTime = newTime;
+                        repeatCount = newCount;
+                        lastDelta = newDelta;
+                    }
+
+                }
+            }
+            if (repeatCount > 0) {
+                writeRepeatedDelta(lastDelta, repeatCount, dataStream);
+            }
+            dataStream.flush();
+            return outputStream.toByteArray();
+        }
+        catch (Exception e) {
+            log.error(e, "In combineTimesLines(), exception combining timelines");
+            return new byte[0];
+        }
+    }
+
     public static int[] decompressTimes(final byte[] compressedTimes) {
         final List<Integer> intList = new ArrayList<Integer>(compressedTimes.length * 4);
         final ByteArrayInputStream byteStream = new ByteArrayInputStream(compressedTimes);
@@ -102,18 +198,25 @@ public class TimelineCoder {
         int lastTime = 0;
         try {
             while (true) {
-                try {
-                    opcode = byteDataStream.readUnsignedByte();
-                }
-                catch (EOFException e) {
+                opcode = byteDataStream.read();
+                if (opcode == -1) {
+                    break;
                 }
 
                 if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
                     lastTime = byteDataStream.readInt();
                     intList.add(lastTime);
                 }
-                else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME.getOpcodeIndex()) {
+                else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex()) {
                     final int repeatCount = byteDataStream.readUnsignedByte();
+                    final int delta = byteDataStream.readUnsignedByte();
+                    for (int i=0; i<repeatCount; i++) {
+                        lastTime = lastTime + delta;
+                        intList.add(lastTime);
+                    }
+                }
+                else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
+                    final int repeatCount = byteDataStream.readUnsignedShort();
                     final int delta = byteDataStream.readUnsignedByte();
                     for (int i=0; i<repeatCount; i++) {
                         lastTime = lastTime + delta;
@@ -128,7 +231,7 @@ public class TimelineCoder {
             }
         }
         catch (IOException e) {
-
+            log.error(e, "In decompressTimes(), exception decompressing");
         }
         final int[] intArray = new int[intList.size()];
         for (int i=0; i<intList.size(); i++) {
@@ -137,7 +240,6 @@ public class TimelineCoder {
         return intArray;
     }
 
-    // TODO: This conversion to int[] isn't necessary - - eliminate it.
     public static byte[] compressDateTimes(final List<DateTime> dateTimes)
     {
         final int[] times = new int[dateTimes.size()];
@@ -149,15 +251,23 @@ public class TimelineCoder {
     }
 
     private static void writeRepeatedDelta(final int delta, final int repeatCount, final DataOutputStream dataStream) throws IOException {
-        dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME.getOpcodeIndex());
-        dataStream.writeByte(repeatCount);
+        if (repeatCount > 1) {
+                if (repeatCount > MAX_BYTE_REPEAT_COUNT) {
+                dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex());
+                dataStream.writeShort(repeatCount);
+            }
+            else {
+                dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex());
+                dataStream.writeByte(repeatCount);
+            }
+        }
         dataStream.writeByte(delta);
     }
 
     private static void writeTime(final int lastTime, final int newTime, final DataOutputStream dataStream) throws IOException {
         if (newTime > lastTime) {
             final int delta = (newTime - lastTime);
-            if (delta <= MAX_DELTA_TIME) {
+            if (delta <= TimelineOpcode.MAX_DELTA_TIME) {
                 dataStream.writeByte(delta);
             }
             else {
