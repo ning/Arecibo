@@ -49,7 +49,8 @@ public @interface TimelineChunkBinder
                         .bind("startTime", DateTimeUtils.unixSeconds(timelineChunk.getStartTime()))
                         .bind("endTime", DateTimeUtils.unixSeconds(timelineChunk.getEndTime()))
                         .bind("aggregationLevel", timelineChunk.getAggregationLevel())
-                        .bind("notValid", timelineChunk.getNotValid() ? 1 : 0);
+                        .bind("notValid", timelineChunk.getNotValid() ? 1 : 0)
+                        .bind("dontAggregate", timelineChunk.getDontAggregate() ? 1 : 0);
                     final byte[] timesAndSamples = TimesAndSamplesCoder.combineTimesAndSamples(timelineChunk.getTimes(), timelineChunk.getSamples());
                     if (timelineChunk.getObjectId() == 0) {
                         query.bindNull("chunkId", Types.BIGINT);

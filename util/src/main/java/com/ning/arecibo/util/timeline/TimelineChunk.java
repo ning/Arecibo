@@ -66,6 +66,9 @@ public class TimelineChunk extends CachedObject
     @JsonProperty
     @JsonView(TimelineChunksViews.Compact.class)
     private final boolean notValid;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Compact.class)
+    private final boolean dontAggregate;
 
     public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
     {
@@ -79,10 +82,11 @@ public class TimelineChunk extends CachedObject
         this.sampleCount = sampleCount;
         aggregationLevel = 0;
         notValid = false;
+        dontAggregate = false;
     }
 
     public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
-            final byte[] times, final byte[] samples, final int sampleCount, final int aggregationLevel, final boolean notValid)
+            final byte[] times, final byte[] samples, final int sampleCount, final int aggregationLevel, final boolean notValid, final boolean dontAggregate)
     {
         super(chunkId);
         this.hostId = hostId;
@@ -94,6 +98,7 @@ public class TimelineChunk extends CachedObject
         this.sampleCount = sampleCount;
         this.aggregationLevel = aggregationLevel;
         this.notValid = notValid;
+        this.dontAggregate = dontAggregate;
     }
 
     public TimelineChunk(final long chunkId, final TimelineChunk other)
@@ -108,6 +113,7 @@ public class TimelineChunk extends CachedObject
         this.sampleCount = other.sampleCount;
         this.aggregationLevel = other.aggregationLevel;
         this.notValid = other.notValid;
+        this.dontAggregate = other.dontAggregate;
     }
 
     @JsonView(TimelineChunksViews.Loose.class)
@@ -226,5 +232,10 @@ public class TimelineChunk extends CachedObject
     public boolean getNotValid()
     {
         return notValid;
+    }
+
+    public boolean getDontAggregate()
+    {
+        return dontAggregate;
     }
 }

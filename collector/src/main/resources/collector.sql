@@ -28,6 +28,7 @@ create table timeline_chunks (
 , end_time integer not null
 , not_valid tinyint default 0
 , aggregation_level tinyint default 0
+, dont_aggregate tinyint default 0
 , in_row_samples varbinary(400) default null
 , blob_samples mediumblob default null
 , unique index host_id_timeline_chunk_sample_kind_idx (host_id, sample_kind_id, start_time, aggregation_level)

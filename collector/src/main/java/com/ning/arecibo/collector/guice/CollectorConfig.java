@@ -106,8 +106,8 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.chunksToAggregate")
     @Description("A string with a comma-separated set of integers, one for each aggregation level, giving the number of sequential TimelineChunks with that aggregation level we must find to perform aggregation")
-    // These values translate to 12 hours; 7 days and 3 weeks
-    @Default("12,14,3")
+    // These values translate to 12 hours; 7 days and 4 weeks
+    @Default("12,14,4")
     String getChunksToAggregate();
 
     @Config("arecibo.collector.timelines.aggregationInterval")
@@ -124,6 +124,16 @@ public interface CollectorConfig
     @Description("If true, blast the old TimelineChunk rows; if false, leave them in peace, since they won't be accessed")
     @Default("true")
     boolean getDeleteAggregatedChunks();
+
+    @Config("arecibo.collector.timelines.randomizeFirstAggregations")
+    @Description("If true, for the first aggregation for the (hostId, sampleKindId, aggregationLevel) after core start, aggregate a random number of chunks.  This distributes the db load")
+    @Default("true")
+    boolean getRandomizeFirstAggregations();
+
+    @Config("arecibo.collector.timelines.maxRandomizedAggregationLevel")
+    @Description("The maximum aggregation level for which we do randomization.  Only consulted if arecibo.collector.timelines.randomizeFirstAggregations is true")
+    @Default("2")
+    int getMaxRandomizedAggregationLevel();
 
     @Config("arecibo.collector.timelines.shutdownSaveMode")
     @Description("What to save on shut down; either all timelines (save_all_timelines) or just the accumulator start times (save_start_times)")

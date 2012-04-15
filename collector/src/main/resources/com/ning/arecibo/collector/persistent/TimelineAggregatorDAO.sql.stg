@@ -12,6 +12,7 @@ getTimelineAggregationCandidates() ::= <<
   , c.sample_count
   , c.aggregation_level
   , c.not_valid
+  , c.dont_aggregate
   , h.chunk_count
   from timeline_chunks c
   join
@@ -22,6 +23,7 @@ getTimelineAggregationCandidates() ::= <<
    where c.host_id = h.host_id and c.sample_kind_id = h.sample_kind_id
      and c.host_id != 0
      and c.aggregation_level = :aggregationLevel and c.not_valid = 0
+     and c.dont_aggregate = 0
      and h.chunk_count >= :chunksNeeded
    order by c.host_id, c.sample_kind_id, c.start_time
    ;
@@ -39,14 +41,11 @@ getTimelineAggregationCandidates() ::= <<
   , sample_count
   , aggregation_level
   , not_valid
+  , dont_aggregate
   from timeline_chunks
   where host_id = :host_id
   and sample_kind_id in (<sampleKindIds>)
   ;
->>
-insertNewInvalidTimelineChunk() ::= <<
-  insert into timeline_chunks (host_id, sample_kind_id, start_time, end_time, sample_count, in_row_samples, blob_samples, aggregation_level, not_valid)
-  values (:hostId, :sampleKindId, :startTime, :endTime, :sampleCount, :inRowSamples, :blobSamples, :aggregationLevel, 1);
 >>
 
 getLastInsertedId() ::= <<

@@ -115,8 +115,8 @@ getLastInsertedId() ::= <<
 >>
 
 insertTimelineChunk() ::= <<
-  insert into timeline_chunks (chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, in_row_samples, blob_samples, aggregation_level, not_valid)
-  values (:chunkId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :inRowSamples, :blobSamples, :aggregationLevel, :notValid);
+  insert into timeline_chunks (chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, in_row_samples, blob_samples, aggregation_level, not_valid, dont_aggregate)
+  values (:chunkId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :inRowSamples, :blobSamples, :aggregationLevel, :notValid, :dontAggregate);
 >>
 
 getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::= <<
@@ -131,6 +131,7 @@ getSamplesByHostIdsAndSampleKindIds(hostIds, sampleKindIds) ::= <<
   , end_time
   , aggregation_level
   , not_valid
+  , dont_aggregate
   from timeline_chunks
   where end_time >= :startTime
   and start_time \<= :endTime
@@ -175,8 +176,8 @@ bulkInsertSampleKinds() ::= <<
 >>
 
 bulkInsertTimelineChunks() ::= <<
-  insert into timeline_chunks (chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, not_valid, aggregation_level, in_row_samples, blob_samples)
-  values (:chunkId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :notValid, :aggregationLevel, :inRowSamples, :blobSamples);
+  insert into timeline_chunks (chunk_id, host_id, sample_kind_id, sample_count, start_time, end_time, not_valid, dont_aggregate, aggregation_level, in_row_samples, blob_samples)
+  values (:chunkId, :hostId, :sampleKindId, :sampleCount, :startTime, :endTime, :dontAggregate, :notValid, :aggregationLevel, :inRowSamples, :blobSamples);
 >>
 
 getHighestTimelineChunkId() ::= <<

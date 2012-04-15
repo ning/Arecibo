@@ -37,6 +37,7 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
         final DateTime endTime = new DateTime(DateTimeUtils.dateTimeFromUnixSeconds(rs.getInt("end_time")));
         final int aggregationLevel = rs.getInt("aggregation_level");
         final boolean notValid = rs.getInt("not_valid") == 0 ? false : true;
+        final boolean dontAggregate = rs.getInt("dont_aggregate") == 0 ? false : true;
         byte[] samplesAndTimes = rs.getBytes("in_row_samples");
         if (rs.wasNull()) {
             final Blob blobSamples = rs.getBlob("blob_samples");
@@ -48,6 +49,7 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
             }
         }
         final TimeBytesAndSampleBytes bytesPair = TimesAndSamplesCoder.getTimesBytesAndSampleBytes(samplesAndTimes);
-        return new TimelineChunk(chunkId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(), sampleCount, aggregationLevel, notValid);
+        return new TimelineChunk(chunkId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(),
+                sampleCount, aggregationLevel, notValid, dontAggregate);
     }
 }

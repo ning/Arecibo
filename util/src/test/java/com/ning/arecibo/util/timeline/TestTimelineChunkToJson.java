@@ -69,7 +69,7 @@ public class TestTimelineChunkToJson
     {
         final String chunkToString = mapper.writerWithView(TimelineChunksViews.Compact.class).writeValueAsString(chunk);
         final Map chunkFromString = mapper.readValue(chunkToString, Map.class);
-        Assert.assertEquals(chunkFromString.keySet().size(), 9);
+        Assert.assertEquals(chunkFromString.keySet().size(), 10);
         Assert.assertEquals(chunkFromString.get("hostId"), HOST_ID);
         Assert.assertEquals(chunkFromString.get("sampleKindId"), SAMPLE_KIND_ID);
         Assert.assertEquals(new TextNode((String) chunkFromString.get("samples")).getBinaryValue(), samples);
@@ -77,6 +77,7 @@ public class TestTimelineChunkToJson
         Assert.assertEquals(chunkFromString.get("startTime"), START_TIME.getMillis());
         Assert.assertEquals(chunkFromString.get("aggregationLevel"), 0);
         Assert.assertEquals(chunkFromString.get("notValid"), false);
+        Assert.assertEquals(chunkFromString.get("dontAggregate"), false);
     }
 
     @Test(groups = "fast")

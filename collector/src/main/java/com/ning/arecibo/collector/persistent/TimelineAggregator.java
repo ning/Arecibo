@@ -19,8 +19,11 @@ package com.ning.arecibo.collector.persistent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,6 +55,7 @@ import com.yammer.metrics.core.CounterMetric;
 public class TimelineAggregator
 {
     private static final Logger log = Logger.getLogger(TimelineAggregator.class);
+    private static final Random rand = new Random(0);
 
     private final DefaultTimelineDAO timelineDao;
     private final CollectorConfig config;
@@ -75,6 +79,15 @@ public class TimelineAggregator
     private final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>();
     private final List<Long> chunkIdsToInvalidateOrDelete = new ArrayList<Long>();
 
+    /**
+     * Mapping from hostId to map of sampleId to a set of aggregation levels.  An agg level is
+     * present if we've previously aggregated this level.  If we don't find the entry,
+     * that means it's the first time we've aggregated this (hostId, sampleKindId, aggregationLevel)
+     * triple, we aggregate a random number of chunks between 2 and the maximum, to
+     * ensure that subsequent aggregation load is distributed at all levels of aggregation.
+     */
+    private final Map<Integer, Map<Integer, Set<Integer>>> aggregatedThisLevelBefore = new HashMap<Integer, Map<Integer, Set<Integer>>>();
+
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
     {
@@ -86,15 +99,27 @@ public class TimelineAggregator
     private int aggregateTimelineCandidates(final List<TimelineChunk> timelineChunkCandidates, final int aggregationLevel, final int chunksToAggregate)
     {
         final TimelineChunk firstCandidate = timelineChunkCandidates.get(0);
+        final int hostId = firstCandidate.getHostId();
+        final int sampleKindId = firstCandidate.getSampleKindId();
         log.debug("For host_id {}, sampleKindId {}, looking to aggregate {} candidates in {} chunks",
-                new Object[]{firstCandidate.getHostId(), firstCandidate.getSampleKindId(), timelineChunkCandidates.size(), chunksToAggregate});
-
+                new Object[]{hostId, sampleKindId, timelineChunkCandidates.size(), chunksToAggregate});
+        Map<Integer, Set<Integer>> sampleKindMap = aggregatedThisLevelBefore.get(hostId);
+        if (sampleKindMap == null) {
+            sampleKindMap = new HashMap<Integer, Set<Integer>>();
+            aggregatedThisLevelBefore.put(hostId, sampleKindMap);
+        }
+        Set<Integer> usedAggregationLevels = sampleKindMap.get(sampleKindId);
+        if (usedAggregationLevels == null) {
+            usedAggregationLevels = new HashSet<Integer>();
+            sampleKindMap.put(sampleKindId, usedAggregationLevels);
+        }
+        boolean previouslyAggregated = !usedAggregationLevels.add(aggregationLevel);
         int aggregatesCreated = 0;
         while (timelineChunkCandidates.size() >= chunksToAggregate) {
             final List<TimelineChunk> chunkCandidates = timelineChunkCandidates.subList(0, chunksToAggregate);
             timelineChunksCombined.inc(chunksToAggregate);
             try {
-                aggregateHostSampleChunks(chunkCandidates, aggregationLevel);
+                aggregateHostSampleChunks(chunkCandidates, aggregationLevel, previouslyAggregated);
             }
             catch (IOException e) {
                 log.error(e, "IOException aggregating {} chunks, host_id {}, sampleKindId {}, looking to aggregate {} candidates in {} chunks",
@@ -102,6 +127,7 @@ public class TimelineAggregator
             }
             aggregatesCreated++;
             chunkCandidates.clear();
+            previouslyAggregated = true;
         }
         return aggregatesCreated;
     }
@@ -119,11 +145,11 @@ public class TimelineAggregator
      *
      * @param timelineChunks the TimelineChunks to be aggregated
      */
-    private void aggregateHostSampleChunks(final List<TimelineChunk> timelineChunks, final int aggregationLevel) throws IOException
+    private void aggregateHostSampleChunks(final List<TimelineChunk> timelineChunks, final int aggregationLevel, final boolean previouslyAggregated) throws IOException
     {
         final TimelineChunk firstTimesChunk = timelineChunks.get(0);
         final TimelineChunk lastTimesChunk = timelineChunks.get(timelineChunks.size() - 1);
-        final int chunkCount = timelineChunks.size();
+        final int chunkCount = computeChunkCount(timelineChunks.size(), aggregationLevel, previouslyAggregated);
         final int hostId = firstTimesChunk.getHostId();
         final DateTime startTime = firstTimesChunk.getStartTime();
         final DateTime endTime = lastTimesChunk.getEndTime();
@@ -146,13 +172,28 @@ public class TimelineAggregator
         timelineChunksBytesCreated.inc(totalSize);
         final int totalSampleCount = sampleCount;
         final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
-                combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false);
+                combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false, false);
         chunksToWrite.add(chunk);
         chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);
         timelineChunksQueuedForCreation.inc();
 
         if (chunkIdsToInvalidateOrDelete.size() >= config.getMaxChunkIdsToInvalidateOrDelete()) {
             performWrites();
+        }
+    }
+
+    private int computeChunkCount(final int chunkCount, final int aggregationLevel, final boolean previouslyAggregated)
+    {
+        if (config.getRandomizeFirstAggregations() && aggregationLevel <= config.getMaxRandomizedAggregationLevel()) {
+            if (chunkCount > 2) {
+                return 2 + rand.nextInt(chunkCount - 1);
+            }
+            else {
+                return chunkCount;
+            }
+        }
+        else {
+            return chunkCount;
         }
     }
 
