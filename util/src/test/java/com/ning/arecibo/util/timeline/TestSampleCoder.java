@@ -172,4 +172,35 @@ public class TestSampleCoder
             Assert.assertEquals(restoredSamples.get(i), samples.get(i));
         }
     }
+
+    /*
+     * I saw an error in combineSampleBytes:
+     * java.lang.ClassCastException: java.lang.Double cannot be cast to java.lang.Short
+     * These were the inputs:
+     * [11, 44, 74, -1, 2, 15, 11, 40, 68, -1, 2, 15]
+     * meaning half-float-for-double; repeat 2 times double zero; half-float-for-double; repeat 2 time double zero
+     * [11, 44, 68, -1, 3, 15, 11, 40, 68]
+     * meaning meaning half-float-for-double; repeat 3 times double zero; half-float-for-double
+     * [-1, 3, 15, 11, 40, 68, -1, 2, 15, 11, 40, 68]
+     * meaning repeat 3 times double-zero; half-float-for-double; repeat 2 times double zero; half-float-for-double
+     * [-1, 2, 11, 40, 68, -1, 3, 15, 11, 40, 68, 15]
+     * meaning repeat 2 times half-float-for-double; repeat 3 times double-zero; half-float-for-double; double zero
+     */
+    @SuppressWarnings("unchecked")
+    @Test(groups = "fast")
+    public void testCombineError() throws Exception
+    {
+        final byte[] b1 = new byte[] { 11, 44, 74, -1, 2, 15, 11, 40, 68, -1, 2, 15 };
+        final byte[] b2 = new byte[] { 11, 44, 68, -1, 3, 15, 11, 40, 68 };
+        final byte[] b3 = new byte[] { -1, 3, 15, 11, 40, 68, -1, 2, 15, 11, 40, 68 };
+        final byte[] b4 = new byte[] { -1, 2, 11, 40, 68, -1, 3, 15, 11, 40, 68, 15 };
+        final List<byte[]> parts = new ArrayList<byte[]>();
+        parts.add(b1);
+        parts.add(b2);
+        parts.add(b3);
+        parts.add(b4);
+        final byte[] combinedBytes = SampleCoder.combineSampleBytes(parts);
+        final List<ScalarSample> samples = SampleCoder.decompressSamples(combinedBytes);
+        Assert.assertEquals(samples.size(), 25);
+    }
 }

@@ -519,6 +519,63 @@ public class SampleCoder {
         }
     }
 
+    /*
+     * This differs from decodeScalarValue because this delivers exactly the
+     * type in the byte stream.  Specifically, it does not convert the arg
+     * of *_FOR_DOUBLE int a Double()
+     */
+    public static Object decodeOpcodeArg(final DataInputStream inputStream, final SampleOpcode opcode) throws IOException {
+        switch (opcode) {
+        case NULL:
+            return null;
+        case DOUBLE_ZERO:
+            return 0.0;
+        case INT_ZERO:
+            return 0;
+        case BYTE:
+            return new Byte(inputStream.readByte());
+        case SHORT:
+            return new Short(inputStream.readShort());
+        case INT:
+            return new Integer(inputStream.readInt());
+        case LONG:
+            return new Long(inputStream.readLong());
+        case FLOAT:
+            return new Float(inputStream.readFloat());
+        case DOUBLE:
+            return new Double(inputStream.readDouble());
+        case STRING:
+            final short s = inputStream.readShort();
+            final byte[] bytes = new byte[s];
+            final int byteCount = inputStream.read(bytes, 0, s);
+            if (byteCount != s) {
+                log.error("Reading string came up short");
+            }
+            return new String(bytes, "UTF-8");
+        case BIGINT:
+            final short bs = inputStream.readShort();
+            final byte[] bbytes = new byte[bs];
+            final int bbyteCount = inputStream.read(bbytes, 0, bs);
+            if (bbyteCount != bs) {
+                log.error("Reading bigint came up short");
+            }
+            return new BigInteger(new String(bbytes, "UTF-8"), 10);
+        case BYTE_FOR_DOUBLE:
+            return new Byte(inputStream.readByte());
+        case SHORT_FOR_DOUBLE:
+            return new Short(inputStream.readShort());
+        case FLOAT_FOR_DOUBLE:
+            final float floatForDouble = inputStream.readFloat();
+            return new Float(floatForDouble);
+        case HALF_FLOAT_FOR_DOUBLE:
+            return new Short(inputStream.readShort());
+        default:
+            final String err = String.format("In decodeOpcodeArg(), opcode %s unrecognized", opcode.name());
+            log.error(err);
+            throw new IllegalArgumentException(err);
+        }
+    }
+
     public static boolean sameSampleValues(final Object o1, final Object o2)
     {
         if (o1 == o2) {
@@ -552,7 +609,7 @@ public class SampleCoder {
                     case REPEAT_SHORT:
                         final int newRepeatCount = opcode == SampleOpcode.REPEAT_BYTE ? byteDataStream.read() : byteDataStream.readUnsignedShort();
                         final SampleOpcode newRepeatedOpcode = SampleOpcode.getOpcodeFromIndex(byteDataStream.read());
-                        final Object newValue = decodeScalarValue(byteDataStream, newRepeatedOpcode);
+                        final Object newValue = decodeOpcodeArg(byteDataStream, newRepeatedOpcode);
                         final ScalarSample newRepeatedSample = new ScalarSample(newRepeatedOpcode, newValue);
                         if (lastSample == null) {
                             lastSample = new RepeatSample(newRepeatCount, new ScalarSample(newRepeatedOpcode, newValue));
@@ -581,7 +638,7 @@ public class SampleCoder {
                         }
                         break;
                     default:
-                        final ScalarSample newSample = new ScalarSample(opcode, decodeScalarValue(byteDataStream, opcode));
+                        final ScalarSample newSample = new ScalarSample(opcode, decodeOpcodeArg(byteDataStream, opcode));
                         if (lastSample == null) {
                             lastSample = newSample;
                         }

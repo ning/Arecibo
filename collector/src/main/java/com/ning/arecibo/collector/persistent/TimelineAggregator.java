@@ -233,7 +233,7 @@ public class TimelineAggregator
             log.info(builder.toString());
             final long netAggregatesCreated = aggregatesCreated.count() - startingAggregatesCreated;
             if (netAggregatesCreated == 0) {
-                log.info("Created no new aggregates, so skipping higher-level aggregations");
+                log.debug("Created no new aggregates, so skipping higher-level aggregations");
                 break;
             }
         }

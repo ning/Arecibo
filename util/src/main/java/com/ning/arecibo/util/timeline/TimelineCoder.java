@@ -16,24 +16,18 @@
 
 package com.ning.arecibo.util.timeline;
 
-import org.joda.time.DateTime;
-
-import com.ning.arecibo.util.Logger;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * TODO: Add another scanner used to combine successive time timelines.  Such a
- * scanner would greatly improve compaction for aggregated timelines with lots
- * of identical repeats`
- */
+import org.joda.time.DateTime;
+
+import com.ning.arecibo.util.Logger;
+
 public class TimelineCoder {
     public static final Logger log = Logger.getLoggerViaExpensiveMagic();
     public static final int MAX_SHORT_REPEAT_COUNT = 0xFFFF;
