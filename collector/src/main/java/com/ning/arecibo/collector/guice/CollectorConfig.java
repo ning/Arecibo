@@ -101,13 +101,13 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.maxAggregationLevel")
     @Description("Max aggregation level")
-    @Default("3")
+    @Default("5")
     int getMaxAggregationLevel();
 
     @Config("arecibo.collector.timelines.chunksToAggregate")
     @Description("A string with a comma-separated set of integers, one for each aggregation level, giving the number of sequential TimelineChunks with that aggregation level we must find to perform aggregation")
-    // These values translate to 12 hours; 7 days and 4 weeks
-    @Default("12,14,4")
+    // These values translate to 4 hours, 16 hours, 2.7 days, 10.7 days, 42.7 days,
+    @Default("4,4,4,4,4")
     String getChunksToAggregate();
 
     @Config("arecibo.collector.timelines.aggregationInterval")

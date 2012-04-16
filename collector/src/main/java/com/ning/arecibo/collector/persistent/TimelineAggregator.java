@@ -186,7 +186,7 @@ public class TimelineAggregator
     {
         if (config.getRandomizeFirstAggregations() && aggregationLevel <= config.getMaxRandomizedAggregationLevel()) {
             if (chunkCount > 2) {
-                return 2 + rand.nextInt(chunkCount - 1);
+                return 1 + rand.nextInt(chunkCount);
             }
             else {
                 return chunkCount;
