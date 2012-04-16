@@ -691,6 +691,7 @@ public class SampleCoder {
         final ByteArrayInputStream byteStream = new ByteArrayInputStream(samples);
         final DataInputStream inputStream = new DataInputStream(byteStream);
         final TimeCursor timeCursor = new TimeCursor(times, sampleCount);
+        int sampleNumber = 0;
         while (true) {
             final int opcodeByte;
             opcodeByte = inputStream.read();
@@ -706,7 +707,8 @@ public class SampleCoder {
                 final Object value = decodeScalarValue(inputStream, repeatedOpcode);
                 final SampleOpcode replacementOpcode = repeatedOpcode.getReplacement();
                 processor.processSamples(timeCursor, repeatCount, replacementOpcode, value);
-                timeCursor.consumeRepeat(repeatCount);
+                sampleNumber += repeatCount;
+                timeCursor.skipToSampleNumber(sampleNumber);
                 break;
             default:
                 processor.processSamples(timeCursor, 1, opcode.getReplacement(), decodeScalarValue(inputStream, opcode));

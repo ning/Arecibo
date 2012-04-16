@@ -77,9 +77,6 @@ public class TimelineChunkDecoded {
                 builder.append(", ");
             }
             final int nextTime = timeCursor.getNextTime();
-            if (sampleCount > 1) {
-                timeCursor.consumeRepeat(sampleCount);
-            }
             final DateTime timestamp = DateTimeUtils.dateTimeFromUnixSeconds(nextTime);
             builder.append("at ").append(timestamp.toString("yyyy-MM-dd HH:mm:ss")).append(" ");
             if (sampleCount > 1) {

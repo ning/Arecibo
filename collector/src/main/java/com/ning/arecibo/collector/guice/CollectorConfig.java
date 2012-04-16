@@ -112,7 +112,7 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.aggregationInterval")
     @Description("How often to check to see if there are timelines ready to be aggregated")
-    @Default("1h")
+    @Default("10m")
     TimeSpan getAggregationInterval();
 
     @Config("arecibo.collector.timelines.maxChunkIdsToInvalidateOrDelete")

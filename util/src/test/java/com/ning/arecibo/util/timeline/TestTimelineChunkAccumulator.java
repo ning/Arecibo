@@ -59,7 +59,6 @@ public class TestTimelineChunkAccumulator {
 
             @Override
             public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
-                timeCursor.consumeRepeat(sampleCount);
                 if (sampleNumber == 0) {
                     Assert.assertEquals(opcode, SampleOpcode.INT);
                     Assert.assertEquals(value, new Integer(25));
