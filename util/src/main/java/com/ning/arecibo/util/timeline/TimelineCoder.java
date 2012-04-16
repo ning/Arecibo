@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTime;
 
 import com.ning.arecibo.util.Logger;
@@ -96,19 +97,23 @@ public class TimelineCoder {
             int lastTime = 0;
             int lastDelta = 0;
             int repeatCount = 0;
+            int chunkCounter = 0;
             for (byte[] times : timesList) {
                 final ByteArrayInputStream byteStream = new ByteArrayInputStream(times);
                 final DataInputStream byteDataStream = new DataInputStream(byteStream);
+                int byteCursor = 0;
                 while (true) {
                     final int opcode = byteDataStream.read();
                     if (opcode == -1) {
                         break;
                     }
+                    byteCursor++;
                     int newTime = 0;
                     int newCount = 0;
                     int newDelta = 0;
                     if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
                         newTime = byteDataStream.readInt();
+                        byteCursor += 4;
                         if (lastTime == 0) {
                             writeTime(0, newTime, dataStream);
                             lastTime = newTime;
@@ -129,22 +134,25 @@ public class TimelineCoder {
                     else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex()) {
                         newCount = byteDataStream.read();
                         newDelta = byteDataStream.read();
+                        byteCursor += 2;
                         if (lastTime != 0) {
                             newTime = lastTime + newDelta * newCount;
                         }
                         else {
-                            throw new IllegalStateException(String.format("In TimelineCoder.combineTimelines, lastTime is 0 byte opcode = %d", opcode));
+                            throw new IllegalStateException(String.format("In TimelineCoder.combineTimelines, lastTime is 0 byte opcode = %d, byteCursor %d, chunkCounter %d, chunk %s",
+                                    opcode, byteCursor, chunkCounter, Hex.encodeHex(times)));
                         }
                     }
                     else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
                         newCount = byteDataStream.readUnsignedShort();
                         newDelta = byteDataStream.read();
+                        byteCursor += 3;
                         if (lastTime != 0) {
                             newTime = lastTime + newDelta * newCount;
                         }
                     }
                     if (lastTime == 0) {
-                        log.error("In combineTimelines(), lastTime is 0!");
+                        log.error("In combineTimelines(), lastTime is 0; byteCursor %d, chunkCounter %d, times %s", byteCursor, chunkCounter, Hex.encodeHex(times));
                     }
                     else if (repeatCount > 0) {
                         if (lastDelta == newDelta) {
@@ -169,8 +177,8 @@ public class TimelineCoder {
                         repeatCount = newCount;
                         lastDelta = newDelta;
                     }
-
                 }
+                chunkCounter++;
             }
             if (repeatCount > 0) {
                 writeRepeatedDelta(lastDelta, repeatCount, dataStream);
