@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.codec.binary.Hex;
+import org.eclipse.jetty.util.log.Log;
 import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -226,5 +227,19 @@ public class TestTimelineCoder
         for (int i=0; i<count; i++) {
             Assert.assertEquals(restoredSamples[i], DateTimeUtils.unixSeconds(dateTimes.get(i)));
         }
+    }
+
+    @Test(groups = "fast")
+    public void testCombiningTimesError() throws Exception
+    {
+        final byte[] times1 = Hex.decodeHex("ff10000001fe0210ff1000011bfe0210".toCharArray());
+        final byte[] times2 = Hex.decodeHex("ff00000140".toCharArray());
+        final List<byte[]> timesList = new ArrayList<byte[]>();
+        timesList.add(times1);
+        timesList.add(times2);
+        final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
+        final String hexCombinedTimes = new String(Hex.encodeHex(combinedTimes));
+        //System.out.printf("Combined times: %s\n", hexCombinedTimes);
+        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0210ff1000011bfe0210");
     }
 }

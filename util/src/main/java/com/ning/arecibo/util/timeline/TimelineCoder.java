@@ -122,9 +122,10 @@ public class TimelineCoder {
                             continue;
                         }
                         else {
-                            // TODO: The test below isn't necesary, because we only get to this else if lastTime != 0
-                            newDelta = lastTime != 0 ? newTime - lastTime : 0;
-                            newCount = 1;
+                            if (newTime - lastTime <= TimelineOpcode.MAX_DELTA_TIME) {
+                                newDelta = newTime - lastTime;
+                                newCount = 1;
+                            }
                         }
                     }
                     else if (opcode <= TimelineOpcode.MAX_DELTA_TIME) {
@@ -152,6 +153,10 @@ public class TimelineCoder {
                             newTime = lastTime + newDelta * newCount;
                         }
                     }
+                    else {
+                        throw new IllegalStateException(String.format("In TimelineCoder.combineTimelines, Unrecognized byte opcode = %d, byteCursor %d, chunkCounter %d, chunk %s",
+                                opcode, byteCursor, chunkCounter, new String(Hex.encodeHex(times))));
+                    }
                     if (lastTime == 0) {
                         log.error("In combineTimelines(), lastTime is 0; byteCursor %d, chunkCounter %d, times %s", byteCursor, chunkCounter, new String(Hex.encodeHex(times)));
                     }
@@ -168,9 +173,17 @@ public class TimelineCoder {
                         }
                         else {
                             writeRepeatedDelta(lastDelta, repeatCount, dataStream);
-                            lastDelta = newDelta;
-                            repeatCount = newCount;
-                            lastTime = newTime;
+                            if (newDelta > 0) {
+                                lastDelta = newDelta;
+                                repeatCount = newCount;
+                                lastTime = newTime;
+                            }
+                            else {
+                                writeTime(lastTime, newTime, dataStream);
+                                lastTime = newTime;
+                                lastDelta = 0;
+                                repeatCount = 0;
+                            }
                         }
                     }
                     else if (lastDelta == 0) {
