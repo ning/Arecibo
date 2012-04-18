@@ -122,6 +122,7 @@ public class TimelineCoder {
                             continue;
                         }
                         else {
+                            // TODO: The test below isn't necesary, because we only get to this else if lastTime != 0
                             newDelta = lastTime != 0 ? newTime - lastTime : 0;
                             newCount = 1;
                         }
@@ -140,7 +141,7 @@ public class TimelineCoder {
                         }
                         else {
                             throw new IllegalStateException(String.format("In TimelineCoder.combineTimelines, lastTime is 0 byte opcode = %d, byteCursor %d, chunkCounter %d, chunk %s",
-                                    opcode, byteCursor, chunkCounter, Hex.encodeHex(times)));
+                                    opcode, byteCursor, chunkCounter, new String(Hex.encodeHex(times))));
                         }
                     }
                     else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
@@ -152,7 +153,7 @@ public class TimelineCoder {
                         }
                     }
                     if (lastTime == 0) {
-                        log.error("In combineTimelines(), lastTime is 0; byteCursor %d, chunkCounter %d, times %s", byteCursor, chunkCounter, Hex.encodeHex(times));
+                        log.error("In combineTimelines(), lastTime is 0; byteCursor %d, chunkCounter %d, times %s", byteCursor, chunkCounter, new String(Hex.encodeHex(times)));
                     }
                     else if (repeatCount > 0) {
                         if (lastDelta == newDelta) {
