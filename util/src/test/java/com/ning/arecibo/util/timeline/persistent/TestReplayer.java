@@ -44,7 +44,7 @@ public class TestReplayer
         }
 
         @Override
-        void read(final File file, final Function<HostSamplesForTimestamp, Void> fn) throws IOException
+        public void read(final File file, final Function<HostSamplesForTimestamp, Void> fn) throws IOException
         {
             Assert.assertEquals(file, expectedFiles.get(seen));
             seen++;

@@ -26,6 +26,7 @@ import org.codehaus.jackson.JsonToken;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.smile.SmileFactory;
 import org.codehaus.jackson.smile.SmileParser;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 public class Replayer
@@ -48,7 +50,7 @@ public class Replayer
     }
 
     @VisibleForTesting
-    static final Ordering<File> FILE_ORDERING = new Ordering<File>()
+    public static final Ordering<File> FILE_ORDERING = new Ordering<File>()
     {
         @Override
         public int compare(@Nullable final File left, @Nullable final File right)
@@ -107,7 +109,7 @@ public class Replayer
     }
 
     @VisibleForTesting
-    void read(final File file, final Function<HostSamplesForTimestamp, Void> fn) throws IOException
+    public void read(final File file, final Function<HostSamplesForTimestamp, Void> fn) throws IOException
     {
         final JsonParser smileParser = smileFactory.createJsonParser(file);
         if (smileParser.nextToken() != JsonToken.START_ARRAY) {
@@ -120,5 +122,20 @@ public class Replayer
         }
 
         smileParser.close();
+    }
+
+
+    public void purgeOldFiles(final DateTime purgeIfOlderDate)
+    {
+        final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
+
+        for (final File file : files) {
+            if (FileUtils.isFileOlder(file, new Date(purgeIfOlderDate.getMillis()))) {
+
+                if (!file.delete()) {
+                    log.warn("Unable to delete file: {}", file.getAbsolutePath());
+                }
+            }
+        }
     }
 }

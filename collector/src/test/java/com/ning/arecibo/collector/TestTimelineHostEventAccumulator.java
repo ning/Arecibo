@@ -39,7 +39,7 @@ public class TestTimelineHostEventAccumulator
     @Test(groups = "fast")
     public void testSimpleAggregate() throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID, false);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID);
 
         // Send a first type of data
         final DateTime startTime = new DateTime(DateTimeZone.UTC);

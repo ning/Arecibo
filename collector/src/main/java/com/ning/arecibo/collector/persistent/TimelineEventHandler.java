@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.process.EventHandler;
 import com.ning.arecibo.collector.process.EventsUtils;
@@ -57,12 +58,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class TimelineEventHandler implements EventHandler
 {
     private static final Logger log = LoggerFactory.getLogger(TimelineEventHandler.class);
+    private final ScheduledExecutorService purgeThread = Executors.newSingleThreadScheduledExecutor("TimelineEventPurger");
     private static Comparator<TimelineChunk> CHUNK_COMPARATOR = new Comparator<TimelineChunk>() {
 
         @Override
@@ -103,7 +107,7 @@ public class TimelineEventHandler implements EventHandler
     //
     // TODO: There are still timing windows in the use of accumulators.  Enumerate them and
     // either fix them or prove they are benign
-    private final Map<Integer, Map<Integer, TimelineHostEventAccumulator>> accumulators = new ConcurrentHashMap<Integer, Map<Integer, TimelineHostEventAccumulator>>();
+    private final Map<Integer, HostAccumulatorsAndUpdateDate> accumulators = new ConcurrentHashMap<Integer, HostAccumulatorsAndUpdateDate>();
 
     private final CollectorConfig config;
     private final TimelineDAO timelineDAO;
@@ -147,9 +151,9 @@ public class TimelineEventHandler implements EventHandler
 
     private void saveAccumulatorsOrStartTimes()
     {
-        for (Map.Entry<Integer, Map<Integer, TimelineHostEventAccumulator>> entry : accumulators.entrySet()) {
+        for (Map.Entry<Integer, HostAccumulatorsAndUpdateDate> entry : accumulators.entrySet()) {
             final int hostId = entry.getKey();
-            final Map<Integer, TimelineHostEventAccumulator> hostAccumulators = entry.getValue();
+            final Map<Integer, TimelineHostEventAccumulator> hostAccumulators = entry.getValue().getCategoryAccumulators();
             for (Map.Entry<Integer, TimelineHostEventAccumulator> accumulatorEntry : hostAccumulators.entrySet()) {
                 final int categoryId = accumulatorEntry.getKey();
                 final TimelineHostEventAccumulator accumulator = accumulatorEntry.getValue();
@@ -162,6 +166,41 @@ public class TimelineEventHandler implements EventHandler
                     accumulator.extractAndQueueTimelineChunks();
                 }
             }
+        }
+    }
+
+    public synchronized void purgeOldHostsAndAccumulators(final DateTime purgeIfBeforeDate)
+    {
+        final List<Integer> oldHostIds = new ArrayList<Integer>();
+        for (final Map.Entry<Integer, HostAccumulatorsAndUpdateDate> entry : accumulators.entrySet()) {
+            final int hostId = entry.getKey();
+            final HostAccumulatorsAndUpdateDate accumulatorsAndDate = entry.getValue();
+            final DateTime lastUpdatedDate = accumulatorsAndDate.getLastUpdateDate();
+            if (lastUpdatedDate.isBefore(purgeIfBeforeDate)) {
+                oldHostIds.add(hostId);
+                for (TimelineHostEventAccumulator categoryAccumulator : accumulatorsAndDate.getCategoryAccumulators().values()) {
+                    categoryAccumulator.extractAndQueueTimelineChunks();
+                }
+            }
+            else {
+                final List<Integer> categoryIdsToPurge = new ArrayList<Integer>();
+                final Map<Integer, TimelineHostEventAccumulator> categoryMap = accumulatorsAndDate.getCategoryAccumulators();
+                for (final Map.Entry<Integer, TimelineHostEventAccumulator> eventEntry : categoryMap.entrySet()) {
+                    final int categoryId = eventEntry.getKey();
+                    final TimelineHostEventAccumulator categoryAccumulator = eventEntry.getValue();
+                    final DateTime latestTime = categoryAccumulator.getLatestTime();
+                    if (latestTime != null && latestTime.isBefore(purgeIfBeforeDate)) {
+                        categoryAccumulator.extractAndQueueTimelineChunks();
+                        categoryIdsToPurge.add(categoryId);
+                    }
+                }
+                for (final int categoryId : categoryIdsToPurge) {
+                    categoryMap.remove(categoryId);
+                }
+            }
+        }
+        for (final int hostIdToPurge : oldHostIds) {
+            accumulators.remove(hostIdToPurge);
         }
     }
 
@@ -202,24 +241,27 @@ public class TimelineEventHandler implements EventHandler
 
     public synchronized TimelineHostEventAccumulator getOrAddHostEventAccumulator(final int hostId, final int categoryId)
     {
-        Map<Integer, TimelineHostEventAccumulator> hostAccumulators = accumulators.get(hostId);
-        if (hostAccumulators == null) {
+        HostAccumulatorsAndUpdateDate hostAccumulatorsAndUpdateDate = accumulators.get(hostId);
+        if (hostAccumulatorsAndUpdateDate == null) {
             addedHostEventAccumulatorMapCount.inc();
-            hostAccumulators = new HashMap<Integer, TimelineHostEventAccumulator>();
-            accumulators.put(hostId, hostAccumulators);
+            hostAccumulatorsAndUpdateDate = new HostAccumulatorsAndUpdateDate(new HashMap<Integer, TimelineHostEventAccumulator>(), new DateTime());
+            accumulators.put(hostId, hostAccumulatorsAndUpdateDate);
         }
-        TimelineHostEventAccumulator accumulator = hostAccumulators.get(categoryId);
+        hostAccumulatorsAndUpdateDate.markUpdated();
+        final Map<Integer, TimelineHostEventAccumulator> hostCategoryAccumulators = hostAccumulatorsAndUpdateDate.getCategoryAccumulators();
+        TimelineHostEventAccumulator accumulator = hostCategoryAccumulators.get(categoryId);
         if (accumulator == null) {
             addedHostEventAccumulatorCount.inc();
             accumulator = new TimelineHostEventAccumulator(timelineDAO, backgroundWriter, hostId, categoryId,
-                    config.getTimelinesVerboseStats(), (int)config.getTimelineLength().getMillis());
-            hostAccumulators.put(categoryId, accumulator);
+                    (int)config.getTimelineLength().getMillis());
+            hostCategoryAccumulators.put(categoryId, accumulator);
             log.debug("Created new Timeline for hostId [{}] and category [{}]", hostId, categoryId);
         }
         return accumulator;
     }
 
-    private void processSamples(final HostSamplesForTimestamp hostSamples) throws ExecutionException, IOException
+    @VisibleForTesting
+    public void processSamples(final HostSamplesForTimestamp hostSamples) throws ExecutionException, IOException
     {
         final int hostId = hostSamples.getHostId();
         final String category = hostSamples.getCategory();
@@ -242,14 +284,14 @@ public class TimelineEventHandler implements EventHandler
     {
         getInMemoryChunksCallCount.inc();
         // Check first if there is an in-memory accumulator for this host
-        final Map<Integer, TimelineHostEventAccumulator> hostAccumulators = accumulators.get(hostId);
-        if (hostAccumulators == null) {
+        final HostAccumulatorsAndUpdateDate hostAccumulatorsAndDate = accumulators.get(hostId);
+        if (hostAccumulatorsAndDate == null) {
             return ImmutableList.of();
         }
 
         // Now, filter each accumulator for this host
         final List<TimelineChunk> samplesByHostName = new ArrayList<TimelineChunk>();
-        for (final TimelineHostEventAccumulator accumulator : hostAccumulators.values()) {
+        for (final TimelineHostEventAccumulator accumulator : hostAccumulatorsAndDate.getCategoryAccumulators().values()) {
             for (TimelineChunk chunk : accumulator.getPendingTimelineChunks()) {
                 if ((filterStartTime != null && chunk.getEndTime().isBefore(filterStartTime)) || (filterEndTime != null && chunk.getStartTime().isAfter(filterEndTime))) {
                     continue;
@@ -389,12 +431,13 @@ public class TimelineEventHandler implements EventHandler
             backgroundWriter.initiateShutdown();
             while (!backgroundWriter.getShutdownFinished()) {
                 try {
-                    Thread.currentThread().sleep(100);
+                    Thread.sleep(100);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             }
+            purgeThread.shutdown();
         }
         // All the samples have been saved, or else the start times have been saved.  Discard the local buffer
         backingBuffer.discard();
@@ -402,12 +445,69 @@ public class TimelineEventHandler implements EventHandler
         log.info(doingFastShutdown ? "Timeline start times committed" : "Timelines committed");
     }
 
+    private synchronized void purgeFilesAndAccumulators()
+    {
+        this.purgeFilesAndAccumulators(new DateTime().minus(config.getTimelineLength().getMillis()), new DateTime().minus(2 * config.getTimelineLength().getMillis()));
+    }
+
+    private synchronized void purgeFilesAndAccumulators(final DateTime purgeAccumulatorsIfBefore, final DateTime purgeFilesIfBefore)
+    {
+        purgeOldHostsAndAccumulators(purgeAccumulatorsIfBefore);
+        final Replayer replayer = new Replayer(config.getSpoolDir());
+        final DateTime purgeIfBeforeDateForFiles = new DateTime().minus(2 * config.getTimelineLength().getMillis());
+        replayer.purgeOldFiles(purgeFilesIfBefore);
+    }
+
+    public void startPurgeThread() {
+        purgeThread.scheduleWithFixedDelay(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                purgeFilesAndAccumulators();
+            }
+        },
+        config.getTimelineLength().getMillis(),
+        config.getTimelineLength().getMillis(),
+        TimeUnit.MILLISECONDS);
+    }
+
+
+    // We use the lastUpdateDate to purge hosts and their accumulators from the map
+    private static class HostAccumulatorsAndUpdateDate
+    {
+        private final Map<Integer, TimelineHostEventAccumulator> categoryAccumulators;
+        private DateTime lastUpdateDate;
+
+        public HostAccumulatorsAndUpdateDate(Map<Integer, TimelineHostEventAccumulator> categoryAccumulators, DateTime lastUpdateDate)
+        {
+            super();
+            this.categoryAccumulators = categoryAccumulators;
+            this.lastUpdateDate = lastUpdateDate;
+        }
+
+        public Map<Integer, TimelineHostEventAccumulator> getCategoryAccumulators()
+        {
+            return categoryAccumulators;
+        }
+
+        public DateTime getLastUpdateDate()
+        {
+            return lastUpdateDate;
+        }
+
+        public void markUpdated()
+        {
+            lastUpdateDate = new DateTime();
+        }
+    }
+
     @VisibleForTesting
     public Collection<TimelineHostEventAccumulator> getAccumulators()
     {
         final List<TimelineHostEventAccumulator> inMemoryAccumulator = new ArrayList<TimelineHostEventAccumulator>();
-        for (final Map<Integer, TimelineHostEventAccumulator> hostEventAccumulatorMap : accumulators.values()) {
-            inMemoryAccumulator.addAll(hostEventAccumulatorMap.values());
+        for (final HostAccumulatorsAndUpdateDate hostEventAccumulatorMap : accumulators.values()) {
+            inMemoryAccumulator.addAll(hostEventAccumulatorMap.getCategoryAccumulators().values());
         }
 
         return inMemoryAccumulator;
@@ -430,3 +530,4 @@ public class TimelineEventHandler implements EventHandler
         return accumulators.size();
     }
 }
+

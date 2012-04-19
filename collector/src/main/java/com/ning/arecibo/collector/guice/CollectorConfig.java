@@ -155,11 +155,6 @@ public interface CollectorConfig
     @Default("/var/tmp/arecibo")
     String getSpoolDir();
 
-    @Config("arecibo.collector.timelines.verboseStats")
-    @Description("Whether to expose in JMX verbose stats per timeline (host), sample kind and opcode")
-    @Default("false")
-    boolean getTimelinesVerboseStats();
-
     @Config("arecibo.collector.rt.kafka.enabled")
     @Description("Whether Kafka is enabled")
     @Default("false")
