@@ -140,30 +140,38 @@ function populateHostsTree(hosts) {
     }
 }
 
+// Find all selected hosts and build the associated query parameter for the dashboard
+// This will also set window.arecibo.hosts_selected to a list of tuples (hostName, category)
 function buildHostsParamsFromTree() {
     var uri = '';
     var tree = $("#hosts_tree").dynatree("getTree").getSelectedNodes();
-    var hostsNb = 0;
+    window.arecibo.hosts_selected = [];
 
     for (var i in tree) {
         var node = tree[i];
         if (node.hasSubSel) {
             continue;
         } else {
-            if (hostsNb > 0) {
+            if (window.arecibo.hosts_selected.length > 0) {
                 uri += '&';
             }
 
+            var hostName = node.data.title;
+            var category = null;
+            if (node.parent) {
+                category = node.parent.data.title;
+            }
+
             uri += 'host=' + node.data.title;
-            hostsNb++;
+            window.arecibo.hosts_selected.push({hostName: hostName, category: category});
         }
     }
-
-    window.arecibo.hosts_selected = hostsNb;
 
     return uri;
 }
 
+// Find all selected sample kinds and build the associated query parameter for the dashboard
+// This will also set window.arecibo.sample_kinds_selected to the number of samples selected
 function buildCategoryAndSampleKindParamsFromTree() {
     var uri = '';
     var tree = $("#sample_kinds_tree").dynatree("getTree").getSelectedNodes();
@@ -194,17 +202,26 @@ function buildCategoryAndSampleKindParamsFromTree() {
     return uri;
 }
 
+// Refresh the sample kinds tree
+// This is called when a host is (un)selected on the hosts tree. Selecting or unselecting
+// another host in the same category does not refresh the sample kinds tree
 function updateSampleKindsTree() {
     var uri = buildHostsParamsFromTree();
+    if (!uri) {
+        return false;
+    }
+
+    var categoriesSelected = Set.makeSet(window.arecibo.hosts_selected, 'category');
+    if (Set.equals(categoriesSelected, window.arecibo.categories_selected)) {
+        return false;
+    } else {
+        window.arecibo.categories_selected = categoriesSelected;
+    }
 
     try {
         $("#sample_kinds_tree").dynatree("getRoot").removeChildren();
     } catch(e){
         // Ignore if the tree was empty
-    }
-
-    if (!uri) {
-        return false;
     }
 
     callArecibo('/rest/1.0/sample_kinds?' + uri, 'populateSampleKindsTree');
@@ -254,7 +271,7 @@ function buildGraphURL() {
     var hosts_url = buildHostsParamsFromTree();
     var sample_kinds_url = buildCategoryAndSampleKindParamsFromTree();
 
-    var nb_samples = Math.round(screen.width / (window.arecibo.hosts_selected * window.arecibo.sample_kinds_selected));
+    var nb_samples = Math.round(screen.width / (window.arecibo.hosts_selected.length * window.arecibo.sample_kinds_selected));
 
     var uri = '/static/graph.html?' +
                 hosts_url + '&' +

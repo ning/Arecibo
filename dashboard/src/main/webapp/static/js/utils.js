@@ -140,3 +140,61 @@ function addMillis(date, milliseconds) {
 function removeMillis(date, milliseconds) {
     date.setTime(date.getTime() - milliseconds);
 }
+
+/*
+ * Simple Set implementation
+ */
+var Set = new function() {
+    this.makeSet = function(objs, key) {
+        var set = {};
+        for (var i = 0; i < objs.length; i++) {
+            set[objs[i][key]] = true;
+        }
+
+        return set;
+    }
+
+    this.equals = function(s1, s2) {
+        return (this.size(this.symdiff(s1, s2)) == 0);
+    }
+
+    this.dup = function(s, copy) {
+        for (var item in s) {
+            if (s[item] === true) {
+                copy[item] = true;
+            }
+        }
+    }
+
+    this.diff = function(s1, s2) {
+        var diff = {};
+        this.dup(s1, diff);
+        for (var item in s2) {
+            if (s2[item] === true) {
+                delete diff[item];
+            }
+        }
+
+        return diff;
+    }
+
+    this.symdiff = function(s1, s2) {
+        var diff1 = this.diff(s1, s2);
+        var diff2 = this.diff(s2, s1);
+        var symdiff = {};
+        this.dup(diff1, symdiff);
+        this.dup(diff2, symdiff);
+        return symdiff;
+    }
+
+    this.size = function(s) {
+        var size = 0;
+        for (var key in s) {
+            if (s.hasOwnProperty(key)) {
+                size++;
+            }
+        }
+
+        return size;
+    }
+}
