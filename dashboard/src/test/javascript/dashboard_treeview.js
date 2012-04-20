@@ -20,12 +20,18 @@ describe('The hosts checkbox tree', function () {
     var sampleKindsTreeRefreshed;
 
     beforeEach(function() {
+        window.arecibo.hosts_selected = [];
         hostCategories = [];
         hosts = [];
         sampleKindsTreeRefreshed = false;
 
         // Mock the dynatree
         var fakeNode = {
+            isExpanded: false,
+            expand: function(bool) {
+                isExpanded = bool;
+            },
+
             onSelect: function() {
                 sampleKindsTreeRefreshed = true;
             },
@@ -126,6 +132,39 @@ describe('The hosts checkbox tree', function () {
         expect(hosts[1].hideCheckbox).toBeFalsy();
 
         expect(hosts.length).toEqual(2);
+    });
+
+    it('should respect previously selected hosts', function() {
+        var hostData = [
+            {
+                coreType: 'proxy/a',
+                hostName: 'hostA.company.com'
+            },
+            {
+                coreType: 'proxy/b',
+                hostName: 'hostB.company.com'
+            }
+        ];
+
+        expect(window.arecibo.hosts_selected.length).toEqual(0);
+
+        populateHostsTree(hostData);
+        expect(window.arecibo.hosts_selected.length).toEqual(0);
+        expect(hostCategories[0].select).toBeFalsy();
+        expect(hosts[0].select).toBeFalsy();
+        expect(hostCategories[1].select).toBeFalsy();
+        expect(hosts[1].select).toBeFalsy();
+
+        hosts = [];
+        window.arecibo.hosts_selected.push({hostName: 'hostA.company.com', category: 'dont care, assignments come and go, we look at hostname only'});
+        expect(window.arecibo.hosts_selected.length).toEqual(1);
+
+        populateHostsTree(hostData);
+        expect(window.arecibo.hosts_selected.length).toEqual(1);
+        expect(hostCategories[0].select).toBeFalsy();
+        expect(hosts[0].select).toBeTruthy();
+        expect(hostCategories[1].select).toBeFalsy();
+        expect(hosts[1].select).toBeFalsy();
     });
 });
 

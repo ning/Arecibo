@@ -30,6 +30,7 @@ function setupAreciboUI() {
     try {
         $("#samples_start").val(localStorage.getItem("arecibo_latest_samples_start_lookup"));
         $("#samples_end").val(localStorage.getItem("arecibo_latest_samples_end_lookup"));
+        window.arecibo.hosts_selected = JSON.parse(localStorage.getItem("arecibo_latest_hosts"));
     } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
 
     // Setup the Graph button
@@ -101,15 +102,15 @@ function populateHostsTree(hosts) {
 
     // Create the tree
     $("#hosts_tree").dynatree({
-        onSelect: function(node) {
+        onSelect: function(flag, node) {
             updateSampleKindsTree();
         },
-        //persistent: true,
         checkbox: true,
         selectMode: 3
     });
 
     // Add the nodes
+    var selectedHostsSet = Set.makeSet(window.arecibo.hosts_selected, 'hostName');
     var rootNode = $("#hosts_tree").dynatree("getRoot");
     var children = {};
     for (var i in hosts) {
@@ -126,16 +127,31 @@ function populateHostsTree(hosts) {
                         title: host.coreType,
                         isFolder: true,
                         icon: false,
-                        hideCheckbox: false
+                        hideCheckbox: false,
+                        expand: false,
+                        select: false
                 });
             }
 
+            var selected = Set.contains(selectedHostsSet, host.hostName);
             var childNode = children[host.coreType];
+
             childNode.addChild({
                 title: host.hostName,
                 hideCheckbox: false,
-                icon: false
+                icon: false,
+                select: selected
             });
+
+            // If at least one child node is selected, expand the father
+            if (selected) {
+                // Note! This needs to happen after the child is added to the father
+                childNode.expand(true);
+            } else {
+                // If at least one child node is not selected, don't select the father
+                // TODO Unfortunately, the following will deselect ALL children
+                //childNode.select(false);
+            }
         }
     }
 }
@@ -206,11 +222,18 @@ function buildCategoryAndSampleKindParamsFromTree() {
 // This is called when a host is (un)selected on the hosts tree. Selecting or unselecting
 // another host in the same category does not refresh the sample kinds tree
 function updateSampleKindsTree() {
+    // Find all selected nodes and build the uri for the dashboard
     var uri = buildHostsParamsFromTree();
     if (!uri) {
         return false;
     }
 
+    // Remember selected nodes for the next page load
+    try {
+        localStorage.setItem("arecibo_latest_hosts", JSON.stringify(window.arecibo.hosts_selected));
+    } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
+
+    // Verify if we need to update the sample kinds tree or not
     var categoriesSelected = Set.makeSet(window.arecibo.hosts_selected, 'category');
     if (Set.equals(categoriesSelected, window.arecibo.categories_selected)) {
         return false;

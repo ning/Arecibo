@@ -64,6 +64,7 @@ describe('The hosts uri builder', function () {
 });
 
 describe('The sample kinds update routine', function () {
+    var items;
     var areciboUri = 'the-machine';
     var hostUri = 'host=A';
 
@@ -72,6 +73,17 @@ describe('The sample kinds update routine', function () {
             uri: areciboUri
         };
 
+        // Mock the local storage
+        if (window.localStorage === undefined) {
+            // Not available at runtime?
+            window.localStorage = {
+                setItem: function(key, value) {}
+            };
+        }
+        items = {};
+        spyOn(localStorage, 'setItem').andCallFake(function(key, value) {
+            items[key] = value;
+        });
         spyOn(window, 'buildHostsParamsFromTree').andCallFake(function() {
             window.arecibo.hosts_selected = [{hostName: 'hostA.company.com', category: 'proxy/a'}];
             return hostUri;
@@ -80,7 +92,7 @@ describe('The sample kinds update routine', function () {
         spyOn($, 'ajax');
     });
 
-    it('refresh the sample kinds tree when a new host is selected', function() {
+    it('should refresh the sample kinds tree when a new host is selected', function() {
         expect(Set.size(window.arecibo.categories_selected)).toEqual(0);
         expect($.ajax.callCount).toEqual(0);
 
@@ -99,7 +111,7 @@ describe('The sample kinds update routine', function () {
         expect($.ajax.mostRecentCall.args[0]["url"]).toEqual(areciboUri + '/rest/1.0/sample_kinds?' + hostUri);
     });
 
-    it('selecting or unselecting another host in the same category should not refresh the sample kinds tree', function() {
+    it('should not refresh the sample kinds tree when selecting or unselecting another host in the same category', function() {
         expect(Set.size(window.arecibo.categories_selected)).toEqual(0);
         expect($.ajax.callCount).toEqual(0);
 
@@ -111,5 +123,25 @@ describe('The sample kinds update routine', function () {
         updateSampleKindsTree();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(1);
         expect($.ajax.callCount).toEqual(1);
+    });
+
+    it('should remember the latest hosts selected', function() {
+        expect(Set.size(window.arecibo.categories_selected)).toEqual(0);
+        expect(Set.size(window.arecibo.hosts_selected)).toEqual(0);
+        expect(items['arecibo_latest_hosts']).toBeUndefined();
+
+        updateSampleKindsTree();
+        expect(Set.size(window.arecibo.categories_selected)).toEqual(1);
+        expect(Set.size(window.arecibo.hosts_selected)).toEqual(1);
+        expect(items['arecibo_latest_hosts']).toBe(JSON.stringify(window.arecibo.hosts_selected));
+
+        window.arecibo.hosts_selected.push({hostName: 'hostB.company.com', category: 'proxy/b'});
+        hostUri = hostUri + '&host=B';
+        window.buildHostsParamsFromTree.andReturn(hostUri);
+
+        updateSampleKindsTree();
+        expect(Set.size(window.arecibo.categories_selected)).toEqual(2);
+        expect(Set.size(window.arecibo.hosts_selected)).toEqual(2);
+        expect(items['arecibo_latest_hosts']).toBe(JSON.stringify(window.arecibo.hosts_selected));
     });
 });
