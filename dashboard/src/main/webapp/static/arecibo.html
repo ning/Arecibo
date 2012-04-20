@@ -46,6 +46,16 @@ under the License. -->
     <script type="text/javascript" src="./js/utils.js"></script>
     <script type="text/javascript" src="./js/arecibo.js"></script>
     <link rel="stylesheet" href="./css/arecibo.css">
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $(document).trigger("content:loaded")
+        });
+
+        $(document).live("content:loaded", function(){
+            setupAreciboUI();
+        });
+    </script>
 </head>
 <body>
     <div class="container">

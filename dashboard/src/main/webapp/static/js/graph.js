@@ -14,7 +14,7 @@
  * under the License.
  */
 
-$(document).ready(function() {
+function renderGraph() {
     // UI setup (Ajax handlers, etc.)
     initializeUI();
 
@@ -46,7 +46,7 @@ $(document).ready(function() {
     $('input:radio[name="interpolation"]').filter('[value="' + window.arecibo.graph_settings['interpolation'] + '"]').attr('checked', true);
 
     updateGraph();
-});
+};
 
 function updateGraph() {
     var url  = '/rest/1.0/host_samples' + window.location.search;

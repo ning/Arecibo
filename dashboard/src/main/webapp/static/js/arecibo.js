@@ -14,7 +14,8 @@
  * under the License.
  */
 
-$(document).ready(function() {
+// Main routine executed at page load time
+function setupAreciboUI() {
     // UI setup (Ajax handlers, etc.)
     initializeUI();
     setupDateTimePickers();
@@ -41,8 +42,9 @@ $(document).ready(function() {
             localStorage.setItem("arecibo_latest_samples_end_lookup", samples_end_lookup);
         } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
 
-        if (!samples_start_lookup || !samples_end_lookup) {
-            alert("Please specify a time range");
+        errorMessage = validateDatesInput(samples_start_lookup, samples_end_lookup);
+        if (errorMessage) {
+            alert(errorMessage);
         } else {
             window.location = buildGraphURL();
         }
@@ -55,7 +57,32 @@ $(document).ready(function() {
 
     // Create en empty sample kinds tree as placeholder
     populateSampleKindsTree([]);
-});
+};
+
+// Return null if the dates are valid, an error message otherwise
+function validateDatesInput(samplesStartString, samplesEndString) {
+    var samplesStartDate = null;
+    var samplesEndDate = null;
+
+    try {
+        samplesStartDate = new Date(samplesStartString);
+        samplesEndDate = new Date(samplesEndString);
+    } catch (err) {
+        return 'Invalid start and/or end time';
+    }
+
+    if (isNaN(samplesStartDate.getTime())) {
+        return 'Invalid start time';
+    } else if (isNaN(samplesEndDate.getTime())) {
+        return 'Invalid end time';
+    } else if (samplesStartDate === null || samplesEndDate === null) {
+        return 'Please specify a time range';
+    } else if (samplesStartDate.getTime() >= samplesEndDate.getTime()) {
+        return 'The start time is greater than or equal to the end time';
+    } else {
+        return null;
+    }
+}
 
 function updateHostsTree() {
     callArecibo('/rest/1.0/hosts', 'populateHostsTree');
@@ -244,6 +271,9 @@ function buildGraphURL() {
  */
 function setupDateTimePickers() {
     $('#samples_start').datetimepicker({
+        dateFormat: $.datepicker.RFC_2822,
+        timeFormat: 'hh:mm',
+        showTimezone: false,
         hourGrid: 4,
         minuteGrid: 10,
         onClose: function(dateText, inst) {
@@ -265,6 +295,9 @@ function setupDateTimePickers() {
     });
 
     $('#samples_end').datetimepicker({
+        dateFormat: $.datepicker.RFC_2822,
+        timeFormat: 'hh:mm',
+        showTimezone: false,
         hourGrid: 4,
         minuteGrid: 10,
         onClose: function(dateText, inst) {

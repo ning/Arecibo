@@ -32,7 +32,7 @@ function callArecibo(uri, callback, opts) {
     }
 
     // Populate the data
-    console.log("Calling " + ajax_opts.url);
+    //console.log("Calling " + ajax_opts.url);
     $.ajax(ajax_opts);
 }
 
