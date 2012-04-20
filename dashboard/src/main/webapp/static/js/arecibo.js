@@ -231,7 +231,7 @@ function populateSampleKindsTree(kinds) {
                 title: category.eventCategory,
                 isFolder: true,
                 icon: false,
-                hideCheckbox: false
+                hideCheckbox: true
         });
 
         var sampleKinds = category.sampleKinds;
