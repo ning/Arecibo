@@ -235,7 +235,7 @@ public class TestHostDataResource
 
     private void sendSamples(final Integer hostId, final Integer sampleKindId, final DateTime startTime) throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = handler.getOrAddHostEventAccumulator(hostId, eventTypeId);
+        final TimelineHostEventAccumulator accumulator = handler.getOrAddHostEventAccumulator(hostId, eventTypeId, startTime, Integer.MAX_VALUE);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = startTime.plusSeconds(i * 30);
@@ -248,9 +248,7 @@ public class TestHostDataResource
 
     private Map<Integer, ScalarSample> createEvent(final Integer sampleKindId, final long ts)
     {
-        return ImmutableMap.<Integer, ScalarSample>of(
-                sampleKindId, new ScalarSample(SampleOpcode.LONG, Long.MIN_VALUE + ts)
-        );
+        return ImmutableMap.<Integer, ScalarSample>of(sampleKindId, new ScalarSample(SampleOpcode.LONG, Long.MIN_VALUE + ts));
     }
 
     private List<Map<String, Object>> getSamplesSinceDateTime(final List<String> hosts, final List<String> categoriesAndSampleKinds, final DateTime startTime) throws IOException

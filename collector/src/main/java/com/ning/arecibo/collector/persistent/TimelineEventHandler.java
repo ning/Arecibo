@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -67,6 +68,7 @@ public class TimelineEventHandler implements EventHandler
 {
     private static final Logger log = LoggerFactory.getLogger(TimelineEventHandler.class);
     private final ScheduledExecutorService purgeThread = Executors.newSingleThreadScheduledExecutor("TimelineEventPurger");
+    private final ExecutorService loadGeneratorThread = Executors.newSingleThreadExecutor("LoadGenerator");
     private static Comparator<TimelineChunk> CHUNK_COMPARATOR = new Comparator<TimelineChunk>() {
 
         @Override
@@ -119,19 +121,21 @@ public class TimelineEventHandler implements EventHandler
     private final AtomicBoolean fastShutdown = new AtomicBoolean();
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
-    private final CounterMetric eventsReceivedAfterShuttingDown = makeCounter("eventsReceivedAfterShuttingDown");
-    private final CounterMetric handledEventCount = makeCounter("handledEventCount");
-    private final CounterMetric addedHostEventAccumulatorMapCount = makeCounter("addedHostEventAccumulatorMapCount");
-    private final CounterMetric addedHostEventAccumulatorCount = makeCounter("addedHostEventAccumulatorCount");
-    private final CounterMetric getInMemoryChunksCallCount = makeCounter("getInMemoryChunksCallCount");
-    private final CounterMetric accumulatorDeepCopyCount = makeCounter("accumulatorDeepCopyCount");
-    private final CounterMetric inMemoryChunksReturnedCount = makeCounter("inMemoryChunksReturnedCount");
-    private final CounterMetric replayCount = makeCounter("replayCount");
-    private final CounterMetric replaySamplesFoundCount = makeCounter("replaySamplesFoundCount");
-    private final CounterMetric replaySamplesOutsideTimeRangeCount = makeCounter("replaySamplesOutsideTimeRangeCount");
-    private final CounterMetric replaySamplesProcessedCount = makeCounter("replaySamplesProcessedCount");
-    private final CounterMetric forceCommitCallCount = makeCounter("forceCommitCallCount");
+    private final AtomicLong eventsReceivedAfterShuttingDown = new AtomicLong();
+    private final AtomicLong handledEventCount = new AtomicLong();
+    private final AtomicLong addedHostEventAccumulatorMapCount = new AtomicLong();
+    private final AtomicLong addedHostEventAccumulatorCount = new AtomicLong();
+    private final AtomicLong getInMemoryChunksCallCount = new AtomicLong();
+    private final AtomicLong accumulatorDeepCopyCount = new AtomicLong();
+    private final AtomicLong inMemoryChunksReturnedCount = new AtomicLong();
+    private final AtomicLong replayCount = new AtomicLong();
+    private final AtomicLong replaySamplesFoundCount = new AtomicLong();
+    private final AtomicLong replaySamplesOutsideTimeRangeCount = new AtomicLong();
+    private final AtomicLong replaySamplesProcessedCount = new AtomicLong();
+    private final AtomicLong forceCommitCallCount = new AtomicLong();
 
+
+    private EventReplayingLoadGenerator loadGenerator = null;
     private StartTimes startTimes = null;
 
     @Inject
@@ -188,7 +192,7 @@ public class TimelineEventHandler implements EventHandler
                 for (final Map.Entry<Integer, TimelineHostEventAccumulator> eventEntry : categoryMap.entrySet()) {
                     final int categoryId = eventEntry.getKey();
                     final TimelineHostEventAccumulator categoryAccumulator = eventEntry.getValue();
-                    final DateTime latestTime = categoryAccumulator.getLatestTime();
+                    final DateTime latestTime = categoryAccumulator.getLatestSampleAddTime();
                     if (latestTime != null && latestTime.isBefore(purgeIfBeforeDate)) {
                         categoryAccumulator.extractAndQueueTimelineChunks();
                         categoryIdsToPurge.add(categoryId);
@@ -208,11 +212,11 @@ public class TimelineEventHandler implements EventHandler
     public void handle(final Event event)
     {
         if (shuttingDown.get()) {
-            eventsReceivedAfterShuttingDown.inc();
+            eventsReceivedAfterShuttingDown.incrementAndGet();
             return;
         }
         try {
-            handledEventCount.inc();
+            handledEventCount.incrementAndGet();
             // Lookup the host id
             final String hostName = EventsUtils.getHostNameFromEvent(event);
             final Integer hostId = timelineDAO.getOrAddHost(hostName);
@@ -239,11 +243,16 @@ public class TimelineEventHandler implements EventHandler
         }
     }
 
-    public synchronized TimelineHostEventAccumulator getOrAddHostEventAccumulator(final int hostId, final int categoryId)
+    public TimelineHostEventAccumulator getOrAddHostEventAccumulator(final int hostId, final int categoryId, final DateTime firstSampleTime)
+    {
+        return this.getOrAddHostEventAccumulator(hostId, categoryId, firstSampleTime, (int)config.getTimelineLength().getMillis());
+    }
+
+    public synchronized TimelineHostEventAccumulator getOrAddHostEventAccumulator(final int hostId, final int categoryId, final DateTime firstSampleTime, final int timelineLengthMillis)
     {
         HostAccumulatorsAndUpdateDate hostAccumulatorsAndUpdateDate = accumulators.get(hostId);
         if (hostAccumulatorsAndUpdateDate == null) {
-            addedHostEventAccumulatorMapCount.inc();
+            addedHostEventAccumulatorMapCount.incrementAndGet();
             hostAccumulatorsAndUpdateDate = new HostAccumulatorsAndUpdateDate(new HashMap<Integer, TimelineHostEventAccumulator>(), new DateTime());
             accumulators.put(hostId, hostAccumulatorsAndUpdateDate);
         }
@@ -251,9 +260,8 @@ public class TimelineEventHandler implements EventHandler
         final Map<Integer, TimelineHostEventAccumulator> hostCategoryAccumulators = hostAccumulatorsAndUpdateDate.getCategoryAccumulators();
         TimelineHostEventAccumulator accumulator = hostCategoryAccumulators.get(categoryId);
         if (accumulator == null) {
-            addedHostEventAccumulatorCount.inc();
-            accumulator = new TimelineHostEventAccumulator(timelineDAO, backgroundWriter, hostId, categoryId,
-                    (int)config.getTimelineLength().getMillis());
+            addedHostEventAccumulatorCount.incrementAndGet();
+            accumulator = new TimelineHostEventAccumulator(timelineDAO, backgroundWriter, hostId, categoryId, firstSampleTime, timelineLengthMillis);
             hostCategoryAccumulators.put(categoryId, accumulator);
             log.debug("Created new Timeline for hostId [{}] and category [{}]", hostId, categoryId);
         }
@@ -266,7 +274,8 @@ public class TimelineEventHandler implements EventHandler
         final int hostId = hostSamples.getHostId();
         final String category = hostSamples.getCategory();
         final int categoryId = timelineDAO.getEventCategoryId(category);
-        final TimelineHostEventAccumulator accumulator = getOrAddHostEventAccumulator(hostId, categoryId);
+        final DateTime timestamp = hostSamples.getTimestamp();
+        final TimelineHostEventAccumulator accumulator = getOrAddHostEventAccumulator(hostId, categoryId, timestamp);
         accumulator.addHostSamples(hostSamples);
     }
 
@@ -282,7 +291,7 @@ public class TimelineEventHandler implements EventHandler
 
     public synchronized Collection<? extends TimelineChunk> getInMemoryTimelineChunks(final Integer hostId, final List<Integer> sampleKindIds, @Nullable final DateTime filterStartTime, @Nullable final DateTime filterEndTime) throws IOException, ExecutionException
     {
-        getInMemoryChunksCallCount.inc();
+        getInMemoryChunksCallCount.incrementAndGet();
         // Check first if there is an in-memory accumulator for this host
         final HostAccumulatorsAndUpdateDate hostAccumulatorsAndDate = accumulators.get(hostId);
         if (hostAccumulatorsAndDate == null) {
@@ -317,7 +326,7 @@ public class TimelineEventHandler implements EventHandler
             final byte[] timeBytes = TimelineCoder.compressDateTimes(accumulatorTimes);
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
                 // Extract the timeline for this chunk by copying it and reading encoded bytes
-                accumulatorDeepCopyCount.inc();
+                accumulatorDeepCopyCount.incrementAndGet();
                 final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
                 final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(accumulatorStartTime, accumulatorEndTime, timeBytes);
 
@@ -329,7 +338,7 @@ public class TimelineEventHandler implements EventHandler
                 samplesByHostName.add(timelineChunk);
             }
         }
-        inMemoryChunksReturnedCount.inc(samplesByHostName.size());
+        inMemoryChunksReturnedCount.addAndGet(samplesByHostName.size());
         Collections.sort(samplesByHostName, CHUNK_COMPARATOR);
         return samplesByHostName;
     }
@@ -352,7 +361,7 @@ public class TimelineEventHandler implements EventHandler
 
     public void replay(final String spoolDir)
     {
-        replayCount.inc();
+        replayCount.incrementAndGet();
         log.info("Starting replay of files in {}", spoolDir);
         final Replayer replayer = new Replayer(spoolDir);
         final StartTimes startTimes = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES ? timelineDAO.getLastStartTimes() : null;
@@ -367,7 +376,7 @@ public class TimelineEventHandler implements EventHandler
                 public Void apply(@Nullable final HostSamplesForTimestamp hostSamples)
                 {
                     if (hostSamples != null) {
-                        replaySamplesFoundCount.inc();
+                        replaySamplesFoundCount.incrementAndGet();
                         boolean useSamples = true;
                         try {
                             final int hostId = hostSamples.getHostId();
@@ -381,12 +390,12 @@ public class TimelineEventHandler implements EventHandler
                                 if (timestamp == null ||
                                         timestamp.isBefore(startTimes.getMinStartTime()) ||
                                         (categoryStartTime != null && timestamp.isBefore(categoryStartTime))) {
-                                    replaySamplesOutsideTimeRangeCount.inc();
+                                    replaySamplesOutsideTimeRangeCount.incrementAndGet();
                                     useSamples = false;
                                 }
                             }
                             if (useSamples) {
-                                replaySamplesProcessedCount.inc();
+                                replaySamplesProcessedCount.incrementAndGet();
                                 processSamples(hostSamples);
                             }
                         }
@@ -415,7 +424,7 @@ public class TimelineEventHandler implements EventHandler
         if (shutdown) {
             shuttingDown.set(true);
         }
-        forceCommitCallCount.inc();
+        forceCommitCallCount.incrementAndGet();
         final boolean doingFastShutdown = shutdown && shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES;
         fastShutdown.set(doingFastShutdown);
         if (doingFastShutdown) {
@@ -428,21 +437,30 @@ public class TimelineEventHandler implements EventHandler
             saveAccumulatorsOrStartTimes();
         }
         if (shutdown) {
-            backgroundWriter.initiateShutdown();
-            while (!backgroundWriter.getShutdownFinished()) {
-                try {
-                    Thread.sleep(100);
-                }
-                catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            purgeThread.shutdown();
+            performShutdown();
         }
         // All the samples have been saved, or else the start times have been saved.  Discard the local buffer
         backingBuffer.discard();
 
         log.info(doingFastShutdown ? "Timeline start times committed" : "Timelines committed");
+    }
+
+    private void performShutdown()
+    {
+        if (config.getRunLoadGenerator()) {
+            loadGenerator.initiateShutdown();
+            loadGeneratorThread.shutdown();
+        }
+        backgroundWriter.initiateShutdown();
+        while (!backgroundWriter.getShutdownFinished()) {
+            try {
+                Thread.sleep(100);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        purgeThread.shutdown();
     }
 
     private synchronized void purgeFilesAndAccumulators()
@@ -458,7 +476,7 @@ public class TimelineEventHandler implements EventHandler
         replayer.purgeOldFiles(purgeFilesIfBefore);
     }
 
-    public void startPurgeThread() {
+    public void startHandlerThreads() {
         purgeThread.scheduleWithFixedDelay(new Runnable()
         {
             @Override
@@ -470,8 +488,19 @@ public class TimelineEventHandler implements EventHandler
         config.getTimelineLength().getMillis(),
         config.getTimelineLength().getMillis(),
         TimeUnit.MILLISECONDS);
-    }
 
+        if (config.getRunLoadGenerator()) {
+            loadGenerator = new EventReplayingLoadGenerator(this, timelineDAO);
+            final EventReplayingLoadGenerator myLoadGenerator = loadGenerator;
+            loadGeneratorThread.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    myLoadGenerator.generateEventStream();
+                }
+            });
+        }
+    }
 
     // We use the lastUpdateDate to purge hosts and their accumulators from the map
     private static class HostAccumulatorsAndUpdateDate
@@ -525,9 +554,82 @@ public class TimelineEventHandler implements EventHandler
         return eventsDiscarded.get();
     }
 
+    @Managed
     public long getHostEventAccumulatorCount()
     {
         return accumulators.size();
+    }
+
+    @Managed
+    public long getEventsReceivedAfterShuttingDown()
+    {
+        return eventsReceivedAfterShuttingDown.get();
+    }
+
+    @Managed
+    public long getHandledEventCount()
+    {
+        return handledEventCount.get();
+    }
+
+    @Managed
+    public long getAddedHostEventAccumulatorMapCount()
+    {
+        return addedHostEventAccumulatorMapCount.get();
+    }
+
+    @Managed
+    public long getAddedHostEventAccumulatorCount()
+    {
+        return addedHostEventAccumulatorCount.get();
+    }
+
+    @Managed
+    public long getGetInMemoryChunksCallCount()
+    {
+        return getInMemoryChunksCallCount.get();
+    }
+
+    @Managed
+    public long getAccumulatorDeepCopyCount()
+    {
+        return accumulatorDeepCopyCount.get();
+    }
+
+    @Managed
+    public long getInMemoryChunksReturnedCount()
+    {
+        return inMemoryChunksReturnedCount.get();
+    }
+
+    @Managed
+    public long getReplayCount()
+    {
+        return replayCount.get();
+    }
+
+    @Managed
+    public long getReplaySamplesFoundCount()
+    {
+        return replaySamplesFoundCount.get();
+    }
+
+    @Managed
+    public long getReplaySamplesOutsideTimeRangeCount()
+    {
+        return replaySamplesOutsideTimeRangeCount.get();
+    }
+
+    @Managed
+    public long getReplaySamplesProcessedCount()
+    {
+        return replaySamplesProcessedCount.get();
+    }
+
+    @Managed
+    public long getForceCommitCallCount()
+    {
+        return forceCommitCallCount.get();
     }
 }
 

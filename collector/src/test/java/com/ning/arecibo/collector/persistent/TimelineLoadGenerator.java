@@ -73,7 +73,7 @@ public class TimelineLoadGenerator {
     {
         this.dbi = new DBI(DBI_URL, DBI_USER, DBI_PASSWORD);
         this.defaultTimelineDAO = new DefaultTimelineDAO(dbi);
-        this.timelineDAO = new CachingTimelineDAO(defaultTimelineDAO, HOST_ID_COUNT * 2, EVENT_CATEGORY_COUNT * 2, EVENT_CATEGORY_COUNT * AVERAGE_SAMPLE_KINDS_PER_CATEGORY * 2);
+        this.timelineDAO = new CachingTimelineDAO(defaultTimelineDAO);
         log.info("DBI initialized");
 
         // Make some hosts

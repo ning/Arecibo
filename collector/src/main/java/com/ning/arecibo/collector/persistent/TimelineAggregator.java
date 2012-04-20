@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.IDBI;
@@ -40,8 +41,6 @@ import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.SampleCoder;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineCoder;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
 
 /**
  * This class runs a thread that periodically looks for unaggregated timeline_times.
@@ -62,18 +61,17 @@ public class TimelineAggregator
     private final TimelineAggregatorDAO aggregatorDao;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
 
-    private Map<String, CounterMetric> aggregatorCounters = new HashMap<String, CounterMetric>();
+    private Map<String, AtomicLong> aggregatorCounters = new HashMap<String, AtomicLong>();
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
 
-    private final CounterMetric aggregatesCreated = makeCounter("aggregatesCreated");
-
-    private final CounterMetric timelineChunksConsidered = makeCounter("timelineChunksConsidered");
-    private final CounterMetric timelineChunksCombined = makeCounter("timelineChunksCombined");
-    private final CounterMetric timelineChunksQueuedForCreation = makeCounter("timelineChunksQueuedForCreation");
-    private final CounterMetric timelineChunksWritten = makeCounter("timelineChunksWritten");
-    private final CounterMetric timelineChunksInvalidatedOrDeleted = makeCounter("timelineChunksInvalidatedOrDeleted");
-    private final CounterMetric timelineChunksBytesCreated = makeCounter("timelineChunksBytesCreated");
+    private final AtomicLong aggregatesCreated = makeCounter("aggregatesCreated");
+    private final AtomicLong timelineChunksConsidered = makeCounter("timelineChunksConsidered");
+    private final AtomicLong timelineChunksCombined = makeCounter("timelineChunksCombined");
+    private final AtomicLong timelineChunksQueuedForCreation = makeCounter("timelineChunksQueuedForCreation");
+    private final AtomicLong timelineChunksWritten = makeCounter("timelineChunksWritten");
+    private final AtomicLong timelineChunksInvalidatedOrDeleted = makeCounter("timelineChunksInvalidatedOrDeleted");
+    private final AtomicLong timelineChunksBytesCreated = makeCounter("timelineChunksBytesCreated");
 
     // These lists support batching of aggregated chunk writes and updates or deletes of the chunks aggregated
     private final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>();
@@ -117,7 +115,7 @@ public class TimelineAggregator
         int aggregatesCreated = 0;
         while (timelineChunkCandidates.size() >= chunksToAggregate) {
             final List<TimelineChunk> chunkCandidates = timelineChunkCandidates.subList(0, chunksToAggregate);
-            timelineChunksCombined.inc(chunksToAggregate);
+            timelineChunksCombined.addAndGet(chunksToAggregate);
             try {
                 aggregateHostSampleChunks(chunkCandidates, aggregationLevel, previouslyAggregated);
             }
@@ -169,13 +167,13 @@ public class TimelineAggregator
         final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;
         log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
             new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineChunks.size(), totalSize, sampleCount});
-        timelineChunksBytesCreated.inc(totalSize);
+        timelineChunksBytesCreated.addAndGet(totalSize);
         final int totalSampleCount = sampleCount;
         final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
                 combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false, false);
         chunksToWrite.add(chunk);
         chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);
-        timelineChunksQueuedForCreation.inc();
+        timelineChunksQueuedForCreation.incrementAndGet();
 
         if (chunkIdsToInvalidateOrDelete.size() >= config.getMaxChunkIdsToInvalidateOrDelete()) {
             performWrites();
@@ -210,8 +208,8 @@ public class TimelineAggregator
             aggregatorDao.makeTimelineChunksInvalid(chunkIdsToInvalidateOrDelete);
         }
         aggregatorDao.commit();
-        timelineChunksWritten.inc(chunksToWrite.size());
-        timelineChunksInvalidatedOrDeleted.inc(chunkIdsToInvalidateOrDelete.size());
+        timelineChunksWritten.addAndGet(chunksToWrite.size());
+        timelineChunksInvalidatedOrDeleted.addAndGet(chunkIdsToInvalidateOrDelete.size());
         chunksToWrite.clear();
         chunkIdsToInvalidateOrDelete.clear();
     }
@@ -241,10 +239,10 @@ public class TimelineAggregator
             // Loop pulling off the candidates for the first hostId and eventCategory
             int lastHostId = 0;
             int lastSampleKindId = 0;
-            final long startingAggregatesCreated = aggregatesCreated.count();
+            final long startingAggregatesCreated = aggregatesCreated.get();
             final List<TimelineChunk> hostTimelineCandidates = new ArrayList<TimelineChunk>();
             for (final TimelineChunk candidate : timelineChunkCandidates) {
-                timelineChunksConsidered.inc();
+                timelineChunksConsidered.incrementAndGet();
                 final int hostId = candidate.getHostId();
                 final int sampleKindId = candidate.getSampleKindId();
                 if (lastHostId == 0) {
@@ -252,7 +250,7 @@ public class TimelineAggregator
                     lastSampleKindId = sampleKindId;
                 }
                 if (lastHostId != hostId || lastSampleKindId != sampleKindId) {
-                    aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
+                    aggregatesCreated.addAndGet(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
                     hostTimelineCandidates.clear();
                     lastHostId = hostId;
                     lastSampleKindId = sampleKindId;
@@ -260,7 +258,7 @@ public class TimelineAggregator
                 hostTimelineCandidates.add(candidate);
             }
             if (hostTimelineCandidates.size() > 0) {
-                aggregatesCreated.inc(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
+                aggregatesCreated.addAndGet(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
             }
             if (chunkIdsToInvalidateOrDelete.size() > 0) {
                 performWrites();
@@ -272,7 +270,7 @@ public class TimelineAggregator
                 builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
             }
             log.info(builder.toString());
-            final long netAggregatesCreated = aggregatesCreated.count() - startingAggregatesCreated;
+            final long netAggregatesCreated = aggregatesCreated.get() - startingAggregatesCreated;
             if (netAggregatesCreated == 0) {
                 log.debug("Created no new aggregates, so skipping higher-level aggregations");
                 break;
@@ -283,9 +281,9 @@ public class TimelineAggregator
         isAggregating.set(false);
     }
 
-    private CounterMetric makeCounter(final String counterName)
+    private AtomicLong makeCounter(final String counterName)
     {
-        final CounterMetric counter = Metrics.newCounter(TimelineAggregator.class, counterName);
+        final AtomicLong counter = new AtomicLong();
         aggregatorCounters.put(counterName, counter);
         return counter;
     }
@@ -293,8 +291,8 @@ public class TimelineAggregator
     private Map<String, Long> captureAggregatorCounters()
     {
         final Map<String, Long> counterValues = new HashMap<String, Long>();
-        for (Map.Entry<String, CounterMetric> entry : aggregatorCounters.entrySet()) {
-            counterValues.put(entry.getKey(), entry.getValue().count());
+        for (Map.Entry<String, AtomicLong> entry : aggregatorCounters.entrySet()) {
+            counterValues.put(entry.getKey(), entry.getValue().get());
         }
         return counterValues;
     }
@@ -302,9 +300,9 @@ public class TimelineAggregator
     private Map<String, Long> subtractFromAggregatorCounters(final Map<String, Long> initialCounters)
     {
         final Map<String, Long> counterValues = new HashMap<String, Long>();
-        for (Map.Entry<String, CounterMetric> entry : aggregatorCounters.entrySet()) {
+        for (Map.Entry<String, AtomicLong> entry : aggregatorCounters.entrySet()) {
             final String key = entry.getKey();
-            counterValues.put(key, entry.getValue().count() - initialCounters.get(key));
+            counterValues.put(key, entry.getValue().get() - initialCounters.get(key));
         }
         return counterValues;
     }
@@ -327,5 +325,41 @@ public class TimelineAggregator
     public void stopAggregationThread()
     {
         aggregatorThread.shutdown();
+    }
+
+    @Managed
+    public long getTimelineChunksConsidered()
+    {
+    return timelineChunksConsidered.get();
+    }
+
+    @Managed
+    public long getTimelineChunksCombined()
+    {
+    return timelineChunksCombined.get();
+    }
+
+    @Managed
+    public long getTimelineChunksQueuedForCreation()
+    {
+    return timelineChunksQueuedForCreation.get();
+    }
+
+    @Managed
+    public long getTimelineChunksWritten()
+    {
+    return timelineChunksWritten.get();
+    }
+
+    @Managed
+    public long getTimelineChunksInvalidatedOrDeleted()
+    {
+    return timelineChunksInvalidatedOrDeleted.get();
+    }
+
+    @Managed
+    public long getTimelineChunksBytesCreated()
+    {
+    return timelineChunksBytesCreated.get();
     }
 }

@@ -17,17 +17,17 @@ x * Copyright 2010-2012 Ning, Inc.
 package com.ning.arecibo.collector.persistent;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
+import org.weakref.jmx.Managed;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -36,8 +36,6 @@ import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineDAO;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
 
 /**
  * This class runs a thread that batch-writes TimelineChunks to the db.
@@ -66,17 +64,15 @@ public class BackgroundDBChunkWriter
     private AtomicBoolean doingWritesNow = new AtomicBoolean();
     private final ScheduledExecutorService backgroundWriteThread = Executors.newSingleThreadScheduledExecutor("TimelineCommitter");
 
-    private Map<String, CounterMetric> backgroundWriteCounters = new HashMap<String, CounterMetric>();
-
-    private final CounterMetric maybePerformBackgroundWritesCount = makeCounter("maybePerformBackgroundWritesCount");
-    private final CounterMetric backgroundWritesCount = makeCounter("backgroundWritesCount");
-    private final CounterMetric pendingChunkMapsAdded = makeCounter("pendingChunkMapsAdded");
-    private final CounterMetric pendingChunksAdded = makeCounter("pendingChunksAdded");
-    private final CounterMetric pendingChunkMapsWritten = makeCounter("pendingChunksMapsWritten");
-    private final CounterMetric pendingChunksWritten = makeCounter("pendingChunksWritten");
-    private final CounterMetric pendingChunkMapsMarkedConsumed = makeCounter("pendingChunkMapsMarkedConsumed");
-    private final CounterMetric foregroundChunkMapsWritten = makeCounter("foregroundChunkMapsWritten");
-    private final CounterMetric foregroundChunksWritten = makeCounter("foregroundChunksWritten");
+    private final AtomicLong maybePerformBackgroundWritesCount = new AtomicLong();
+    private final AtomicLong backgroundWritesCount = new AtomicLong();
+    private final AtomicLong pendingChunkMapsAdded = new AtomicLong();
+    private final AtomicLong pendingChunksAdded = new AtomicLong();
+    private final AtomicLong pendingChunkMapsWritten = new AtomicLong();
+    private final AtomicLong pendingChunksWritten = new AtomicLong();
+    private final AtomicLong pendingChunkMapsMarkedConsumed = new AtomicLong();
+    private final AtomicLong foregroundChunkMapsWritten = new AtomicLong();
+    private final AtomicLong foregroundChunksWritten = new AtomicLong();
 
     @Inject
     public BackgroundDBChunkWriter(final TimelineDAO timelineDAO, final CollectorConfig config)
@@ -91,13 +87,6 @@ public class BackgroundDBChunkWriter
         this.performForegroundWrites = performForegroundWrites;
     }
 
-    private CounterMetric makeCounter(final String counterName)
-    {
-        final CounterMetric counter = Metrics.newCounter(BackgroundDBChunkWriter.class, counterName);
-        backgroundWriteCounters.put(counterName, counter);
-        return counter;
-    }
-
     public synchronized void addPendingChunkMap(final PendingChunkMap chunkMap)
     {
         if (shuttingDown.get()) {
@@ -105,16 +94,16 @@ public class BackgroundDBChunkWriter
         }
         else {
             if (performForegroundWrites) {
-                foregroundChunkMapsWritten.inc();
+                foregroundChunkMapsWritten.incrementAndGet();
                 final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>(chunkMap.getChunkMap().values());
-                foregroundChunksWritten.inc(chunksToWrite.size());
+                foregroundChunksWritten.addAndGet(chunksToWrite.size());
                 timelineDAO.bulkInsertTimelineChunks(chunksToWrite);
                 chunkMap.getAccumulator().markPendingChunkMapConsumed(chunkMap.getPendingChunkMapId());
             }
             else {
-                pendingChunkMapsAdded.inc();
+                pendingChunkMapsAdded.incrementAndGet();
                 final int chunkCount = chunkMap.getChunkCount();
-                pendingChunksAdded.inc(chunkCount);
+                pendingChunksAdded.addAndGet(chunkCount);
                 pendingChunks.add(chunkMap);
                 pendingChunkCount.addAndGet(chunkCount);
             }
@@ -123,7 +112,7 @@ public class BackgroundDBChunkWriter
 
     private void performBackgroundWrites()
     {
-        backgroundWritesCount.inc();
+        backgroundWritesCount.incrementAndGet();
         List<PendingChunkMap> chunkMapsToWrite = null;
         synchronized(this) {
             chunkMapsToWrite = pendingChunks;
@@ -132,13 +121,13 @@ public class BackgroundDBChunkWriter
         }
         final List<TimelineChunk> chunks = new ArrayList<TimelineChunk>();
         for (PendingChunkMap map : chunkMapsToWrite) {
-            pendingChunkMapsWritten.inc();
-            pendingChunksWritten.inc(map.getChunkMap().size());
+            pendingChunkMapsWritten.incrementAndGet();
+            pendingChunksWritten.addAndGet(map.getChunkMap().size());
             chunks.addAll(map.getChunkMap().values());
         }
         timelineDAO.bulkInsertTimelineChunks(chunks);
         for (PendingChunkMap map : chunkMapsToWrite) {
-            pendingChunkMapsMarkedConsumed.inc();
+            pendingChunkMapsMarkedConsumed.incrementAndGet();
             map.getAccumulator().markPendingChunkMapConsumed(map.getPendingChunkMapId());
         }
     }
@@ -146,7 +135,7 @@ public class BackgroundDBChunkWriter
     private void maybePerformBackgroundWrites()
     {
         // If already running background writes, just return
-        maybePerformBackgroundWritesCount.inc();
+        maybePerformBackgroundWritesCount.incrementAndGet();
         if (!doingWritesNow.compareAndSet(false, true)) {
             return;
         }
@@ -200,5 +189,59 @@ public class BackgroundDBChunkWriter
         if (!performForegroundWrites) {
             backgroundWriteThread.shutdown();
         }
+    }
+
+    @Managed
+    public long getMaybePerformBackgroundWritesCount()
+    {
+    return maybePerformBackgroundWritesCount.get();
+    }
+
+    @Managed
+    public long getBackgroundWritesCount()
+    {
+    return backgroundWritesCount.get();
+    }
+
+    @Managed
+    public long getPendingChunkMapsAdded()
+    {
+    return pendingChunkMapsAdded.get();
+    }
+
+    @Managed
+    public long getPendingChunksAdded()
+    {
+    return pendingChunksAdded.get();
+    }
+
+    @Managed
+    public long getPendingChunkMapsWritten()
+    {
+    return pendingChunkMapsWritten.get();
+    }
+
+    @Managed
+    public long getPendingChunksWritten()
+    {
+    return pendingChunksWritten.get();
+    }
+
+    @Managed
+    public long getPendingChunkMapsMarkedConsumed()
+    {
+    return pendingChunkMapsMarkedConsumed.get();
+    }
+
+    @Managed
+    public long getForegroundChunkMapsWritten()
+    {
+    return foregroundChunkMapsWritten.get();
+    }
+
+    @Managed
+    public long getForegroundChunksWritten()
+    {
+        return foregroundChunksWritten.get();
     }
 }

@@ -242,4 +242,65 @@ public class TestTimelineCoder
         //System.out.printf("Combined times: %s\n", hexCombinedTimes);
         Assert.assertEquals(hexCombinedTimes, "ff10000001fe0210ff1000011bfe0210");
     }
+
+    @Test(groups = "fast")
+    public void testTimeCursorWithZeroDeltaWithNext() throws Exception
+    {
+        // This caused a TimeCursor problem
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E FF 79 0B 44 22
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E
+        // FF 4F 91 D5 BC          Absolute time
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // 00                      Delta 0.  Why did this happen?
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // FF 79 0B 44 22          Absolute time
+        // Total samples: 6
+        final int sampleCount = 7;
+        final byte[] times = Hex.decodeHex("FF4F91D5BCFE021E00FE021EFF790B4422".toCharArray());
+        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        for (int i=0; i<sampleCount; i++) {
+            final int nextTime = cursor.getNextTime();
+            if (nextTime == -1) {
+                Assert.assertTrue(false);
+            }
+        }
+        try {
+            final int lastTime = cursor.getNextTime();
+            Assert.assertTrue(false);
+        }
+        catch (Exception e) {
+
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCursorWithZeroDeltaWithSampleSkip() throws Exception
+    {
+        // This caused a TimeCursor problem
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E FF 79 0B 44 22
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E
+        // FF 4F 91 D5 BC          Absolute time
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // 00                      Delta 0.  Why did this happen?
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // FF 79 0B 44 22          Absolute time
+        // Total samples: 6
+        final int sampleCount = 7;
+        final byte[] times = Hex.decodeHex("FF4F91D5BCFE021E00FE021EFF790B4422".toCharArray());
+        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        for (int i=0; i<sampleCount; i++) {
+            final int nextTime = cursor.getNextTime();
+            if (nextTime == -1) {
+                Assert.assertTrue(false);
+            }
+            cursor.skipToSampleNumber(i + 1);
+        }
+        try {
+            final int lastTime = cursor.getNextTime();
+            Assert.assertTrue(false);
+        }
+        catch (Exception e) {
+
+        }
+    }
 }
