@@ -14,6 +14,121 @@
  * under the License.
  */
 
+describe('The hosts checkbox tree', function () {
+    var hostCategories;
+    var hosts;
+    var sampleKindsTreeRefreshed;
+
+    beforeEach(function() {
+        hostCategories = [];
+        hosts = [];
+        sampleKindsTreeRefreshed = false;
+
+        // Mock the dynatree
+        var fakeNode = {
+            onSelect: function() {
+                sampleKindsTreeRefreshed = true;
+            },
+
+            addChild: function(host) {
+                hosts.push(host);
+            }
+        }
+        var fakeDynatree = {
+            onSelect: function() {
+                sampleKindsTreeRefreshed = true;
+            },
+
+            addChild: function(categoryNode) {
+                hostCategories.push(categoryNode);
+                return fakeNode;
+            }
+        };
+        spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+    });
+
+    it('should sort hosts categories alphabetically', function() {
+        var hostData = [
+            {
+                coreType: 'proxy/b',
+                hostName: 'hostA.company.com'
+            },
+            {
+                coreType: 'proxy/a',
+                hostName: 'hostA.company.com'
+            }
+        ];
+        populateHostsTree(hostData);
+
+        expect(hostCategories[0].title).toEqual('proxy/a');
+        expect(hostCategories[1].title).toEqual('proxy/b');
+        expect(hostCategories.length).toEqual(2);
+
+        expect(hosts[0].title).toEqual('hostA.company.com');
+        expect(hosts[1].title).toEqual('hostA.company.com');
+        expect(hosts.length).toEqual(2);
+    });
+
+    it('should sort hosts alphabetically', function() {
+        var hostData = [
+            {
+                coreType: 'proxy',
+                hostName: 'hostB.company.com'
+            },
+            {
+                coreType: 'proxy',
+                hostName: 'hostA.company.com'
+            }
+        ];
+        populateHostsTree(hostData);
+
+        expect(hostCategories[0].title).toEqual('proxy');
+        expect(hostCategories.length).toEqual(1);
+
+        expect(hosts[0].title).toEqual('hostA.company.com');
+        expect(hosts[1].title).toEqual('hostB.company.com');
+        expect(hosts.length).toEqual(2);
+    });
+
+    it('should have checkboxes for both categories and hosts', function() {
+        var hostData = [
+            {
+                coreType: 'proxy/a',
+                hostName: 'hostA.company.com'
+            },
+            {
+                coreType: 'proxy/b',
+                hostName: 'hostB.company.com'
+            }
+        ];
+        populateHostsTree(hostData);
+
+        expect(hostCategories[0].title).toEqual('proxy/a');
+        expect(hostCategories[0].isFolder).toBeTruthy();
+        expect(hostCategories[0].icon).toBeFalsy();
+        expect(hostCategories[0].hideCheckbox).toBeFalsy();
+
+        expect(hostCategories[1].title).toEqual('proxy/b');
+        expect(hostCategories[1].isFolder).toBeTruthy();
+        expect(hostCategories[1].icon).toBeFalsy();
+        expect(hostCategories[1].hideCheckbox).toBeFalsy();
+
+        expect(hostCategories.length).toEqual(2);
+
+        expect(hosts[0].title).toEqual('hostA.company.com');
+        expect(hosts[0].isFolder).toBeUndefined();
+        expect(hosts[0].icon).toBeFalsy();
+        expect(hosts[0].hideCheckbox).toBeFalsy();
+
+        expect(hosts[1].title).toEqual('hostB.company.com');
+        expect(hosts[1].isFolder).toBeUndefined();
+        expect(hosts[1].icon).toBeFalsy();
+        expect(hosts[1].hideCheckbox).toBeFalsy();
+
+        expect(hosts.length).toEqual(2);
+    });
+});
+
 describe('The sample kinds checkbox tree', function () {
     var sampleCategories;
     var sampleKinds;
@@ -52,6 +167,7 @@ describe('The sample kinds checkbox tree', function () {
 
         expect(sampleCategories[0].title).toEqual('JVMMemory');
         expect(sampleCategories[1].title).toEqual('JVMOperatingSystemPerZone');
+        expect(sampleCategories.length).toEqual(2);
     });
 
     it('should sort sample kinds alphabetically', function() {
@@ -69,6 +185,7 @@ describe('The sample kinds checkbox tree', function () {
 
         expect(sampleCategories[0].title).toEqual('JVMMemory');
         expect(sampleCategories[1].title).toEqual('JVMOperatingSystemPerZone');
+        expect(sampleCategories.length).toEqual(2);
 
         expect(sampleKinds[0].title).toEqual('heapMax');
         expect(sampleKinds[1].title).toEqual('heapUsed');
@@ -76,6 +193,7 @@ describe('The sample kinds checkbox tree', function () {
         expect(sampleKinds[3].title).toEqual('nonHeapUsed');
         expect(sampleKinds[4].title).toEqual('OpenFileDescriptorCount');
         expect(sampleKinds[5].title).toEqual('ProcessCpuTime');
+        expect(sampleKinds.length).toEqual(6);
     });
 
     it('should not have checkboxes at the sample category level', function() {
@@ -100,6 +218,8 @@ describe('The sample kinds checkbox tree', function () {
         expect(sampleCategories[1].isFolder).toBeTruthy();
         expect(sampleCategories[1].icon).toBeFalsy();
         expect(sampleCategories[1].hideCheckbox).toBeTruthy();
+
+        expect(sampleCategories.length).toEqual(2);
     });
 
     it('should have checkboxes at the sample kind level', function() {
@@ -144,5 +264,7 @@ describe('The sample kinds checkbox tree', function () {
         expect(sampleKinds[5].isFolder).toBeUndefined();
         expect(sampleKinds[5].icon).toBeFalsy();
         expect(sampleKinds[5].hideCheckbox).toBeFalsy();
+
+        expect(sampleKinds.length).toEqual(6);
     });
 });
