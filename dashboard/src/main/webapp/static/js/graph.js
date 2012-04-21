@@ -232,6 +232,10 @@ function updateGraphSettings(graph, settings) {
         graph.renderer.unstack = false;
         graph.offset = settings.offset;
     }
+
+    // Force a stroke-width (line width) of 1 pixel
+    graph.renderer.strokeWidth = 1;
+
     graph.render();
 }
 
