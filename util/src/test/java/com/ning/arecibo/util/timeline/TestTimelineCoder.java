@@ -241,7 +241,7 @@ public class TestTimelineCoder
         final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
         final String hexCombinedTimes = new String(Hex.encodeHex(combinedTimes));
         //System.out.printf("Combined times: %s\n", hexCombinedTimes);
-        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0210ff1000011bfe0210");
+        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0210ff1000011bfe021005");
     }
 
     @Test(groups = "fast")
@@ -337,6 +337,38 @@ public class TestTimelineCoder
         final List<byte[]> timeParts = new ArrayList<byte[]>();
         timeParts.add(Hex.decodeHex("ff4f91fb14fe631e00fe151e".toCharArray()));
         timeParts.add(Hex.decodeHex("ff4f920942".toCharArray()));
+        int count = 0;
+        for (byte[] timePart : timeParts) {
+            count += TimelineCoder.countTimeBytesSamples(timePart);
+        }
+        final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
+        final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
+        Assert.assertEquals(newCombinedLength, count);
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCombineTimesErrorAgain() throws Exception
+    {
+        final List<byte[]> timeParts = new ArrayList<byte[]>();
+        timeParts.add(Hex.decodeHex("ff4f922618fe111e78fe111efe02005a".toCharArray()));
+        timeParts.add(Hex.decodeHex("ff4f923428".toCharArray()));
+        int count = 0;
+        for (byte[] timePart : timeParts) {
+            count += TimelineCoder.countTimeBytesSamples(timePart);
+        }
+        final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
+        final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
+        Assert.assertEquals(newCombinedLength, count);
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCombineTimesErrorYetAgain() throws Exception
+    {
+        final List<byte[]> timeParts = new ArrayList<byte[]>();
+        timeParts.add(Hex.decodeHex("ff4f9224ecfe091e".toCharArray()));
+        timeParts.add(Hex.decodeHex("ff4f922618fe071e78fe111e78fe111e78fe111e78fe111efe02005afe121e78fe031e".toCharArray()));
+        timeParts.add(Hex.decodeHex("ff4f923428fe0d1e7dfe111e78fe111e78fe111e78fe0b1e00fe061e78fe111e".toCharArray()));
+        timeParts.add(Hex.decodeHex("ff4f92427cfe111e78fe111e78fe111e78fe111e82fe041e1d01fe0c1e78fe0e1e".toCharArray()));
         int count = 0;
         for (byte[] timePart : timeParts) {
             count += TimelineCoder.countTimeBytesSamples(timePart);

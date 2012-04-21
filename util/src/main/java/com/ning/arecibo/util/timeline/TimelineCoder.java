@@ -138,6 +138,7 @@ public class TimelineCoder {
                     int newTime = 0;
                     int newCount = 0;
                     int newDelta = 0;
+                    boolean useNewDelta = false;
                     if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
                         newTime = byteDataStream.readInt();
                         newDelta = 0;
@@ -152,17 +153,20 @@ public class TimelineCoder {
                         }
                         else if (newTime - lastTime <= TimelineOpcode.MAX_DELTA_TIME) {
                             newDelta = newTime - lastTime;
+                            useNewDelta = true;
                             newCount = 1;
                         }
                     }
                     else if (opcode <= TimelineOpcode.MAX_DELTA_TIME) {
                         newTime = lastTime + opcode;
                         newDelta = opcode;
+                        useNewDelta = true;
                         newCount = 1;
                     }
                     else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex()) {
                         newCount = byteDataStream.read();
                         newDelta = byteDataStream.read();
+                        useNewDelta = true;
                         byteCursor += 2;
                         if (lastTime != 0) {
                             newTime = lastTime + newDelta * newCount;
@@ -175,6 +179,7 @@ public class TimelineCoder {
                     else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
                         newCount = byteDataStream.readUnsignedShort();
                         newDelta = byteDataStream.read();
+                        useNewDelta = true;
                         byteCursor += 3;
                         if (lastTime != 0) {
                             newTime = lastTime + newDelta * newCount;
@@ -195,7 +200,7 @@ public class TimelineCoder {
                         }
                         else {
                             writeRepeatedDelta(lastDelta, repeatCount, dataStream);
-                            if (newDelta > 0) {
+                            if (useNewDelta) {
                                 lastDelta = newDelta;
                                 repeatCount = newCount;
                                 lastTime = newTime;
