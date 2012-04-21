@@ -30,7 +30,7 @@ function renderGraph() {
         graph: null,
         // Settings for the graph, as defined by the left "Rendering" buttons
         graph_settings: {
-            interpolation: 'cardinal',
+            interpolation: 'linear',
             offset: 'zero',
             renderer: 'line'
         },
