@@ -51,6 +51,8 @@ describe('The hosts checkbox tree', function () {
             }
         };
         spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+        // Don't trigger the sample kinds tree refresh for this test
+        spyOn(window, 'hostsSelected');
     });
 
     it('should sort hosts categories alphabetically', function() {
@@ -178,6 +180,11 @@ describe('The sample kinds checkbox tree', function () {
 
         // Mock the dynatree
         var fakeNode = {
+            isExpanded: false,
+            expand: function(bool) {
+                isExpanded = bool;
+            },
+
             addChild: function(sampleKindNode) {
                 sampleKinds.push(sampleKindNode);
             }

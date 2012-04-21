@@ -63,7 +63,56 @@ describe('The hosts uri builder', function () {
     });
 });
 
-describe('The sample kinds update routine', function () {
+describe('The sample kinds uri builder', function () {
+    var sampleKinds;
+
+    beforeEach(function() {
+        window.arecibo = {};
+        sampleKinds = [];
+
+        // Mock the dynatree
+        var fakeDynatree = {
+            getSelectedNodes: function() {
+                return sampleKinds;
+            }
+        };
+        spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+    });
+
+    it('should set the global window.arecibo.sample_kinds_selected variable', function() {
+        sampleKinds.push(
+            {
+                parent: {
+                    data: {
+                        title: 'JVMMemory'
+                    }
+                },
+                data: {
+                    title: 'heapUsed'
+                }
+            },
+            {
+                parent: {
+                    data: {
+                        title: 'JVMOperatingSystemPerZone'
+                    }
+                },
+                data: {
+                    title: 'ProcessCpuTime'
+                }
+            }
+        );
+        var uri = buildCategoryAndSampleKindParamsFromTree();
+
+        expect(uri).toEqual('category_and_sample_kind=JVMMemory,heapUsed&category_and_sample_kind=JVMOperatingSystemPerZone,ProcessCpuTime');
+
+        expect(window.arecibo.sample_kinds_selected[0]).toEqual({sampleKind: 'heapUsed', sampleCategory: 'JVMMemory'});
+        expect(window.arecibo.sample_kinds_selected[1]).toEqual({sampleKind: 'ProcessCpuTime', sampleCategory: 'JVMOperatingSystemPerZone'});
+        expect(window.arecibo.sample_kinds_selected.length).toEqual(2);
+    });
+});
+
+describe('The hostsSelected callback routine', function () {
     var items;
     var areciboUri = 'the-machine';
     var hostUri = 'host=A';
@@ -96,7 +145,7 @@ describe('The sample kinds update routine', function () {
         expect(Set.size(window.arecibo.categories_selected)).toEqual(0);
         expect($.ajax.callCount).toEqual(0);
 
-        updateSampleKindsTree();
+        hostsSelected();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(1);
         expect($.ajax.callCount).toEqual(1);
         expect($.ajax.mostRecentCall.args[0]["url"]).toEqual(areciboUri + '/rest/1.0/sample_kinds?' + hostUri);
@@ -105,7 +154,7 @@ describe('The sample kinds update routine', function () {
         hostUri = hostUri + '&host=B';
         window.buildHostsParamsFromTree.andReturn(hostUri);
 
-        updateSampleKindsTree();
+        hostsSelected();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(2);
         expect($.ajax.callCount).toEqual(2);
         expect($.ajax.mostRecentCall.args[0]["url"]).toEqual(areciboUri + '/rest/1.0/sample_kinds?' + hostUri);
@@ -115,12 +164,12 @@ describe('The sample kinds update routine', function () {
         expect(Set.size(window.arecibo.categories_selected)).toEqual(0);
         expect($.ajax.callCount).toEqual(0);
 
-        updateSampleKindsTree();
+        hostsSelected();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(1);
         expect($.ajax.callCount).toEqual(1);
         expect($.ajax.mostRecentCall.args[0]["url"]).toEqual(areciboUri + '/rest/1.0/sample_kinds?' + hostUri);
 
-        updateSampleKindsTree();
+        hostsSelected();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(1);
         expect($.ajax.callCount).toEqual(1);
     });
@@ -130,7 +179,7 @@ describe('The sample kinds update routine', function () {
         expect(Set.size(window.arecibo.hosts_selected)).toEqual(0);
         expect(items['arecibo_latest_hosts']).toBeUndefined();
 
-        updateSampleKindsTree();
+        hostsSelected();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(1);
         expect(Set.size(window.arecibo.hosts_selected)).toEqual(1);
         expect(items['arecibo_latest_hosts']).toBe(JSON.stringify(window.arecibo.hosts_selected));
@@ -139,9 +188,56 @@ describe('The sample kinds update routine', function () {
         hostUri = hostUri + '&host=B';
         window.buildHostsParamsFromTree.andReturn(hostUri);
 
-        updateSampleKindsTree();
+        hostsSelected();
         expect(Set.size(window.arecibo.categories_selected)).toEqual(2);
         expect(Set.size(window.arecibo.hosts_selected)).toEqual(2);
         expect(items['arecibo_latest_hosts']).toBe(JSON.stringify(window.arecibo.hosts_selected));
+    });
+});
+
+describe('The sampleKindsSelected callback routine', function () {
+    var items;
+    var areciboUri = 'the-machine';
+    var sampleKindsUri = 'sampleKinds=A,B,C';
+
+    beforeEach(function() {
+        window.arecibo = {
+            uri: areciboUri
+        };
+
+        // Mock the local storage
+        if (window.localStorage === undefined) {
+            // Not available at runtime?
+            window.localStorage = {
+                setItem: function(key, value) {}
+            };
+        }
+        items = {};
+        spyOn(localStorage, 'setItem').andCallFake(function(key, value) {
+            items[key] = value;
+        });
+        spyOn(window, 'buildCategoryAndSampleKindParamsFromTree').andCallFake(function() {
+            window.arecibo.sample_kinds_selected = [{sampleKind: 'heapUsed', sampleCategory: 'JVMMemory'}];
+            return sampleKindsUri;
+        });
+        spyOn($.fn, 'dynatree');
+        spyOn($, 'ajax');
+    });
+
+    it('should remember the latest sample kinds selected', function() {
+        expect(Set.size(window.arecibo.sample_kinds_selected)).toEqual(0);
+        expect(items['arecibo_latest_sample_kinds']).toBeUndefined();
+
+        sampleKindsSelected();
+        expect(Set.size(window.arecibo.sample_kinds_selected)).toEqual(1);
+        expect(items['arecibo_latest_sample_kinds']).toBe(JSON.stringify(window.arecibo.sample_kinds_selected));
+
+        window.arecibo.sample_kinds_selected.push({sampleKind: 'ProcessCpuTime', sampleCategory: 'JVMOperatingSystemPerZone'});
+        hostUri = sampleKindsUri + '&sampleKinds=D,E,F';
+        window.buildCategoryAndSampleKindParamsFromTree.andReturn(hostUri);
+
+        sampleKindsSelected();
+        expect(Set.size(window.arecibo.sample_kinds_selected)).toEqual(2);
+        expect(items['arecibo_latest_sample_kinds']).toBe(JSON.stringify(window.arecibo.sample_kinds_selected));
     });
 });
