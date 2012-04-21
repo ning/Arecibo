@@ -32,16 +32,10 @@ under the License. -->
     <script type="text/javascript" src="./vendor/js/bootstrap-modal-v2.0.0.js"></script>
     <link rel="stylesheet" href="./vendor/css/bootstrap-v2.0.0.min.css">
 
-    <!-- See https://github.com/shutterstock/rickshaw -->
-    <script type="text/javascript" src="./vendor/js/rickshaw-c25f467.min.js"></script>
-    <script type="text/javascript" src="./vendor/js/d3.rickshaw-c25f467.min.js"></script>
-    <script type="text/javascript" src="./vendor/js/d3.layout.rickshaw-c25f467.min.js"></script>
-    <link rel="stylesheet" href="./vendor/css/rickshaw-c25f467.min.css">
-
-    <!-- See http://code.google.com/p/dynatree/ -->
-    <script type="text/javascript" src="./vendor/js/jquery.cookie-1.2.1_rc3.js"></script>
-    <script type="text/javascript" src="./vendor/js/jquery.dynatree-1.2.1_rc3.min.js"></script>
-    <link rel="stylesheet" href="./vendor/css/ui.dynatree-1.2.1_rc3.css">
+    <!-- See https://github.com/shutterstock/rickshaw and https://github.com/mbostock/d3 -->
+    <script type="text/javascript" src="./vendor/js/rickshaw-6a75eae.min.js"></script>
+    <script type="text/javascript" src="./vendor/js/d3.mbostock-d3bad29.min.js"></script>
+    <link rel="stylesheet" href="./vendor/css/rickshaw-6a75eae.min.css">
 
     <script type="text/javascript" src="./js/utils.js"></script>
     <script type="text/javascript" src="./js/graph.js"></script>
@@ -64,6 +58,7 @@ under the License. -->
         </div>
         <div class="row">
             <div id="chart_container">
+                <div id="y_axis"></div>
                 <div id="chart"></div>
             </div>
             <div id="slider"></div>
@@ -117,11 +112,11 @@ under the License. -->
                         <div class="control-group" id="interpolation_form">
                             <div class="controls">
                                 <label for="cardinal">
-                                    <input type="radio" name="interpolation" id="cardinal" value="cardinal" checked>
+                                    <input type="radio" name="interpolation" id="cardinal" value="cardinal">
                                     <span>cardinal</span>
                                 </label>
                                 <label for="linear">
-                                    <input type="radio" name="interpolation" id="linear" value="linear">
+                                    <input type="radio" name="interpolation" id="linear" value="linear" checked>
                                     <span>linear</span>
                                 </label>
                                 <label for="step">

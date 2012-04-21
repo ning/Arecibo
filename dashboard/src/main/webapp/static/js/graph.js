@@ -30,7 +30,7 @@ function renderGraph() {
         graph: null,
         // Settings for the graph, as defined by the left "Rendering" buttons
         graph_settings: {
-            interpolation: 'cardinal',
+            interpolation: 'linear',
             offset: 'zero',
             renderer: 'line'
         },
@@ -194,7 +194,9 @@ function drawGraph() {
     var yAxis = new Rickshaw.Graph.Axis.Y({
         graph: graph,
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT, // TODO
-        ticksTreatment: 'glow'
+        ticksTreatment: 'glow',
+        orientation: 'left',
+        element: document.getElementById('y_axis')
     });
     yAxis.render();
 
@@ -232,6 +234,10 @@ function updateGraphSettings(graph, settings) {
         graph.renderer.unstack = false;
         graph.offset = settings.offset;
     }
+
+    // Force a stroke-width (line width) of 1 pixel
+    graph.renderer.strokeWidth = 1;
+
     graph.render();
 }
 

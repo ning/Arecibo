@@ -147,11 +147,19 @@ function removeMillis(date, milliseconds) {
 var Set = new function() {
     this.makeSet = function(objs, key) {
         var set = {};
+        if (objs == undefined) {
+            return set;
+        }
+
         for (var i = 0; i < objs.length; i++) {
             set[objs[i][key]] = true;
         }
 
         return set;
+    }
+
+    this.contains = function(s, item) {
+        return s != undefined && s[item] === true;
     }
 
     this.equals = function(s1, s2) {
@@ -160,7 +168,7 @@ var Set = new function() {
 
     this.dup = function(s, copy) {
         for (var item in s) {
-            if (s[item] === true) {
+            if (this.contains(s, item)) {
                 copy[item] = true;
             }
         }
@@ -170,7 +178,7 @@ var Set = new function() {
         var diff = {};
         this.dup(s1, diff);
         for (var item in s2) {
-            if (s2[item] === true) {
+            if (this.contains(s2, item)) {
                 delete diff[item];
             }
         }

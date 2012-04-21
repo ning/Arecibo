@@ -30,7 +30,9 @@ function setupAreciboUI() {
     try {
         $("#samples_start").val(localStorage.getItem("arecibo_latest_samples_start_lookup"));
         $("#samples_end").val(localStorage.getItem("arecibo_latest_samples_end_lookup"));
-    } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
+        window.arecibo.hosts_selected = JSON.parse(localStorage.getItem("arecibo_latest_hosts"));
+        window.arecibo.sample_kinds_selected = JSON.parse(localStorage.getItem("arecibo_latest_sample_kinds"));
+    } catch (e) { /* Ignore quota issues, non supported Browsers, etc. */ }
 
     // Setup the Graph button
     $("#crunch").click(function (event) {
@@ -40,7 +42,7 @@ function setupAreciboUI() {
         try {
             localStorage.setItem("arecibo_latest_samples_start_lookup", samples_start_lookup);
             localStorage.setItem("arecibo_latest_samples_end_lookup", samples_end_lookup);
-        } catch (e) { /* Ignore quota issues, non supoprted Browsers, etc. */ }
+        } catch (e) { /* Ignore quota issues, non supported Browsers, etc. */ }
 
         errorMessage = validateDatesInput(samples_start_lookup, samples_end_lookup);
         if (errorMessage) {
@@ -52,11 +54,11 @@ function setupAreciboUI() {
         event.preventDefault();
     });
 
-    // Update hosts tree
-    updateHostsTree();
-
-    // Create en empty sample kinds tree as placeholder
+    // Create en empty sample kinds tree as placeholder if there was no sample kind previously selected
     populateSampleKindsTree([]);
+
+    // Update hosts tree and potentially load the sample kinds tree
+    updateHostsTree();
 };
 
 // Return null if the dates are valid, an error message otherwise
@@ -101,15 +103,15 @@ function populateHostsTree(hosts) {
 
     // Create the tree
     $("#hosts_tree").dynatree({
-        onSelect: function(node) {
-            updateSampleKindsTree();
+        onSelect: function(flag, node) {
+            hostsSelected();
         },
-        //persistent: true,
         checkbox: true,
         selectMode: 3
     });
 
     // Add the nodes
+    var selectedHostsSet = Set.makeSet(window.arecibo.hosts_selected, 'hostName');
     var rootNode = $("#hosts_tree").dynatree("getRoot");
     var children = {};
     for (var i in hosts) {
@@ -126,18 +128,36 @@ function populateHostsTree(hosts) {
                         title: host.coreType,
                         isFolder: true,
                         icon: false,
-                        hideCheckbox: false
+                        hideCheckbox: false,
+                        expand: false,
+                        select: false
                 });
             }
 
+            var selected = Set.contains(selectedHostsSet, host.hostName);
             var childNode = children[host.coreType];
+
             childNode.addChild({
                 title: host.hostName,
                 hideCheckbox: false,
-                icon: false
+                icon: false,
+                select: selected
             });
+
+            // If at least one child node is selected, expand the father
+            if (selected) {
+                // Note! This needs to happen after the child is added to the father
+                childNode.expand(true);
+            } else {
+                // If at least one child node is not selected, don't select the father
+                // TODO Unfortunately, the following will deselect ALL children
+                //childNode.select(false);
+            }
         }
     }
+
+    // Trigger a sample kinds tree update: this will display the sample kinds tree with previous values, if any
+    hostsSelected();
 }
 
 // Find all selected hosts and build the associated query parameter for the dashboard
@@ -171,33 +191,33 @@ function buildHostsParamsFromTree() {
 }
 
 // Find all selected sample kinds and build the associated query parameter for the dashboard
-// This will also set window.arecibo.sample_kinds_selected to the number of samples selected
+// This will also set window.arecibo.sample_kinds_selected to a list of tuples (sampleKind, sampleCategory)
 function buildCategoryAndSampleKindParamsFromTree() {
     var uri = '';
     var tree = $("#sample_kinds_tree").dynatree("getTree").getSelectedNodes();
-    var sampleKindsNb = 0;
+    window.arecibo.sample_kinds_selected = [];
 
     for (var i in tree) {
         var node = tree[i];
         if (node.hasSubSel) {
             continue;
         } else {
-            if (sampleKindsNb > 0) {
+            if (window.arecibo.sample_kinds_selected.length > 0) {
                 uri += '&';
             }
-
             uri += 'category_and_sample_kind=';
-            var parent = node.getParent();
-            if (parent != null) {
-                uri += parent.data.title + ',';
+
+            var sampleKind = node.data.title;
+            var sampleCategory = null;
+            if (node.parent) {
+                sampleCategory = node.parent.data.title;
+                uri += sampleCategory + ',';
             }
 
-            uri += node.data.title;
-            sampleKindsNb++;
+            uri += sampleKind;
+            window.arecibo.sample_kinds_selected.push({sampleKind: sampleKind, sampleCategory: sampleCategory});
         }
     }
-
-    window.arecibo.sample_kinds_selected = sampleKindsNb;
 
     return uri;
 }
@@ -205,12 +225,19 @@ function buildCategoryAndSampleKindParamsFromTree() {
 // Refresh the sample kinds tree
 // This is called when a host is (un)selected on the hosts tree. Selecting or unselecting
 // another host in the same category does not refresh the sample kinds tree
-function updateSampleKindsTree() {
+function hostsSelected() {
+    // Find all selected nodes and build the uri for the dashboard
     var uri = buildHostsParamsFromTree();
     if (!uri) {
         return false;
     }
 
+    // Remember selected nodes for the next page load
+    try {
+        localStorage.setItem("arecibo_latest_hosts", JSON.stringify(window.arecibo.hosts_selected));
+    } catch (e) { /* Ignore quota issues, non supported Browsers, etc. */ }
+
+    // Verify if we need to update the sample kinds tree or not
     var categoriesSelected = Set.makeSet(window.arecibo.hosts_selected, 'category');
     if (Set.equals(categoriesSelected, window.arecibo.categories_selected)) {
         return false;
@@ -236,19 +263,29 @@ function populateSampleKindsTree(kinds) {
         });
 
     $("#sample_kinds_tree").dynatree({
+        onSelect: function(flag, node) {
+            sampleKindsSelected();
+        },
         checkbox: true,
         selectMode: 3
     });
 
+    // Add the nodes
+    var selectedSamplesSet = Set.makeSet(window.arecibo.sample_kinds_selected, 'sampleKind');
     var rootNode = $("#sample_kinds_tree").dynatree("getRoot");
     var children = {};
     for (var i in kinds) {
         var category = kinds[i];
+
+        // Add the father
+        var sampleCategory = category.eventCategory;
         var childNode = rootNode.addChild({
-                title: category.eventCategory,
+                title: sampleCategory,
                 isFolder: true,
                 icon: false,
-                hideCheckbox: true
+                hideCheckbox: true,
+                expand: false,
+                select: false
         });
 
         var sampleKinds = category.sampleKinds;
@@ -256,13 +293,49 @@ function populateSampleKindsTree(kinds) {
         sampleKinds.sort();
         for (var j in sampleKinds) {
             var kind = sampleKinds[j];
+            var selected = Set.contains(selectedSamplesSet, kind);
+            // We need to check if the sample categories names match as well. In contrary to hostnames,
+            // sample kind names are not unique (e.g. memoryPoolUsed)
+            if (selected) {
+                selected = false;
+                for (var i = 0; i < window.arecibo.sample_kinds_selected.length; i++) {
+                    var item = window.arecibo.sample_kinds_selected[i];
+                    if (item.sampleKind == kind && item.sampleCategory == sampleCategory) {
+                        selected = true;
+                        break;
+                    }
+                }
+            }
+
             childNode.addChild({
                 title: kind,
                 hideCheckbox: false,
-                icon: false
+                icon: false,
+                select: selected
             });
+            // If at least one child node is selected, expand the father
+            if (selected) {
+                // Note! This needs to happen after the child is added to the father
+                childNode.expand(true);
+            }
         }
     }
+}
+
+// This is called when a sample kind is (un)selected on the sample kinds tree
+function sampleKindsSelected() {
+    // Find all selected nodes and build the uri for the dashboard
+    var uri = buildCategoryAndSampleKindParamsFromTree();
+    if (!uri) {
+        return false;
+    }
+
+    // Remember selected nodes for the next page load
+    try {
+        localStorage.setItem("arecibo_latest_sample_kinds", JSON.stringify(window.arecibo.sample_kinds_selected));
+    } catch (e) { /* Ignore quota issues, non supported Browsers, etc. */ }
+
+    return false;
 }
 
 function buildGraphURL() {
@@ -271,7 +344,7 @@ function buildGraphURL() {
     var hosts_url = buildHostsParamsFromTree();
     var sample_kinds_url = buildCategoryAndSampleKindParamsFromTree();
 
-    var nb_samples = Math.round(screen.width / (window.arecibo.hosts_selected.length * window.arecibo.sample_kinds_selected));
+    var nb_samples = Math.round(screen.width / (window.arecibo.hosts_selected.length * window.arecibo.sample_kinds_selected.length));
 
     var uri = '/static/graph.html?' +
                 hosts_url + '&' +

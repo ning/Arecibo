@@ -44,6 +44,27 @@ describe('The set implementation', function () {
         expect(mySet.apple).toBeFalsy();
         expect(mySet.yellow).toBeTruthy();
         expect(mySet.green).toBeTruthy();
+
+        expect(Set.makeSet({}, null)).toEqual({});
+        expect(Set.makeSet(null, null)).toEqual({});
+        expect(Set.makeSet(undefined, null)).toEqual({});
+    });
+
+    it('should be able to check if an element is in a set', function() {
+        var objs = [
+            {
+                name: 'banana',
+                color: 'yellow'
+            }
+        ];
+
+        var mySet = Set.makeSet(objs, 'name');
+        expect(Set.contains(mySet, 'banana')).toBeTruthy();
+        expect(Set.contains(mySet, 'yellow')).toBeFalsy();
+
+        expect(Set.contains({}, 'yellow')).toBeFalsy();
+        expect(Set.contains(null, 'yellow')).toBeFalsy();
+        expect(Set.contains(undefined, 'yellow')).toBeFalsy();
     });
 
     it('should be able to compute the size of a set', function() {
