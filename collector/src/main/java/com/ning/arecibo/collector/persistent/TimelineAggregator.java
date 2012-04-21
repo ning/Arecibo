@@ -161,7 +161,7 @@ public class TimelineAggregator
             sampleCount += timelineChunk.getSampleCount();
             timelineChunkIds.add(timelineChunk.getObjectId());
         }
-        final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts);
+        final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts, sampleCount);
         final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);
         final int timeBytesLength = combinedTimeBytes.length;
         final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;
