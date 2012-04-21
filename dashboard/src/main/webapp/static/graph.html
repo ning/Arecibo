@@ -57,13 +57,14 @@ under the License. -->
             <h1>Arecibo <small>graph</small></h1>
         </div>
         <div class="row">
+            <a href="#" style="cursor: hand;"><i class="icon-plus" id="controls_btn"></i></a>
             <div id="chart_container">
                 <div id="y_axis"></div>
                 <div id="chart"></div>
             </div>
             <div id="slider"></div>
         </div>
-        <div class="row">
+        <div class="row" id="graph_controls" style="display: none;">
             <div class="span6">
                 <!--Sidebar content-->
                 <form class="form-inline" id="side_panel">
@@ -135,9 +136,8 @@ under the License. -->
                     <div id="legend"></div>
                 </div>
             </div>
-        </div>
-        <div class="row">
-            <div id="debug_container">
+            <div class="span6">
+                <div id="debug_container"/>
             </div>
         </div>
         <div class="row">
