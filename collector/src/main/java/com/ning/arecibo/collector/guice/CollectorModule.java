@@ -183,7 +183,7 @@ public class CollectorModule extends AbstractModule
             {
                 log.info("START event received: replaying on-disk events");
                 handler.replay(config.getSpoolDir());
-                handler.startPurgeThread();
+                handler.startHandlerThreads();
             }
         });
         lifecycledProvider.addListener(LifecycleEvent.STOP, new LifecycleAction<TimelineEventHandler>()

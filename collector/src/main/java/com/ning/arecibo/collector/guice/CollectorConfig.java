@@ -54,21 +54,6 @@ public interface CollectorConfig
     @Default("")
     String getAttributesToIgnore();
 
-    @Config("arecibo.collector.timelines.maxHosts")
-    @Description("Max number of different hosts to keep in memory at the same time")
-    @Default("10000")
-    int getMaxHosts();
-
-    @Config("arecibo.collector.timelines.maxEventCategories")
-    @Description("Max number of different event categories to keep in memory at the same time")
-    @Default("10000")
-    int getMaxEventCategories();
-
-    @Config("arecibo.collector.timelines.maxSampleKinds")
-    @Description("Max number of different sample kinds to keep in memory at the same time")
-    @Default("10000")
-    int getMaxSampleKinds();
-
     @Config("arecibo.collector.timelines.length")
     @Description("How long to buffer data in memory before flushing it to the database")
     @Default("60m")
@@ -174,4 +159,9 @@ public interface CollectorConfig
     @Description("Kafka groupId")
     @Default("arecibo")
     String getKafkaGroupId();
+
+    @Config("arecibo.collector.runLoadGenerator")
+    @Description("If true, in additional to processing any incoming events, start the load generator to create generated events")
+    @Default("false")
+    boolean getRunLoadGenerator();
 }

@@ -154,10 +154,11 @@ public class TestTimelineAggregator
 
     private void createAOneHourTimelineChunk(final int startTimeMinutesAgo) throws IOException
     {
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE_ID);
+        final DateTime firstSampleTime = START_TIME.minusMinutes(startTimeMinutesAgo);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE_ID, firstSampleTime);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
-            final DateTime eventDateTime = START_TIME.minusMinutes(startTimeMinutesAgo).plusSeconds(i * 30);
+            final DateTime eventDateTime = firstSampleTime.plusSeconds(i * 30);
             final Map<Integer, ScalarSample> event = createEvent(eventDateTime.getMillis());
             final HostSamplesForTimestamp samples = new HostSamplesForTimestamp(hostId, EVENT_TYPE, eventDateTime, event);
             accumulator.addHostSamples(samples);

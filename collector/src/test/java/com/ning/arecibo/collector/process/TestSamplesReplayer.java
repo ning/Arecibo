@@ -86,7 +86,7 @@ public class TestSamplesReplayer
 
         // Try to encode them again
         final MockTimelineDAO dao = new MockTimelineDAO();
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID, hostSamples.get(0).getTimestamp());
         for (final HostSamplesForTimestamp samplesFound : hostSamples) {
             accumulator.addHostSamples(samplesFound);
         }

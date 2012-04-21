@@ -89,6 +89,32 @@ public class TimelineCoder {
         }
     }
 
+    public static byte[] combineTimelines(final List<byte[]> timesList, final int sampleCount)
+    {
+        final byte[] timeBytes = combineTimelines(timesList);
+        final int combinedSampleCount = countTimeBytesSamples(timeBytes);
+        if (sampleCount != combinedSampleCount) {
+            final StringBuilder builder = new StringBuilder();
+            builder
+                .append("In compressTimelineTimes(), combined sample count is ")
+                .append(combinedSampleCount)
+                .append(", but sample count is ")
+                .append(sampleCount)
+                .append(", combined TimeBytes ")
+                .append(Hex.encodeHex(timeBytes))
+                .append(", ")
+                .append(timesList.size())
+                .append(" chunks");
+            for (byte[] bytes : timesList) {
+                builder
+                    .append(", ")
+                    .append(Hex.encodeHex(bytes));
+            }
+            log.error(builder.toString());
+        }
+        return timeBytes;
+    }
+
     public static byte[] combineTimelines(final List<byte[]> timesList)
     {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -103,6 +129,7 @@ public class TimelineCoder {
                 final DataInputStream byteDataStream = new DataInputStream(byteStream);
                 int byteCursor = 0;
                 while (true) {
+                    // Part 1: Get the opcode, and come up with newTime, newCount and newDelta
                     final int opcode = byteDataStream.read();
                     if (opcode == -1) {
                         break;
@@ -113,6 +140,8 @@ public class TimelineCoder {
                     int newDelta = 0;
                     if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
                         newTime = byteDataStream.readInt();
+                        newDelta = 0;
+                        newCount = 0;
                         byteCursor += 4;
                         if (lastTime == 0) {
                             writeTime(0, newTime, dataStream);
@@ -121,11 +150,9 @@ public class TimelineCoder {
                             repeatCount = 0;
                             continue;
                         }
-                        else {
-                            if (newTime - lastTime <= TimelineOpcode.MAX_DELTA_TIME) {
-                                newDelta = newTime - lastTime;
-                                newCount = 1;
-                            }
+                        else if (newTime - lastTime <= TimelineOpcode.MAX_DELTA_TIME) {
+                            newDelta = newTime - lastTime;
+                            newCount = 1;
                         }
                     }
                     else if (opcode <= TimelineOpcode.MAX_DELTA_TIME) {
@@ -157,19 +184,14 @@ public class TimelineCoder {
                         throw new IllegalStateException(String.format("In TimelineCoder.combineTimelines, Unrecognized byte opcode = %d, byteCursor %d, chunkCounter %d, chunk %s",
                                 opcode, byteCursor, chunkCounter, new String(Hex.encodeHex(times))));
                     }
+                    // Part 2: Combine existing state represented in lastTime, lastDelta and repeatCount with newTime, newCount and newDelta
                     if (lastTime == 0) {
                         log.error("In combineTimelines(), lastTime is 0; byteCursor %d, chunkCounter %d, times %s", byteCursor, chunkCounter, new String(Hex.encodeHex(times)));
                     }
                     else if (repeatCount > 0) {
-                        if (lastDelta == newDelta) {
-                            if (newCount > 0) {
-                                repeatCount += newCount;
-                                lastTime = newTime;
-                            }
-                            else {
-                                repeatCount++;
-                                lastTime += lastDelta;
-                            }
+                        if (lastDelta == newDelta && newCount > 0) {
+                            repeatCount += newCount;
+                            lastTime = newTime;
                         }
                         else {
                             writeRepeatedDelta(lastDelta, repeatCount, dataStream);
@@ -266,6 +288,41 @@ public class TimelineCoder {
         return compressTimes(times);
     }
 
+    public static int countTimeBytesSamples(final byte[] timeBytes)
+    {
+        int count = 0;
+        try {
+            final ByteArrayInputStream byteStream = new ByteArrayInputStream(timeBytes);
+            final DataInputStream byteDataStream = new DataInputStream(byteStream);
+            int opcode;
+            while ((opcode = byteDataStream.read()) != -1) {
+                if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
+                    byteDataStream.readInt();
+                    count++;
+                }
+                else if (opcode <= TimelineOpcode.MAX_DELTA_TIME) {
+                    count++;
+                }
+                else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex()) {
+                    count += byteDataStream.read();
+                    byteDataStream.read();
+                }
+                else if (opcode == TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex()) {
+                    count += byteDataStream.readUnsignedShort();
+                    byteDataStream.read();
+                }
+                else {
+                    throw new IllegalStateException(String.format("In TimelineCoder.countTimeBytesSamples(), unrecognized opcode %d", opcode));
+                }
+            }
+            return count;
+        }
+        catch (IOException e) {
+            log.error(e, "IOException while counting timeline samples");
+            return count;
+        }
+    }
+
     private static void writeRepeatedDelta(final int delta, final int repeatCount, final DataOutputStream dataStream) throws IOException {
         if (repeatCount > 1) {
                 if (repeatCount > MAX_BYTE_REPEAT_COUNT) {
@@ -290,6 +347,9 @@ public class TimelineCoder {
                 dataStream.writeByte(TimelineOpcode.FULL_TIME.getOpcodeIndex());
                 dataStream.writeInt(newTime);
             }
+        }
+        else if (newTime == lastTime) {
+            dataStream.writeByte(0);
         }
     }
 }

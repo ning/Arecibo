@@ -45,7 +45,7 @@ public class CachingDefaultTimelineDAOProvider implements Provider<TimelineDAO>
     public TimelineDAO get()
     {
         final TimelineDAO delegate = new DefaultTimelineDAO(dbi);
-        final CachingTimelineDAO cachingTimelineDAO = new CachingTimelineDAO(delegate, config.getMaxHosts(), config.getMaxEventCategories(), config.getMaxSampleKinds());
+        final CachingTimelineDAO cachingTimelineDAO = new CachingTimelineDAO(delegate);
 
         final MBeanExporter exporter = new MBeanExporter(mBeanServer);
         exporter.export(ObjectNames.generatedNameOf(CachingTimelineDAO.class), cachingTimelineDAO);

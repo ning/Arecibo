@@ -85,6 +85,7 @@ public class TimelineHostEventAccumulator
     private DateTime chunkEndTime = null;
     private DateTime startTime = null;
     private DateTime endTime = null;
+    private DateTime latestSampleAddTime;
     private long sampleSequenceNumber = 0;
     private int sampleCount = 0;
 
@@ -99,7 +100,7 @@ public class TimelineHostEventAccumulator
     private final List<DateTime> times = new ArrayList<DateTime>();
 
     public TimelineHostEventAccumulator(final TimelineDAO dao, final BackgroundDBChunkWriter backgroundWriter,
-            final int hostId, final int eventCategoryId, Integer timelineLengthMillis)
+            final int hostId, final int eventCategoryId, final DateTime firstSampleTime, Integer timelineLengthMillis)
     {
         this.dao = dao;
         this.timelineLengthMillis = timelineLengthMillis;
@@ -107,7 +108,7 @@ public class TimelineHostEventAccumulator
         this.hostId = hostId;
         this.eventCategoryId = eventCategoryId;
         // Set the end-of-chunk time by tossing a random number, to evenly distribute the db writeback load.
-        this.chunkEndTime = timelineLengthMillis != null ? new DateTime().plusMillis(rand.nextInt(timelineLengthMillis)) : null;;
+        this.chunkEndTime = timelineLengthMillis != null ? firstSampleTime.plusMillis(rand.nextInt(timelineLengthMillis)) : null;;
     }
 
     /*
@@ -115,9 +116,9 @@ public class TimelineHostEventAccumulator
      * created, but because the chunkEndTime is way in the future, doesn't initiate
      * chunk writes.
      */
-    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, Integer hostId, int eventTypeId)
+    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, Integer hostId, int eventTypeId, DateTime firstSampleTime)
     {
-        this(timelineDAO, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, Integer.MAX_VALUE);
+        this(timelineDAO, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, firstSampleTime, Integer.MAX_VALUE);
     }
 
     @SuppressWarnings("unchecked")
@@ -129,7 +130,7 @@ public class TimelineHostEventAccumulator
         if (chunkEndTime != null && chunkEndTime.isBefore(timestamp)) {
             extractAndQueueTimelineChunks();
             startTime = timestamp;
-            chunkEndTime = new DateTime().plusMillis(timelineLengthMillis);
+            chunkEndTime = timestamp.plusMillis(timelineLengthMillis);
         }
 
         if (startTime == null) {
@@ -145,6 +146,7 @@ public class TimelineHostEventAccumulator
             return;
         }
         sampleSequenceNumber++;
+        latestSampleAddTime = new DateTime();
         for (final Map.Entry<Integer, ScalarSample> entry : samples.getSamples().entrySet()) {
             final Integer sampleKindId = entry.getKey();
             final SampleSequenceNumber counter = sampleKindIdCounters.get(sampleKindId);
@@ -304,14 +306,9 @@ public class TimelineHostEventAccumulator
         return times;
     }
 
-    public DateTime getLatestTime()
+    public DateTime getLatestSampleAddTime()
     {
-        if (times.size() > 0) {
-            return times.get(times.size() - 1);
-        }
-        else {
-            return null;
-        }
+        return latestSampleAddTime;
     }
 
     private static class SampleSequenceNumber

@@ -44,7 +44,7 @@ public class CachingTimelineDAO implements TimelineDAO
 
     private final TimelineDAO delegate;
 
-    public CachingTimelineDAO(final TimelineDAO delegate, final long maxNbHosts, final long maxNbEventCategories, final long maxNbSampleKinds)
+    public CachingTimelineDAO(final TimelineDAO delegate)
     {
         this.delegate = delegate;
         hostsCache = delegate.getHosts();

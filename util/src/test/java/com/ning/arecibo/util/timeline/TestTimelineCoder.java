@@ -91,6 +91,7 @@ public class TestTimelineCoder
         Assert.assertEquals(combinedTimes[7] & 0xff, 100);
         // Check for 19, not 20, since the first full time took one
         Assert.assertEquals(combinedTimes[6], 19);
+        Assert.assertEquals(TimelineCoder.countTimeBytesSamples(combinedTimes), 20);
     }
 
     @Test(groups = "fast")
@@ -241,5 +242,107 @@ public class TestTimelineCoder
         final String hexCombinedTimes = new String(Hex.encodeHex(combinedTimes));
         //System.out.printf("Combined times: %s\n", hexCombinedTimes);
         Assert.assertEquals(hexCombinedTimes, "ff10000001fe0210ff1000011bfe0210");
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCursorWithZeroDeltaWithNext() throws Exception
+    {
+        // This caused a TimeCursor problem
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E FF 79 0B 44 22
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E
+        // FF 4F 91 D5 BC          Absolute time
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // 00                      Delta 0.  Why did this happen?
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // FF 79 0B 44 22          Absolute time
+        // Total samples: 6
+        final int sampleCount = 7;
+        final byte[] times = Hex.decodeHex("FF4F91D5BCFE021E00FE021EFF790B4422".toCharArray());
+        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        for (int i=0; i<sampleCount; i++) {
+            final int nextTime = cursor.getNextTime();
+            if (nextTime == -1) {
+                Assert.assertTrue(false);
+            }
+        }
+        try {
+            final int lastTime = cursor.getNextTime();
+            Assert.assertTrue(false);
+        }
+        catch (Exception e) {
+
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCursorWithZeroDeltaWithSampleSkip() throws Exception
+    {
+        // This caused a TimeCursor problem
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E FF 79 0B 44 22
+        // FF 4F 91 D5 BC FE 02 1E 00 FE 02 1E
+        // FF 4F 91 D5 BC          Absolute time
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // 00                      Delta 0.  Why did this happen?
+        // FE 02 1E                Repeated delta time: count 2, delta: 30
+        // FF 79 0B 44 22          Absolute time
+        // Total samples: 6
+        final int sampleCount = 7;
+        final byte[] times = Hex.decodeHex("FF4F91D5BCFE021E00FE021EFF790B4422".toCharArray());
+        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        for (int i=0; i<sampleCount; i++) {
+            final int nextTime = cursor.getNextTime();
+            if (nextTime == -1) {
+                Assert.assertTrue(false);
+            }
+            cursor.skipToSampleNumber(i + 1);
+        }
+        try {
+            final int lastTime = cursor.getNextTime();
+            Assert.assertTrue(false);
+        }
+        catch (Exception e) {
+
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCursorThatShowedError() throws Exception
+    {
+        // 39 bytes are: ff4f90f67afd03ce1e1ffe1a1e1d01fe771e1d01fd01df1e1d1ffe761e1d01fe771e1d01fe571e
+        // 1944 samples; error at 1934
+        final int sampleCount = 1944;
+        //final byte[] times = Hex.decodeHex("ff4f90f67afd03ce1e1ffe1a1e1d01fe771e1d01fd01df1e1d1ffe761e1d01fe771e1d01fe571e".toCharArray());
+        final byte[] times = Hex.decodeHex("00000018FF4F8FE521FD023D1E1FFEF01E1D01FE771E1D01FD03E21EFE07980F".toCharArray());
+        Assert.assertEquals(times.length, 32);
+        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        for (int i=0; i<sampleCount; i++) {
+            final int nextTime = cursor.getNextTime();
+            if (nextTime == -1) {
+                Assert.assertTrue(false);
+            }
+            cursor.skipToSampleNumber(i + 1);
+        }
+        try {
+            final int lastTime = cursor.getNextTime();
+            Assert.assertTrue(false);
+        }
+        catch (Exception e) {
+
+        }
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCombineTimesError() throws Exception
+    {
+        final List<byte[]> timeParts = new ArrayList<byte[]>();
+        timeParts.add(Hex.decodeHex("ff4f91fb14fe631e00fe151e".toCharArray()));
+        timeParts.add(Hex.decodeHex("ff4f920942".toCharArray()));
+        int count = 0;
+        for (byte[] timePart : timeParts) {
+            count += TimelineCoder.countTimeBytesSamples(timePart);
+        }
+        final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
+        final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
+        Assert.assertEquals(newCombinedLength, count);
     }
 }
