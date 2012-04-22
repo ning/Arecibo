@@ -58,14 +58,16 @@ public class TimelineAggregator
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
 
-    private final AtomicLong aggregatesCreated = makeCounter("aggregatesCreated");
-    private final AtomicLong timelineChunksConsidered = makeCounter("timelineChunksConsidered");
-    private final AtomicLong timelineChunkBatchesProcessed = makeCounter("timelineChunkBatchesProcessed");
-    private final AtomicLong timelineChunksCombined = makeCounter("timelineChunksCombined");
-    private final AtomicLong timelineChunksQueuedForCreation = makeCounter("timelineChunksQueuedForCreation");
-    private final AtomicLong timelineChunksWritten = makeCounter("timelineChunksWritten");
-    private final AtomicLong timelineChunksInvalidatedOrDeleted = makeCounter("timelineChunksInvalidatedOrDeleted");
-    private final AtomicLong timelineChunksBytesCreated = makeCounter("timelineChunksBytesCreated");
+    private final AtomicLong aggregatesCreated = makeCounter("aggsCreated");
+    private final AtomicLong timelineChunksConsidered = makeCounter("chunksConsidered");
+    private final AtomicLong timelineChunkBatchesProcessed = makeCounter("batchesProcessed");
+    private final AtomicLong timelineChunksCombined = makeCounter("chunksCombined");
+    private final AtomicLong timelineChunksQueuedForCreation = makeCounter("chunksQueued");
+    private final AtomicLong timelineChunksWritten = makeCounter("chunksWritten");
+    private final AtomicLong timelineChunksInvalidatedOrDeleted = makeCounter("chunksInvalidatedOrDeleted");
+    private final AtomicLong timelineChunksBytesCreated = makeCounter("bytesCreated");
+    private final AtomicLong msSpentAggregating = makeCounter("msSpentAggregating");
+    private final AtomicLong msSpentSleeping = makeCounter("msSpentSleeping");
 
     // These lists support batching of aggregated chunk writes and updates or deletes of the chunks aggregated
     private final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>();
@@ -215,36 +217,42 @@ public class TimelineAggregator
     {
         final int aggregationBatchSize = config.getAggregationBatchSize();
         while (true) {
-            final List<TimelineChunk> candidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel, chunksToAggregate, aggregationBatchSize);
-            if (candidates.size() == 0) {
-                break;
-            }
-            // The candidates are ordered first by host_id, then by event_category, and finally by start_time
-            // Loop pulling off the candidates for the first hostId and eventCategory
-            int lastHostId = 0;
-            int lastSampleKindId = 0;
-            final List<TimelineChunk> hostTimelineCandidates = new ArrayList<TimelineChunk>();
-            for (final TimelineChunk candidate : candidates) {
-                timelineChunksConsidered.incrementAndGet();
-                final int hostId = candidate.getHostId();
-                final int sampleKindId = candidate.getSampleKindId();
-                if (lastHostId == 0) {
-                    lastHostId = hostId;
-                    lastSampleKindId = sampleKindId;
+            final long startTime = System.currentTimeMillis();
+            try {
+                final List<TimelineChunk> candidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel, chunksToAggregate, aggregationBatchSize);
+                if (candidates.size() == 0) {
+                    break;
                 }
-                if (lastHostId != hostId || lastSampleKindId != sampleKindId) {
+                // The candidates are ordered first by host_id, then by event_category, and finally by start_time
+                // Loop pulling off the candidates for the first hostId and eventCategory
+                int lastHostId = 0;
+                int lastSampleKindId = 0;
+                final List<TimelineChunk> hostTimelineCandidates = new ArrayList<TimelineChunk>();
+                for (final TimelineChunk candidate : candidates) {
+                    timelineChunksConsidered.incrementAndGet();
+                    final int hostId = candidate.getHostId();
+                    final int sampleKindId = candidate.getSampleKindId();
+                    if (lastHostId == 0) {
+                        lastHostId = hostId;
+                        lastSampleKindId = sampleKindId;
+                    }
+                    if (lastHostId != hostId || lastSampleKindId != sampleKindId) {
+                        aggregatesCreated.addAndGet(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
+                        hostTimelineCandidates.clear();
+                        lastHostId = hostId;
+                        lastSampleKindId = sampleKindId;
+                    }
+                    hostTimelineCandidates.add(candidate);
+                }
+                if (hostTimelineCandidates.size() > 0) {
                     aggregatesCreated.addAndGet(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
-                    hostTimelineCandidates.clear();
-                    lastHostId = hostId;
-                    lastSampleKindId = sampleKindId;
                 }
-                hostTimelineCandidates.add(candidate);
+                if (chunkIdsToInvalidateOrDelete.size() > 0) {
+                    performWrites();
+                }
             }
-            if (hostTimelineCandidates.size() > 0) {
-                aggregatesCreated.addAndGet(aggregateTimelineCandidates(hostTimelineCandidates, aggregationLevel, chunksToAggregate));
-            }
-            if (chunkIdsToInvalidateOrDelete.size() > 0) {
-                performWrites();
+            finally {
+                msSpentAggregating.addAndGet(System.currentTimeMillis() - startTime);
             }
             final long sleepTime = config.getAggregationSleepBetweenBatches().getMillis();
             if (sleepTime > 0) {
@@ -254,6 +262,7 @@ public class TimelineAggregator
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
+                msSpentSleeping.addAndGet(sleepTime);
             }
             timelineChunkBatchesProcessed.incrementAndGet();
         }
