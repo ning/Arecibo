@@ -100,6 +100,16 @@ public interface CollectorConfig
     @Default("10m")
     TimeSpan getAggregationInterval();
 
+    @Config("arecibo.collector.timelines.aggregationBatchSize")
+    @Description("The number of chunks to fetch in each batch processed")
+    @Default("4000")
+    int getAggregationBatchSize();
+
+    @Config("arecibo.collector.timelines.aggregationSleepBetweenBatches")
+    @Description("How long to sleep between aggregation batches")
+    @Default("3s")
+    TimeSpan getAggregationSleepBetweenBatches();
+
     @Config("arecibo.collector.timelines.maxChunkIdsToInvalidateOrDelete")
     @Description("If the number of queued chunkIds to invalidate or delete is greater than or equal to this count, perform aggregated timeline writes and delete or invalidate the chunks aggregated")
     @Default("1000")
@@ -109,16 +119,6 @@ public interface CollectorConfig
     @Description("If true, blast the old TimelineChunk rows; if false, leave them in peace, since they won't be accessed")
     @Default("true")
     boolean getDeleteAggregatedChunks();
-
-    @Config("arecibo.collector.timelines.randomizeFirstAggregations")
-    @Description("If true, for the first aggregation for the (hostId, sampleKindId, aggregationLevel) after core start, aggregate a random number of chunks.  This distributes the db load")
-    @Default("true")
-    boolean getRandomizeFirstAggregations();
-
-    @Config("arecibo.collector.timelines.maxRandomizedAggregationLevel")
-    @Description("The maximum aggregation level for which we do randomization.  Only consulted if arecibo.collector.timelines.randomizeFirstAggregations is true")
-    @Default("2")
-    int getMaxRandomizedAggregationLevel();
 
     @Config("arecibo.collector.timelines.shutdownSaveMode")
     @Description("What to save on shut down; either all timelines (save_all_timelines) or just the accumulator start times (save_start_times)")

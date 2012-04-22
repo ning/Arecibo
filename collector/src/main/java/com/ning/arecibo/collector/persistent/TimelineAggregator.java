@@ -19,11 +19,8 @@ package com.ning.arecibo.collector.persistent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,14 +44,10 @@ import com.ning.arecibo.util.timeline.TimelineCoder;
  * When it finds them, it creates a single new timeline_times object representing the
  * full sequence, then searches for all TimelineChunks referring to the original
  * timeline_times_ids and aggregates them
- * TODO: When combining timelines, don't just concat the time and the samples.
- * Instead, run a scanner so we can compress the case of successive identical repeats
- * in adjacent timelines.
  */
 public class TimelineAggregator
 {
     private static final Logger log = Logger.getLogger(TimelineAggregator.class);
-    private static final Random rand = new Random(0);
 
     private final DefaultTimelineDAO timelineDao;
     private final CollectorConfig config;
@@ -67,6 +60,7 @@ public class TimelineAggregator
 
     private final AtomicLong aggregatesCreated = makeCounter("aggregatesCreated");
     private final AtomicLong timelineChunksConsidered = makeCounter("timelineChunksConsidered");
+    private final AtomicLong timelineChunkBatchesProcessed = makeCounter("timelineChunkBatchesProcessed");
     private final AtomicLong timelineChunksCombined = makeCounter("timelineChunksCombined");
     private final AtomicLong timelineChunksQueuedForCreation = makeCounter("timelineChunksQueuedForCreation");
     private final AtomicLong timelineChunksWritten = makeCounter("timelineChunksWritten");
@@ -76,15 +70,6 @@ public class TimelineAggregator
     // These lists support batching of aggregated chunk writes and updates or deletes of the chunks aggregated
     private final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>();
     private final List<Long> chunkIdsToInvalidateOrDelete = new ArrayList<Long>();
-
-    /**
-     * Mapping from hostId to map of sampleId to a set of aggregation levels.  An agg level is
-     * present if we've previously aggregated this level.  If we don't find the entry,
-     * that means it's the first time we've aggregated this (hostId, sampleKindId, aggregationLevel)
-     * triple, we aggregate a random number of chunks between 2 and the maximum, to
-     * ensure that subsequent aggregation load is distributed at all levels of aggregation.
-     */
-    private final Map<Integer, Map<Integer, Set<Integer>>> aggregatedThisLevelBefore = new HashMap<Integer, Map<Integer, Set<Integer>>>();
 
     @Inject
     public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
@@ -101,23 +86,12 @@ public class TimelineAggregator
         final int sampleKindId = firstCandidate.getSampleKindId();
         log.debug("For host_id {}, sampleKindId {}, looking to aggregate {} candidates in {} chunks",
                 new Object[]{hostId, sampleKindId, timelineChunkCandidates.size(), chunksToAggregate});
-        Map<Integer, Set<Integer>> sampleKindMap = aggregatedThisLevelBefore.get(hostId);
-        if (sampleKindMap == null) {
-            sampleKindMap = new HashMap<Integer, Set<Integer>>();
-            aggregatedThisLevelBefore.put(hostId, sampleKindMap);
-        }
-        Set<Integer> usedAggregationLevels = sampleKindMap.get(sampleKindId);
-        if (usedAggregationLevels == null) {
-            usedAggregationLevels = new HashSet<Integer>();
-            sampleKindMap.put(sampleKindId, usedAggregationLevels);
-        }
-        boolean previouslyAggregated = !usedAggregationLevels.add(aggregationLevel);
         int aggregatesCreated = 0;
         while (timelineChunkCandidates.size() >= chunksToAggregate) {
             final List<TimelineChunk> chunkCandidates = timelineChunkCandidates.subList(0, chunksToAggregate);
             timelineChunksCombined.addAndGet(chunksToAggregate);
             try {
-                aggregateHostSampleChunks(chunkCandidates, aggregationLevel, previouslyAggregated);
+                aggregateHostSampleChunks(chunkCandidates, aggregationLevel);
             }
             catch (IOException e) {
                 log.error(e, "IOException aggregating {} chunks, host_id {}, sampleKindId {}, looking to aggregate {} candidates in {} chunks",
@@ -125,7 +99,6 @@ public class TimelineAggregator
             }
             aggregatesCreated++;
             chunkCandidates.clear();
-            previouslyAggregated = true;
         }
         return aggregatesCreated;
     }
@@ -143,11 +116,11 @@ public class TimelineAggregator
      *
      * @param timelineChunks the TimelineChunks to be aggregated
      */
-    private void aggregateHostSampleChunks(final List<TimelineChunk> timelineChunks, final int aggregationLevel, final boolean previouslyAggregated) throws IOException
+    private void aggregateHostSampleChunks(final List<TimelineChunk> timelineChunks, final int aggregationLevel) throws IOException
     {
         final TimelineChunk firstTimesChunk = timelineChunks.get(0);
         final TimelineChunk lastTimesChunk = timelineChunks.get(timelineChunks.size() - 1);
-        final int chunkCount = computeChunkCount(timelineChunks.size(), aggregationLevel, previouslyAggregated);
+        final int chunkCount = timelineChunks.size();
         final int hostId = firstTimesChunk.getHostId();
         final DateTime startTime = firstTimesChunk.getStartTime();
         final DateTime endTime = lastTimesChunk.getEndTime();
@@ -177,21 +150,6 @@ public class TimelineAggregator
 
         if (chunkIdsToInvalidateOrDelete.size() >= config.getMaxChunkIdsToInvalidateOrDelete()) {
             performWrites();
-        }
-    }
-
-    private int computeChunkCount(final int chunkCount, final int aggregationLevel, final boolean previouslyAggregated)
-    {
-        if (config.getRandomizeFirstAggregations() && aggregationLevel <= config.getMaxRandomizedAggregationLevel()) {
-            if (chunkCount > 2) {
-                return 1 + rand.nextInt(chunkCount);
-            }
-            else {
-                return chunkCount;
-            }
-        }
-        else {
-            return chunkCount;
         }
     }
 
@@ -230,18 +188,43 @@ public class TimelineAggregator
 
         final String[] chunkCountsToAggregate = config.getChunksToAggregate().split(",");
         for (int aggregationLevel=0; aggregationLevel<config.getMaxAggregationLevel(); aggregationLevel++) {
+            final long startingAggregatesCreated = aggregatesCreated.get();
             final Map<String, Long> initialCounters = captureAggregatorCounters();
             final int chunkCountIndex = aggregationLevel >= chunkCountsToAggregate.length ? chunkCountsToAggregate.length - 1 : aggregationLevel;
             final int chunksToAggregate = Integer.parseInt(chunkCountsToAggregate[chunkCountIndex]);
-            final List<TimelineChunk> timelineChunkCandidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel, chunksToAggregate);
+            aggregateLevel(aggregationLevel, chunksToAggregate);
+            final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
+            final StringBuilder builder = new StringBuilder();
+            builder.append("For aggregation level ").append(aggregationLevel);
+            for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
+                builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
+            }
+            log.info(builder.toString());
+            final long netAggregatesCreated = aggregatesCreated.get() - startingAggregatesCreated;
+            if (netAggregatesCreated == 0) {
+                log.debug("Created no new aggregates, so skipping higher-level aggregations");
+                break;
+            }
+        }
 
+        log.info("Aggregation done");
+        isAggregating.set(false);
+    }
+
+    private void aggregateLevel(final int aggregationLevel, final int chunksToAggregate)
+    {
+        final int aggregationBatchSize = config.getAggregationBatchSize();
+        while (true) {
+            final List<TimelineChunk> candidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel, chunksToAggregate, aggregationBatchSize);
+            if (candidates.size() == 0) {
+                break;
+            }
             // The candidates are ordered first by host_id, then by event_category, and finally by start_time
             // Loop pulling off the candidates for the first hostId and eventCategory
             int lastHostId = 0;
             int lastSampleKindId = 0;
-            final long startingAggregatesCreated = aggregatesCreated.get();
             final List<TimelineChunk> hostTimelineCandidates = new ArrayList<TimelineChunk>();
-            for (final TimelineChunk candidate : timelineChunkCandidates) {
+            for (final TimelineChunk candidate : candidates) {
                 timelineChunksConsidered.incrementAndGet();
                 final int hostId = candidate.getHostId();
                 final int sampleKindId = candidate.getSampleKindId();
@@ -263,22 +246,17 @@ public class TimelineAggregator
             if (chunkIdsToInvalidateOrDelete.size() > 0) {
                 performWrites();
             }
-            final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
-            final StringBuilder builder = new StringBuilder();
-            builder.append("For aggregation level ").append(aggregationLevel);
-            for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
-                builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
+            final long sleepTime = config.getAggregationSleepBetweenBatches().getMillis();
+            if (sleepTime > 0) {
+                try {
+                    Thread.sleep(sleepTime);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
-            log.info(builder.toString());
-            final long netAggregatesCreated = aggregatesCreated.get() - startingAggregatesCreated;
-            if (netAggregatesCreated == 0) {
-                log.debug("Created no new aggregates, so skipping higher-level aggregations");
-                break;
-            }
+            timelineChunkBatchesProcessed.incrementAndGet();
         }
-
-        log.info("Aggregation done");
-        isAggregating.set(false);
     }
 
     private AtomicLong makeCounter(final String counterName)
@@ -331,6 +309,12 @@ public class TimelineAggregator
     public long getTimelineChunksConsidered()
     {
     return timelineChunksConsidered.get();
+    }
+
+    @Managed
+    public long getTimelineChunkBatchesProcessed()
+    {
+    return timelineChunkBatchesProcessed.get();
     }
 
     @Managed
