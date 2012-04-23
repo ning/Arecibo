@@ -141,9 +141,10 @@ function fillSeries(series) {
 // window.arecibo.graphs has been populated by the Ajax callback, now
 // populate the grid with the graphs
 function drawAllGraphs() {
-    var i = 0;
+    var nbGraphs = Set.size(window.arecibo.graphs);
+    var i = 1;
     for (var sampleKind in window.arecibo.graphs) {
-        addGraphContainer(i, sampleKind);
+        addGraphContainer(i, sampleKind, nbGraphs);
         drawGraph(i, sampleKind);
         i++;
     }
@@ -152,6 +153,7 @@ function drawAllGraphs() {
 function drawGraph(graphId, sampleKind) {
     var graph = new Rickshaw.Graph({
         element: document.querySelector("#chart_" + graphId),
+        width: 0.90 * $('#chart_container_' + graphId).parent().width(),
         series: window.arecibo.graphs[sampleKind].timeserie
     });
     graph.render();
@@ -358,20 +360,32 @@ var RenderControls = function(args) {
 };
 
 // Add a new graph container in the grid
-function addGraphContainer(graphId, sampleKind) {
-    var graphContainer = buildGraphContainer(graphId, sampleKind);
+function addGraphContainer(graphId, sampleKind, nbGraphs) {
+    var alone = false;
 
     // Do we need an extra row?
-    if (graphId % 2 == 0) {
+    if (graphId % 2 == 1) {
         $("#graph_grid").append($('<div></div>').attr('class', 'row show-grid row_graph_container'));
+        // Is the graph alone on the last row?
+        if (graphId == nbGraphs) {
+            alone = true;
+        }
     }
+
+    // Create the container
+    var graphContainer = buildGraphContainer(graphId, sampleKind, alone);
 
     // Find the latest row and add the new container
     $("#graph_grid div.row_graph_container:last").append(graphContainer);
 }
 
 // Build the necessary elements for a new graph
-function buildGraphContainer(graphId, sampleKind) {
+function buildGraphContainer(graphId, sampleKind, alone) {
+    var span = 'span6';
+    if (alone) {
+        span = 'span12';
+    }
+
     var graphRow = buildGraphRow(graphId);
     var graphControlsRow = buildGraphControlsRow(graphId);
     var smootherRow = buildSmootherRow(graphId);
@@ -379,7 +393,7 @@ function buildGraphContainer(graphId, sampleKind) {
     var debugRow = buildDebugRow(graphId);
 
     return $('<div></div>')
-                .attr('class', 'span6')
+                .attr('class', span)
                 .append($('<h5></h5>').text(sampleKind))
                 .append(graphRow)
                 .append(graphControlsRow)

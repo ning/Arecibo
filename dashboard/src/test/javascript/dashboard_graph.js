@@ -31,13 +31,13 @@ describe('The graph builder', function () {
         $('html,body').append($('<div></div>').attr('id', 'graph_grid'));
         verify($('#graph_grid'), '<div id="graph_grid"></div>')
 
-        addGraphContainer(0);
+        addGraphContainer(1);
         verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div></div></div>');
 
-        addGraphContainer(1);
+        addGraphContainer(2);
         verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div><div id="GRAPH"></div></div></div>');
 
-        addGraphContainer(2);
+        addGraphContainer(3);
         verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div><div id="GRAPH"></div></div><div class="row show-grid row_graph_container"><div id="GRAPH"></div></div></div>');
     });
 
