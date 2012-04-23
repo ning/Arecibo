@@ -134,9 +134,6 @@ function fillSeries(series) {
     });
 }
 
-/*
- * D3.js magic
- */
 function drawGraph() {
     $("#chart").children().remove();
     $("#legend").children().remove();
@@ -352,6 +349,84 @@ var RenderControls = function(args) {
 
     this.initialize();
 };
+
+// Add a new graph container in the grid
+function addGraphContainer() {
+    var graphId = window.arecibo.graphs.length + 1;
+    var graphContainer = buildGraphContainer(graphId);
+
+    // Do we need an extra row?
+    if (graphId % 2 == 1) {
+        $("#graph_grid").append($('<div></div>').attr('class', 'row show-grid'));
+    }
+
+    // Find the latest row and add the new container
+    $("#graph_grid div.row:last").append(graphContainer);
+}
+
+// Build the necessary elements for a new graph
+function buildGraphContainer(graphId) {
+    var graphRow = buildGraphRow(graphId);
+    var graphControlsRow = buildGraphControlsRow(graphId);
+    var smootherRow = buildSmootherRow(graphId);
+    var legendRow = buildLegendRow(graphId);
+    var debugRow = buildDebugRow(graphId);
+
+    return $('<div></div>')
+                .attr('class', 'span6')
+                .append(graphRow)
+                .append(graphControlsRow)
+                .append(smootherRow)
+                .append(legendRow)
+                .append(debugRow);
+}
+
+// Build the actual graph container
+function buildGraphRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<div></div>')
+                            .attr('id', 'chart_container_' + graphId)
+                            .append($('<div></div>').attr('id', 'y_axis_' + graphId))
+                            .append($('<div></div>').attr('id', 'chart_' + graphId))
+                        )
+                .append($('<div></div>').attr('id', 'slider_' + graphId));
+}
+
+// Build the form controls container
+function buildGraphControlsRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .attr('id', 'graph_controls_' + graphId)
+                .attr('style', 'display: none;')
+                .append(buildGraphControlsForm(graphId));
+}
+
+// Build the smoother container
+function buildSmootherRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<h6></h6>').text('Smoothing'))
+                .append($('<div></div>').attr('id', 'smoother_container_' + graphId));
+}
+
+// Build the container where the legend will be injected
+function buildLegendRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<div></div>')
+                            .attr('id', 'legend_container_' + graphId)
+                            .append($('<div></div>').attr('id', 'legend_' + graphId))
+                        );
+}
+
+// Build the debug row for a graph: this is where we store extra metadata
+// information, such as the direct link to the raw data
+function buildDebugRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<div></div>').attr('id', 'debug_container_' + graphId));
+}
 
 // Build the complete form for the controls
 function buildGraphControlsForm(graphId) {
