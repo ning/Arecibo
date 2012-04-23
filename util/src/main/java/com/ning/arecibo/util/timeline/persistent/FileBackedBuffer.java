@@ -51,6 +51,7 @@ public class FileBackedBuffer
 
     private final String basePath;
     private final String prefix;
+    private final boolean deleteFilesOnClose;
     private final AtomicLong samplesforTimestampWritten = new AtomicLong();
     private final Object recyclingMonitor = new Object();
 
@@ -60,8 +61,14 @@ public class FileBackedBuffer
 
     public FileBackedBuffer(final String basePath, final String prefix, final int segmentsSize, final int maxNbSegments) throws IOException
     {
+        this(basePath, prefix, true, segmentsSize, maxNbSegments);
+    }
+
+    public FileBackedBuffer(final String basePath, final String prefix, final boolean deleteFilesOnClose, final int segmentsSize, final int maxNbSegments) throws IOException
+    {
         this.basePath = basePath;
         this.prefix = prefix;
+        this.deleteFilesOnClose = deleteFilesOnClose;
 
         final MemBuffersForBytes bufs = new MemBuffersForBytes(segmentsSize, 1, maxNbSegments);
         inputBuffer = bufs.createStreamyBuffer(1, maxNbSegments);
@@ -104,7 +111,7 @@ public class FileBackedBuffer
                 out.close();
             }
 
-            out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer);
+            out = new StreamyBytesPersistentOutputStream(basePath, prefix, inputBuffer, deleteFilesOnClose);
             smileGenerator = smileFactory.createJsonGenerator(out, JsonEncoding.UTF8);
             // Drop the Smile header
             smileGenerator.flush();

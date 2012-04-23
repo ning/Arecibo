@@ -56,7 +56,7 @@ public class TestReplayer
         }
     }
 
-    private final StreamyBytesPersistentOutputStream outputStream = new StreamyBytesPersistentOutputStream(basePath.toString(), "pweet", null);
+    private final StreamyBytesPersistentOutputStream outputStream = new StreamyBytesPersistentOutputStream(basePath.toString(), "pweet", null, true);
 
     @Test(groups = "fast")
     public void testStringOrdering() throws Exception

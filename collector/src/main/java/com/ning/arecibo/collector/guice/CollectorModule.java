@@ -89,7 +89,8 @@ public class CollectorModule extends AbstractModule
 
         // Persistent buffer for in-memory samples
         try {
-            final FileBackedBuffer fileBackedBuffer = new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", config.getSegmentsSize(), config.getMaxNbSegments());
+            final boolean deleteFilesOnClose = config.getShutdownSaveMode().equals("save_all_timelines");
+            final FileBackedBuffer fileBackedBuffer = new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", deleteFilesOnClose, config.getSegmentsSize(), config.getMaxNbSegments());
             exporter.export(ObjectNames.generatedNameOf(FileBackedBuffer.class), fileBackedBuffer);
             bind(FileBackedBuffer.class).toInstance(fileBackedBuffer);
         }

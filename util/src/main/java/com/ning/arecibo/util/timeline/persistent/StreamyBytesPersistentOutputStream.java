@@ -38,11 +38,12 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
     private final String basePath;
     private final String prefix;
     private final StreamyBytesMemBuffer inputBuffer;
+    private final boolean deleteFilesOnClose;
     private final List<String> createdFiles = new ArrayList<String>();
 
     private long bytesOnDisk = 0L;
 
-    public StreamyBytesPersistentOutputStream(String basePath, final String prefix, final StreamyBytesMemBuffer inputBuffer)
+    public StreamyBytesPersistentOutputStream(String basePath, final String prefix, final StreamyBytesMemBuffer inputBuffer, final boolean deleteFilesOnClose)
     {
         if (!basePath.endsWith("/")) {
             basePath += "/";
@@ -51,6 +52,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
 
         this.prefix = prefix;
         this.inputBuffer = inputBuffer;
+        this.deleteFilesOnClose = deleteFilesOnClose;
     }
 
     @Override
@@ -80,10 +82,12 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
         inputBuffer.clear();
 
         // Cleanup persistent data
-        for (final String path : createdFiles) {
-            log.info("Discarding file: {}", path);
-            if (!new File(path).delete()) {
-                log.warn("Unable to discard file: {}", path);
+        if (deleteFilesOnClose) {
+            for (final String path : createdFiles) {
+                log.info("Discarding file: {}", path);
+                if (!new File(path).delete()) {
+                    log.warn("Unable to discard file: {}", path);
+                }
             }
         }
     }
@@ -98,7 +102,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
 
             final String pathname = getFileName();
             createdFiles.add(pathname);
-            log.info("Flushing in-memory buffer to disk: {}", pathname);
+            log.debug("Flushing in-memory buffer to disk: {}", pathname);
 
             try {
                 final File out = new File(pathname);
@@ -149,7 +153,7 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
                 }
             }
         }
-        log.info("Saved {} bytes to disk", bytesTransferred);
+        log.debug("Saved {} bytes to disk", bytesTransferred);
     }
 
     public void reset()
