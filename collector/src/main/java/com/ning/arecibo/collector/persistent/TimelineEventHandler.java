@@ -116,7 +116,6 @@ public class TimelineEventHandler implements EventHandler
 
     private final ShutdownSaveMode shutdownSaveMode;
     private final AtomicBoolean shuttingDown = new AtomicBoolean();
-    private final AtomicBoolean fastShutdown = new AtomicBoolean();
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
     private final AtomicLong eventsReceivedAfterShuttingDown = new AtomicLong();
@@ -134,7 +133,6 @@ public class TimelineEventHandler implements EventHandler
 
 
     private EventReplayingLoadGenerator loadGenerator = null;
-    private StartTimes startTimes = null;
 
     @Inject
     public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final BackgroundDBChunkWriter backgroundWriter, final FileBackedBuffer fileBackedBuffer)
@@ -146,7 +144,7 @@ public class TimelineEventHandler implements EventHandler
         this.shutdownSaveMode = ShutdownSaveMode.fromString(config.getShutdownSaveMode());
     }
 
-    private void saveAccumulatorsOrStartTimes()
+    private void saveAccumulators()
     {
         for (Map.Entry<Integer, HostAccumulatorsAndUpdateDate> entry : accumulators.entrySet()) {
             final int hostId = entry.getKey();
@@ -154,14 +152,22 @@ public class TimelineEventHandler implements EventHandler
             for (Map.Entry<Integer, TimelineHostEventAccumulator> accumulatorEntry : hostAccumulators.entrySet()) {
                 final int categoryId = accumulatorEntry.getKey();
                 final TimelineHostEventAccumulator accumulator = accumulatorEntry.getValue();
-                if (fastShutdown.get()) {
-                    log.debug("Saving Timeline start time for hostId [{}] and category [{}]", hostId, categoryId);
-                    startTimes.addTime(hostId, categoryId, accumulator.getStartTime());
-                }
-                else {
-                    log.debug("Saving Timeline for hostId [{}] and categoryId [{}]", hostId, categoryId);
-                    accumulator.extractAndQueueTimelineChunks();
-                }
+                log.debug("Saving Timeline for hostId [{}] and categoryId [{}]", hostId, categoryId);
+                accumulator.extractAndQueueTimelineChunks();
+            }
+        }
+    }
+
+    private void saveStartTimes(final StartTimes startTimes)
+    {
+        for (Map.Entry<Integer, HostAccumulatorsAndUpdateDate> entry : accumulators.entrySet()) {
+            final int hostId = entry.getKey();
+            final Map<Integer, TimelineHostEventAccumulator> hostAccumulators = entry.getValue().getCategoryAccumulators();
+            for (Map.Entry<Integer, TimelineHostEventAccumulator> accumulatorEntry : hostAccumulators.entrySet()) {
+                final int categoryId = accumulatorEntry.getKey();
+                final TimelineHostEventAccumulator accumulator = accumulatorEntry.getValue();
+                log.debug("Saving Timeline start time for hostId [{}] and category [{}]", hostId, categoryId);
+                startTimes.addTime(hostId, categoryId, accumulator.getStartTime());
             }
         }
     }
@@ -412,30 +418,30 @@ public class TimelineEventHandler implements EventHandler
     }
 
     @Managed
-    public void forceCommit(final boolean shutdown)
+    public void forceCommit()
     {
-        if (shutdown) {
-            shuttingDown.set(true);
-        }
         forceCommitCallCount.incrementAndGet();
-        final boolean doingFastShutdown = shutdown && shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES;
-        fastShutdown.set(doingFastShutdown);
+        saveAccumulators();
+        backingBuffer.discard();
+        log.info("Timelines committed");
+    }
+
+    @Managed
+    public void commitAndShutdown()
+    {
+        shuttingDown.set(true);
+        final boolean doingFastShutdown = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES;
         if (doingFastShutdown) {
-            startTimes = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES ? new StartTimes() : null;
-            saveAccumulatorsOrStartTimes();
+            final StartTimes startTimes = new StartTimes();
+            saveStartTimes(startTimes);
             timelineDAO.insertLastStartTimes(startTimes);
         }
         else {
-            startTimes = null;
-            saveAccumulatorsOrStartTimes();
+            saveAccumulators();
         }
-        if (shutdown) {
-            performShutdown();
-        }
-        // All the samples have been saved, or else the start times have been saved.  Discard the local buffer
+        performShutdown();
         backingBuffer.discard();
-
-        log.info(doingFastShutdown ? "Timeline start times committed" : "Timelines committed");
+        log.info("During shutdown, timeline %s committed", doingFastShutdown ? "start times" : "accumulators");
     }
 
     private void performShutdown()
