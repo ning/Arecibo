@@ -101,7 +101,6 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
             log.info("Flushing in-memory buffer to disk: {}", pathname);
 
             try {
-                write(SmileConstants.TOKEN_LITERAL_END_ARRAY);
                 final File out = new File(pathname);
                 flushToFile(out);
             }
@@ -125,10 +124,10 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
         final byte[] buf = new byte[BUF_SIZE];
         FileOutputStream transfer = null;
 
+        int bytesTransferred = 0;
         try {
             transfer = Files.newOutputStreamSupplier(out).getOutput();
 
-            int bytesTransferred = 0;
             while (true) {
                 final int r = inputBuffer.readIfAvailable(buf);
                 if (r == 0) {
@@ -137,15 +136,20 @@ public class StreamyBytesPersistentOutputStream extends OutputStream
                 transfer.write(buf, 0, r);
                 bytesTransferred += r;
             }
-
-            bytesOnDisk += bytesTransferred;
-            log.info("Saved {} bytes to disk", bytesTransferred);
         }
         finally {
             if (transfer != null) {
-                transfer.flush();
+                try {
+                    transfer.write(SmileConstants.TOKEN_LITERAL_END_ARRAY);
+                    bytesTransferred++;
+                    bytesOnDisk += bytesTransferred;
+                }
+                finally {
+                    transfer.flush();
+                }
             }
         }
+        log.info("Saved {} bytes to disk", bytesTransferred);
     }
 
     public void reset()
