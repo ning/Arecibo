@@ -218,7 +218,7 @@ function drawGraph(graphId, sampleKind) {
 
     var smoother = new Rickshaw.Graph.Smoother({
         graph: graph,
-        element: document.getElementById('smoother_' + graphId)
+        element: document.getElementById('smoother_container_' + graphId)
     });
 
     var controls = new RenderControls({
