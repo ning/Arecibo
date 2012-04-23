@@ -168,7 +168,7 @@ public class TestEventCollectorServer
             Assert.assertTrue(sampleKinds.contains(MAX_HEAPUSED_KIND));
         }
 
-        timelineEventHandler.forceCommit(false);
+        timelineEventHandler.forceCommit();
         backgroundWriter.initiateShutdown();
 
         final AccumulatorConsumer consumer = new AccumulatorConsumer();

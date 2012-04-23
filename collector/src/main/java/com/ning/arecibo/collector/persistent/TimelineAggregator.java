@@ -57,6 +57,8 @@ public class TimelineAggregator
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
 
+    private final AtomicLong aggregationRuns = makeCounter("runs");
+    private final AtomicLong foundNothingRuns = makeCounter("found nothing");
     private final AtomicLong aggregatesCreated = makeCounter("aggsCreated");
     private final AtomicLong timelineChunksConsidered = makeCounter("chunksConsidered");
     private final AtomicLong timelineChunkBatchesProcessed = makeCounter("batchesProcessed");
@@ -187,6 +189,7 @@ public class TimelineAggregator
             log.debug("Starting aggregating");
         }
 
+        aggregationRuns.incrementAndGet();
         final String[] chunkCountsToAggregate = config.getChunksToAggregate().split(",");
         for (int aggregationLevel=0; aggregationLevel<config.getMaxAggregationLevel(); aggregationLevel++) {
             final long startingAggregatesCreated = aggregatesCreated.get();
@@ -197,6 +200,7 @@ public class TimelineAggregator
             final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
             final long netAggregatesCreated = aggregatesCreated.get() - startingAggregatesCreated;
             if (netAggregatesCreated == 0) {
+                foundNothingRuns.incrementAndGet();
                 log.debug("Created no new aggregates, so skipping higher-level aggregations");
                 break;
             }
@@ -313,6 +317,18 @@ public class TimelineAggregator
     public void stopAggregationThread()
     {
         aggregatorThread.shutdown();
+    }
+
+    @Managed
+    public long getAggregationRuns()
+    {
+        return aggregationRuns.get();
+    }
+
+    @Managed
+    public long getFoundNothingRuns()
+    {
+        return foundNothingRuns.get();
     }
 
     @Managed
