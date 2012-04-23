@@ -363,13 +363,25 @@ public class TimelineEventHandler implements EventHandler
         replayCount.incrementAndGet();
         log.info("Starting replay of files in {}", spoolDir);
         final Replayer replayer = new Replayer(spoolDir);
-        final StartTimes startTimes = shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES ? timelineDAO.getLastStartTimes() : null;
+        StartTimes lastStartTimes = null;
+        if (shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES) {
+            lastStartTimes = timelineDAO.getLastStartTimes();
+            if (lastStartTimes == null) {
+                log.info("Did not find startTimes");
+            }
+            else {
+                log.info("Retrieved startTimes from the db");
+            }
+        }
+        final StartTimes startTimes = lastStartTimes;
+        final long found = replaySamplesFoundCount.get();
+        final long outsideTimeRange = replaySamplesOutsideTimeRangeCount.get();
+        final long processed = replaySamplesProcessedCount.get();
 
         try {
-            // Read all files in the spool directory and delete them after process
-            // NOTE: The replay process creates new replay files, so we can restart if
-            // we crash before the accumulators are sent to the db.
-            replayer.readAll(new Function<HostSamplesForTimestamp, Void>()
+            // Read all files in the spool directory and delete them after process, if
+            // startTimes  is null.
+            replayer.readAll(startTimes == null, new Function<HostSamplesForTimestamp, Void>()
             {
                 @Override
                 public Void apply(@Nullable final HostSamplesForTimestamp hostSamples)
@@ -408,8 +420,10 @@ public class TimelineEventHandler implements EventHandler
             });
             if (shutdownSaveMode == ShutdownSaveMode.SAVE_START_TIMES) {
                 timelineDAO.deleteLastStartTimes();
+                log.info("Deleted old startTimes");
             }
-            log.info("Replay completed");
+            log.info(String.format("Replay completed samples read %d, samples outside time range %d, samples used %d",
+                    replaySamplesFoundCount.get() - found, replaySamplesOutsideTimeRangeCount.get() - outsideTimeRange, replaySamplesProcessedCount.get() - processed));
         }
         catch (RuntimeException e) {
             // Catch the exception to make the collector start properly
@@ -435,13 +449,14 @@ public class TimelineEventHandler implements EventHandler
             final StartTimes startTimes = new StartTimes();
             saveStartTimes(startTimes);
             timelineDAO.insertLastStartTimes(startTimes);
+            log.info("During shutdown, saved timeline start times in the db");
         }
         else {
             saveAccumulators();
+            log.info("During shutdown, saved timeline accumulators");
         }
         performShutdown();
         backingBuffer.discard();
-        log.info("During shutdown, timeline %s committed", doingFastShutdown ? "start times" : "accumulators");
     }
 
     private void performShutdown()
@@ -467,11 +482,12 @@ public class TimelineEventHandler implements EventHandler
         this.purgeFilesAndAccumulators(new DateTime().minus(config.getTimelineLength().getMillis()), new DateTime().minus(2 * config.getTimelineLength().getMillis()));
     }
 
+    // TODO: We have a bad interaction between startTimes and purging: If the system is down
+    // for two hours, we may not want it to purge everything.  Figure out what to do about this.
     private synchronized void purgeFilesAndAccumulators(final DateTime purgeAccumulatorsIfBefore, final DateTime purgeFilesIfBefore)
     {
         purgeOldHostsAndAccumulators(purgeAccumulatorsIfBefore);
         final Replayer replayer = new Replayer(config.getSpoolDir());
-        final DateTime purgeIfBeforeDateForFiles = new DateTime().minus(2 * config.getTimelineLength().getMillis());
         replayer.purgeOldFiles(purgeFilesIfBefore);
     }
 

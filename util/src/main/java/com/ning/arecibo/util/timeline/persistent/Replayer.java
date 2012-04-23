@@ -71,11 +71,12 @@ public class Replayer
         this.path = path;
     }
 
+    // This method is only used by test code
     public List<HostSamplesForTimestamp> readAll()
     {
         final List<HostSamplesForTimestamp> samples = new ArrayList<HostSamplesForTimestamp>();
 
-        readAll(new Function<HostSamplesForTimestamp, Void>()
+        readAll(true, new Function<HostSamplesForTimestamp, Void>()
         {
             @Override
             public Void apply(@Nullable final HostSamplesForTimestamp input)
@@ -90,7 +91,7 @@ public class Replayer
         return samples;
     }
 
-    public void readAll(final Function<HostSamplesForTimestamp, Void> fn)
+    public void readAll(final boolean deleteFiles, final Function<HostSamplesForTimestamp, Void> fn)
     {
         final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
 
@@ -98,8 +99,10 @@ public class Replayer
             try {
                 read(file, fn);
 
-                if (!file.delete()) {
-                    log.warn("Unable to delete file: {}", file.getAbsolutePath());
+                if (deleteFiles) {
+                    if (!file.delete()) {
+                        log.warn("Unable to delete file: {}", file.getAbsolutePath());
+                    }
                 }
             }
             catch (IOException e) {
