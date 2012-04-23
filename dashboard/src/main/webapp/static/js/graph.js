@@ -352,3 +352,96 @@ var RenderControls = function(args) {
 
     this.initialize();
 };
+
+// Build the complete form for the controls
+function buildGraphControlsForm(graphId) {
+    var rendererFields = buildGraphControlsRendererFields(graphId);
+    var offsetFields = buildGraphControlsOffsetFields(graphId);
+    var interpolationFields = buildGraphControlsInterpolationFields(graphId);
+
+    var fieldSet = $('<fieldset></fieldset>')
+                        .append($('<h6></h6>').text('Rendering'))
+                        .append(rendererFields)
+                        .append(offsetFields)
+                        .append(interpolationFields);
+
+    return $('<form></form>')
+                .attr('class', 'form-inline')
+                .attr('id', 'side_panel_' + graphId)
+                .append(fieldSet);
+}
+
+// Build the controls for the renderers (how to draw the data points)
+function buildGraphControlsRendererFields(graphId) {
+    var areaRendererField = buildGraphControlsInputField(1, 'renderer', 'area', 'area', true, 'area');
+    var barRendererField = buildGraphControlsInputField(1, 'renderer', 'bar', 'bar', false, 'bar');
+    var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', false, 'line');
+    var scatterRendererField = buildGraphControlsInputField(1, 'renderer', 'scatter', 'scatterplot', false, 'scatter');
+
+    return $('<div></div')
+                .attr('class', 'control-group toggler')
+                .attr('id', 'renderer_form_' + graphId)
+                .append(
+                    $('<div></div>')
+                    .attr('class', 'controls')
+                    .append(areaRendererField)
+                    .append(barRendererField)
+                    .append(lineRendererField)
+                    .append(scatterRendererField)
+                );
+}
+
+// Build the controls for the offsets (how to position the different graph relatively to each other)
+function buildGraphControlsOffsetFields(graphId) {
+    var stackOffsetField = buildGraphControlsInputField(1, 'offset', 'stack', 'zero', false, 'stack');
+    var streamOffsetField = buildGraphControlsInputField(1, 'offset', 'stream', 'wiggle', false, 'stream');
+    var pctOffsetField = buildGraphControlsInputField(1, 'offset', 'pct', 'expand', false, 'pct');
+    var valueOffsetField = buildGraphControlsInputField(1, 'offset', 'value', 'value', true, 'value');
+
+    return $('<div></div')
+                .attr('class', 'control-group')
+                .attr('id', 'offset_form_' + graphId)
+                .append(
+                    $('<div></div>')
+                    .attr('class', 'controls')
+                    .append(stackOffsetField)
+                    .append(streamOffsetField)
+                    .append(pctOffsetField)
+                    .append(valueOffsetField)
+                );
+}
+
+// Build the controls for the interpolation (how to join data points within a graph)
+function buildGraphControlsInterpolationFields(graphId) {
+    var cardinalInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'cardinal', 'cardinal', false, 'cardinal');
+    var linearInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'linear', 'linear', true, 'linear');
+    var stepInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'step', 'step-after', false, 'step');
+
+    return $('<div></div')
+                .attr('class', 'control-group')
+                .attr('id', 'interpolation_form_' + graphId)
+                .append(
+                    $('<div></div>')
+                    .attr('class', 'controls')
+                    .append(cardinalInterpolationField)
+                    .append(linearInterpolationField)
+                    .append(stepInterpolationField)
+                );
+}
+
+// Build one label/input combo for the graph controls
+function buildGraphControlsInputField(graphId, name, id, value, checked, text) {
+    var inputId = id + '_' + graphId;
+    var inputElement =
+        $('<input>')
+            .attr('type', 'radio')
+            .attr('value', value)
+            .attr('name', name)
+            .attr('id', inputId)
+            .attr('checked', checked);
+
+    return $('<label></label>')
+            .attr('for', inputId)
+            .append(inputElement)
+            .append(text);
+}
