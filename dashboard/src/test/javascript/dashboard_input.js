@@ -14,6 +14,42 @@
  * under the License.
  */
 
+describe('The dashboard input form validator', function() {
+    var broken = 'BROKEN!';
+
+    it('should accept valid entries', function() {
+        spyOn(window, 'validateHostsInput').andReturn(null);
+        spyOn(window, 'validateSampleKindsInput').andReturn(null);
+        spyOn(window, 'validateDatesInput').andReturn(null);
+
+        expect(validateInput()).toBeNull();
+    });
+
+    it('should reject an invalid hosts selection', function() {
+        spyOn(window, 'validateHostsInput').andReturn(broken);
+        spyOn(window, 'validateSampleKindsInput').andReturn(null);
+        spyOn(window, 'validateDatesInput').andReturn(null);
+
+        expect(validateInput()).toBe(broken);
+    });
+
+    it('should reject an invalid sample kinds selection', function() {
+        spyOn(window, 'validateHostsInput').andReturn(null);
+        spyOn(window, 'validateSampleKindsInput').andReturn(broken);
+        spyOn(window, 'validateDatesInput').andReturn(null);
+
+        expect(validateInput()).toBe(broken);
+    });
+
+    it('should reject an invalid dates selection', function() {
+        spyOn(window, 'validateHostsInput').andReturn(null);
+        spyOn(window, 'validateSampleKindsInput').andReturn(null);
+        spyOn(window, 'validateDatesInput').andReturn(broken);
+
+        expect(validateInput()).toBe(broken);
+    });
+});
+
 describe('The dashboard input form host validator', function() {
     var hosts;
 
@@ -47,6 +83,42 @@ describe('The dashboard input form host validator', function() {
 
         hosts = undefined;
         expect(validateHostsInput()).toBe('No host selected');
+    });
+});
+
+describe('The dashboard input form sample kind validator', function() {
+    var sampleKinds;
+
+    beforeEach(function() {
+        // Mock the dynatree
+        var fakeDynatree = {
+            getSelectedNodes: function() {
+                return sampleKinds;
+            }
+        };
+
+        spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+    });
+
+    it('should accept a single sample kind selection', function() {
+        sampleKinds = ['heapMax'];
+        expect(validateSampleKindsInput()).toBeNull;
+    });
+
+    it('should accept a multiple sample kinds selection', function() {
+        sampleKinds = ['heapMax', 'heapUsed'];
+        expect(validateSampleKindsInput()).toBeNull;
+    });
+
+    it('should complain and not make a collector query if no sample kind is selected', function() {
+        sampleKinds = [];
+        expect(validateSampleKindsInput()).toBe('No sample kind selected');
+
+        sampleKinds = null;
+        expect(validateSampleKindsInput()).toBe('No sample kind selected');
+
+        sampleKinds = undefined;
+        expect(validateSampleKindsInput()).toBe('No sample kind selected');
     });
 });
 

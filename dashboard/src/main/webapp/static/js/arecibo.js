@@ -78,10 +78,17 @@ function validateInput() {
         return errorMessage;
     }
 
+    errorMessage = validateSampleKindsInput();
+    if (errorMessage) {
+        return errorMessage;
+    }
+
     errorMessage = validateDatesInput();
     if (errorMessage) {
         return errorMessage;
     }
+
+    return null;
 }
 
 // Return null if the hosts selection is valid, an error message otherwise
@@ -89,6 +96,16 @@ function validateHostsInput() {
     var hostsSelected = findSelectedHosts();
     if (!hostsSelected || hostsSelected.length == 0) {
         return 'No host selected';
+    } else {
+        return null;
+    }
+}
+
+// Return null if the sample kinds selection is valid, an error message otherwise
+function validateSampleKindsInput() {
+    var sampleKindsSelected = findSelectedSampleKinds();
+    if (!sampleKindsSelected || sampleKindsSelected.length == 0) {
+        return 'No sample kind selected';
     } else {
         return null;
     }
@@ -198,6 +215,11 @@ function findSelectedHosts() {
     return $("#hosts_tree").dynatree("getTree").getSelectedNodes();
 }
 
+// Find all selected nodes in the sample kinds tree
+function findSelectedSampleKinds() {
+    return $("#sample_kinds_tree").dynatree("getTree").getSelectedNodes();
+}
+
 // Find all selected hosts and build the associated query parameter for the dashboard
 // This will also set window.arecibo.hosts_selected to a list of tuples (hostName, category)
 function buildHostsParamsFromTree() {
@@ -232,7 +254,7 @@ function buildHostsParamsFromTree() {
 // This will also set window.arecibo.sample_kinds_selected to a list of tuples (sampleKind, sampleCategory)
 function buildCategoryAndSampleKindParamsFromTree() {
     var uri = '';
-    var tree = $("#sample_kinds_tree").dynatree("getTree").getSelectedNodes();
+    var tree = findSelectedSampleKinds();
     window.arecibo.sample_kinds_selected = [];
 
     for (var i in tree) {
