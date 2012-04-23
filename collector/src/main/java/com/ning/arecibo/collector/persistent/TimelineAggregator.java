@@ -40,10 +40,9 @@ import com.ning.arecibo.util.timeline.TimelineChunk;
 import com.ning.arecibo.util.timeline.TimelineCoder;
 
 /**
- * This class runs a thread that periodically looks for unaggregated timeline_times.
- * When it finds them, it creates a single new timeline_times object representing the
- * full sequence, then searches for all TimelineChunks referring to the original
- * timeline_times_ids and aggregates them
+ * This class runs a thread that periodically looks for unaggregated timelines.
+ * When it finds them, it combines them intelligently as if they were originally
+ * a single sequence of times.
  */
 public class TimelineAggregator
 {
@@ -185,7 +184,7 @@ public class TimelineAggregator
             return;
         }
         else {
-            log.info("Starting aggregating");
+            log.debug("Starting aggregating");
         }
 
         final String[] chunkCountsToAggregate = config.getChunksToAggregate().split(",");
@@ -196,20 +195,22 @@ public class TimelineAggregator
             final int chunksToAggregate = Integer.parseInt(chunkCountsToAggregate[chunkCountIndex]);
             aggregateLevel(aggregationLevel, chunksToAggregate);
             final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
-            final StringBuilder builder = new StringBuilder();
-            builder.append("For aggregation level ").append(aggregationLevel);
-            for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
-                builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
-            }
-            log.info(builder.toString());
             final long netAggregatesCreated = aggregatesCreated.get() - startingAggregatesCreated;
             if (netAggregatesCreated == 0) {
                 log.debug("Created no new aggregates, so skipping higher-level aggregations");
                 break;
             }
+            else {
+                final StringBuilder builder = new StringBuilder();
+                builder.append("For aggregation level ").append(aggregationLevel);
+                for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
+                    builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
+                }
+                log.info(builder.toString());
+            }
         }
 
-        log.info("Aggregation done");
+        log.debug("Aggregation done");
         isAggregating.set(false);
     }
 
