@@ -37,8 +37,6 @@ import com.ning.arecibo.util.timeline.TimelineCoder;
 import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.CounterMetric;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -146,11 +144,6 @@ public class TimelineEventHandler implements EventHandler
         this.backgroundWriter = backgroundWriter;
         this.backingBuffer = fileBackedBuffer;
         this.shutdownSaveMode = ShutdownSaveMode.fromString(config.getShutdownSaveMode());
-    }
-
-    private CounterMetric makeCounter(final String counterName)
-    {
-        return Metrics.newCounter(TimelineEventHandler.class, counterName);
     }
 
     private void saveAccumulatorsOrStartTimes()

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.joda.time.DateTime;
@@ -68,13 +67,11 @@ public class TimelineHostEventAccumulator
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
-    private static final Random rand = new Random(System.currentTimeMillis());
 
     private final Map<Integer, SampleSequenceNumber> sampleKindIdCounters = new HashMap<Integer, SampleSequenceNumber>();
     private final List<PendingChunkMap> pendingChunkMaps = new ArrayList<PendingChunkMap>();
     private long pendingChunkMapIdCounter = 1;
 
-    private final TimelineDAO dao;
     private final BackgroundDBChunkWriter backgroundWriter;
     private final Integer timelineLengthMillis;
     private final int hostId;
@@ -102,13 +99,12 @@ public class TimelineHostEventAccumulator
     public TimelineHostEventAccumulator(final TimelineDAO dao, final BackgroundDBChunkWriter backgroundWriter,
             final int hostId, final int eventCategoryId, final DateTime firstSampleTime, Integer timelineLengthMillis)
     {
-        this.dao = dao;
         this.timelineLengthMillis = timelineLengthMillis;
         this.backgroundWriter = backgroundWriter;
         this.hostId = hostId;
         this.eventCategoryId = eventCategoryId;
         // Set the end-of-chunk time by tossing a random number, to evenly distribute the db writeback load.
-        this.chunkEndTime = timelineLengthMillis != null ? firstSampleTime.plusMillis(rand.nextInt(timelineLengthMillis)) : null;;
+        this.chunkEndTime = timelineLengthMillis != null ? firstSampleTime.plusMillis(timelineLengthMillis) : null;;
     }
 
     /*

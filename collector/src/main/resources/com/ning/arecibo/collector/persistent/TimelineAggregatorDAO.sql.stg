@@ -26,7 +26,7 @@ getTimelineAggregationCandidates() ::= <<
      and c.dont_aggregate = 0
      and h.chunk_count >= :chunksNeeded
    order by c.host_id, c.sample_kind_id, c.start_time
-   ;
+   limit :aggregationBatchSize;
  >>
 
  getAggregationCandidatesForHostIdAndSampleKindIds(sampleKindIds) ::= <<

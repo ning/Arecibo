@@ -34,7 +34,8 @@ import com.ning.arecibo.util.timeline.TimelineChunkMapper;
 public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorDAO>
 {
     @SqlQuery
-    List<TimelineChunk> getTimelineAggregationCandidates(@Bind("aggregationLevel") final int aggregationLevel, @Bind("chunksNeeded") final int chunksNeeded);
+    List<TimelineChunk> getTimelineAggregationCandidates(@Bind("aggregationLevel") final int aggregationLevel, @Bind("chunksNeeded") final int chunksNeeded,
+            @Bind("aggregationBatchSize") int aggregationBatchSize);
 
     @SqlQuery
     int getLastInsertedId();
