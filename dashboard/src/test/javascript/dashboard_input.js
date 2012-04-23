@@ -14,36 +14,92 @@
  * under the License.
  */
 
-describe('The dashboard input form', function () {
+describe('The dashboard input form host validator', function() {
+    var hosts;
+
+    beforeEach(function() {
+        // Mock the dynatree
+        var fakeDynatree = {
+            getSelectedNodes: function() {
+                return hosts;
+            }
+        };
+
+        spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+    });
+
+    it('should accept a single host selection', function() {
+        hosts = ['hostA.company.com'];
+        expect(validateHostsInput()).toBeNull;
+    });
+
+    it('should accept a multiple hosts selection', function() {
+        hosts = ['hostA.company.com', 'hostB.company.com'];
+        expect(validateHostsInput()).toBeNull;
+    });
+
+    it('should complain and not make a collector query if no host is selected', function() {
+        hosts = [];
+        expect(validateHostsInput()).toBe('No host selected');
+
+        hosts = null;
+        expect(validateHostsInput()).toBe('No host selected');
+
+        hosts = undefined;
+        expect(validateHostsInput()).toBe('No host selected');
+    });
+});
+
+describe('The dashboard input form datetime validator', function() {
+    var firstCall = true;
+    var startTime;
+    var endTime;
+
+    beforeEach(function() {
+        spyOn($.fn, 'val').andCallFake(function() {
+            if (firstCall) {
+                firstCall = false;
+                return startTime;
+            } else {
+                // reset for re-use
+                firstCall = true;
+                return endTime;
+            }
+        });
+    });
+
     it('should accept valid input times', function() {
-        var startTime = 'Wed, 11 Apr 2012 12:20';
-        var endTime = 'Thu, 26 Apr 2012 20:44';
-        expect(validateDatesInput(startTime, endTime)).toBeNull();
+        startTime = 'Wed, 11 Apr 2012 12:20';
+        endTime = 'Thu, 26 Apr 2012 20:44';
+        expect(validateDatesInput()).toBeNull();
     });
 
     it('should accept valid input dates', function() {
-        var startDate = 'Wed, 11 Apr 2012';
-        var endDate = 'Thu, 12 Apr 2012';
-        expect(validateDatesInput(startDate, endDate)).toBeNull();
+        startTime = 'Wed, 11 Apr 2012';
+        endTime = 'Thu, 12 Apr 2012';
+        expect(validateDatesInput()).toBeNull();
     });
 
     it('should complain and not make a collector query if the start time is greater than or equal to the end time', function () {
-        var startTime = 'Tue, 24 Apr 2012 08:21';
-        var endTime = 'Tue, 24 Apr 2012 08:20';
+        startTime = 'Tue, 24 Apr 2012 08:21';
+        endTime = 'Tue, 24 Apr 2012 08:20';
 
-        expect(validateDatesInput(startTime, startTime)).toBe('The start time is greater than or equal to the end time');
-        expect(validateDatesInput(startTime, endTime)).toBe('The start time is greater than or equal to the end time');
+        expect(validateDatesInput()).toBe('The start time is greater than or equal to the end time');
+        expect(validateDatesInput()).toBe('The start time is greater than or equal to the end time');
     });
 
     it('should complain and not make a collector query if times are bogus', function() {
-        var bogusStartTime = 'salut';
-        var validStartTime = 'Fri, 4 May 2012 00:00';
-        var bogusEndTime = 'kikoo';
-        var validEndTime = 'Sat, 5 May 2012 00:00';
+        startTime = 'salut';
+        endTime = 'Sat, 5 May 2012 00:00';
+        expect(validateDatesInput()).toBe('Invalid start time');
 
-        expect(validateDatesInput(bogusStartTime, validEndTime)).toBe('Invalid start time');
-        expect(validateDatesInput(validStartTime, bogusEndTime)).toBe('Invalid end time');
+        startTime = 'Fri, 4 May 2012 00:00';
+        endTime = 'kikoo';
+        expect(validateDatesInput()).toBe('Invalid end time');
+
+        startTime = 'salut';
+        endTime = 'kikoo';
         // We fail fast hence the error message on start time only
-        expect(validateDatesInput(bogusStartTime, bogusEndTime)).toBe('Invalid start time');
+        expect(validateDatesInput()).toBe('Invalid start time');
     });
 });
