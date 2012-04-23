@@ -18,7 +18,7 @@ package com.ning.arecibo.collector.persistent;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,7 +54,7 @@ public class TimelineAggregator
     private final TimelineAggregatorDAO aggregatorDao;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
 
-    private Map<String, AtomicLong> aggregatorCounters = new HashMap<String, AtomicLong>();
+    private Map<String, AtomicLong> aggregatorCounters = new LinkedHashMap<String, AtomicLong>();
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
 
@@ -223,8 +223,8 @@ public class TimelineAggregator
                 if (candidates.size() == 0) {
                     break;
                 }
-                // The candidates are ordered first by host_id, then by event_category, and finally by start_time
-                // Loop pulling off the candidates for the first hostId and eventCategory
+                // The candidates are ordered first by host_id, then by sampleKindId, and finally by start_time
+                // Loop pulling off the candidates for the first hostId and sampleKindId
                 int lastHostId = 0;
                 int lastSampleKindId = 0;
                 final List<TimelineChunk> hostTimelineCandidates = new ArrayList<TimelineChunk>();
@@ -277,7 +277,7 @@ public class TimelineAggregator
 
     private Map<String, Long> captureAggregatorCounters()
     {
-        final Map<String, Long> counterValues = new HashMap<String, Long>();
+        final Map<String, Long> counterValues = new LinkedHashMap<String, Long>();
         for (Map.Entry<String, AtomicLong> entry : aggregatorCounters.entrySet()) {
             counterValues.put(entry.getKey(), entry.getValue().get());
         }
@@ -286,7 +286,7 @@ public class TimelineAggregator
 
     private Map<String, Long> subtractFromAggregatorCounters(final Map<String, Long> initialCounters)
     {
-        final Map<String, Long> counterValues = new HashMap<String, Long>();
+        final Map<String, Long> counterValues = new LinkedHashMap<String, Long>();
         for (Map.Entry<String, AtomicLong> entry : aggregatorCounters.entrySet()) {
             final String key = entry.getKey();
             counterValues.put(key, entry.getValue().get() - initialCounters.get(key));
