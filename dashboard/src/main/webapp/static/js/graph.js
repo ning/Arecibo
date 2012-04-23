@@ -134,9 +134,6 @@ function fillSeries(series) {
     });
 }
 
-/*
- * D3.js magic
- */
 function drawGraph() {
     $("#chart").children().remove();
     $("#legend").children().remove();
@@ -352,3 +349,174 @@ var RenderControls = function(args) {
 
     this.initialize();
 };
+
+// Add a new graph container in the grid
+function addGraphContainer() {
+    var graphId = window.arecibo.graphs.length + 1;
+    var graphContainer = buildGraphContainer(graphId);
+
+    // Do we need an extra row?
+    if (graphId % 2 == 1) {
+        $("#graph_grid").append($('<div></div>').attr('class', 'row show-grid'));
+    }
+
+    // Find the latest row and add the new container
+    $("#graph_grid div.row:last").append(graphContainer);
+}
+
+// Build the necessary elements for a new graph
+function buildGraphContainer(graphId) {
+    var graphRow = buildGraphRow(graphId);
+    var graphControlsRow = buildGraphControlsRow(graphId);
+    var smootherRow = buildSmootherRow(graphId);
+    var legendRow = buildLegendRow(graphId);
+    var debugRow = buildDebugRow(graphId);
+
+    return $('<div></div>')
+                .attr('class', 'span6')
+                .append(graphRow)
+                .append(graphControlsRow)
+                .append(smootherRow)
+                .append(legendRow)
+                .append(debugRow);
+}
+
+// Build the actual graph container
+function buildGraphRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<div></div>')
+                            .attr('id', 'chart_container_' + graphId)
+                            .append($('<div></div>').attr('id', 'y_axis_' + graphId))
+                            .append($('<div></div>').attr('id', 'chart_' + graphId))
+                        )
+                .append($('<div></div>').attr('id', 'slider_' + graphId));
+}
+
+// Build the form controls container
+function buildGraphControlsRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .attr('id', 'graph_controls_' + graphId)
+                .attr('style', 'display: none;')
+                .append(buildGraphControlsForm(graphId));
+}
+
+// Build the smoother container
+function buildSmootherRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<h6></h6>').text('Smoothing'))
+                .append($('<div></div>').attr('id', 'smoother_container_' + graphId));
+}
+
+// Build the container where the legend will be injected
+function buildLegendRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<div></div>')
+                            .attr('id', 'legend_container_' + graphId)
+                            .append($('<div></div>').attr('id', 'legend_' + graphId))
+                        );
+}
+
+// Build the debug row for a graph: this is where we store extra metadata
+// information, such as the direct link to the raw data
+function buildDebugRow(graphId) {
+    return $('<div></div>')
+                .attr('class', 'row')
+                .append($('<div></div>').attr('id', 'debug_container_' + graphId));
+}
+
+// Build the complete form for the controls
+function buildGraphControlsForm(graphId) {
+    var rendererFields = buildGraphControlsRendererFields(graphId);
+    var offsetFields = buildGraphControlsOffsetFields(graphId);
+    var interpolationFields = buildGraphControlsInterpolationFields(graphId);
+
+    var fieldSet = $('<fieldset></fieldset>')
+                        .append($('<h6></h6>').text('Rendering'))
+                        .append(rendererFields)
+                        .append(offsetFields)
+                        .append(interpolationFields);
+
+    return $('<form></form>')
+                .attr('class', 'form-inline')
+                .attr('id', 'side_panel_' + graphId)
+                .append(fieldSet);
+}
+
+// Build the controls for the renderers (how to draw the data points)
+function buildGraphControlsRendererFields(graphId) {
+    var areaRendererField = buildGraphControlsInputField(1, 'renderer', 'area', 'area', true, 'area');
+    var barRendererField = buildGraphControlsInputField(1, 'renderer', 'bar', 'bar', false, 'bar');
+    var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', false, 'line');
+    var scatterRendererField = buildGraphControlsInputField(1, 'renderer', 'scatter', 'scatterplot', false, 'scatter');
+
+    return $('<div></div')
+                .attr('class', 'control-group toggler')
+                .attr('id', 'renderer_form_' + graphId)
+                .append(
+                    $('<div></div>')
+                    .attr('class', 'controls')
+                    .append(areaRendererField)
+                    .append(barRendererField)
+                    .append(lineRendererField)
+                    .append(scatterRendererField)
+                );
+}
+
+// Build the controls for the offsets (how to position the different graph relatively to each other)
+function buildGraphControlsOffsetFields(graphId) {
+    var stackOffsetField = buildGraphControlsInputField(1, 'offset', 'stack', 'zero', false, 'stack');
+    var streamOffsetField = buildGraphControlsInputField(1, 'offset', 'stream', 'wiggle', false, 'stream');
+    var pctOffsetField = buildGraphControlsInputField(1, 'offset', 'pct', 'expand', false, 'pct');
+    var valueOffsetField = buildGraphControlsInputField(1, 'offset', 'value', 'value', true, 'value');
+
+    return $('<div></div')
+                .attr('class', 'control-group')
+                .attr('id', 'offset_form_' + graphId)
+                .append(
+                    $('<div></div>')
+                    .attr('class', 'controls')
+                    .append(stackOffsetField)
+                    .append(streamOffsetField)
+                    .append(pctOffsetField)
+                    .append(valueOffsetField)
+                );
+}
+
+// Build the controls for the interpolation (how to join data points within a graph)
+function buildGraphControlsInterpolationFields(graphId) {
+    var cardinalInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'cardinal', 'cardinal', false, 'cardinal');
+    var linearInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'linear', 'linear', true, 'linear');
+    var stepInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'step', 'step-after', false, 'step');
+
+    return $('<div></div')
+                .attr('class', 'control-group')
+                .attr('id', 'interpolation_form_' + graphId)
+                .append(
+                    $('<div></div>')
+                    .attr('class', 'controls')
+                    .append(cardinalInterpolationField)
+                    .append(linearInterpolationField)
+                    .append(stepInterpolationField)
+                );
+}
+
+// Build one label/input combo for the graph controls
+function buildGraphControlsInputField(graphId, name, id, value, checked, text) {
+    var inputId = id + '_' + graphId;
+    var inputElement =
+        $('<input>')
+            .attr('type', 'radio')
+            .attr('value', value)
+            .attr('name', name)
+            .attr('id', inputId)
+            .attr('checked', checked);
+
+    return $('<label></label>')
+            .attr('for', inputId)
+            .append(inputElement)
+            .append(text);
+}
