@@ -30,8 +30,10 @@ function renderGraph() {
         graph: null,
         // Settings for the graph, as defined by the left "Rendering" buttons
         graph_settings: {
+            // linear interpolation by default, i.e. straight lines between points
             interpolation: 'linear',
-            offset: 'zero',
+            // graphs offset should be the value of the data points by default
+            offset: 'value',
             renderer: 'line'
         },
         // Permalink temporary data for the graphs.
