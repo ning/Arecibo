@@ -57,8 +57,8 @@ public class TimelineAggregator
 
     private final AtomicBoolean isAggregating = new AtomicBoolean(false);
 
-    private final AtomicLong aggregationRuns = makeCounter("runs");
-    private final AtomicLong foundNothingRuns = makeCounter("found nothing");
+    private final AtomicLong aggregationRuns = new AtomicLong();
+    private final AtomicLong foundNothingRuns = new AtomicLong();
     private final AtomicLong aggregatesCreated = makeCounter("aggsCreated");
     private final AtomicLong timelineChunksConsidered = makeCounter("chunksConsidered");
     private final AtomicLong timelineChunkBatchesProcessed = makeCounter("batchesProcessed");
@@ -206,7 +206,13 @@ public class TimelineAggregator
             }
             else {
                 final StringBuilder builder = new StringBuilder();
-                builder.append("For aggregation level ").append(aggregationLevel);
+                builder
+                    .append("For aggregation level ")
+                    .append(aggregationLevel)
+                    .append(", runs ")
+                    .append(aggregationRuns.get())
+                    .append(", foundNothingRuns ")
+                    .append(foundNothingRuns.get());
                 for (Map.Entry<String, Long> entry : counterDeltas.entrySet()) {
                     builder.append(", ").append(entry.getKey()).append(": ").append(entry.getValue());
                 }
