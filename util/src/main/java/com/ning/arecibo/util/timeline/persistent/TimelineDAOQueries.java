@@ -121,7 +121,6 @@ public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
     Integer insertLastStartTimes(@StartTimesBinder final StartTimes startTimes);
 
     @SqlQuery
-    @Mapper(DefaultMapper.class)
     StartTimes getLastStartTimes();
 
     @SqlUpdate

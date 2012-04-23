@@ -50,7 +50,7 @@ public @interface StartTimesBinder {
                     try {
                         final String s = mapper.writeValueAsString(startTimes.getStartTimesMap());
                         query.bind("startTimes", s)
-                             .bind("timeInserted", startTimes.getTimeInserted());
+                             .bind("timeInserted", DateTimeUtils.unixSeconds(startTimes.getTimeInserted()));
                     }
                     catch (IOException e) {
                         log.error(e, "Exception while binding StartTimes");
