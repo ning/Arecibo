@@ -22,13 +22,9 @@ function renderGraph() {
     window.arecibo = {
         // Dashboard location, e.g. 'http://127.0.0.1:8080'
         uri: window.location.origin,
-        // The actual data
-        timeseries: [],
-        // Scale factors for all graphs (i.e. mapping between (host + kind) and scale factor)
-        scales: {},
-        // The actual graph object
-        graph: null,
-        // Settings for the graph, as defined by the left "Rendering" buttons
+        // Mapping between sample kinds and (timeserie, graph) tuples
+        graphs: {},
+        // Default settings for the graphs
         graph_settings: {
             // linear interpolation by default, i.e. straight lines between points
             interpolation: 'linear',
@@ -36,8 +32,6 @@ function renderGraph() {
             offset: 'value',
             renderer: 'line'
         },
-        // Permalink temporary data for the graphs.
-        graph_permalink: [],
         // The graph palette, used to generate the colors for the different graphs
         graph_palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' }),
     };
@@ -58,6 +52,7 @@ function updateGraph() {
     var url  = '/rest/1.0/host_samples' + window.location.search;
 
     // Create a debug link
+    // TODO
     $('<a>',{
         text: 'See raw data',
         title: 'Raw data',
@@ -84,6 +79,16 @@ function populateSamples(payload) {
     // Prepare the time series
     for (var j in payload) {
         var sample = payload[j];
+
+        // New sample kind?
+        var sampleKind = sample['sampleKind'];
+        if (!window.arecibo.graphs[sampleKind]) {
+            window.arecibo.graphs[sampleKind] = {
+                timeserie: [],
+                graph: null,
+            }
+        }
+
         var csv = sample['samples'].split(",");
         // Build data in the form [{x:, y:}, {}, ...]
         var data = [];
@@ -99,7 +104,7 @@ function populateSamples(payload) {
             i++;
         }
 
-        window.arecibo.timeseries.push(
+        window.arecibo.graphs[sampleKind].timeserie.push(
             {
                 color: window.arecibo.graph_palette.color(),
                 data: data,
@@ -109,12 +114,11 @@ function populateSamples(payload) {
     }
 
     // Make sure time series have the same number of data points
-    fillSeries(window.arecibo.timeseries);
-
-    // Draw the graph
-    if (window.arecibo.timeseries.length > 0) {
-        drawGraph();
+    for (var sampleKind in window.arecibo.graphs) {
+        fillSeries(window.arecibo.graphs[sampleKind].timeserie);
     }
+
+    drawAllGraphs();
 }
 
 /*
@@ -134,18 +138,21 @@ function fillSeries(series) {
     });
 }
 
-function drawGraph() {
-    $("#chart").children().remove();
-    $("#legend").children().remove();
-    $("#y_axis").children().remove();
-    // Don't clear the slider!
+// window.arecibo.graphs has been populated by the Ajax callback, now
+// populate the grid with the graphs
+function drawAllGraphs() {
+    var i = 0;
+    for (var sampleKind in window.arecibo.graphs) {
+        addGraphContainer(i, sampleKind);
+        drawGraph(i, sampleKind);
+        i++;
+    }
+}
 
+function drawGraph(graphId, sampleKind) {
     var graph = new Rickshaw.Graph({
-        element: document.querySelector("#chart"),
-        // width: ($('#chart_container').width() - $('#y_axis').width()) * 0.95,
-        // height: 500,
-        renderer: 'line',
-        series: window.arecibo.timeseries
+        element: document.querySelector("#chart_" + graphId),
+        series: window.arecibo.graphs[sampleKind].timeserie
     });
     graph.render();
 
@@ -161,7 +168,7 @@ function drawGraph() {
     // Add a basic legend
     var legend = new Rickshaw.Graph.Legend({
         graph: graph,
-        element: document.querySelector('#legend')
+        element: document.querySelector('#legend_' + graphId)
     });
 
     // Add functionality to toggle series' visibility on and off
@@ -199,29 +206,29 @@ function drawGraph() {
         tickFormat: Rickshaw.Fixtures.Number.formatKMBT, // TODO
         ticksTreatment: 'glow',
         orientation: 'left',
-        element: document.getElementById('y_axis')
+        element: document.getElementById('y_axis_' + graphId)
     });
     yAxis.render();
 
     var slider = new Rickshaw.Graph.RangeSlider({
         graph: graph,
         // Note: document.getElementById won't work here
-        element: $('#slider')
+        element: $('#slider_' + graphId)
     });
 
     var smoother = new Rickshaw.Graph.Smoother({
         graph: graph,
-        element: document.getElementById('smoother')
+        element: document.getElementById('smoother_' + graphId)
     });
 
     var controls = new RenderControls({
-        element: document.getElementById('side_panel'),
+        element: document.getElementById('side_panel_' + graphId),
         graph: graph
     });
 
     updateGraphSettings(graph, window.arecibo.graph_settings);
 
-    window.arecibo.graph = graph;
+    window.arecibo.graphs[sampleKind].graph = graph;
 }
 
 // The following is inspired from http://shutterstock.github.com/rickshaw/examples/js/extensions.js
@@ -351,21 +358,20 @@ var RenderControls = function(args) {
 };
 
 // Add a new graph container in the grid
-function addGraphContainer() {
-    var graphId = window.arecibo.graphs.length + 1;
-    var graphContainer = buildGraphContainer(graphId);
+function addGraphContainer(graphId, sampleKind) {
+    var graphContainer = buildGraphContainer(graphId, sampleKind);
 
     // Do we need an extra row?
-    if (graphId % 2 == 1) {
-        $("#graph_grid").append($('<div></div>').attr('class', 'row show-grid'));
+    if (graphId % 2 == 0) {
+        $("#graph_grid").append($('<div></div>').attr('class', 'row show-grid row_graph_container'));
     }
 
     // Find the latest row and add the new container
-    $("#graph_grid div.row:last").append(graphContainer);
+    $("#graph_grid div.row_graph_container:last").append(graphContainer);
 }
 
 // Build the necessary elements for a new graph
-function buildGraphContainer(graphId) {
+function buildGraphContainer(graphId, sampleKind) {
     var graphRow = buildGraphRow(graphId);
     var graphControlsRow = buildGraphControlsRow(graphId);
     var smootherRow = buildSmootherRow(graphId);
@@ -374,6 +380,7 @@ function buildGraphContainer(graphId) {
 
     return $('<div></div>')
                 .attr('class', 'span6')
+                .append($('<h5></h5>').text(sampleKind))
                 .append(graphRow)
                 .append(graphControlsRow)
                 .append(smootherRow)
@@ -386,11 +393,12 @@ function buildGraphRow(graphId) {
     return $('<div></div>')
                 .attr('class', 'row')
                 .append($('<div></div>')
+                            .attr('class', 'chart_container')
                             .attr('id', 'chart_container_' + graphId)
-                            .append($('<div></div>').attr('id', 'y_axis_' + graphId))
-                            .append($('<div></div>').attr('id', 'chart_' + graphId))
+                            .append($('<div></div>').attr('class', 'y_axis').attr('id', 'y_axis_' + graphId))
+                            .append($('<div></div>').attr('class', 'chart').attr('id', 'chart_' + graphId))
                         )
-                .append($('<div></div>').attr('id', 'slider_' + graphId));
+                .append($('<div></div>').attr('class', 'slider').attr('id', 'slider_' + graphId));
 }
 
 // Build the form controls container
@@ -398,7 +406,6 @@ function buildGraphControlsRow(graphId) {
     return $('<div></div>')
                 .attr('class', 'row')
                 .attr('id', 'graph_controls_' + graphId)
-                .attr('style', 'display: none;')
                 .append(buildGraphControlsForm(graphId));
 }
 

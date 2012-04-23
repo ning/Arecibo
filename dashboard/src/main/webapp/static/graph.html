@@ -57,102 +57,14 @@ under the License. -->
             <h1>Arecibo <small>graph</small></h1>
         </div>
 
-        <section id="graph_grid" />
+        <div id="graph_grid"></div>
 
         <div class="row">
-            <a href="#" style="cursor: hand;"><i class="icon-plus" id="controls_btn"></i></a>
-            <div id="chart_container">
-                <div id="y_axis"></div>
-                <div id="chart"></div>
-            </div>
-            <div id="slider"></div>
-        </div>
-        <div class="row" id="graph_controls" style="display: none;">
-            <div class="span6">
-                <!--Sidebar content-->
-                <form class="form-inline" id="side_panel">
-                    <fieldset>
-                        <h6>Rendering</h6>
-                        <div class="control-group toggler" id="renderer_form">
-                            <div class="controls">
-                                <label for="area">
-                                    <input type="radio" name="renderer" id="area" value="area" checked>
-                                    area
-                                </label>
-                                <label for="bar">
-                                    <input type="radio" name="renderer" id="bar" value="bar">
-                                    bar
-                                </label>
-                                <label for="line">
-                                    <input type="radio" name="renderer" id="line" value="line">
-                                    line
-                                </label>
-                                <label for="scatter">
-                                    <input type="radio" name="renderer" id="scatter" value="scatterplot">
-                                    scatter
-                                </label>
-                            </div>
-                        </div>
-                        <div class="control-group" id="offset_form">
-                            <div class="controls">
-                                <label for="stack">
-                                    <input type="radio" name="offset" id="stack" value="zero">
-                                    <span>stack</span>
-                                </label>
-                                <label for="stream">
-                                    <input type="radio" name="offset" id="stream" value="wiggle">
-                                    <span>stream</span>
-                                </label>
-                                <label for="pct">
-                                    <input type="radio" name="offset" id="pct" value="expand">
-                                    <span>pct</span>
-                                </label>
-                                <label for="value">
-                                    <input type="radio" name="offset" id="value" value="value" checked>
-                                    <span>value</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="control-group" id="interpolation_form">
-                            <div class="controls">
-                                <label for="cardinal">
-                                    <input type="radio" name="interpolation" id="cardinal" value="cardinal">
-                                    <span>cardinal</span>
-                                </label>
-                                <label for="linear">
-                                    <input type="radio" name="interpolation" id="linear" value="linear" checked>
-                                    <span>linear</span>
-                                </label>
-                                <label for="step">
-                                    <input type="radio" name="interpolation" id="step" value="step-after">
-                                    <span>step</span>
-                                </label>
-                            </div>
-                        </div>
-                        <h6>Smoothing</h6>
-                        <div id="smoother"></div>
-                    </fieldset>
-                </form>
-            </div>
-            <div class="span6">
-                <div id="legend_container">
-                    <div id="legend"></div>
-                </div>
-            </div>
-            <div class="span6">
-                <div id="debug_container"/>
-            </div>
+            <i id="spinnerDiv" class="icon-refresh"></i>
         </div>
         <div class="row">
-            <div class="span12">
-                <i id="spinnerDiv" class="icon-refresh"></i>
-            </div>
-        </div>
-        <div class="row">
-            <div class="span12">
-                <div id="errorDiv" class="alert alert-error">
-                    <p><strong>Oh no!</strong></p>
-                </div>
+            <div id="errorDiv" class="alert alert-error">
+                <p><strong>Oh no!</strong></p>
             </div>
         </div>
     </div>

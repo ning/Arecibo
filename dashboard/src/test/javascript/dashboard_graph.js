@@ -27,23 +27,18 @@ function verify(actual, expected) {
 
 describe('The graph builder', function () {
     it('should be able to add a new graph container in an empty grid', function() {
-        window.arecibo = {
-            graphs: []
-        };
         spyOn(window, 'buildGraphContainer').andReturn('<div id="GRAPH"></div>');
         $('html,body').append($('<div></div>').attr('id', 'graph_grid'));
         verify($('#graph_grid'), '<div id="graph_grid"></div>')
 
-        addGraphContainer();
-        verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid"><div id="GRAPH"></div></div></div>');
+        addGraphContainer(0);
+        verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div></div></div>');
 
-        window.arecibo.graphs.push('foo');
-        addGraphContainer();
-        verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid"><div id="GRAPH"></div><div id="GRAPH"></div></div></div>');
+        addGraphContainer(1);
+        verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div><div id="GRAPH"></div></div></div>');
 
-        window.arecibo.graphs.push('bar');
-        addGraphContainer();
-        verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid"><div id="GRAPH"></div><div id="GRAPH"></div></div><div class="row show-grid"><div id="GRAPH"></div></div></div>');
+        addGraphContainer(2);
+        verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div><div id="GRAPH"></div></div><div class="row show-grid row_graph_container"><div id="GRAPH"></div></div></div>');
     });
 
     it('should be able to create a new graph container', function() {
@@ -60,7 +55,7 @@ describe('The graph builder', function () {
 
     it('should be able to create the graph row', function() {
         var htmlBuilt = buildGraphRow(1);
-        var htmlExpected = '<div class="row"><div id="chart_container_1"><div id="y_axis_1"></div><div id="chart_1"></div></div><div id="slider_1"></div></div>';
+        var htmlExpected = '<div class="row"><div class="chart_container" id="chart_container_1"><div class="y_axis" id="y_axis_1"></div><div class="chart" id="chart_1"></div></div><div class="slider" id="slider_1"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
@@ -68,7 +63,7 @@ describe('The graph builder', function () {
         spyOn(window, 'buildGraphControlsForm').andReturn('<form></form>');
 
         var htmlBuilt = buildGraphControlsRow(1);
-        var htmlExpected = '<div class="row" id="graph_controls_1" style="display: none;"><form></form></div>';
+        var htmlExpected = '<div class="row" id="graph_controls_1"><form></form></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
