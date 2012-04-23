@@ -14,27 +14,26 @@
  * under the License.
  */
 
-#chart_container {
+.chart_container {
     width: 940px;
     position: relative;
     margin-top: 25px;
 }
 
-#y_axis {
+.y_axis {
     position: relative;
     width: 40px;
     float: left;
 }
 
-#chart {
+.chart {
     position: relative;
     margin-top: -25px;
-    width: 850px;
     float: left;
     clear: right;
 }
 
-#slider {
+.slider {
     float: left;
 }
 
