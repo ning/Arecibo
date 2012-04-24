@@ -15,47 +15,47 @@
  */
 
 // Build the collector Url that shifts left the timeseries
-function shiftLeft(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
+function shiftLeftUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
     // Shift 50% left
     var deltaMillis = getDeltaForGraph(fromDate, toDate);
 
     removeMillis(fromDate, deltaMillis);
     removeMillis(toDate, deltaMillis);
 
-    return buildHostSampleUrl(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
+    return buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
 }
 
 // Build the collector Url that shifts right the timeseries
-function shiftRight(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
+function shiftRightUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
     // Shift 50% right
     var deltaMillis = getDeltaForGraph(fromDate, toDate);
 
     addMillis(fromDate, deltaMillis);
     addMillis(toDate, deltaMillis);
 
-    return buildHostSampleUrl(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
+    return buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
 }
 
 // Build the collector Url that zooms in the timeseries
-function zoomIn(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
+function zoomInUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
     // Shift 25% on both sides
     var deltaMillis = getDeltaForGraph(fromDate, toDate) / 2;
 
     addMillis(fromDate, deltaMillis);
     removeMillis(toDate, deltaMillis);
 
-    return buildHostSampleUrl(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
+    return buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
 }
 
 // Build the collector Url that zooms out the timeseries
-function zoomOut(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
+function zoomOutUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
     // Shift 25% on both sides
     var deltaMillis = getDeltaForGraph(fromDate, toDate) / 2;
 
     removeMillis(fromDate, deltaMillis);
     addMillis(toDate, deltaMillis);
 
-    return buildHostSampleUrl(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
+    return buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
 }
 
 // Get the middle of a date interval
@@ -64,11 +64,16 @@ function getDeltaForGraph(startDate, endDate) {
 }
 
 // Build the collector Url for a given host and sample kind
-function buildHostSampleUrl(host, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
-    return '/rest/1.0/host_samples?' +
-            'host=' + host + '&' +
+function buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
+    var url = '/rest/1.0/host_samples?' +
             'category_and_sample_kind=' + sampleCategory + ',' + sampleKind + '&' +
             'from=' + ISODateString(fromDate) + '&' +
             'to=' + ISODateString(toDate) + '&' +
             'output_count=' + nbSamples;
+
+    for (var i in hosts) {
+        url += '&host=' + hosts[i];
+    }
+
+    return url;
 }
