@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.log4j.Logger;
 import org.eclipse.jetty.util.log.Log;
 import org.joda.time.DateTime;
 import org.testng.Assert;
@@ -29,6 +30,8 @@ import org.testng.annotations.Test;
 
 public class TestTimelineCoder
 {
+    private static final Logger log = Logger.getLogger(TestTimelineCoder.class);
+
     @Test(groups = "fast")
     public void testBasicEncodeDecode() throws Exception
     {
@@ -233,7 +236,7 @@ public class TestTimelineCoder
     @Test(groups = "fast")
     public void testCombiningTimesError() throws Exception
     {
-        final byte[] times1 = Hex.decodeHex("ff10000001fe0210ff1000011bfe0210".toCharArray());
+        final byte[] times1 = Hex.decodeHex("ff10000001fe0310ff1000011bfe0310".toCharArray());
         final byte[] times2 = Hex.decodeHex("ff00000140".toCharArray());
         final List<byte[]> timesList = new ArrayList<byte[]>();
         timesList.add(times1);
@@ -241,7 +244,7 @@ public class TestTimelineCoder
         final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
         final String hexCombinedTimes = new String(Hex.encodeHex(combinedTimes));
         //System.out.printf("Combined times: %s\n", hexCombinedTimes);
-        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0210ff1000011bfe021005");
+        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0310eafe0310f5");
     }
 
     @Test(groups = "fast")
@@ -332,49 +335,77 @@ public class TestTimelineCoder
     }
 
     @Test(groups = "fast")
-    public void testTimeCombineTimesError() throws Exception
+    public void testTimeCombineTimesError1() throws Exception
     {
-        final List<byte[]> timeParts = new ArrayList<byte[]>();
-        timeParts.add(Hex.decodeHex("ff4f91fb14fe631e00fe151e".toCharArray()));
-        timeParts.add(Hex.decodeHex("ff4f920942".toCharArray()));
-        int count = 0;
-        for (byte[] timePart : timeParts) {
-            count += TimelineCoder.countTimeBytesSamples(timePart);
-        }
-        final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
-        final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
-        Assert.assertEquals(newCombinedLength, count);
+        checkCombinedTimelines("ff4f91fb14fe631e00fe151e", "ff4f920942");
     }
 
     @Test(groups = "fast")
-    public void testTimeCombineTimesErrorAgain() throws Exception
+    public void testTimeCombineTimesError2() throws Exception
     {
-        final List<byte[]> timeParts = new ArrayList<byte[]>();
-        timeParts.add(Hex.decodeHex("ff4f922618fe111e78fe111efe02005a".toCharArray()));
-        timeParts.add(Hex.decodeHex("ff4f923428".toCharArray()));
-        int count = 0;
-        for (byte[] timePart : timeParts) {
-            count += TimelineCoder.countTimeBytesSamples(timePart);
-        }
-        final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
-        final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
-        Assert.assertEquals(newCombinedLength, count);
+        checkCombinedTimelines("ff4f922618fe111e78fe111efe02005a", "ff4f923428");
     }
 
     @Test(groups = "fast")
-    public void testTimeCombineTimesErrorYetAgain() throws Exception
+    public void testTimeCombineTimesError3() throws Exception
+    {
+        checkCombinedTimelines("ff4f9224ecfe091e", "ff4f922618fe071e78fe111e78fe111e78fe111e78fe111efe02005afe121e78fe031e",
+                "ff4f923428fe0d1e7dfe111e78fe111e78fe111e78fe0b1e00fe061e78fe111e", "ff4f92427cfe111e78fe111e78fe111e78fe111e82fe041e1d01fe0c1e78fe0e1e");
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCombineTimesError4() throws Exception
+    {
+        checkCombinedTimelines("ff4f95ba83fe021e", "ff4f95d595", "ff4f95e297fe021e");
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCombineTimesError5() throws Exception
+    {
+        checkCombinedTimelines("ff00000100", "ff00000200");
+    }
+
+    @Test(groups = "fast")
+    public void testTimeCombineTimesError6() throws Exception
+    {
+        checkCombinedTimelines("ff4f95ac73fe471e00fe301e", "ff4f95ba83fe471e00fe311e", "ff4f95d595", "ff4f95e297fe091e");
+        checkCombinedTimelines("ff4f95ac7afe461e1d01fe301e", "ff4f95ba8afe471e00fe041e1ffe2b1e", "ff4f95d59d", "ff4f95e281fe0a1e");
+        checkCombinedTimelines("ff4f95aca4fe461e00fe311e", "ff4f95bab4fe461e00fe261e1f1dfe0a1e", "ff4f95d5a8", "ff4f95e28cfe091e");
+        checkCombinedTimelines("ff4f95ac88fe471e00fe311e", "ff4f95bab6fe461e00fe321e", "ff4f95d5aa", "ff4f95e28efe091eff4f95e4e6fe0a1e");
+        checkCombinedTimelines("ff4f95e394ff4f95e4fcfe0e1e5afe341e00fe221e", "ff4f95f12cfe551e00fe221e", "ff4f95ff3cfe551e00fe231e", "ff4f960d6afe541e00fe231e");
+        checkCombinedTimelines("ff4f95e396ff4f95e4fefe0e1e5afe341e00fe271e", "ff4f95f1c4fe501e00fe281e", "ff4f95fff2fe4f1e00fe281e", "ff4f960e02fe4f1e00fe291e");
+    }
+
+    private void checkCombinedTimelines(final String... timelines) throws Exception
     {
         final List<byte[]> timeParts = new ArrayList<byte[]>();
-        timeParts.add(Hex.decodeHex("ff4f9224ecfe091e".toCharArray()));
-        timeParts.add(Hex.decodeHex("ff4f922618fe071e78fe111e78fe111e78fe111e78fe111efe02005afe121e78fe031e".toCharArray()));
-        timeParts.add(Hex.decodeHex("ff4f923428fe0d1e7dfe111e78fe111e78fe111e78fe0b1e00fe061e78fe111e".toCharArray()));
-        timeParts.add(Hex.decodeHex("ff4f92427cfe111e78fe111e78fe111e78fe111e82fe041e1d01fe0c1e78fe0e1e".toCharArray()));
-        int count = 0;
+        for (String timeline : timelines) {
+            timeParts.add(Hex.decodeHex(timeline.toCharArray()));
+        }
+        int sampleCount = 0;
+        int byteCount = 0;
         for (byte[] timePart : timeParts) {
-            count += TimelineCoder.countTimeBytesSamples(timePart);
+            byteCount += timePart.length;
+            sampleCount += TimelineCoder.countTimeBytesSamples(timePart);
+        }
+        final byte[] concatedTimes = new byte[byteCount];
+        int offset = 0;
+        for (byte[] timePart : timeParts) {
+            final int length = timePart.length;
+            System.arraycopy(timePart, 0, concatedTimes, offset, length);
+            offset += length;
         }
         final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
         final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
-        Assert.assertEquals(newCombinedLength, count);
+        final TimeCursor concatedCursor = new TimeCursor(concatedTimes, sampleCount);
+        final TimeCursor combinedCursor = new TimeCursor(newCombined, sampleCount);
+        int counter = 0;
+        for (int i=0; i<sampleCount; i++) {
+            final int concatedTime = concatedCursor.getNextTime();
+            final int combinedTime = combinedCursor.getNextTime();
+            Assert.assertEquals(combinedTime, concatedTime);
+            counter++;
+        }
+        Assert.assertEquals(newCombinedLength, sampleCount);
     }
 }
