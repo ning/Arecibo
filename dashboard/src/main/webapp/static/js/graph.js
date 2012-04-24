@@ -20,6 +20,7 @@ function renderGraph() {
 
     // Global variables
     window.arecibo = {
+        ajax_lock: false,
         // Dashboard location, e.g. 'http://127.0.0.1:8080'
         uri: window.location.origin,
         // Mapping between graphIds and graphs meta-objects
@@ -53,10 +54,10 @@ function renderGraph() {
         $('#graph_controls').toggle();
     });
 
-    updateGraph();
+    createGraphs();
 };
 
-function updateGraph() {
+function createGraphs() {
     var url  = '/rest/1.0/host_samples' + window.location.search;
 
     // Create a debug link
@@ -67,15 +68,36 @@ function updateGraph() {
         href: url + '&pretty=true'
     }).appendTo('#debug_container');
 
-    callArecibo(url, "populateSamples");
+    callArecibo(url, "createGraph");
 }
 
-/*
- * Add samples to a graph (callback from the dashboard)
- *
- * @param {String}  payload     Data (for a single host) sent from the collector
- */
-function populateSamples(payload) {
+// Initially called by the first callback to create the
+// graph objects and the grid (containers)
+function createGraph(payload) {
+    var graphIds = populateSamples(payload, false);
+
+    for (var i in graphIds) {
+        var graphId = graphIds[i];
+        addGraphContainer(window.arecibo.graphs[graphId], graphIds.length);
+        drawGraph(window.arecibo.graphs[graphId]);
+    }
+
+    window.arecibo.ajax_lock = false;
+}
+
+// Succeeding invocations
+function refreshGraph(payload) {
+    var graphIds = populateSamples(payload, true);
+
+    for (var i in graphIds) {
+        var graphId = graphIds[i];
+        window.arecibo.graphs[graphId].graph.update();
+    }
+
+    window.arecibo.ajax_lock = false;
+}
+
+function populateSamples(payload, refresh) {
     // payload is an array of objects:
     // {
     //    eventCategory: "JVMMemory"
@@ -83,6 +105,8 @@ function populateSamples(payload) {
     //    sampleKind: "heapMax"
     //    samples: "1333137065,0.0,1333137095,0.0"
     // }
+    var updatedGraphIds = Set.makeSet();
+    var refreshed = Set.makeSet();
 
     // Prepare the time series
     for (var j in payload) {
@@ -92,8 +116,10 @@ function populateSamples(payload) {
         var sampleKind = sample['sampleKind'];
         var csv = sample['samples'].split(',');
 
-        // Register the new graph
+        // Register the new graph if needed
         var graph = getOrCreateGraphMetaObject(sampleCategory, sampleKind);
+        Set.add(updatedGraphIds, graph.graphId);
+        Set.add(graph.hosts, hostName);
 
         // Final data in the form [{x:, y:}, {}, ...] for Richshaw
         var data = [];
@@ -103,11 +129,11 @@ function populateSamples(payload) {
             tmp.y = parseFloat(csv[i+1]);
             if (!isNaN(tmp.x) && !isNaN(tmp.y) && !(tmp.x == Infinity) && !(tmp.y == Infinity)) {
                 data.push(tmp);
-                if (!graph.startTime || tmp.x < graph.startTime) {
-                    graph.startTime = tmp.x;
+                if (!graph.startDate || tmp.x < graph.startDate.getTime() / 1000) {
+                    graph.startDate = new Date(tmp.x * 1000);
                 }
-                if (!graph.endTime || tmp.x > graph.endTime) {
-                    graph.endTime = tmp.x;
+                if (!graph.endDate || tmp.x > graph.endDate.getTime() / 1000) {
+                    graph.endDate = new Date(tmp.x * 1000);
                 }
             }
             i++;
@@ -118,6 +144,10 @@ function populateSamples(payload) {
             window.arecibo.colors.host_colors[hostName] = window.arecibo.colors.palette.color();
         }
 
+        if (refresh && !Set.contains(refreshed, graph.graphId)) {
+            graph.timeserie.splice(0, graph.timeserie.length);
+            Set.add(refreshed, graph.graphId);
+        }
         // Push to data for Rickshaw
         graph.timeserie.push(
             {
@@ -129,11 +159,11 @@ function populateSamples(payload) {
     }
 
     // Make sure time series have the same number of data points
-    for (var sampleKind in window.arecibo.graphs) {
-        fillSeries(window.arecibo.graphs[sampleKind].timeserie);
+    for (var graphId in window.arecibo.graphs) {
+        fillSeries(window.arecibo.graphs[graphId].timeserie);
     }
 
-    drawAllGraphs();
+    return Set.elements(updatedGraphIds);
 }
 
 // Function that manages the global registry for graph. It is also responsible
@@ -154,23 +184,35 @@ function getOrCreateGraphMetaObject(sampleCategory, sampleKind) {
     }
 
     // Does the graph for this sampleCategory and sampleKind already exists?
-    if (window.arecibo.graphs[graphId]) {
-        return window.arecibo.graphs[graphId];
+    var graph = getGraphMetaObjectById(graphId);
+    if (graph) {
+        return graph;
     }
 
     // Nope, create the graph meta-object
-    var graph = {
+    graph = {
         timeserie: [],
         graph: null,
+        hosts: Set.makeSet(),
         sampleCategory: sampleCategory,
         sampleKind: sampleKind,
         graphId: graphId,
-        startTime: null,
-        endTime: null,
-    }
-    window.arecibo.graphs[graphId] = graph;
+        startDate: null,
+        endDate: null,
+    };
+    setGraphMetaObjectById(graphId, graph);
 
     return graph;
+}
+
+// Given a graphId, retrieve the associated graph meta object
+function getGraphMetaObjectById(graphId) {
+    return window.arecibo.graphs[graphId];
+}
+
+// Given a graphId, set the associated graph meta object
+function setGraphMetaObjectById(graphId, graph) {
+    window.arecibo.graphs[graphId] = graph;
 }
 
 /*
@@ -188,16 +230,6 @@ function fillSeries(series) {
             d.push({ x: maxX + d.length - maxSeriesLength, y: y });
         }
     });
-}
-
-// window.arecibo.graphs has been populated by the Ajax callback, now
-// populate the grid with the graphs
-function drawAllGraphs() {
-    var nbGraphs = Set.size(window.arecibo.graphs);
-    for (var graphId in window.arecibo.graphs) {
-        addGraphContainer(window.arecibo.graphs[graphId], nbGraphs);
-        drawGraph(window.arecibo.graphs[graphId]);
-    }
 }
 
 function drawGraph(item) {
@@ -265,11 +297,11 @@ function drawGraph(item) {
     });
     yAxis.render();
 
-    var slider = new Rickshaw.Graph.RangeSlider({
-        graph: graph,
-        // Note: document.getElementById won't work here
-        element: $('#slider_' + graphId)
-    });
+    // var slider = new Rickshaw.Graph.RangeSlider({
+    //     graph: graph,
+    //     // Note: document.getElementById won't work here
+    //     element: $('#slider_' + graphId)
+    // });
 
     var smoother = new Rickshaw.Graph.Smoother({
         graph: graph,
@@ -524,9 +556,7 @@ function buildDisplayRow(graphId) {
                         .append(
                             $('<i></i>')
                             .attr('class', 'icon-arrow-left')
-                            .click(function() {
-                                // TODO
-                            })
+                            .click(function() { shiftLeft(graphId); return false; })
                         );
     // Go forward in time
     var shiftRightBtn = $('<a></a>')
@@ -534,9 +564,7 @@ function buildDisplayRow(graphId) {
                         .append(
                             $('<i></i>')
                             .attr('class', 'icon-arrow-right')
-                            .click(function() {
-                                // TODO
-                            })
+                            .click(function() { shiftRight(graphId); return false; })
                         );
 
     // Zoom in in time
@@ -545,9 +573,7 @@ function buildDisplayRow(graphId) {
                         .append(
                             $('<i></i>')
                             .attr('class', 'icon-plus')
-                            .click(function() {
-                                // TODO
-                            })
+                            .click(function() { zoomIn(graphId); return false; })
                         );
     // Zoom out in time
     var zoomOutBtn = $('<a></a>')
@@ -555,9 +581,7 @@ function buildDisplayRow(graphId) {
                         .append(
                             $('<i></i>')
                             .attr('class', 'icon-minus')
-                            .click(function() {
-                                // TODO
-                            })
+                            .click(function() { zoomOut(graphId); return false; })
                         );
 
 

@@ -22,6 +22,7 @@ function setupAreciboUI() {
 
     // Dashboard Configuration
     window.arecibo = {
+        ajax_lock: false,
         // initializeUI() must be called first for window.location.origin to be set
         uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
     }
@@ -207,6 +208,7 @@ function populateHostsTree(hosts) {
     }
 
     // Trigger a sample kinds tree update: this will display the sample kinds tree with previous values, if any
+    window.arecibo.ajax_lock = false;
     hostsSelected();
 }
 
@@ -380,6 +382,8 @@ function populateSampleKindsTree(kinds) {
             }
         }
     }
+
+    window.arecibo.ajax_lock = false;
 }
 
 // This is called when a sample kind is (un)selected on the sample kinds tree

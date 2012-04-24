@@ -15,6 +15,11 @@
  */
 
 function callArecibo(uri, callback, opts) {
+    if (window.arecibo.ajax_lock) {
+        //console.log('Unable to update, call in progress!' + callback)
+        return;
+    }
+
     var ajax_opts = {
         url: window.arecibo['uri'] + uri,
         dataType: "jsonp",
@@ -32,7 +37,8 @@ function callArecibo(uri, callback, opts) {
     }
 
     // Populate the data
-    //console.log("Calling " + ajax_opts.url);
+    // console.log("Calling " + ajax_opts.url);
+    window.arecibo.ajax_lock = true;
     $.ajax(ajax_opts);
 }
 

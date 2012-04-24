@@ -14,6 +14,42 @@
  * under the License.
  */
 
+function shiftLeft(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+    var hosts = Set.elements(graph.hosts);
+    var nbSamples = Math.round(screen.width / hosts.length);
+
+    var url = shiftLeftUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
+    callArecibo(url, 'refreshGraph');
+}
+
+function shiftRight(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+    var hosts = Set.elements(graph.hosts);
+    var nbSamples = Math.round(screen.width / hosts.length);
+
+    var url = shiftRightUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
+    callArecibo(url, 'refreshGraph');
+}
+
+function zoomIn(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+    var hosts = Set.elements(graph.hosts);
+    var nbSamples = Math.round(screen.width / hosts.length);
+
+    var url = zoomInUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
+    callArecibo(url, 'refreshGraph');
+}
+
+function zoomOut(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+    var hosts = Set.elements(graph.hosts);
+    var nbSamples = Math.round(screen.width / hosts.length);
+
+    var url = zoomOutUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
+    callArecibo(url, 'refreshGraph');
+}
+
 // Build the collector Url that shifts left the timeseries
 function shiftLeftUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
     // Shift 50% left
