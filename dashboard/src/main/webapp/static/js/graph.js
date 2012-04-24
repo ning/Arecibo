@@ -108,7 +108,7 @@ function populateSamples(payload) {
             {
                 color: window.arecibo.graph_palette.color(),
                 data: data,
-                name: sample['hostName'] + ' (' + sample['eventCategory'] + '::' + sample['sampleKind'] + ')'
+                name: sample['hostName']
             }
         );
     }
@@ -387,18 +387,16 @@ function buildGraphContainer(graphId, sampleKind, alone) {
     }
 
     var graphRow = buildGraphRow(graphId);
-    var graphControlsRow = buildGraphControlsRow(graphId);
+    var controlsAndLegendRow = buildControlsAndLegendRow(graphId);
     var smootherRow = buildSmootherRow(graphId);
-    var legendRow = buildLegendRow(graphId);
     var debugRow = buildDebugRow(graphId);
 
     return $('<div></div>')
                 .attr('class', span)
                 .append($('<h5></h5>').text(sampleKind))
                 .append(graphRow)
-                .append(graphControlsRow)
+                .append(controlsAndLegendRow)
                 .append(smootherRow)
-                .append(legendRow)
                 .append(debugRow);
 }
 
@@ -415,12 +413,32 @@ function buildGraphRow(graphId) {
                 .append($('<div></div>').attr('class', 'slider').attr('id', 'slider_' + graphId));
 }
 
-// Build the form controls container
-function buildGraphControlsRow(graphId) {
+function buildControlsAndLegendRow(graphId) {
+    var graphControlsRow = buildGraphControlsColumn(graphId);
+    var legendRow = buildLegendColumn(graphId);
+
     return $('<div></div>')
                 .attr('class', 'row')
+                .append(graphControlsRow)
+                .append(legendRow);
+}
+
+// Build the form controls container
+function buildGraphControlsColumn(graphId) {
+    return $('<div></div>')
+                .attr('class', 'span3')
                 .attr('id', 'graph_controls_' + graphId)
                 .append(buildGraphControlsForm(graphId));
+}
+
+// Build the container where the legend will be injected
+function buildLegendColumn(graphId) {
+    return $('<div></div>')
+                .attr('class', 'span3')
+                .append($('<div></div>')
+                            .attr('id', 'legend_container_' + graphId)
+                            .append($('<div></div>').attr('id', 'legend_' + graphId))
+                        );
 }
 
 // Build the smoother container
@@ -429,16 +447,6 @@ function buildSmootherRow(graphId) {
                 .attr('class', 'row')
                 .append($('<h6></h6>').text('Smoothing'))
                 .append($('<div></div>').attr('id', 'smoother_container_' + graphId));
-}
-
-// Build the container where the legend will be injected
-function buildLegendRow(graphId) {
-    return $('<div></div>')
-                .attr('class', 'row')
-                .append($('<div></div>')
-                            .attr('id', 'legend_container_' + graphId)
-                            .append($('<div></div>').attr('id', 'legend_' + graphId))
-                        );
 }
 
 // Build the debug row for a graph: this is where we store extra metadata

@@ -43,13 +43,12 @@ describe('The graph builder', function () {
 
     it('should be able to create a new graph container', function() {
         spyOn(window, 'buildGraphRow').andReturn('<div id="A"></div>');
-        spyOn(window, 'buildGraphControlsRow').andReturn('<div id="B"></div>');
+        spyOn(window, 'buildControlsAndLegendRow').andReturn('<div id="B"></div>');
         spyOn(window, 'buildSmootherRow').andReturn('<div id="C"></div>');
-        spyOn(window, 'buildLegendRow').andReturn('<div id="D"></div>');
-        spyOn(window, 'buildDebugRow').andReturn('<div id="E"></div>');
+        spyOn(window, 'buildDebugRow').andReturn('<div id="D"></div>');
 
         var htmlBuilt = buildGraphContainer(1);
-        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div><div id="D"></div><div id="E"></div></div>';
+        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div><div id="D"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
@@ -62,8 +61,8 @@ describe('The graph builder', function () {
     it('should be able to create the form controls row', function() {
         spyOn(window, 'buildGraphControlsForm').andReturn('<form></form>');
 
-        var htmlBuilt = buildGraphControlsRow(1);
-        var htmlExpected = '<div class="row" id="graph_controls_1"><form></form></div>';
+        var htmlBuilt = buildGraphControlsColumn(1);
+        var htmlExpected = '<div class="span3" id="graph_controls_1"><form></form></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
@@ -74,8 +73,8 @@ describe('The graph builder', function () {
     });
 
     it('should be able to create the legend row', function() {
-        var htmlBuilt = buildLegendRow(1);
-        var htmlExpected = '<div class="row"><div id="legend_container_1"><div id="legend_1"></div></div></div>';
+        var htmlBuilt = buildLegendColumn(1);
+        var htmlExpected = '<div class="span3"><div id="legend_container_1"><div id="legend_1"></div></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
