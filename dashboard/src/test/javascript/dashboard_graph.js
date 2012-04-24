@@ -43,17 +43,33 @@ describe('The graph builder', function () {
 
     it('should be able to create a new graph container', function() {
         spyOn(window, 'buildGraphRow').andReturn('<div id="A"></div>');
-        spyOn(window, 'buildControlsAndLegendRow').andReturn('<div id="B"></div>');
-        spyOn(window, 'buildDebugRow').andReturn('<div id="C"></div>');
+        spyOn(window, 'buildDisplayRow').andReturn('<div id="B"></div>');
+        spyOn(window, 'buildControlsAndLegendRow').andReturn('<div id="C"></div>');
+        spyOn(window, 'buildDebugRow').andReturn('<div id="D"></div>');
 
-        var htmlBuilt = buildGraphContainer(1);
-        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div></div>';
+        var htmlBuilt = buildGraphContainer(1, 'Pweet');
+        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div><div id="D"></div></div>';
+        verify(htmlBuilt, htmlExpected);
+    });
+
+    it('should be able to create the display controls row', function() {
+        var htmlBuilt = buildDisplayRow(1);
+        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a></div>';
+        verify(htmlBuilt, htmlExpected);
+    });
+
+    it('should be able to create the controls and legend row', function() {
+        spyOn(window, 'buildGraphControlsColumn').andReturn('<div id="A"></div>');
+        spyOn(window, 'buildLegendColumn').andReturn('<div id="B"></div>');
+
+        var htmlBuilt = buildControlsAndLegendRow(1);
+        var htmlExpected = '<div class="row controls_and_legend" id="controls_and_legend_1" style="display: none;"><div id="A"></div><div id="B"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
     it('should be able to create the graph row', function() {
-        var htmlBuilt = buildGraphRow(1);
-        var htmlExpected = '<div class="row"><div class="chart_container" id="chart_container_1"><div class="y_axis" id="y_axis_1"></div><div class="chart" id="chart_1"></div></div><div class="slider" id="slider_1"></div></div>';
+        var htmlBuilt = buildGraphRow(1, 'Pweet');
+        var htmlExpected = '<div class="row"><h5>Pweet</h5><div class="chart_container" id="chart_container_1"><div class="y_axis" id="y_axis_1"></div><div class="chart" id="chart_1"></div></div><div class="slider" id="slider_1"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 

@@ -15,26 +15,43 @@
  */
 
 .row_graph_container {
-    margin-bottom: 25px;
 }
 
 .chart_container {
-    width: 940px;
     position: relative;
-    margin-top: 25px;
+    /* Give some room for the chart title */
+    margin-top: 35px;
 }
 
 .y_axis {
     position: relative;
-    width: 40px;
     float: left;
 }
 
 .chart {
     position: relative;
-    margin-top: -25px;
     float: left;
     clear: right;
+    /* By default, Rickshaw offsets the graph. I'm not sure why, but it's hardcoded.
+       See berthRate parameter in Rickshaw.Graph.Axis.Y */
+    margin-top: -25px;
+}
+
+.display_controls {
+    /* Need to artificially push up the controls because of the berthRate (see above) */
+    margin-top: -45px;
+    /* Give some room between the controls and the graph title below */
+    margin-bottom: 30px;
+    /* Position the controls on top of the Y axis */
+    position: relative;
+    z-index: 2;
+}
+
+.controls_and_legend {
+    /* Need to artificially push up the row to offset the margin-bottom of the .display_controls element */
+    margin-top: -25px;
+    /* When displaying the controls, give some room between the smoothing slider and the title below */
+    margin-bottom: 30px;
 }
 
 .slider {

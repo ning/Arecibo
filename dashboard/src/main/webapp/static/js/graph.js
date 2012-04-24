@@ -386,22 +386,24 @@ function buildGraphContainer(graphId, sampleKind, alone) {
         span = 'span12';
     }
 
-    var graphRow = buildGraphRow(graphId);
+    var graphRow = buildGraphRow(graphId, sampleKind);
     var controlsAndLegendRow = buildControlsAndLegendRow(graphId);
+    var displayRow = buildDisplayRow(graphId);
     var debugRow = buildDebugRow(graphId);
 
     return $('<div></div>')
                 .attr('class', span)
-                .append($('<h5></h5>').text(sampleKind))
                 .append(graphRow)
+                .append(displayRow)
                 .append(controlsAndLegendRow)
                 .append(debugRow);
 }
 
 // Build the actual graph container
-function buildGraphRow(graphId) {
+function buildGraphRow(graphId, sampleKind) {
     return $('<div></div>')
                 .attr('class', 'row')
+                .append($('<h5></h5>').text(sampleKind))
                 .append($('<div></div>')
                             .attr('class', 'chart_container')
                             .attr('id', 'chart_container_' + graphId)
@@ -416,7 +418,9 @@ function buildControlsAndLegendRow(graphId) {
     var legendRow = buildLegendColumn(graphId);
 
     return $('<div></div>')
-                .attr('class', 'row')
+                .attr('class', 'row controls_and_legend')
+                .attr('id', 'controls_and_legend_' + graphId)
+                .attr('style', 'display: none;')
                 .append(graphControlsRow)
                 .append(legendRow);
 }
@@ -445,6 +449,73 @@ function buildSmootherContainer(graphId) {
     return $('<div></div>')
                 .append($('<h6></h6>').text('Smoothing'))
                 .append($('<div></div>').attr('id', 'smoother_container_' + graphId));
+}
+
+// Build the row with the display controls (zoom, shift, etc.)
+function buildDisplayRow(graphId) {
+    // Show/Hide the graph controls
+    var toggleBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-plus-sign')
+                            .click(function() {
+                                // See buildControlsAndLegendRow()
+                                $('#controls_and_legend_' + graphId).toggle();
+                            })
+                        );
+
+    // Go back in time
+    var shiftLeftBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-arrow-left')
+                            .click(function() {
+                                // TODO
+                            })
+                        );
+    // Go forward in time
+    var shiftRightBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-arrow-right')
+                            .click(function() {
+                                // TODO
+                            })
+                        );
+
+    // Zoom in in time
+    var zoomInBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-plus')
+                            .click(function() {
+                                // TODO
+                            })
+                        );
+    // Zoom out in time
+    var zoomOutBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-minus')
+                            .click(function() {
+                                // TODO
+                            })
+                        );
+
+
+    return $('<div></div>')
+                .attr('class', 'display_controls')
+                .attr('id', 'display_controls_' + graphId)
+                .append(toggleBtn)
+                .append(shiftLeftBtn)
+                .append(shiftRightBtn)
+                .append(zoomOutBtn)
+                .append(zoomInBtn);
 }
 
 // Build the debug row for a graph: this is where we store extra metadata
