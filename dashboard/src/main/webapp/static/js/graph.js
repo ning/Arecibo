@@ -24,6 +24,14 @@ function renderGraph() {
         uri: window.location.origin,
         // Mapping between sample kinds and (timeserie, graph) tuples
         graphs: {},
+        // Metadata for colors
+        colors: {
+            // Global mapping between hosts and colors to be able to keep the same color
+            // across graphs on a per host basis
+            host_colors: {},
+            // The graph palette, used to generate the colors for the different graphs
+            palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
+        },
         // Default settings for the graphs
         graph_settings: {
             // linear interpolation by default, i.e. straight lines between points
@@ -32,8 +40,6 @@ function renderGraph() {
             offset: 'value',
             renderer: 'line'
         },
-        // The graph palette, used to generate the colors for the different graphs
-        graph_palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' }),
     };
 
     // Set the radio buttons properly
@@ -85,7 +91,7 @@ function populateSamples(payload) {
         if (!window.arecibo.graphs[sampleKind]) {
             window.arecibo.graphs[sampleKind] = {
                 timeserie: [],
-                graph: null,
+                graph: null
             }
         }
 
@@ -104,11 +110,15 @@ function populateSamples(payload) {
             i++;
         }
 
+        var hostName = sample['hostName'];
+        if (!window.arecibo.colors.host_colors[hostName]) {
+            window.arecibo.colors.host_colors[hostName] = window.arecibo.colors.palette.color();
+        }
         window.arecibo.graphs[sampleKind].timeserie.push(
             {
-                color: window.arecibo.graph_palette.color(),
+                color: window.arecibo.colors.host_colors[hostName],
                 data: data,
-                name: sample['hostName']
+                name: hostName
             }
         );
     }
