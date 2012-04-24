@@ -388,7 +388,6 @@ function buildGraphContainer(graphId, sampleKind, alone) {
 
     var graphRow = buildGraphRow(graphId);
     var controlsAndLegendRow = buildControlsAndLegendRow(graphId);
-    var smootherRow = buildSmootherRow(graphId);
     var debugRow = buildDebugRow(graphId);
 
     return $('<div></div>')
@@ -396,7 +395,6 @@ function buildGraphContainer(graphId, sampleKind, alone) {
                 .append($('<h5></h5>').text(sampleKind))
                 .append(graphRow)
                 .append(controlsAndLegendRow)
-                .append(smootherRow)
                 .append(debugRow);
 }
 
@@ -428,7 +426,8 @@ function buildGraphControlsColumn(graphId) {
     return $('<div></div>')
                 .attr('class', 'span3')
                 .attr('id', 'graph_controls_' + graphId)
-                .append(buildGraphControlsForm(graphId));
+                .append(buildGraphControlsForm(graphId))
+                .append(buildSmootherContainer(graphId));
 }
 
 // Build the container where the legend will be injected
@@ -442,9 +441,8 @@ function buildLegendColumn(graphId) {
 }
 
 // Build the smoother container
-function buildSmootherRow(graphId) {
+function buildSmootherContainer(graphId) {
     return $('<div></div>')
-                .attr('class', 'row')
                 .append($('<h6></h6>').text('Smoothing'))
                 .append($('<div></div>').attr('id', 'smoother_container_' + graphId));
 }

@@ -44,11 +44,10 @@ describe('The graph builder', function () {
     it('should be able to create a new graph container', function() {
         spyOn(window, 'buildGraphRow').andReturn('<div id="A"></div>');
         spyOn(window, 'buildControlsAndLegendRow').andReturn('<div id="B"></div>');
-        spyOn(window, 'buildSmootherRow').andReturn('<div id="C"></div>');
-        spyOn(window, 'buildDebugRow').andReturn('<div id="D"></div>');
+        spyOn(window, 'buildDebugRow').andReturn('<div id="C"></div>');
 
         var htmlBuilt = buildGraphContainer(1);
-        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div><div id="D"></div></div>';
+        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
@@ -62,13 +61,13 @@ describe('The graph builder', function () {
         spyOn(window, 'buildGraphControlsForm').andReturn('<form></form>');
 
         var htmlBuilt = buildGraphControlsColumn(1);
-        var htmlExpected = '<div class="span3" id="graph_controls_1"><form></form></div>';
+        var htmlExpected = '<div class="span3" id="graph_controls_1"><form></form><div><h6>Smoothing</h6><div id="smoother_container_1"></div></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
-    it('should be able to create the smoother row', function() {
-        var htmlBuilt = buildSmootherRow(1);
-        var htmlExpected = '<div class="row"><h6>Smoothing</h6><div id="smoother_container_1"></div></div>';
+    it('should be able to create the smoother container', function() {
+        var htmlBuilt = buildSmootherContainer(1);
+        var htmlExpected = '<div><h6>Smoothing</h6><div id="smoother_container_1"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
