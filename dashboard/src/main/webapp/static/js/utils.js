@@ -152,10 +152,16 @@ var Set = new function() {
         }
 
         for (var i = 0; i < objs.length; i++) {
-            set[objs[i][key]] = true;
+            this.add(set, objs[i][key]);
         }
 
         return set;
+    }
+
+    this.add = function(s, item) {
+        if (item) {
+            s[item] = true;
+        }
     }
 
     this.contains = function(s, item) {
@@ -164,6 +170,21 @@ var Set = new function() {
 
     this.equals = function(s1, s2) {
         return (this.size(this.symdiff(s1, s2)) == 0);
+    }
+
+    this.elements = function(s) {
+        var elts = [];
+        if (s == undefined) {
+            return elts;
+        }
+
+        for (var item in s) {
+            if (this.contains(s, item)) {
+                elts.push(item);
+            }
+        }
+
+        return elts;
     }
 
     this.dup = function(s, copy) {

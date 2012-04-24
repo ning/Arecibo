@@ -50,6 +50,39 @@ describe('The set implementation', function () {
         expect(Set.makeSet(undefined, null)).toEqual({});
     });
 
+    it('should be able to add an element to a set', function() {
+        var mySet = Set.makeSet();
+        expect(Set.size(mySet)).toBe(0);
+
+        Set.add(mySet, 'foo');
+        expect(Set.size(mySet)).toBe(1);
+        expect(Set.contains(mySet, 'foo')).toBeTruthy();
+
+        Set.add(mySet, 'foo');
+        expect(Set.size(mySet)).toBe(1);
+        expect(Set.contains(mySet, 'foo')).toBeTruthy();
+
+        Set.add(mySet, null);
+        expect(Set.size(mySet)).toBe(1);
+        expect(Set.contains(mySet, 'foo')).toBeTruthy();
+
+        Set.add(mySet, 'bar');
+        expect(Set.size(mySet)).toBe(2);
+        expect(Set.contains(mySet, 'foo')).toBeTruthy();
+        expect(Set.contains(mySet, 'bar')).toBeTruthy();
+    });
+
+    it('should be able to convert a set to an array', function() {
+        var mySet = Set.makeSet();
+        Set.add(mySet, 'foo');
+        Set.add(mySet, 'bar');
+
+        var elts = Set.elements(mySet);
+        expect(elts.length).toBe(2);
+        expect(elts[0]).toBe('foo');
+        expect(elts[1]).toBe('bar');
+    });
+
     it('should be able to check if an element is in a set', function() {
         var objs = [
             {
