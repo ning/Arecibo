@@ -22,8 +22,10 @@ function renderGraph() {
     window.arecibo = {
         // Dashboard location, e.g. 'http://127.0.0.1:8080'
         uri: window.location.origin,
-        // Mapping between sample kinds and (timeserie, graph) tuples
+        // Mapping between graphIds and graphs meta-objects
         graphs: {},
+        // Mapping between sampleCategory, sampleKind and graphIds
+        graph_per_kind: {},
         // Metadata for colors
         colors: {
             // Global mapping between hosts and colors to be able to keep the same color
@@ -85,36 +87,39 @@ function populateSamples(payload) {
     // Prepare the time series
     for (var j in payload) {
         var sample = payload[j];
-
-        // New sample kind?
+        var hostName = sample['hostName'];
+        var sampleCategory = sample['eventCategory'];
         var sampleKind = sample['sampleKind'];
-        if (!window.arecibo.graphs[sampleKind]) {
-            window.arecibo.graphs[sampleKind] = {
-                timeserie: [],
-                graph: null
-            }
-        }
+        var csv = sample['samples'].split(',');
 
-        var csv = sample['samples'].split(",");
-        // Build data in the form [{x:, y:}, {}, ...]
+        // Register the new graph
+        var graph = getOrCreateGraphMetaObject(sampleCategory, sampleKind);
+
+        // Final data in the form [{x:, y:}, {}, ...] for Richshaw
         var data = [];
-        var lastX = -1;
         for (var i = 0; i < csv.length; i++) {
             tmp = {x:0, y:0};
             tmp.x = parseInt(csv[i]);
             tmp.y = parseFloat(csv[i+1]);
-            if (!isNaN(tmp.x) && !isNaN(tmp.y) && (tmp.x > lastX) && !(tmp.x == Infinity) && !(tmp.y == Infinity)) {
+            if (!isNaN(tmp.x) && !isNaN(tmp.y) && !(tmp.x == Infinity) && !(tmp.y == Infinity)) {
                 data.push(tmp);
-                lastX = tmp.x;
+                if (!graph.startTime || tmp.x < graph.startTime) {
+                    graph.startTime = tmp.x;
+                }
+                if (!graph.endTime || tmp.x > graph.endTime) {
+                    graph.endTime = tmp.x;
+                }
             }
             i++;
         }
 
-        var hostName = sample['hostName'];
+        // Determine the color to use for this host
         if (!window.arecibo.colors.host_colors[hostName]) {
             window.arecibo.colors.host_colors[hostName] = window.arecibo.colors.palette.color();
         }
-        window.arecibo.graphs[sampleKind].timeserie.push(
+
+        // Push to data for Rickshaw
+        graph.timeserie.push(
             {
                 color: window.arecibo.colors.host_colors[hostName],
                 data: data,
@@ -129,6 +134,43 @@ function populateSamples(payload) {
     }
 
     drawAllGraphs();
+}
+
+// Function that manages the global registry for graph. It is also responsible
+// for issuing graphIds
+function getOrCreateGraphMetaObject(sampleCategory, sampleKind) {
+    // Potential new graphId
+    var graphId = Set.size(window.arecibo.graphs) + 1;
+
+    if (!window.arecibo.graph_per_kind[sampleCategory]) {
+        window.arecibo.graph_per_kind[sampleCategory] = {};
+    }
+
+    if (!window.arecibo.graph_per_kind[sampleCategory][sampleKind]) {
+        // New graph
+        window.arecibo.graph_per_kind[sampleCategory][sampleKind] = graphId;
+    } else {
+        graphId = window.arecibo.graph_per_kind[sampleCategory][sampleKind];
+    }
+
+    // Does the graph for this sampleCategory and sampleKind already exists?
+    if (window.arecibo.graphs[graphId]) {
+        return window.arecibo.graphs[graphId];
+    }
+
+    // Nope, create the graph meta-object
+    var graph = {
+        timeserie: [],
+        graph: null,
+        sampleCategory: sampleCategory,
+        sampleKind: sampleKind,
+        graphId: graphId,
+        startTime: null,
+        endTime: null,
+    }
+    window.arecibo.graphs[graphId] = graph;
+
+    return graph;
 }
 
 /*
@@ -152,20 +194,21 @@ function fillSeries(series) {
 // populate the grid with the graphs
 function drawAllGraphs() {
     var nbGraphs = Set.size(window.arecibo.graphs);
-    var i = 1;
-    for (var sampleKind in window.arecibo.graphs) {
-        addGraphContainer(i, sampleKind, nbGraphs);
-        drawGraph(i, sampleKind);
-        i++;
+    for (var graphId in window.arecibo.graphs) {
+        addGraphContainer(window.arecibo.graphs[graphId], nbGraphs);
+        drawGraph(window.arecibo.graphs[graphId]);
     }
 }
 
-function drawGraph(graphId, sampleKind) {
+function drawGraph(item) {
+    var graphId = item.graphId;
+
     var graph = new Rickshaw.Graph({
         element: document.querySelector("#chart_" + graphId),
         width: 0.90 * $('#chart_container_' + graphId).parent().width(),
-        series: window.arecibo.graphs[sampleKind].timeserie
+        series: item.timeserie
     });
+    item.graph = graph;
     graph.render();
 
     // Interactive Hover Details
@@ -234,13 +277,11 @@ function drawGraph(graphId, sampleKind) {
     });
 
     var controls = new RenderControls({
-        element: document.getElementById('side_panel_' + graphId),
-        graph: graph
+        graph: graph,
+        element: document.getElementById('side_panel_' + graphId)
     });
 
     updateGraphSettings(graph, window.arecibo.graph_settings);
-
-    window.arecibo.graphs[sampleKind].graph = graph;
 }
 
 // The following is inspired from http://shutterstock.github.com/rickshaw/examples/js/extensions.js
@@ -370,7 +411,9 @@ var RenderControls = function(args) {
 };
 
 // Add a new graph container in the grid
-function addGraphContainer(graphId, sampleKind, nbGraphs) {
+function addGraphContainer(graph, nbGraphs) {
+    var graphId = graph.graphId;
+    var graphTitle = graph.sampleCategory + ': ' + graph.sampleKind;
     var alone = false;
 
     // Do we need an extra row?
@@ -383,20 +426,20 @@ function addGraphContainer(graphId, sampleKind, nbGraphs) {
     }
 
     // Create the container
-    var graphContainer = buildGraphContainer(graphId, sampleKind, alone);
+    var graphContainer = buildGraphContainer(graphId, graphTitle, alone);
 
     // Find the latest row and add the new container
     $("#graph_grid div.row_graph_container:last").append(graphContainer);
 }
 
 // Build the necessary elements for a new graph
-function buildGraphContainer(graphId, sampleKind, alone) {
+function buildGraphContainer(graphId, graphTitle, alone) {
     var span = 'span6';
     if (alone) {
         span = 'span12';
     }
 
-    var graphRow = buildGraphRow(graphId, sampleKind);
+    var graphRow = buildGraphRow(graphId, graphTitle);
     var controlsAndLegendRow = buildControlsAndLegendRow(graphId);
     var displayRow = buildDisplayRow(graphId);
     var debugRow = buildDebugRow(graphId);
@@ -410,10 +453,10 @@ function buildGraphContainer(graphId, sampleKind, alone) {
 }
 
 // Build the actual graph container
-function buildGraphRow(graphId, sampleKind) {
+function buildGraphRow(graphId, graphTitle) {
     return $('<div></div>')
                 .attr('class', 'row')
-                .append($('<h5></h5>').text(sampleKind))
+                .append($('<h5></h5>').text(graphTitle))
                 .append($('<div></div>')
                             .attr('class', 'chart_container')
                             .attr('id', 'chart_container_' + graphId)

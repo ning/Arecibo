@@ -25,19 +25,65 @@ function verify(actual, expected) {
     expect(outerHTML(actual)).toBe(expected);
 }
 
-describe('The graph builder', function () {
+describe('The graph Ajax callback', function() {
+    it('should be able to manage the global list of graphs', function() {
+        window.arecibo = {graphs: {}, graph_per_kind: {}};
+
+        expect(Set.size(window.arecibo.graphs)).toBe(0);
+        expect(Set.size(window.arecibo.graph_per_kind)).toBe(0);
+
+        // Create a new one
+        var graph = getOrCreateGraphMetaObject('JVM', 'heapUsed');
+        expect(Set.size(window.arecibo.graphs)).toBe(1);
+        expect(Set.size(window.arecibo.graph_per_kind)).toBe(1);
+        expect(Set.size(window.arecibo.graph_per_kind.JVM)).toBe(1);
+        // graphId is 1
+        expect(window.arecibo.graph_per_kind.JVM.heapUsed).toBe(1);
+        expect(graph.graphId).toBe(1);
+
+        // Make sure we don't recreate it
+        graph = getOrCreateGraphMetaObject('JVM', 'heapUsed');
+        expect(Set.size(window.arecibo.graphs)).toBe(1);
+        expect(Set.size(window.arecibo.graph_per_kind)).toBe(1);
+        expect(Set.size(window.arecibo.graph_per_kind.JVM)).toBe(1);
+        expect(window.arecibo.graph_per_kind.JVM.heapUsed).toBe(1);
+        expect(graph.graphId).toBe(1);
+
+        // Create a new one
+        graph = getOrCreateGraphMetaObject('JVM', 'heapMax');
+        expect(Set.size(window.arecibo.graphs)).toBe(2);
+        expect(Set.size(window.arecibo.graph_per_kind)).toBe(1);
+        expect(Set.size(window.arecibo.graph_per_kind.JVM)).toBe(2);
+        expect(window.arecibo.graph_per_kind.JVM.heapUsed).toBe(1);
+        expect(window.arecibo.graph_per_kind.JVM.heapMax).toBe(2);
+        expect(graph.graphId).toBe(2);
+
+        // Create a new one with a different category
+        graph = getOrCreateGraphMetaObject('JVMOperatingSystemPerZone', 'ProcessCpuTime');
+        expect(Set.size(window.arecibo.graphs)).toBe(3);
+        expect(Set.size(window.arecibo.graph_per_kind)).toBe(2);
+        expect(Set.size(window.arecibo.graph_per_kind.JVM)).toBe(2);
+        expect(Set.size(window.arecibo.graph_per_kind.JVMOperatingSystemPerZone)).toBe(1);
+        expect(window.arecibo.graph_per_kind.JVM.heapUsed).toBe(1);
+        expect(window.arecibo.graph_per_kind.JVM.heapMax).toBe(2);
+        expect(window.arecibo.graph_per_kind.JVMOperatingSystemPerZone.ProcessCpuTime).toBe(3);
+        expect(graph.graphId).toBe(3);
+    });
+});
+
+describe('The graph builder', function() {
     it('should be able to add a new graph container in an empty grid', function() {
         spyOn(window, 'buildGraphContainer').andReturn('<div id="GRAPH"></div>');
         $('html,body').append($('<div></div>').attr('id', 'graph_grid'));
         verify($('#graph_grid'), '<div id="graph_grid"></div>')
 
-        addGraphContainer(1);
+        addGraphContainer({graphId: 1, sampleCategory: 'A', sampleKind: 'B'});
         verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div></div></div>');
 
-        addGraphContainer(2);
+        addGraphContainer({graphId: 2, sampleCategory: 'C', sampleKind: 'D'});
         verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div><div id="GRAPH"></div></div></div>');
 
-        addGraphContainer(3);
+        addGraphContainer({graphId: 3, sampleCategory: 'E', sampleKind: 'F'});
         verify($('#graph_grid'), '<div id="graph_grid"><div class="row show-grid row_graph_container"><div id="GRAPH"></div><div id="GRAPH"></div></div><div class="row show-grid row_graph_container"><div id="GRAPH"></div></div></div>');
     });
 
