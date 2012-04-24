@@ -88,8 +88,10 @@ public class TestCollectorEventProcessor
 
         String csvSamplesKindA = "";
         String csvSamplesKindB = "";
+        final DateTime firstTime = new DateTime(DateTimeZone.UTC);
         for (int i = 0; i < NB_EVENTS; i++) {
-            final long eventTs = new DateTime(DateTimeZone.UTC).getMillis();
+            final long eventTs = firstTime.getMillis() + i;
+            final long eventTsInSeconds = eventTs / 1000L;
             processor.processEvent(new MapEvent(eventTs, EVENT_TYPE, HOST_UUID, EVENT));
 
             final Integer sampleKindAId = dao.getSampleKindId(eventCategoryId, SAMPLE_KIND_A);
@@ -102,8 +104,8 @@ public class TestCollectorEventProcessor
                 csvSamplesKindA += ",";
                 csvSamplesKindB += ",";
             }
-            csvSamplesKindA = String.format("%s%d,%d", csvSamplesKindA, eventTs / 1000, 12);
-            csvSamplesKindB = String.format("%s%d,%d", csvSamplesKindB, eventTs / 1000, 42);
+            csvSamplesKindA = String.format("%s%d,%d", csvSamplesKindA, eventTsInSeconds, 12);
+            csvSamplesKindB = String.format("%s%d,%d", csvSamplesKindB, eventTsInSeconds, 42);
 
             checkProcessorState(hostId, sampleKindAId, sampleKindBId, csvSamplesKindA, csvSamplesKindB, i + 1);
         }
