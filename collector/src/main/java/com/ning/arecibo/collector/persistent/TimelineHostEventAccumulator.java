@@ -137,9 +137,8 @@ public class TimelineHostEventAccumulator
         if (endTime == null) {
             endTime = timestamp;
         }
-
-        if (timestamp.isBefore(endTime)) {
-            log.warn("Adding samples for host {}, timestamp {} is earlier than the end time {}; ignored",
+        else if (!timestamp.isAfter(endTime)) {
+            log.warn("Adding samples for host {}, timestamp {} is not after the end time {}; ignored",
                 new Object[]{hostId, dateFormatter.print(timestamp), dateFormatter.print(endTime)});
             return;
         }

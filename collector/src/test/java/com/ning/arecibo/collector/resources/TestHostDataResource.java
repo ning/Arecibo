@@ -176,8 +176,9 @@ public class TestHostDataResource
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
 
         // Send the second sample to the same host
-        sendSamples(hostId1, sampleKindId2, startTime);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        final DateTime nextStartTime = startTime.plusSeconds(121 * 30);
+        sendSamples(hostId1, sampleKindId2, nextStartTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
@@ -187,7 +188,7 @@ public class TestHostDataResource
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_2);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
         samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
@@ -195,16 +196,16 @@ public class TestHostDataResource
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
         samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
         samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
 
         // Send the first sample to the second host
-        sendSamples(hostId2, sampleKindId1, startTime);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        sendSamples(hostId2, sampleKindId1, nextStartTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
@@ -214,7 +215,7 @@ public class TestHostDataResource
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("hostName"), HOST_NAME_1);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("eventCategory"), EVENT_TYPE);
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_2);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
         samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
@@ -223,13 +224,13 @@ public class TestHostDataResource
         Assert.assertEquals(samplesForSampleKindAndHost.get(0).get("sampleKind"), SAMPLE_KIND_1);
         samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 0);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 2);
         samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_2), startTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 1);
-        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), startTime);
+        samplesForSampleKindAndHost = getSamplesSinceDateTime(ImmutableList.<String>of(HOST_NAME_1, HOST_NAME_2), ImmutableList.<String>of(CATEGORY_AND_SAMPLE_KIND_1, CATEGORY_AND_SAMPLE_KIND_2), nextStartTime);
         Assert.assertEquals(samplesForSampleKindAndHost.size(), 3);
     }
 

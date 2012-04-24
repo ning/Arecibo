@@ -72,10 +72,11 @@ public class TestSamplesReplayer
             6, new ScalarSample(SampleOpcode.FLOAT, Float.NEGATIVE_INFINITY),
             7, new ScalarSample(SampleOpcode.STRING, "pwet")
         ));
-        final HostSamplesForTimestamp samples = new HostSamplesForTimestamp(HOST_ID, "something", new DateTime(DateTimeZone.UTC), eventMap);
+        final DateTime firstTime = new DateTime(DateTimeZone.UTC).minusSeconds(NB_EVENTS * 30);
 
         // Write the samples to disk
         for (int i = 0; i < NB_EVENTS; i++) {
+            final HostSamplesForTimestamp samples = new HostSamplesForTimestamp(HOST_ID, "something", firstTime.plusSeconds(30 * i), eventMap);
             fileBackedBuffer.append(samples);
         }
 

@@ -200,7 +200,9 @@ public class TimelineAggregator
             final Map<String, Long> counterDeltas = subtractFromAggregatorCounters(initialCounters);
             final long netAggregatesCreated = aggregatesCreated.get() - startingAggregatesCreated;
             if (netAggregatesCreated == 0) {
-                foundNothingRuns.incrementAndGet();
+                if (aggregationLevel == 0) {
+                    foundNothingRuns.incrementAndGet();
+                }
                 log.debug("Created no new aggregates, so skipping higher-level aggregations");
                 break;
             }

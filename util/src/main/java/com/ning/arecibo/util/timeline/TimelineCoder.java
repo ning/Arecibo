@@ -139,10 +139,9 @@ public class TimelineCoder {
                     int newCount = 0;
                     int newDelta = 0;
                     boolean useNewDelta = false;
+                    boolean nonDeltaTime = false;
                     if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
                         newTime = byteDataStream.readInt();
-                        newDelta = 0;
-                        newCount = 0;
                         byteCursor += 4;
                         if (lastTime == 0) {
                             writeTime(0, newTime, dataStream);
@@ -155,6 +154,9 @@ public class TimelineCoder {
                             newDelta = newTime - lastTime;
                             useNewDelta = true;
                             newCount = 1;
+                        }
+                        else {
+                            nonDeltaTime = true;
                         }
                     }
                     else if (opcode <= TimelineOpcode.MAX_DELTA_TIME) {
@@ -212,6 +214,12 @@ public class TimelineCoder {
                                 repeatCount = 0;
                             }
                         }
+                    }
+                    else if (nonDeltaTime) {
+                        writeTime(lastTime, newTime, dataStream);
+                        lastTime = newTime;
+                        lastDelta = 0;
+                        repeatCount = 0;
                     }
                     else if (lastDelta == 0) {
                         lastTime = newTime;
@@ -330,9 +338,12 @@ public class TimelineCoder {
 
     private static void writeRepeatedDelta(final int delta, final int repeatCount, final DataOutputStream dataStream) throws IOException {
         if (repeatCount > 1) {
-                if (repeatCount > MAX_BYTE_REPEAT_COUNT) {
+            if (repeatCount > MAX_BYTE_REPEAT_COUNT) {
                 dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex());
                 dataStream.writeShort(repeatCount);
+            }
+            else if (repeatCount == 2) {
+                dataStream.writeByte(delta);
             }
             else {
                 dataStream.writeByte(TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex());
