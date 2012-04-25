@@ -44,10 +44,6 @@ function renderGraph() {
     $('input:radio[name="offset"]').filter('[value="' + window.arecibo.graph_settings['offset'] + '"]').attr('checked', true);
     $('input:radio[name="interpolation"]').filter('[value="' + window.arecibo.graph_settings['interpolation'] + '"]').attr('checked', true);
 
-    $('#controls_btn').click(function() {
-        $('#graph_controls').toggle();
-    });
-
     createGraphs();
 };
 
