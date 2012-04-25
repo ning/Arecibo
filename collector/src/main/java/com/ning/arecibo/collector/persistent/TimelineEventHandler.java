@@ -301,7 +301,9 @@ public class TimelineEventHandler implements EventHandler
         final List<TimelineChunk> samplesByHostName = new ArrayList<TimelineChunk>();
         for (final TimelineHostEventAccumulator accumulator : hostAccumulatorsAndDate.getCategoryAccumulators().values()) {
             for (TimelineChunk chunk : accumulator.getPendingTimelineChunks()) {
-                if ((filterStartTime != null && chunk.getEndTime().isBefore(filterStartTime)) || (filterEndTime != null && chunk.getStartTime().isAfter(filterEndTime))) {
+                if ((filterStartTime != null && chunk.getEndTime().isBefore(filterStartTime)) ||
+                    (filterEndTime != null && chunk.getStartTime().isAfter(filterEndTime)) ||
+                    !sampleKindIds.contains(chunk.getSampleKindId())) {
                     continue;
                 }
                 else {
@@ -324,17 +326,13 @@ public class TimelineEventHandler implements EventHandler
             // This accumulator is in the right time range, now return only the sample kinds specified
             final byte[] timeBytes = TimelineCoder.compressDateTimes(accumulatorTimes);
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
-                // Extract the timeline for this chunk by copying it and reading encoded bytes
-                accumulatorDeepCopyCount.incrementAndGet();
-                final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
-                final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(accumulatorStartTime, accumulatorEndTime, timeBytes);
-
-                if (!sampleKindIds.contains(timelineChunk.getSampleKindId())) {
-                    // We don't care about this sample kind
-                    continue;
+                if (sampleKindIds.contains(chunkAccumulator.getSampleKindId())) {
+                    // Extract the timeline for this chunk by copying it and reading encoded bytes
+                    accumulatorDeepCopyCount.incrementAndGet();
+                    final TimelineChunkAccumulator chunkAccumulatorCopy = chunkAccumulator.deepCopy();
+                    final TimelineChunk timelineChunk = chunkAccumulatorCopy.extractTimelineChunkAndReset(accumulatorStartTime, accumulatorEndTime, timeBytes);
+                    samplesByHostName.add(timelineChunk);
                 }
-
-                samplesByHostName.add(timelineChunk);
             }
         }
         inMemoryChunksReturnedCount.addAndGet(samplesByHostName.size());
