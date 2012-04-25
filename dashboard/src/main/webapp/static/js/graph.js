@@ -242,10 +242,14 @@ function drawGraph(item) {
 
     // Interactive Hover Details
 
+    // XXX We're hitting https://github.com/shutterstock/rickshaw/issues/37
+    // and https://github.com/shutterstock/rickshaw/issues/39 which seem
+    // to cause spinloops in some situations
+    //
     // Show the series value and formatted date and time on hover
-    var hoverDetail = new Rickshaw.Graph.HoverDetail({
-        graph: graph
-    });
+    // var hoverDetail = new Rickshaw.Graph.HoverDetail({
+    //     graph: graph
+    // });
 
     // Interactive Legend
     drawLegend(graph, graphId);
