@@ -66,6 +66,8 @@ function createGraph(payload) {
         addGraphContainer(window.arecibo.graphs[graphId], graphIds.length);
         drawGraph(window.arecibo.graphs[graphId]);
     }
+
+    removeAttributesFromYAxis();
 }
 
 // Succeeding invocations
@@ -83,6 +85,8 @@ function refreshGraph(payload) {
         // Render the new graph
         graph.update();
     }
+
+    removeAttributesFromYAxis();
 }
 
 function populateSamples(payload, refresh) {
@@ -311,6 +315,11 @@ function drawLegend(graph, graphId) {
         graph: graph,
         legend: legend
     });
+}
+
+// Remove the hardcoded padding added by Rickshaw
+function removeAttributesFromYAxis() {
+    $('svg.rickshaw_graph.y_axis').attr('style', '');
 }
 
 // The following is inspired from http://shutterstock.github.com/rickshaw/examples/js/extensions.js
