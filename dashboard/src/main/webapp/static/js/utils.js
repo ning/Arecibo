@@ -51,6 +51,8 @@ function initializeUI() {
     window.arecibo = {
         // Current Ajax request - only one at a time
         xhr: null,
+        // Current timeout on the error div
+        errorDivTimeout: null,
         uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
     }
 
@@ -94,8 +96,19 @@ function initializeUI() {
                 message = 'Uncaught Error. ' + jqXHR.responseText;
             }
 
+            // If there was a scheduled timeout, cancel it
+            if (window.arecibo.errorDivTimeout) {
+                window.clearTimeout(window.arecibo.errorDivTimeout);
+            }
+
             $(this).show();
-            $(this).append("<p>Error requesting " + settings.url + ". " + message + "<p>");
+            $(this).html("<p>Error requesting " + settings.url + ". " + message + "<p>");
+
+            // Hide the error message after a while
+            window.arecibo.errorDivTimeout = window.setTimeout(function() {
+                $('#errorDiv').hide();
+            }, 5000);
+
             event.preventDefault();
         });
 }
