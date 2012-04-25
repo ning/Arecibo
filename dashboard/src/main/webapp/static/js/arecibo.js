@@ -408,7 +408,7 @@ function buildGraphURL() {
     var hosts_url = buildHostsParamsFromTree();
     var sample_kinds_url = buildCategoryAndSampleKindParamsFromTree();
 
-    var nb_samples = Math.round(screen.width / (window.arecibo.hosts_selected.length * window.arecibo.sample_kinds_selected.length));
+    var nb_samples = screen.width;
 
     var uri = '/static/graph.html?' +
                 hosts_url + '&' +

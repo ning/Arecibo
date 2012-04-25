@@ -17,7 +17,7 @@
 function shiftLeft(graphId) {
     var graph = getGraphMetaObjectById(graphId);
     var hosts = Set.elements(graph.hosts);
-    var nbSamples = Math.round(screen.width / hosts.length);
+    var nbSamples = screen.width;
 
     var url = shiftLeftUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
     callArecibo(url, 'refreshGraph');
@@ -26,7 +26,7 @@ function shiftLeft(graphId) {
 function shiftRight(graphId) {
     var graph = getGraphMetaObjectById(graphId);
     var hosts = Set.elements(graph.hosts);
-    var nbSamples = Math.round(screen.width / hosts.length);
+    var nbSamples = screen.width;
 
     var url = shiftRightUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
     callArecibo(url, 'refreshGraph');
@@ -35,7 +35,7 @@ function shiftRight(graphId) {
 function zoomIn(graphId) {
     var graph = getGraphMetaObjectById(graphId);
     var hosts = Set.elements(graph.hosts);
-    var nbSamples = Math.round(screen.width / hosts.length);
+    var nbSamples = screen.width;
 
     var url = zoomInUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
     callArecibo(url, 'refreshGraph');
@@ -44,7 +44,7 @@ function zoomIn(graphId) {
 function zoomOut(graphId) {
     var graph = getGraphMetaObjectById(graphId);
     var hosts = Set.elements(graph.hosts);
-    var nbSamples = Math.round(screen.width / hosts.length);
+    var nbSamples = screen.width;
 
     var url = zoomOutUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
     callArecibo(url, 'refreshGraph');
