@@ -35,6 +35,8 @@
     /* By default, Rickshaw offsets the graph. I'm not sure why, but it's hardcoded.
        See berthRate parameter in Rickshaw.Graph.Axis.Y */
     margin-top: -25px;
+    /* Required on Firefox to adjust for the legend */
+    padding-top: 25px;
 }
 
 .display_controls {
