@@ -18,31 +18,25 @@ function renderGraph() {
     // UI setup (Ajax handlers, etc.)
     initializeUI();
 
-    // Global variables
-    window.arecibo = {
-        ajax_lock: false,
-        // Dashboard location, e.g. 'http://127.0.0.1:8080'
-        uri: window.location.origin,
-        // Mapping between graphIds and graphs meta-objects
-        graphs: {},
-        // Mapping between sampleCategory, sampleKind and graphIds
-        graph_per_kind: {},
-        // Metadata for colors
-        colors: {
-            // Global mapping between hosts and colors to be able to keep the same color
-            // across graphs on a per host basis
-            host_colors: {},
-            // The graph palette, used to generate the colors for the different graphs
-            palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
-        },
-        // Default settings for the graphs
-        graph_settings: {
-            // linear interpolation by default, i.e. straight lines between points
-            interpolation: 'linear',
-            // graphs offset should be the value of the data points by default
-            offset: 'value',
-            renderer: 'line'
-        },
+    // Mapping between graphIds and graphs meta-objects
+    window.arecibo.graphs = {};
+    // Mapping between sampleCategory, sampleKind and graphIds
+    window.arecibo.graph_per_kind = {};
+    // Metadata for colors
+    window.arecibo.colors = {
+        // Global mapping between hosts and colors to be able to keep the same color
+        // across graphs on a per host basis
+        host_colors: {},
+        // The graph palette, used to generate the colors for the different graphs
+        palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
+    };
+    // Default settings for the graphs
+    window.arecibo.graph_settings = {
+        // linear interpolation by default, i.e. straight lines between points
+        interpolation: 'linear',
+        // graphs offset should be the value of the data points by default
+        offset: 'value',
+        renderer: 'line'
     };
 
     // Set the radio buttons properly
@@ -81,8 +75,6 @@ function createGraph(payload) {
         addGraphContainer(window.arecibo.graphs[graphId], graphIds.length);
         drawGraph(window.arecibo.graphs[graphId]);
     }
-
-    window.arecibo.ajax_lock = false;
 }
 
 // Succeeding invocations
@@ -93,8 +85,6 @@ function refreshGraph(payload) {
         var graphId = graphIds[i];
         window.arecibo.graphs[graphId].graph.update();
     }
-
-    window.arecibo.ajax_lock = false;
 }
 
 function populateSamples(payload, refresh) {

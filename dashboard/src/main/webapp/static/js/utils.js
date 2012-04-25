@@ -15,11 +15,6 @@
  */
 
 function callArecibo(uri, callback, opts) {
-    if (window.arecibo.ajax_lock) {
-        //console.log('Unable to update, call in progress!' + callback)
-        return;
-    }
-
     var ajax_opts = {
         url: window.arecibo['uri'] + uri,
         dataType: "jsonp",
@@ -36,9 +31,13 @@ function callArecibo(uri, callback, opts) {
         }
     }
 
+    // Serialize the callbacks to avoid weird UI errors
+    if (window.arecibo.xhr) {
+        window.arecibo.xhr.abort();
+    }
+
     // Populate the data
-    // console.log("Calling " + ajax_opts.url);
-    window.arecibo.ajax_lock = true;
+    //console.log("Calling " + ajax_opts.url);
     $.ajax(ajax_opts);
 }
 
@@ -48,9 +47,20 @@ function initializeUI() {
         window.location.origin = window.location.protocol + "//" + window.location.host;
     }
 
+    // Dashboard Configuration
+    window.arecibo = {
+        // Current Ajax request - only one at a time
+        xhr: null,
+        uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
+    }
+
     // See http://bugs.jquery.com/ticket/8338 - this is required for the Ajax feedback functions
     jQuery.ajaxPrefilter(function(options) {
         options.global = true;
+    });
+
+    $(document).ajaxStop(function() {
+        window.arecibo.xhr = null;
     });
 
     // Setup the loading indicator for Ajax calls
