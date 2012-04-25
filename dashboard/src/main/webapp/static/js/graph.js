@@ -83,7 +83,14 @@ function refreshGraph(payload) {
 
     for (var i in graphIds) {
         var graphId = graphIds[i];
-        window.arecibo.graphs[graphId].graph.update();
+        var graph = window.arecibo.graphs[graphId].graph;
+
+        // Rickshaw doesn't redraw the legend for us, we need to do it
+        $('#legend_' + graphId).empty();
+        drawLegend(graph, graphId);
+
+        // Render the new graph
+        graph.update();
     }
 }
 
@@ -241,30 +248,7 @@ function drawGraph(item) {
     });
 
     // Interactive Legend
-
-    // Add a basic legend
-    var legend = new Rickshaw.Graph.Legend({
-        graph: graph,
-        element: document.querySelector('#legend_' + graphId)
-    });
-
-    // Add functionality to toggle series' visibility on and off
-    var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
-        graph: graph,
-        legend: legend
-    });
-
-    // Add drag-and-drop functionality to re-order the stack
-    var order = new Rickshaw.Graph.Behavior.Series.Order({
-        graph: graph,
-        legend: legend
-    });
-
-    // Highlight each series on hover within the legend
-    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
-        graph: graph,
-        legend: legend
-    });
+    drawLegend(graph, graphId);
 
     // Axes and Tick Marks
 
@@ -304,6 +288,33 @@ function drawGraph(item) {
     });
 
     updateGraphSettings(graph, window.arecibo.graph_settings);
+}
+
+// Populate and configure the legend element
+function drawLegend(graph, graphId) {
+    // Add a basic legend
+    var legend = new Rickshaw.Graph.Legend({
+        graph: graph,
+        element: document.querySelector('#legend_' + graphId)
+    });
+
+    // Add functionality to toggle series' visibility on and off
+    var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
+        graph: graph,
+        legend: legend
+    });
+
+    // Add drag-and-drop functionality to re-order the stack
+    var order = new Rickshaw.Graph.Behavior.Series.Order({
+        graph: graph,
+        legend: legend
+    });
+
+    // Highlight each series on hover within the legend
+    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
+        graph: graph,
+        legend: legend
+    });
 }
 
 // The following is inspired from http://shutterstock.github.com/rickshaw/examples/js/extensions.js
