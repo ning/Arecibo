@@ -100,7 +100,7 @@ describe('The graph builder', function() {
 
     it('should be able to create the display controls row', function() {
         var htmlBuilt = buildDisplayRow(1);
-        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a></div>';
+        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-time"></i></a></div>';
         verify(htmlBuilt, htmlExpected);
     });
 

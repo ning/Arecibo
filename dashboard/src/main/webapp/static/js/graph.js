@@ -196,6 +196,7 @@ function getOrCreateGraphMetaObject(sampleCategory, sampleKind) {
         graphId: graphId,
         startDate: null,
         endDate: null,
+        periodicXhrTimeout: null
     };
     setGraphMetaObjectById(graphId, graph);
 
@@ -589,6 +590,15 @@ function buildDisplayRow(graphId) {
                             .click(function() { zoomOut(graphId); return false; })
                         );
 
+    // Real-time mode
+    var realtimeBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-time')
+                            .click(function() { realtime(graphId); return false; })
+                        );
+
 
     return $('<div></div>')
                 .attr('class', 'display_controls')
@@ -597,7 +607,8 @@ function buildDisplayRow(graphId) {
                 .append(shiftLeftBtn)
                 .append(shiftRightBtn)
                 .append(zoomOutBtn)
-                .append(zoomInBtn);
+                .append(zoomInBtn)
+                .append(realtimeBtn);
 }
 
 // Build the debug row for a graph: this is where we store extra metadata

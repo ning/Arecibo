@@ -14,6 +14,17 @@
  * under the License.
  */
 
+function callPeriodicArecibo(graphId, uri, callback, opts) {
+    callArecibo(uri, callback, {
+        complete: function(XMLHttpRequest) {
+            var graph = getGraphMetaObjectById(graphId);
+            graph.periodicXhrTimeout = window.setTimeout(function() {
+                doRealtimeUpdate(graphId);
+            }, 10000);
+        }
+    })
+}
+
 function callArecibo(uri, callback, opts) {
     var ajax_opts = {
         url: window.arecibo['uri'] + uri,
@@ -53,6 +64,8 @@ function initializeUI() {
         xhr: null,
         // Current timeout on the error div
         errorDivTimeout: null,
+        // Current timeout for the realtime updater
+        periodicXhrTimeout: null,
         uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
     }
 
