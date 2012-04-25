@@ -37,6 +37,11 @@ public class SuperGroupsManager
     @Inject
     public SuperGroupsManager(final DashboardConfig config) throws IOException
     {
+        if (config.getSuperGroupsFile() == null) {
+            kinds = ImmutableList.<CategoryAndSampleKinds>of();
+            return;
+        }
+
         final File superGroupsFile = new File(config.getSuperGroupsFile());
         final List<SuperGroup> groups = mapper.readValue(superGroupsFile, new TypeReference<List<SuperGroup>>()
         {
