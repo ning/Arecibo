@@ -265,11 +265,10 @@ function buildCategoryAndSampleKindParamsFromTree() {
             var sampleCategory = null;
 
             // Check if it's a super group
-            var group = sampleKind.split('::');
-            if (group.length == 2) {
+            if (isSuperGroup(sampleKind)) {
                 // Yup!
-                sampleCategory = group[0];
-                sampleKind = group[1];
+                sampleCategory = getCategoryFromSuperGroup(sampleKind);
+                sampleKind = getKindFromSuperGroup(sampleKind);
             } else if (node.parent) {
                 sampleCategory = node.parent.data.title;
             }
@@ -283,6 +282,18 @@ function buildCategoryAndSampleKindParamsFromTree() {
     }
 
     return uri;
+}
+
+function isSuperGroup(sampleKind) {
+    return sampleKind && sampleKind.split('::').length == 2;
+}
+
+function getCategoryFromSuperGroup(sampleKind) {
+    return sampleKind.split('::')[0];
+}
+
+function getKindFromSuperGroup(sampleKind) {
+    return sampleKind.split('::')[1];
 }
 
 // Refresh the sample kinds tree
@@ -321,8 +332,19 @@ function hostsSelected() {
 function populateSampleKindsTree(kinds) {
     // Order by eventCategory alphabetically
     kinds.sort(function(a, b) {
-            var x = a['eventCategory']; var y = b['eventCategory'];
-            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+            var x = a['eventCategory'];
+            var y = b['eventCategory'];
+            var isSuperGroupX = a.sampleKinds ? isSuperGroup(a.sampleKinds[0]) : false;
+            var isSuperGroupY = b.sampleKinds ? isSuperGroup(b.sampleKinds[0]) : false;
+
+            // Super groups at the top
+            if (isSuperGroupX && !isSuperGroupY) {
+                return -1;
+            } else if (!isSuperGroupX && isSuperGroupY) {
+                return 1;
+            } else {
+                return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+            }
         });
 
     $("#sample_kinds_tree").dynatree({
@@ -338,6 +360,7 @@ function populateSampleKindsTree(kinds) {
     var rootNode = $("#sample_kinds_tree").dynatree("getRoot");
     var children = {};
     for (var i in kinds) {
+        var superGroup = false;
         var category = kinds[i];
 
         // Add the father
@@ -380,6 +403,13 @@ function populateSampleKindsTree(kinds) {
             if (selected) {
                 // Note! This needs to happen after the child is added to the father
                 childNode.expand(true);
+            }
+
+            if (isSuperGroup(kind) && !superGroup) {
+                childNode.data.title = '<span style="color: red;">' + childNode.data.title + '</span>';
+                childNode.render();
+                // Render the node once
+                superGroup = true;
             }
         }
     }
