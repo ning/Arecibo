@@ -39,11 +39,6 @@ function renderGraph() {
         renderer: 'line'
     };
 
-    // Set the radio buttons properly
-    $('input:radio[name="renderer"]').filter('[value="' + window.arecibo.graph_settings['renderer'] + '"]').attr('checked', true);
-    $('input:radio[name="offset"]').filter('[value="' + window.arecibo.graph_settings['offset'] + '"]').attr('checked', true);
-    $('input:radio[name="interpolation"]').filter('[value="' + window.arecibo.graph_settings['interpolation'] + '"]').attr('checked', true);
-
     createGraphs();
 };
 
@@ -635,9 +630,9 @@ function buildGraphControlsForm(graphId) {
 
 // Build the controls for the renderers (how to draw the data points)
 function buildGraphControlsRendererFields(graphId) {
-    var areaRendererField = buildGraphControlsInputField(1, 'renderer', 'area', 'area', true, 'area');
+    var areaRendererField = buildGraphControlsInputField(1, 'renderer', 'area', 'area', false, 'area');
     var barRendererField = buildGraphControlsInputField(1, 'renderer', 'bar', 'bar', false, 'bar');
-    var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', false, 'line');
+    var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', true, 'line');
     var scatterRendererField = buildGraphControlsInputField(1, 'renderer', 'scatter', 'scatterplot', false, 'scatter');
 
     return $('<div></div')
