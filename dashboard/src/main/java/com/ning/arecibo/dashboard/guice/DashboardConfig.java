@@ -51,4 +51,9 @@ public interface DashboardConfig
     @Config("arecibo.dashboard.alertManagerEnabled")
     @Default("false")
     boolean isAlertManagerEnabled();
+
+    @Config("arecibo.dashboard.superGroupsFile")
+    @Description("Path to the super groups file (optional)")
+    @DefaultNull
+    String getSuperGroupsFile();
 }

@@ -263,11 +263,20 @@ function buildCategoryAndSampleKindParamsFromTree() {
 
             var sampleKind = node.data.title;
             var sampleCategory = null;
-            if (node.parent) {
+
+            // Check if it's a super group
+            var group = sampleKind.split('::');
+            if (group.length == 2) {
+                // Yup!
+                sampleCategory = group[0];
+                sampleKind = group[1];
+            } else if (node.parent) {
                 sampleCategory = node.parent.data.title;
-                uri += sampleCategory + ',';
             }
 
+            if (sampleCategory) {
+                uri += sampleCategory + ',';
+            }
             uri += sampleKind;
             window.arecibo.sample_kinds_selected.push({sampleKind: sampleKind, sampleCategory: sampleCategory});
         }
@@ -337,7 +346,7 @@ function populateSampleKindsTree(kinds) {
                 title: sampleCategory,
                 isFolder: true,
                 icon: false,
-                hideCheckbox: true,
+                hideCheckbox: false,
                 expand: false,
                 select: false
         });

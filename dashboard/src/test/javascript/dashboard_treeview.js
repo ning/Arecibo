@@ -242,7 +242,7 @@ describe('The sample kinds checkbox tree', function () {
         expect(sampleKinds.length).toEqual(6);
     });
 
-    it('should not have checkboxes at the sample category level', function() {
+    it('should have checkboxes at the sample category level', function() {
         var kinds = [
             {
                 eventCategory: 'JVMMemory',
@@ -258,12 +258,12 @@ describe('The sample kinds checkbox tree', function () {
         expect(sampleCategories[0].title).toEqual('JVMMemory');
         expect(sampleCategories[0].isFolder).toBeTruthy();
         expect(sampleCategories[0].icon).toBeFalsy();
-        expect(sampleCategories[0].hideCheckbox).toBeTruthy();
+        expect(sampleCategories[0].hideCheckbox).toBeFalsy();
 
         expect(sampleCategories[1].title).toEqual('JVMOperatingSystemPerZone');
         expect(sampleCategories[1].isFolder).toBeTruthy();
         expect(sampleCategories[1].icon).toBeFalsy();
-        expect(sampleCategories[1].hideCheckbox).toBeTruthy();
+        expect(sampleCategories[1].hideCheckbox).toBeFalsy();
 
         expect(sampleCategories.length).toEqual(2);
     });
