@@ -207,6 +207,7 @@
                                 <exclude>logs/**</exclude>
                                 <exclude>src/main/webapp/META-INF/MANIFEST.MF</exclude>
                                 <exclude>src/main/webapp/static/vendor/**</exclude>
+                                <exclude>src/test/resources/groups.json</exclude>
                             </excludes>
                         </configuration>
                     </execution>

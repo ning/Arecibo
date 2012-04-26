@@ -20,13 +20,6 @@ function setupAreciboUI() {
     initializeUI();
     setupDateTimePickers();
 
-    // Dashboard Configuration
-    window.arecibo = {
-        ajax_lock: false,
-        // initializeUI() must be called first for window.location.origin to be set
-        uri: window.location.origin // e.g. 'http://127.0.0.1:8080'
-    }
-
     // Retrieve user's last input and populate the input fields
     try {
         samplesStartSelector().val(localStorage.getItem("arecibo_latest_samples_start_lookup"));
@@ -208,7 +201,6 @@ function populateHostsTree(hosts) {
     }
 
     // Trigger a sample kinds tree update: this will display the sample kinds tree with previous values, if any
-    window.arecibo.ajax_lock = false;
     hostsSelected();
 }
 
@@ -271,17 +263,37 @@ function buildCategoryAndSampleKindParamsFromTree() {
 
             var sampleKind = node.data.title;
             var sampleCategory = null;
-            if (node.parent) {
+
+            // Check if it's a super group
+            if (isSuperGroup(sampleKind)) {
+                // Yup!
+                sampleCategory = getCategoryFromSuperGroup(sampleKind);
+                sampleKind = getKindFromSuperGroup(sampleKind);
+            } else if (node.parent) {
                 sampleCategory = node.parent.data.title;
-                uri += sampleCategory + ',';
             }
 
+            if (sampleCategory) {
+                uri += sampleCategory + ',';
+            }
             uri += sampleKind;
             window.arecibo.sample_kinds_selected.push({sampleKind: sampleKind, sampleCategory: sampleCategory});
         }
     }
 
     return uri;
+}
+
+function isSuperGroup(sampleKind) {
+    return sampleKind && sampleKind.split('::').length == 2;
+}
+
+function getCategoryFromSuperGroup(sampleKind) {
+    return sampleKind.split('::')[0];
+}
+
+function getKindFromSuperGroup(sampleKind) {
+    return sampleKind.split('::')[1];
 }
 
 // Refresh the sample kinds tree
@@ -320,8 +332,19 @@ function hostsSelected() {
 function populateSampleKindsTree(kinds) {
     // Order by eventCategory alphabetically
     kinds.sort(function(a, b) {
-            var x = a['eventCategory']; var y = b['eventCategory'];
-            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+            var x = a['eventCategory'];
+            var y = b['eventCategory'];
+            var isSuperGroupX = a.sampleKinds ? isSuperGroup(a.sampleKinds[0]) : false;
+            var isSuperGroupY = b.sampleKinds ? isSuperGroup(b.sampleKinds[0]) : false;
+
+            // Super groups at the top
+            if (isSuperGroupX && !isSuperGroupY) {
+                return -1;
+            } else if (!isSuperGroupX && isSuperGroupY) {
+                return 1;
+            } else {
+                return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+            }
         });
 
     $("#sample_kinds_tree").dynatree({
@@ -337,6 +360,7 @@ function populateSampleKindsTree(kinds) {
     var rootNode = $("#sample_kinds_tree").dynatree("getRoot");
     var children = {};
     for (var i in kinds) {
+        var superGroup = false;
         var category = kinds[i];
 
         // Add the father
@@ -345,7 +369,7 @@ function populateSampleKindsTree(kinds) {
                 title: sampleCategory,
                 isFolder: true,
                 icon: false,
-                hideCheckbox: true,
+                hideCheckbox: false,
                 expand: false,
                 select: false
         });
@@ -380,10 +404,15 @@ function populateSampleKindsTree(kinds) {
                 // Note! This needs to happen after the child is added to the father
                 childNode.expand(true);
             }
+
+            if (isSuperGroup(kind) && !superGroup) {
+                childNode.data.title = '<span style="color: red;">' + childNode.data.title + '</span>';
+                childNode.render();
+                // Render the node once
+                superGroup = true;
+            }
         }
     }
-
-    window.arecibo.ajax_lock = false;
 }
 
 // This is called when a sample kind is (un)selected on the sample kinds tree

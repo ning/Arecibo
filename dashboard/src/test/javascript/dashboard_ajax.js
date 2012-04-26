@@ -139,9 +139,7 @@ describe('The hostsSelected callback routine', function () {
             return hostUri;
         });
         spyOn($.fn, 'dynatree');
-        spyOn($, 'ajax').andCallFake(function() {
-            window.arecibo.ajax_lock = false;
-        });
+        spyOn($, 'ajax');
     });
 
     it('should refresh the sample kinds tree when a new host is selected', function() {

@@ -26,6 +26,7 @@ import com.ning.arecibo.collector.rest.DefaultCollectorClient;
 import com.ning.arecibo.dashboard.alert.AlertRESTClient;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.alert.ClusterAwareAlertClient;
+import com.ning.arecibo.dashboard.config.SuperGroupsManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.event.publisher.HdfsEventPublisher;
@@ -51,6 +52,8 @@ public class DashboardModule extends AbstractModule
         // Collector client configuration
         final CollectorClientConfig collectorClientConfig = new ConfigurationObjectFactory(System.getProperties()).build(CollectorClientConfig.class);
         bind(CollectorClientConfig.class).toInstance(collectorClientConfig);
+
+        bind(SuperGroupsManager.class).asEagerSingleton();
 
         configureServiceLocator(dashboardConfig);
         configureCollectorFinder(collectorClientConfig);

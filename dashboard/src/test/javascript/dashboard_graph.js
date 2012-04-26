@@ -100,7 +100,7 @@ describe('The graph builder', function() {
 
     it('should be able to create the display controls row', function() {
         var htmlBuilt = buildDisplayRow(1);
-        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a></div>';
+        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a><a style="cursor: pointer; cursor: hand;"><i class="icon-time"></i></a></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
@@ -157,7 +157,7 @@ describe('The graph builder', function() {
 
     it('should be able to create the controls renderer fields', function() {
         var htmlBuilt = buildGraphControlsRendererFields(1);
-        var htmlExpected = '<div class="control-group toggler" id="renderer_form_1"><div class="controls"><label for="area_1"><input type="radio" value="area" name="renderer" id="area_1" checked="checked">area</label><label for="bar_1"><input type="radio" value="bar" name="renderer" id="bar_1">bar</label><label for="line_1"><input type="radio" value="line" name="renderer" id="line_1">line</label><label for="scatter_1"><input type="radio" value="scatterplot" name="renderer" id="scatter_1">scatter</label></div></div>';
+        var htmlExpected = '<div class="control-group toggler" id="renderer_form_1"><div class="controls"><label for="area_1"><input type="radio" value="area" name="renderer" id="area_1">area</label><label for="bar_1"><input type="radio" value="bar" name="renderer" id="bar_1">bar</label><label for="line_1"><input type="radio" value="line" name="renderer" id="line_1" checked="checked">line</label><label for="scatter_1"><input type="radio" value="scatterplot" name="renderer" id="scatter_1">scatter</label></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 

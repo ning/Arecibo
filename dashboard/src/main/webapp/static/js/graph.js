@@ -18,41 +18,26 @@ function renderGraph() {
     // UI setup (Ajax handlers, etc.)
     initializeUI();
 
-    // Global variables
-    window.arecibo = {
-        ajax_lock: false,
-        // Dashboard location, e.g. 'http://127.0.0.1:8080'
-        uri: window.location.origin,
-        // Mapping between graphIds and graphs meta-objects
-        graphs: {},
-        // Mapping between sampleCategory, sampleKind and graphIds
-        graph_per_kind: {},
-        // Metadata for colors
-        colors: {
-            // Global mapping between hosts and colors to be able to keep the same color
-            // across graphs on a per host basis
-            host_colors: {},
-            // The graph palette, used to generate the colors for the different graphs
-            palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
-        },
-        // Default settings for the graphs
-        graph_settings: {
-            // linear interpolation by default, i.e. straight lines between points
-            interpolation: 'linear',
-            // graphs offset should be the value of the data points by default
-            offset: 'value',
-            renderer: 'line'
-        },
+    // Mapping between graphIds and graphs meta-objects
+    window.arecibo.graphs = {};
+    // Mapping between sampleCategory, sampleKind and graphIds
+    window.arecibo.graph_per_kind = {};
+    // Metadata for colors
+    window.arecibo.colors = {
+        // Global mapping between hosts and colors to be able to keep the same color
+        // across graphs on a per host basis
+        host_colors: {},
+        // The graph palette, used to generate the colors for the different graphs
+        palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
     };
-
-    // Set the radio buttons properly
-    $('input:radio[name="renderer"]').filter('[value="' + window.arecibo.graph_settings['renderer'] + '"]').attr('checked', true);
-    $('input:radio[name="offset"]').filter('[value="' + window.arecibo.graph_settings['offset'] + '"]').attr('checked', true);
-    $('input:radio[name="interpolation"]').filter('[value="' + window.arecibo.graph_settings['interpolation'] + '"]').attr('checked', true);
-
-    $('#controls_btn').click(function() {
-        $('#graph_controls').toggle();
-    });
+    // Default settings for the graphs
+    window.arecibo.graph_settings = {
+        // linear interpolation by default, i.e. straight lines between points
+        interpolation: 'linear',
+        // graphs offset should be the value of the data points by default
+        offset: 'value',
+        renderer: 'line'
+    };
 
     createGraphs();
 };
@@ -82,7 +67,7 @@ function createGraph(payload) {
         drawGraph(window.arecibo.graphs[graphId]);
     }
 
-    window.arecibo.ajax_lock = false;
+    removeAttributesFromYAxis();
 }
 
 // Succeeding invocations
@@ -91,10 +76,17 @@ function refreshGraph(payload) {
 
     for (var i in graphIds) {
         var graphId = graphIds[i];
-        window.arecibo.graphs[graphId].graph.update();
+        var graph = window.arecibo.graphs[graphId].graph;
+
+        // Rickshaw doesn't redraw the legend for us, we need to do it
+        $('#legend_' + graphId).empty();
+        drawLegend(graph, graphId);
+
+        // Render the new graph
+        graph.update();
     }
 
-    window.arecibo.ajax_lock = false;
+    removeAttributesFromYAxis();
 }
 
 function populateSamples(payload, refresh) {
@@ -199,6 +191,7 @@ function getOrCreateGraphMetaObject(sampleCategory, sampleKind) {
         graphId: graphId,
         startDate: null,
         endDate: null,
+        periodicXhrTimeout: null
     };
     setGraphMetaObjectById(graphId, graph);
 
@@ -245,36 +238,17 @@ function drawGraph(item) {
 
     // Interactive Hover Details
 
+    // XXX We're hitting https://github.com/shutterstock/rickshaw/issues/37
+    // and https://github.com/shutterstock/rickshaw/issues/39 which seem
+    // to cause spinloops in some situations
+    //
     // Show the series value and formatted date and time on hover
-    var hoverDetail = new Rickshaw.Graph.HoverDetail({
-        graph: graph
-    });
+    // var hoverDetail = new Rickshaw.Graph.HoverDetail({
+    //     graph: graph
+    // });
 
     // Interactive Legend
-
-    // Add a basic legend
-    var legend = new Rickshaw.Graph.Legend({
-        graph: graph,
-        element: document.querySelector('#legend_' + graphId)
-    });
-
-    // Add functionality to toggle series' visibility on and off
-    var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
-        graph: graph,
-        legend: legend
-    });
-
-    // Add drag-and-drop functionality to re-order the stack
-    var order = new Rickshaw.Graph.Behavior.Series.Order({
-        graph: graph,
-        legend: legend
-    });
-
-    // Highlight each series on hover within the legend
-    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
-        graph: graph,
-        legend: legend
-    });
+    drawLegend(graph, graphId);
 
     // Axes and Tick Marks
 
@@ -314,6 +288,38 @@ function drawGraph(item) {
     });
 
     updateGraphSettings(graph, window.arecibo.graph_settings);
+}
+
+// Populate and configure the legend element
+function drawLegend(graph, graphId) {
+    // Add a basic legend
+    var legend = new Rickshaw.Graph.Legend({
+        graph: graph,
+        element: document.querySelector('#legend_' + graphId)
+    });
+
+    // Add functionality to toggle series' visibility on and off
+    var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
+        graph: graph,
+        legend: legend
+    });
+
+    // Add drag-and-drop functionality to re-order the stack
+    var order = new Rickshaw.Graph.Behavior.Series.Order({
+        graph: graph,
+        legend: legend
+    });
+
+    // Highlight each series on hover within the legend
+    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight({
+        graph: graph,
+        legend: legend
+    });
+}
+
+// Remove the hardcoded padding added by Rickshaw
+function removeAttributesFromYAxis() {
+    $('svg.rickshaw_graph.y_axis').attr('style', '');
 }
 
 // The following is inspired from http://shutterstock.github.com/rickshaw/examples/js/extensions.js
@@ -584,6 +590,15 @@ function buildDisplayRow(graphId) {
                             .click(function() { zoomOut(graphId); return false; })
                         );
 
+    // Real-time mode
+    var realtimeBtn = $('<a></a>')
+                        .attr('style', 'cursor: pointer; cursor: hand;')
+                        .append(
+                            $('<i></i>')
+                            .attr('class', 'icon-time')
+                            .click(function() { realtime(graphId); return false; })
+                        );
+
 
     return $('<div></div>')
                 .attr('class', 'display_controls')
@@ -592,7 +607,8 @@ function buildDisplayRow(graphId) {
                 .append(shiftLeftBtn)
                 .append(shiftRightBtn)
                 .append(zoomOutBtn)
-                .append(zoomInBtn);
+                .append(zoomInBtn)
+                .append(realtimeBtn);
 }
 
 // Build the debug row for a graph: this is where we store extra metadata
@@ -623,9 +639,9 @@ function buildGraphControlsForm(graphId) {
 
 // Build the controls for the renderers (how to draw the data points)
 function buildGraphControlsRendererFields(graphId) {
-    var areaRendererField = buildGraphControlsInputField(1, 'renderer', 'area', 'area', true, 'area');
+    var areaRendererField = buildGraphControlsInputField(1, 'renderer', 'area', 'area', false, 'area');
     var barRendererField = buildGraphControlsInputField(1, 'renderer', 'bar', 'bar', false, 'bar');
-    var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', false, 'line');
+    var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', true, 'line');
     var scatterRendererField = buildGraphControlsInputField(1, 'renderer', 'scatter', 'scatterplot', false, 'scatter');
 
     return $('<div></div')

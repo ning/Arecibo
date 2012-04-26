@@ -50,6 +50,30 @@ function zoomOut(graphId) {
     callArecibo(url, 'refreshGraph');
 }
 
+// Function invoked when the user clicks on the button
+function realtime(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+
+    // Is there already a periodic update? If so just cancel it
+    if (graph.periodicXhrTimeout) {
+        window.clearTimeout(graph.periodicXhrTimeout);
+        graph.periodicXhrTimeout = null;
+        return;
+    }
+
+    doRealtimeUpdate(graphId);
+}
+
+// Function invoked when the user clicks on the button and during the periodic updates
+function doRealtimeUpdate(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+    var hosts = Set.elements(graph.hosts);
+    var nbSamples = screen.width;
+
+    var url = realtimeUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, nbSamples);
+    callPeriodicArecibo(graphId, url, 'refreshGraph');
+}
+
 // Build the collector Url that shifts left the timeseries
 function shiftLeftUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
     // Shift 50% left
@@ -89,6 +113,17 @@ function zoomOutUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSampl
     var deltaMillis = getDeltaForGraph(fromDate, toDate) / 2;
 
     removeMillis(fromDate, deltaMillis);
+    addMillis(toDate, deltaMillis);
+
+    return buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples);
+}
+
+// Build the collector Url that shifts right the timeseries for the realtime update
+function realtimeUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples) {
+    // 10 seconds
+    var deltaMillis = 10000;
+
+    addMillis(fromDate, deltaMillis);
     addMillis(toDate, deltaMillis);
 
     return buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate, nbSamples);

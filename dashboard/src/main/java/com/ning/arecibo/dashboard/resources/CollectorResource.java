@@ -17,8 +17,8 @@
 package com.ning.arecibo.dashboard.resources;
 
 import com.ning.arecibo.collector.CollectorClient;
+import com.ning.arecibo.dashboard.config.SuperGroupsManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
-import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.jaxrs.DateTimeParameter;
@@ -28,7 +28,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Singleton;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.util.JSONPObject;
 
 import javax.inject.Inject;
@@ -47,12 +46,14 @@ import java.util.Map;
 @Path("/rest/1.0")
 public class CollectorResource
 {
+    private final SuperGroupsManager groupsManager;
     private final CollectorClient client;
     private final GalaxyStatusManager manager;
 
     @Inject
-    public CollectorResource(final CollectorClient client, final GalaxyStatusManager manager)
+    public CollectorResource(final SuperGroupsManager groupsManager, final CollectorClient client, final GalaxyStatusManager manager)
     {
+        this.groupsManager = groupsManager;
         this.client = client;
         this.manager = manager;
     }
@@ -94,7 +95,14 @@ public class CollectorResource
                                    @QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         try {
-            final Iterable<CategoryAndSampleKinds> sampleKinds = client.getSampleKinds(hostNames);
+            final Iterable<CategoryAndSampleKinds> collectorSampleKinds = client.getSampleKinds(hostNames);
+            // Find super groups, if they exist
+            final Iterable<CategoryAndSampleKinds> superGroups = groupsManager.getAllKinds();
+
+            final Iterable<CategoryAndSampleKinds> sampleKinds = ImmutableList.<CategoryAndSampleKinds>builder()
+                    .addAll(collectorSampleKinds)
+                    .addAll(superGroups)
+                    .build();
             final JSONPObject object = new JSONPObject(callback, sampleKinds);
             return Response.ok(object).build();
         }
