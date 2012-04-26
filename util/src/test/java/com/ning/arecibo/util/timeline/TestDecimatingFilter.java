@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.skife.config.TimeSpan;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -30,7 +31,7 @@ public class TestDecimatingFilter {
         final List<Double> outputs = new ArrayList<Double>();
         final long millisStart = System.currentTimeMillis() - 2000 * 100;
 
-        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 100), 25, 100,
+        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 100), 25, 100, new TimeSpan("2s"),
                 new SampleConsumer() {
 
                     @Override
@@ -73,7 +74,7 @@ public class TestDecimatingFilter {
         final List<Double> outputs = new ArrayList<Double>();
         final long millisStart = System.currentTimeMillis() - 2000 * 21;
 
-        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 21), 6, 21,
+        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 21), 6, 21, new TimeSpan("2s"),
                 new SampleConsumer() {
 
                     @Override
