@@ -157,19 +157,19 @@ describe('The graph builder', function() {
 
     it('should be able to create the controls renderer fields', function() {
         var htmlBuilt = buildGraphControlsRendererFields(1);
-        var htmlExpected = '<div class="control-group toggler" id="renderer_form_1"><div class="controls"><label for="area_1"><input type="radio" value="area" name="renderer" id="area_1">area</label><label for="bar_1"><input type="radio" value="bar" name="renderer" id="bar_1">bar</label><label for="line_1"><input type="radio" value="line" name="renderer" id="line_1" checked="checked">line</label><label for="scatter_1"><input type="radio" value="scatterplot" name="renderer" id="scatter_1">scatter</label></div></div>';
+        var htmlExpected = '<div class="control-group toggler" id="renderer_form_1"><div class="controls"><label for="area_1" data-original-title=""><input type="radio" value="area" name="renderer" id="area_1">area</label><label for="bar_1" data-original-title=""><input type="radio" value="bar" name="renderer" id="bar_1">bar</label><label for="line_1" data-original-title=""><input type="radio" value="line" name="renderer" id="line_1" checked="checked">line</label><label for="scatter_1" data-original-title=""><input type="radio" value="scatterplot" name="renderer" id="scatter_1">scatter</label></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
     it('should be able to create the controls offset fields', function() {
         var htmlBuilt = buildGraphControlsOffsetFields(1);
-        var htmlExpected = '<div class="control-group" id="offset_form_1"><div class="controls"><label for="stack_1"><input type="radio" value="zero" name="offset" id="stack_1">stack</label><label for="stream_1"><input type="radio" value="wiggle" name="offset" id="stream_1">stream</label><label for="pct_1"><input type="radio" value="expand" name="offset" id="pct_1">pct</label><label for="value_1"><input type="radio" value="value" name="offset" id="value_1" checked="checked">value</label></div></div>';
+        var htmlExpected = '<div class="control-group" id="offset_form_1"><div class="controls"><label for="stack_1" data-original-title=""><input type="radio" value="zero" name="offset" id="stack_1">stack</label><label for="stream_1" data-original-title=""><input type="radio" value="wiggle" name="offset" id="stream_1">stream</label><label for="pct_1" data-original-title=""><input type="radio" value="expand" name="offset" id="pct_1">pct</label><label for="value_1" data-original-title=""><input type="radio" value="value" name="offset" id="value_1" checked="checked">value</label></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
     it('should be able to create the controls interpolation fields', function() {
         var htmlBuilt = buildGraphControlsInterpolationFields(1);
-        var htmlExpected = '<div class="control-group" id="interpolation_form_1"><div class="controls"><label for="cardinal_1"><input type="radio" value="cardinal" name="interpolation" id="cardinal_1">cardinal</label><label for="linear_1"><input type="radio" value="linear" name="interpolation" id="linear_1" checked="checked">linear</label><label for="step_1"><input type="radio" value="step-after" name="interpolation" id="step_1">step</label></div></div>';
+        var htmlExpected = '<div class="control-group" id="interpolation_form_1"><div class="controls"><label for="cardinal_1" data-original-title=""><input type="radio" value="cardinal" name="interpolation" id="cardinal_1">cardinal</label><label for="linear_1" data-original-title=""><input type="radio" value="linear" name="interpolation" id="linear_1" checked="checked">linear</label><label for="step_1" data-original-title=""><input type="radio" value="step-after" name="interpolation" id="step_1">step</label></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
