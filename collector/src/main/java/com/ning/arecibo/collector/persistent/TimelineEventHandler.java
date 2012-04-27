@@ -116,6 +116,7 @@ public class TimelineEventHandler implements EventHandler
 
     private final ShutdownSaveMode shutdownSaveMode;
     private final AtomicBoolean shuttingDown = new AtomicBoolean();
+    private final AtomicBoolean replaying = new AtomicBoolean();
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
     private final AtomicLong eventsReceivedAfterShuttingDown = new AtomicLong();
@@ -232,8 +233,10 @@ public class TimelineEventHandler implements EventHandler
             }
 
             final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, event.getEventType(), new DateTime(event.getTimestamp(), DateTimeZone.UTC), scalarSamples);
-            // Start by saving locally the samples
-            backingBuffer.append(hostSamples);
+            if (!replaying.get()) {
+                // Start by saving locally the samples
+                backingBuffer.append(hostSamples);
+            }
             // Then add them to the in-memory accumulator
             processSamples(hostSamples);
         }
@@ -380,7 +383,8 @@ public class TimelineEventHandler implements EventHandler
         try {
             // Read all files in the spool directory and delete them after process, if
             // startTimes  is null.
-            replayer.readAll(startTimes == null, minStartTime, new Function<HostSamplesForTimestamp, Void>()
+            replaying.set(true);
+            int filesSkipped = replayer.readAll(startTimes == null, minStartTime, new Function<HostSamplesForTimestamp, Void>()
             {
                 @Override
                 public Void apply(@Nullable final HostSamplesForTimestamp hostSamples)
@@ -421,12 +425,15 @@ public class TimelineEventHandler implements EventHandler
                 timelineDAO.deleteLastStartTimes();
                 log.info("Deleted old startTimes");
             }
-            log.info(String.format("Replay completed samples read %d, samples outside time range %d, samples used %d",
-                    replaySamplesFoundCount.get() - found, replaySamplesOutsideTimeRangeCount.get() - outsideTimeRange, replaySamplesProcessedCount.get() - processed));
+            log.info(String.format("Replay completed; %d files skipped, samples read %d, samples outside time range %d, samples used %d",
+                    filesSkipped, replaySamplesFoundCount.get() - found, replaySamplesOutsideTimeRangeCount.get() - outsideTimeRange, replaySamplesProcessedCount.get() - processed));
         }
         catch (RuntimeException e) {
             // Catch the exception to make the collector start properly
             log.error("Ignoring error when replaying the data", e);
+        }
+        finally {
+            replaying.set(false);
         }
     }
 

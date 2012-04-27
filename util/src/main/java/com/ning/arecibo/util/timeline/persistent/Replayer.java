@@ -91,14 +91,15 @@ public class Replayer
         return samples;
     }
 
-    public void readAll(final boolean deleteFiles, final @Nullable DateTime minStartTime, final Function<HostSamplesForTimestamp, Void> fn)
+    public int readAll(final boolean deleteFiles, final @Nullable DateTime minStartTime, final Function<HostSamplesForTimestamp, Void> fn)
     {
         final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
-
+        int filesSkipped = 0;
         for (final File file : FILE_ORDERING.sortedCopy(files)) {
             try {
                 // Skip files whose last modification date is is earlier than the first start time.
                 if (minStartTime != null && file.lastModified() < minStartTime.getMillis()) {
+                    filesSkipped++;
                     continue;
                 }
                 read(file, fn);
@@ -113,6 +114,7 @@ public class Replayer
                 log.warn("Exception replaying file: {}", file.getAbsolutePath(), e);
             }
         }
+        return filesSkipped;
     }
 
     @VisibleForTesting
