@@ -59,6 +59,13 @@ public interface CollectorConfig
     @Default("60m")
     TimeSpan getTimelineLength();
 
+    // This is used to predict the number of samples between two times.  It might be
+    // better to store this information on a per event category basis.
+    @Config("arecibo.collector.timelines.pollingInterval")
+    @Description("How long to between attribute polling.  This constant should be replaced by a flexible mechanism")
+    @Default("30s")
+    TimeSpan getPollingInterval();
+
     @Config("arecibo.collector.timelines.performForegroundWrites")
     @Description("If true, perform database writes in the foreground; if false, in the background")
     @Default("false")

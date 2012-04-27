@@ -52,4 +52,12 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
     }
 
     public abstract void processOneSample(final DateTime time, final SampleOpcode opcode, final Object value);
+
+    public DateTime getStartTime() {
+        return startTime;
+    }
+
+    public DateTime getEndTime() {
+        return endTime;
+    }
 }

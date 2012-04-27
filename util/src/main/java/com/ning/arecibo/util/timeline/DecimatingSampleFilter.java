@@ -17,6 +17,7 @@
 package com.ning.arecibo.util.timeline;
 
 import org.joda.time.DateTime;
+import org.skife.config.TimeSpan;
 
 /**
  * This SampleProcessor interpolates a stream of sample values to such that the
@@ -54,11 +55,14 @@ import org.joda.time.DateTime;
  * of the sample or the midpoint of the times between first and last sample.
  */
 public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
-    private final double samplesPerOutput;
-    private final double outputsPerSample;
-    private final int ceilSamplesPerOutput;
+    private final int outputCount;
     private final SampleConsumer sampleConsumer;
-    private final SampleState[] filterHistory;
+    private final TimeSpan pollingInterval;
+    private double samplesPerOutput;
+    private double outputsPerSample;
+    private int ceilSamplesPerOutput;
+    private SampleState[] filterHistory;
+    private boolean initialized = false;
 
     private double runningSum = 0.0;
     private int sampleNumber = 0;
@@ -69,22 +73,58 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
      * @param endTime The end time we're considering values, or null, meaning all time
      * @param outputCount The number of samples to generate
      * @param sampleCount The number of samples to be scanned.  sampleCount must be >= outputCount
+     * @param pollingInterval The polling interval, used to compute sample counts assuming no gaps
      * @param sampleConsumer The implementor of the SampleConsumer interface
      */
-    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, int sampleCount, SampleConsumer sampleConsumer) {
+    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, int sampleCount, TimeSpan pollingInterval, SampleConsumer sampleConsumer)
+    {
         super(startTime, endTime);
         if (outputCount <= 0 || sampleCount <= 0 || outputCount > sampleCount)  {
-            throw new IllegalArgumentException(String.format("In DecimatingSampleFilter constructor, outputCount is %d but sampleCount is %d", outputCount, sampleCount));
+            throw new IllegalArgumentException(String.format("In DecimatingSampleFilter, outputCount is %d but sampleCount is %d", outputCount, sampleCount));
         }
+        this.outputCount = outputCount;
+        this.pollingInterval = pollingInterval;
         this.sampleConsumer = sampleConsumer;
+        initializeFilterHistory(sampleCount);
+    }
+
+    /**
+     * This form of the constructor delays initialization til we get the first sample
+     * @param startTime The start time we're considering values, or null, meaning all time
+     * @param endTime The end time we're considering values, or null, meaning all time
+     * @param outputCount The number of samples to generate
+     * @param pollingInterval The polling interval, used to compute sample counts assuming no gaps
+     * @param sampleConsumer The implementor of the SampleConsumer interface
+     */
+    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, TimeSpan pollingInterval, SampleConsumer sampleConsumer)
+    {
+        super(startTime, endTime);
+        this.outputCount = outputCount;
+        this.pollingInterval = pollingInterval;
+        this.sampleConsumer = sampleConsumer;
+    }
+
+    private void initializeFilterHistory(final int sampleCount)
+    {
+        if (outputCount <= 0 || sampleCount <= 0 || outputCount > sampleCount)  {
+            throw new IllegalArgumentException(String.format("In DecimatingSampleFilter.initialize(), outputCount is %d but sampleCount is %d", outputCount, sampleCount));
+        }
         this.samplesPerOutput = (double) sampleCount / (double) outputCount;
         this.outputsPerSample = 1.0 / this.samplesPerOutput;
         ceilSamplesPerOutput = (int) Math.ceil(samplesPerOutput);
         filterHistory = new SampleState[ceilSamplesPerOutput];
+        initialized = true;
     }
 
     @Override
     public void processOneSample(DateTime time, SampleOpcode opcode, Object value) {
+        if (!initialized) {
+            // Estimate the sampleCount, assuming that there are no gaps
+            final long adjustedEndMillis = Math.min(getEndTime().getMillis(), System.currentTimeMillis());
+            final long millisTilEnd = adjustedEndMillis - time.getMillis();
+            final int sampleCount = Math.max(outputCount, (int)(millisTilEnd / pollingInterval.getMillis()));
+            initializeFilterHistory(sampleCount);
+        }
         sampleNumber++;
         final SampleState sampleState = new SampleState(opcode, value, SampleCoder.getDoubleValue(opcode, value), time);
         final int historyIndex = sampleNumber % filterHistory.length;

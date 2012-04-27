@@ -82,7 +82,7 @@ public class TestHostDataResource
         dao = new MockTimelineDAO();
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         handler = new TimelineEventHandler(config, dao, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
-        resource = new HostDataResource(dao, handler);
+        resource = new HostDataResource(dao, config, handler);
 
         // Create the hosts. host1 and host2 are used in testGetHostSamplesParsing, host3 in testWriteJsonForInMemoryChunks
         hostId1 = dao.getOrAddHost(HOST_NAME_1);

@@ -16,6 +16,7 @@
 
 package com.ning.arecibo.collector.resources;
 
+import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.CSVSampleConsumer;
@@ -76,12 +77,14 @@ public class HostDataResource
     private static final ObjectMapper objectMapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
 
     private final TimelineDAO dao;
+    private final CollectorConfig config;
     private final TimelineEventHandler processor;
 
     @Inject
-    public HostDataResource(final TimelineDAO dao, final TimelineEventHandler processor)
+    public HostDataResource(final TimelineDAO dao, final CollectorConfig config, final TimelineEventHandler processor)
     {
         this.dao = dao;
+        this.config = config;
         this.processor = processor;
     }
 
@@ -321,10 +324,7 @@ public class HostDataResource
             rangeSampleProcessor = null;
         }
         else {
-            // TODO assume 2 samples per minute
-            final int sampleCount = (int) (endTime.minus(startTime.getMillis()).getMillis() / 1000 / 60 * 2);
-            final int adjustedOutputCount = Math.min(sampleCount, outputCount);
-            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, adjustedOutputCount, sampleCount, new CSVSampleConsumer());
+            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, config.getPollingInterval(), new CSVSampleConsumer());
         }
         return rangeSampleProcessor;
     }
