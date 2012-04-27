@@ -59,6 +59,18 @@
     text-transform: none;
 }
 
+#graph_control_toggle {
+    margin-right: 8px;
+}
+
+#graph_control_shift_right {
+    margin-right: 8px;
+}
+
+#graph_control_zoom_in {
+    margin-right: 8px;
+}
+
 /*
  * Main Arecibo page
  */

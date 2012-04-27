@@ -546,6 +546,7 @@ function buildSmootherContainer(graphId) {
 function buildDisplayRow(graphId) {
     // Show/Hide the graph controls
     var toggleBtn = $('<a></a>')
+                        .attr('id', 'graph_control_toggle')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -558,6 +559,7 @@ function buildDisplayRow(graphId) {
 
     // Go back in time
     var shiftLeftBtn = $('<a></a>')
+                        .attr('id', 'graph_control_shift_left')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -566,6 +568,7 @@ function buildDisplayRow(graphId) {
                         );
     // Go forward in time
     var shiftRightBtn = $('<a></a>')
+                        .attr('id', 'graph_control_shift_right')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -575,6 +578,7 @@ function buildDisplayRow(graphId) {
 
     // Zoom in in time
     var zoomInBtn = $('<a></a>')
+                        .attr('id', 'graph_control_zoom_in')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -583,6 +587,7 @@ function buildDisplayRow(graphId) {
                         );
     // Zoom out in time
     var zoomOutBtn = $('<a></a>')
+                        .attr('id', 'graph_control_zoom_out')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -592,6 +597,7 @@ function buildDisplayRow(graphId) {
 
     // Real-time mode
     var realtimeBtn = $('<a></a>')
+                        .attr('id', 'graph_control_realtime')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
