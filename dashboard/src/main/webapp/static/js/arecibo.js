@@ -466,7 +466,7 @@ function buildGraphURL() {
     var hosts_url = buildHostsParamsFromTree();
     var sample_kinds_url = buildCategoryAndSampleKindParamsFromTree();
 
-    var nb_samples = screen.width;
+    var nb_samples = 500;
 
     var uri = '/static/graph.html?' +
                 hosts_url + '&' +
