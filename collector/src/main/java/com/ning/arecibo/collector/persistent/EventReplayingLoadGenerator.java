@@ -61,9 +61,6 @@ public class EventReplayingLoadGenerator {
     private DateTime firstReplayEventTimestamp;
     // This is the corresponding real time timestamp
     private DateTime replayIterationStartTime;
-    // This is the amount to add to a read timestamp to get
-    // the real time timestamp
-    private long millisecondsTimeShift;
 
     public EventReplayingLoadGenerator(TimelineEventHandler eventHandler, TimelineDAO timelineDAO)
     {
@@ -118,7 +115,6 @@ public class EventReplayingLoadGenerator {
     {
         if (firstReplayEventTimestamp == null) {
             firstReplayEventTimestamp = timestamp;
-            millisecondsTimeShift = replayIterationStartTime.getMillis() - timestamp.getMillis();
         }
         final int addend = (int)(timestamp.getMillis() - firstReplayEventTimestamp.getMillis());
         //log.info("In processSamples(), timestamp %s, replayIterationStartTime %s, firstReplayEventTimestamp %s, addend %d",

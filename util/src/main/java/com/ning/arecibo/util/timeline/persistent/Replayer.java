@@ -76,7 +76,7 @@ public class Replayer
     {
         final List<HostSamplesForTimestamp> samples = new ArrayList<HostSamplesForTimestamp>();
 
-        readAll(true, new Function<HostSamplesForTimestamp, Void>()
+        readAll(true, null, new Function<HostSamplesForTimestamp, Void>()
         {
             @Override
             public Void apply(@Nullable final HostSamplesForTimestamp input)
@@ -91,12 +91,16 @@ public class Replayer
         return samples;
     }
 
-    public void readAll(final boolean deleteFiles, final Function<HostSamplesForTimestamp, Void> fn)
+    public void readAll(final boolean deleteFiles, final @Nullable DateTime minStartTime, final Function<HostSamplesForTimestamp, Void> fn)
     {
         final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
 
         for (final File file : FILE_ORDERING.sortedCopy(files)) {
             try {
+                // Skip files whose last modification date is is earlier than the first start time.
+                if (minStartTime != null && file.lastModified() < minStartTime.getMillis()) {
+                    continue;
+                }
                 read(file, fn);
 
                 if (deleteFiles) {

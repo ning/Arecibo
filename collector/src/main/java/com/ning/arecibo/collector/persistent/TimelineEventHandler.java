@@ -372,6 +372,7 @@ public class TimelineEventHandler implements EventHandler
             }
         }
         final StartTimes startTimes = lastStartTimes;
+        final DateTime minStartTime = lastStartTimes == null ? null : startTimes.getMinStartTime();
         final long found = replaySamplesFoundCount.get();
         final long outsideTimeRange = replaySamplesOutsideTimeRangeCount.get();
         final long processed = replaySamplesProcessedCount.get();
@@ -379,7 +380,7 @@ public class TimelineEventHandler implements EventHandler
         try {
             // Read all files in the spool directory and delete them after process, if
             // startTimes  is null.
-            replayer.readAll(startTimes == null, new Function<HostSamplesForTimestamp, Void>()
+            replayer.readAll(startTimes == null, minStartTime, new Function<HostSamplesForTimestamp, Void>()
             {
                 @Override
                 public Void apply(@Nullable final HostSamplesForTimestamp hostSamples)

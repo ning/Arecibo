@@ -128,38 +128,44 @@ public class TimelineAggregator
         final DateTime startTime = firstTimesChunk.getStartTime();
         final DateTime endTime = lastTimesChunk.getEndTime();
         final List<byte[]> timeParts = new ArrayList<byte[]>(chunkCount);
-        final List<byte[]> sampleParts = new ArrayList<byte[]>(chunkCount);
-        final List<Long> timelineChunkIds = new ArrayList<Long>(chunkCount);
-        int sampleCount = 0;
-        for (final TimelineChunk timelineChunk : timelineChunks) {
-            timeParts.add(timelineChunk.getTimes());
-            sampleParts.add(timelineChunk.getSamples());
-            sampleCount += timelineChunk.getSampleCount();
-            timelineChunkIds.add(timelineChunk.getObjectId());
-        }
-        final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts, sampleCount);
-        final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);
-        final int timeBytesLength = combinedTimeBytes.length;
-        final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;
-        log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
-            new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineChunks.size(), totalSize, sampleCount});
-        timelineChunksBytesCreated.addAndGet(totalSize);
-        final int totalSampleCount = sampleCount;
-        final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
-                combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false, false);
-        chunksToWrite.add(chunk);
-        chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);
-        timelineChunksQueuedForCreation.incrementAndGet();
+        try {
+            final List<byte[]> sampleParts = new ArrayList<byte[]>(chunkCount);
+            final List<Long> timelineChunkIds = new ArrayList<Long>(chunkCount);
+            int sampleCount = 0;
+            for (final TimelineChunk timelineChunk : timelineChunks) {
+                timeParts.add(timelineChunk.getTimes());
+                sampleParts.add(timelineChunk.getSamples());
+                sampleCount += timelineChunk.getSampleCount();
+                timelineChunkIds.add(timelineChunk.getObjectId());
+            }
+            final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts, sampleCount);
+            final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);
+            final int timeBytesLength = combinedTimeBytes.length;
+            final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;
+            log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
+                new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineChunks.size(), totalSize, sampleCount});
+            timelineChunksBytesCreated.addAndGet(totalSize);
+            final int totalSampleCount = sampleCount;
+            final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
+                    combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false, false);
+            chunksToWrite.add(chunk);
+            chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);
+            timelineChunksQueuedForCreation.incrementAndGet();
 
-        if (chunkIdsToInvalidateOrDelete.size() >= config.getMaxChunkIdsToInvalidateOrDelete()) {
-            performWrites();
+            if (chunkIdsToInvalidateOrDelete.size() >= config.getMaxChunkIdsToInvalidateOrDelete()) {
+                performWrites();
+            }
+        }
+        catch (Exception e) {
+            log.error(e, "Exception aggregating level %d, hostId %d, sampleKindId %d, startTime %s, endTime %s",
+                    aggregationLevel, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime);
         }
     }
 
     private void performWrites()
     {
-        // This is the atomic operation: set the new aggregated TimelineChunk object valid, and the
-        // ones that were aggregated invalid.  This should be very fast.
+        // This is the atomic operation: bulk insert the new aggregated TimelineChunk objects, and delete
+        // or invalidate the ones that were aggregated.  This should be very fast.
         aggregatorDao.begin();
         timelineDao.bulkInsertTimelineChunks(chunksToWrite);
         if (config.getDeleteAggregatedChunks()) {
