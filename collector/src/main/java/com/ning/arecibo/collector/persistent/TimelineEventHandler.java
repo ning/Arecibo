@@ -131,6 +131,8 @@ public class TimelineEventHandler implements EventHandler
     private final AtomicLong replaySamplesOutsideTimeRangeCount = new AtomicLong();
     private final AtomicLong replaySamplesProcessedCount = new AtomicLong();
     private final AtomicLong forceCommitCallCount = new AtomicLong();
+    private final AtomicLong purgedAccumsBecauseHostNotUpdated = new AtomicLong();
+    private final AtomicLong purgedAccumsBecauseCategoryNotUpdated = new AtomicLong();
 
 
     private EventReplayingLoadGenerator loadGenerator = null;
@@ -182,6 +184,7 @@ public class TimelineEventHandler implements EventHandler
             final DateTime lastUpdatedDate = accumulatorsAndDate.getLastUpdateDate();
             if (lastUpdatedDate.isBefore(purgeIfBeforeDate)) {
                 oldHostIds.add(hostId);
+                purgedAccumsBecauseHostNotUpdated.incrementAndGet();
                 for (TimelineHostEventAccumulator categoryAccumulator : accumulatorsAndDate.getCategoryAccumulators().values()) {
                     categoryAccumulator.extractAndQueueTimelineChunks();
                 }
@@ -194,6 +197,7 @@ public class TimelineEventHandler implements EventHandler
                     final TimelineHostEventAccumulator categoryAccumulator = eventEntry.getValue();
                     final DateTime latestTime = categoryAccumulator.getLatestSampleAddTime();
                     if (latestTime != null && latestTime.isBefore(purgeIfBeforeDate)) {
+                        purgedAccumsBecauseCategoryNotUpdated.incrementAndGet();
                         categoryAccumulator.extractAndQueueTimelineChunks();
                         categoryIdsToPurge.add(categoryId);
                     }
@@ -651,6 +655,18 @@ public class TimelineEventHandler implements EventHandler
     public long getForceCommitCallCount()
     {
         return forceCommitCallCount.get();
+    }
+
+    @Managed
+    public long getPurgedAccumsBecauseHostNotUpdated()
+    {
+        return purgedAccumsBecauseHostNotUpdated.get();
+    }
+
+    @Managed
+    public long getPurgedAccumsBecauseCategoryNotUpdated()
+    {
+        return purgedAccumsBecauseCategoryNotUpdated.get();
     }
 }
 

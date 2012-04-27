@@ -142,6 +142,11 @@ public class TimelineCoder {
                     boolean nonDeltaTime = false;
                     if (opcode == TimelineOpcode.FULL_TIME.getOpcodeIndex()) {
                         newTime = byteDataStream.readInt();
+                        if (newTime < lastTime) {
+                            log.warn("In TimelineCoder.combineTimeLines(), the fulltime read is %d, but the lastTime is %d; setting newTime to lastTime",
+                                    newTime, lastTime);
+                            newTime = lastTime;
+                        }
                         byteCursor += 4;
                         if (lastTime == 0) {
                             writeTime(0, newTime, dataStream);
