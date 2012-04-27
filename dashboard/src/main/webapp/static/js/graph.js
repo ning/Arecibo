@@ -28,7 +28,7 @@ function renderGraph() {
         // across graphs on a per host basis
         host_colors: {},
         // The graph palette, used to generate the colors for the different graphs
-        palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
+        palette: new Rickshaw.Color.Palette({ scheme: 'munin' })
     };
     // Default settings for the graphs
     window.arecibo.graph_settings = {
