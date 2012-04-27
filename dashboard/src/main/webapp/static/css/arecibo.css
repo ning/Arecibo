@@ -59,6 +59,15 @@
     text-transform: none;
 }
 
+/*
+ * Main Arecibo page
+ */
+
+.controls span {
+    padding-left: 2px;
+    margin-right: 8px;
+}
+
 #sample_kinds_summary {
     margin-top: 10px;
 }

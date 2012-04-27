@@ -726,5 +726,5 @@ function buildGraphControlsInputField(graphId, name, id, value, checked, text) {
     return $('<label></label>')
             .attr('for', inputId)
             .append(inputElement)
-            .append(text);
+            .append($('<span></span>').text(text));
 }
