@@ -140,6 +140,8 @@ describe('The hostsSelected callback routine', function () {
         });
         spyOn($.fn, 'dynatree');
         spyOn($, 'ajax');
+
+        $('html,body').append($('<ul></ul>').attr('id', 'hosts_summary_list'));
     });
 
     it('should refresh the sample kinds tree when a new host is selected', function() {
@@ -194,6 +196,11 @@ describe('The hostsSelected callback routine', function () {
         expect(Set.size(window.arecibo.hosts_selected)).toEqual(2);
         expect(items['arecibo_latest_hosts']).toBe(JSON.stringify(window.arecibo.hosts_selected));
     });
+
+    it('should update the summary box for hosts', function() {
+        hostsSelected();
+        verify($('#hosts_summary_list'), '<ul id="hosts_summary_list"><li>hostA.company.com</li></ul>')
+    });
 });
 
 describe('The sampleKindsSelected callback routine', function () {
@@ -223,6 +230,8 @@ describe('The sampleKindsSelected callback routine', function () {
         });
         spyOn($.fn, 'dynatree');
         spyOn($, 'ajax');
+
+        $('html,body').append($('<ul></ul>').attr('id', 'sample_kinds_summary_list'));
     });
 
     it('should remember the latest sample kinds selected', function() {
@@ -240,5 +249,10 @@ describe('The sampleKindsSelected callback routine', function () {
         sampleKindsSelected();
         expect(Set.size(window.arecibo.sample_kinds_selected)).toEqual(2);
         expect(items['arecibo_latest_sample_kinds']).toBe(JSON.stringify(window.arecibo.sample_kinds_selected));
+    });
+
+    it('should update the summary box for sample kinds', function() {
+        sampleKindsSelected();
+        verify($('#sample_kinds_summary_list'), '<ul id="sample_kinds_summary_list"><li>JVMMemory::heapUsed</li></ul>')
     });
 });

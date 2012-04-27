@@ -58,3 +58,7 @@
     color: black;
     text-transform: none;
 }
+
+#sample_kinds_summary {
+    margin-top: 10px;
+}
