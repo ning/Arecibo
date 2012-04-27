@@ -28,7 +28,7 @@ function renderGraph() {
         // across graphs on a per host basis
         host_colors: {},
         // The graph palette, used to generate the colors for the different graphs
-        palette: new Rickshaw.Color.Palette({ scheme: 'colorwheel' })
+        palette: new Rickshaw.Color.Palette({ scheme: 'munin' })
     };
     // Default settings for the graphs
     window.arecibo.graph_settings = {
@@ -546,6 +546,7 @@ function buildSmootherContainer(graphId) {
 function buildDisplayRow(graphId) {
     // Show/Hide the graph controls
     var toggleBtn = $('<a></a>')
+                        .attr('id', 'graph_control_toggle')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -558,6 +559,7 @@ function buildDisplayRow(graphId) {
 
     // Go back in time
     var shiftLeftBtn = $('<a></a>')
+                        .attr('id', 'graph_control_shift_left')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -566,6 +568,7 @@ function buildDisplayRow(graphId) {
                         );
     // Go forward in time
     var shiftRightBtn = $('<a></a>')
+                        .attr('id', 'graph_control_shift_right')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -575,6 +578,7 @@ function buildDisplayRow(graphId) {
 
     // Zoom in in time
     var zoomInBtn = $('<a></a>')
+                        .attr('id', 'graph_control_zoom_in')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -583,6 +587,7 @@ function buildDisplayRow(graphId) {
                         );
     // Zoom out in time
     var zoomOutBtn = $('<a></a>')
+                        .attr('id', 'graph_control_zoom_out')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -592,6 +597,7 @@ function buildDisplayRow(graphId) {
 
     // Real-time mode
     var realtimeBtn = $('<a></a>')
+                        .attr('id', 'graph_control_realtime')
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -644,6 +650,12 @@ function buildGraphControlsRendererFields(graphId) {
     var lineRendererField = buildGraphControlsInputField(1, 'renderer', 'line', 'line', true, 'line');
     var scatterRendererField = buildGraphControlsInputField(1, 'renderer', 'scatter', 'scatterplot', false, 'scatter');
 
+    // Add tooltips
+    areaRendererField.tooltip({title: 'Area chart'});
+    barRendererField.tooltip({title: 'Bar chart'});
+    lineRendererField.tooltip({title: 'Line plot'});
+    scatterRendererField.tooltip({title: 'Scatter plot'});
+
     return $('<div></div')
                 .attr('class', 'control-group toggler')
                 .attr('id', 'renderer_form_' + graphId)
@@ -664,6 +676,12 @@ function buildGraphControlsOffsetFields(graphId) {
     var pctOffsetField = buildGraphControlsInputField(1, 'offset', 'pct', 'expand', false, 'pct');
     var valueOffsetField = buildGraphControlsInputField(1, 'offset', 'value', 'value', true, 'value');
 
+    // Add tooltips
+    stackOffsetField.tooltip({title: 'Use a zero baseline, i.e. the y-axis'});
+    streamOffsetField.tooltip({title: 'Minimize weighted change in slope'});
+    pctOffsetField.tooltip({title: 'Normalize the graph to fill the range [0,1]'});
+    valueOffsetField.tooltip({title: 'Use original value to draw the graph'});
+
     return $('<div></div')
                 .attr('class', 'control-group')
                 .attr('id', 'offset_form_' + graphId)
@@ -682,6 +700,11 @@ function buildGraphControlsInterpolationFields(graphId) {
     var cardinalInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'cardinal', 'cardinal', false, 'cardinal');
     var linearInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'linear', 'linear', true, 'linear');
     var stepInterpolationField = buildGraphControlsInputField(1, 'interpolation', 'step', 'step-after', false, 'step');
+
+    // Add tooltips
+    cardinalInterpolationField.tooltip({title: 'Smooth curves via cardinal splines'});
+    linearInterpolationField.tooltip({title: 'Straight lines between points'});
+    stepInterpolationField.tooltip({title: 'Square steps from point to point'});
 
     return $('<div></div')
                 .attr('class', 'control-group')
@@ -709,5 +732,5 @@ function buildGraphControlsInputField(graphId, name, id, value, checked, text) {
     return $('<label></label>')
             .attr('for', inputId)
             .append(inputElement)
-            .append(text);
+            .append($('<span></span>').text(text));
 }

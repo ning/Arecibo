@@ -51,8 +51,12 @@ function setupAreciboUI() {
     // Create en empty sample kinds tree as placeholder if there was no sample kind previously selected
     populateSampleKindsTree([]);
 
-    // Update hosts tree and potentially load the sample kinds tree
+    // Update the hosts tree (and the summary box for hosts if any is selected), and potentially load the sample kinds tree
     updateHostsTree();
+
+    // Update the summary box for sample kinds (if any is selected)
+    findSelectedSampleKinds();
+    updateSampleKindsSelectedSummary(window.arecibo.sample_kinds_selected);
 };
 
 // Return the selector for the samples start input
@@ -201,6 +205,7 @@ function populateHostsTree(hosts) {
     }
 
     // Trigger a sample kinds tree update: this will display the sample kinds tree with previous values, if any
+    // and update the summary box for hosts
     hostsSelected();
 }
 
@@ -296,15 +301,25 @@ function getKindFromSuperGroup(sampleKind) {
     return sampleKind.split('::')[1];
 }
 
+// Update the hosts list summary
+function updateHostsSelectedSummary(hosts) {
+    $('#hosts_summary_list').html('');
+    for (var i in hosts) {
+        var host = hosts[i];
+        var hostItem = $('<li></li>').html(host.hostName);
+        $('#hosts_summary_list').append(hostItem);
+    }
+}
+
 // Refresh the sample kinds tree
 // This is called when a host is (un)selected on the hosts tree. Selecting or unselecting
 // another host in the same category does not refresh the sample kinds tree
 function hostsSelected() {
-    // Find all selected nodes and build the uri for the dashboard
+    // Build the uri for the dashboard
     var uri = buildHostsParamsFromTree();
-    if (!uri) {
-        return false;
-    }
+
+    // Update the summary box
+    updateHostsSelectedSummary(window.arecibo.hosts_selected);
 
     // Remember selected nodes for the next page load
     try {
@@ -325,8 +340,12 @@ function hostsSelected() {
         // Ignore if the tree was empty
     }
 
-    callArecibo('/rest/1.0/sample_kinds?' + uri, 'populateSampleKindsTree');
-    return false;
+    if (!uri) {
+        return false;
+    } else {
+        callArecibo('/rest/1.0/sample_kinds?' + uri, 'populateSampleKindsTree');
+        return false;
+    }
 }
 
 function populateSampleKindsTree(kinds) {
@@ -415,13 +434,23 @@ function populateSampleKindsTree(kinds) {
     }
 }
 
+// Update the sample kinds list summary
+function updateSampleKindsSelectedSummary(kinds) {
+    $('#sample_kinds_summary_list').html('');
+    for (var i in kinds) {
+        var kind = kinds[i];
+        var kindItem = $('<li></li>').html(kind.sampleCategory + '::' + kind.sampleKind);
+        $('#sample_kinds_summary_list').append(kindItem);
+    }
+}
+
 // This is called when a sample kind is (un)selected on the sample kinds tree
 function sampleKindsSelected() {
     // Find all selected nodes and build the uri for the dashboard
-    var uri = buildCategoryAndSampleKindParamsFromTree();
-    if (!uri) {
-        return false;
-    }
+    buildCategoryAndSampleKindParamsFromTree();
+
+    // Update the summary box
+    updateSampleKindsSelectedSummary(window.arecibo.sample_kinds_selected);
 
     // Remember selected nodes for the next page load
     try {
@@ -437,7 +466,7 @@ function buildGraphURL() {
     var hosts_url = buildHostsParamsFromTree();
     var sample_kinds_url = buildCategoryAndSampleKindParamsFromTree();
 
-    var nb_samples = screen.width;
+    var nb_samples = 500;
 
     var uri = '/static/graph.html?' +
                 hosts_url + '&' +

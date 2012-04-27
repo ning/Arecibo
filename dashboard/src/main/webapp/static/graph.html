@@ -53,6 +53,12 @@ under the License. -->
     </script>
 </head>
 <body>
+    <div id="spinnerDiv" class="modal hide" style="display: none;">
+        <div class="modal-body">
+            <h3>Data is loading...</h3>
+        </div>
+    </div>
+
     <div class="container">
         <div class="page-header">
             <h1>Arecibo <small>graph</small></h1>
@@ -60,9 +66,6 @@ under the License. -->
 
         <div id="graph_grid"></div>
 
-        <div class="row">
-            <i id="spinnerDiv" class="icon-refresh"></i>
-        </div>
         <div class="row">
             <div id="errorDiv" class="alert alert-error">
                 <p><strong>Oh no!</strong></p>

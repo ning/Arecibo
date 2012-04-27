@@ -52,6 +52,12 @@ under the License. -->
     </script>
 </head>
 <body>
+    <div id="spinnerDiv" class="modal hide" style="display: none;">
+        <div class="modal-body">
+            <h3>Data is loading...</h3>
+        </div>
+    </div>
+
     <div class="container">
         <div class="page-header">
             <h1>Arecibo <small>Choose a group of hosts, attributes and the time range to graph data</small></h1>
@@ -69,13 +75,19 @@ under the License. -->
                     <input type="text" class="input-medium" name="samples_end" id="samples_end" value="" placeholder="End time" />
                     <button type="submit" class="btn" id="crunch">Graph</button>
                 </form>
+                <div class="well">
+                    <div id="hosts_summary">
+                        <h5>Hosts selected</h5>
+                        <ul id="hosts_summary_list"></ul>
+                    </div>
+                    <div id="sample_kinds_summary">
+                        <h5>Sample kinds selected</h5>
+                        <ul id="sample_kinds_summary_list"></ul>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="row">
-            <div class="span12">
-                <i id="spinnerDiv" class="icon-refresh"></i>
-            </div>
-        </div>
+
         <div class="row">
             <div class="span12">
                 <div id="errorDiv" class="alert alert-error">

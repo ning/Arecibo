@@ -82,10 +82,10 @@ function initializeUI() {
     $('#spinnerDiv')
         .hide()  // hide it initially
         .ajaxStart(function() {
-            $(this).show();
+            $(this).modal('show');
         })
         .ajaxStop(function() {
-            $(this).hide();
+            $(this).modal('hide');
         });
 
     // Setup the error messages alert for Ajax calls
