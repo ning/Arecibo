@@ -237,14 +237,14 @@ public class TestTimelineCoder
     public void testCombiningTimesError() throws Exception
     {
         final byte[] times1 = Hex.decodeHex("ff10000001fe0310ff1000011bfe0310".toCharArray());
-        final byte[] times2 = Hex.decodeHex("ff00000140".toCharArray());
+        final byte[] times2 = Hex.decodeHex("ff10000160".toCharArray());
         final List<byte[]> timesList = new ArrayList<byte[]>();
         timesList.add(times1);
         timesList.add(times2);
         final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
         final String hexCombinedTimes = new String(Hex.encodeHex(combinedTimes));
         //System.out.printf("Combined times: %s\n", hexCombinedTimes);
-        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0310eafe0310f5");
+        Assert.assertEquals(hexCombinedTimes, "ff10000001fe0310eafe031015");
     }
 
     @Test(groups = "fast")
