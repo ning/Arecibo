@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Replayer
 {
@@ -65,6 +66,7 @@ public class Replayer
     };
 
     private final String path;
+    private AtomicBoolean shuttingDown = new AtomicBoolean();
 
     public Replayer(final String path)
     {
@@ -91,6 +93,11 @@ public class Replayer
         return samples;
     }
 
+    public void initiateShutdown()
+    {
+        shuttingDown.set(true);
+    }
+
     public int readAll(final boolean deleteFiles, final @Nullable DateTime minStartTime, final Function<HostSamplesForTimestamp, Void> fn)
     {
         final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
@@ -103,6 +110,9 @@ public class Replayer
                     continue;
                 }
                 read(file, fn);
+                if (shuttingDown.get()) {
+                    break;
+                }
 
                 if (deleteFiles) {
                     if (!file.delete()) {
@@ -125,7 +135,7 @@ public class Replayer
             return;
         }
 
-        while (smileParser.nextToken() != JsonToken.END_ARRAY) {
+        while (!shuttingDown.get() && smileParser.nextToken() != JsonToken.END_ARRAY) {
             final HostSamplesForTimestamp hostSamplesForTimestamp = smileParser.readValueAs(HostSamplesForTimestamp.class);
             fn.apply(hostSamplesForTimestamp);
         }

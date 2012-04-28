@@ -41,6 +41,7 @@ import com.ning.arecibo.util.rmi.RMIRegistryConfig;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.service.ServiceLocator;
 import org.eclipse.jetty.server.Server;
+import org.weakref.jmx.Managed;
 import org.weakref.jmx.guice.MBeanModule;
 
 import javax.management.MBeanServer;
@@ -118,6 +119,13 @@ public class EventCollectorServer
     public boolean isRunning()
     {
         return isRunning.get();
+    }
+
+
+    @Managed
+    public void shutDownCore()
+    {
+        stop();
     }
 
     public static void main(final String[] args) throws Exception

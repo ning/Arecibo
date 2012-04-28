@@ -114,7 +114,7 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.aggregationSleepBetweenBatches")
     @Description("How long to sleep between aggregation batches")
-    @Default("3s")
+    @Default("50ms")
     TimeSpan getAggregationSleepBetweenBatches();
 
     @Config("arecibo.collector.timelines.maxChunkIdsToInvalidateOrDelete")

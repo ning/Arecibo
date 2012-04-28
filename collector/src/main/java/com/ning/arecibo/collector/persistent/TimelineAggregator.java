@@ -69,6 +69,8 @@ public class TimelineAggregator
     private final AtomicLong timelineChunksBytesCreated = makeCounter("bytesCreated");
     private final AtomicLong msSpentAggregating = makeCounter("msSpentAggregating");
     private final AtomicLong msSpentSleeping = makeCounter("msSpentSleeping");
+    private final AtomicLong msFetchingChunks = makeCounter("msFetchingChunks");
+    private final AtomicLong msWritingDb = makeCounter("msWritingDb");
 
     // These lists support batching of aggregated chunk writes and updates or deletes of the chunks aggregated
     private final List<TimelineChunk> chunksToWrite = new ArrayList<TimelineChunk>();
@@ -166,6 +168,7 @@ public class TimelineAggregator
     {
         // This is the atomic operation: bulk insert the new aggregated TimelineChunk objects, and delete
         // or invalidate the ones that were aggregated.  This should be very fast.
+        final long startWriteTime = System.currentTimeMillis();
         aggregatorDao.begin();
         timelineDao.bulkInsertTimelineChunks(chunksToWrite);
         if (config.getDeleteAggregatedChunks()) {
@@ -175,6 +178,8 @@ public class TimelineAggregator
             aggregatorDao.makeTimelineChunksInvalid(chunkIdsToInvalidateOrDelete);
         }
         aggregatorDao.commit();
+        msWritingDb.addAndGet(System.currentTimeMillis() - startWriteTime);
+
         timelineChunksWritten.addAndGet(chunksToWrite.size());
         timelineChunksInvalidatedOrDeleted.addAndGet(chunkIdsToInvalidateOrDelete.size());
         chunksToWrite.clear();
@@ -238,7 +243,9 @@ public class TimelineAggregator
         while (true) {
             final long startTime = System.currentTimeMillis();
             try {
+                final long startFetchTime = System.currentTimeMillis();
                 final List<TimelineChunk> candidates = aggregatorDao.getTimelineAggregationCandidates(aggregationLevel, chunksToAggregate, aggregationBatchSize);
+                msFetchingChunks.addAndGet(System.currentTimeMillis() - startFetchTime);
                 if (candidates.size() == 0) {
                     break;
                 }

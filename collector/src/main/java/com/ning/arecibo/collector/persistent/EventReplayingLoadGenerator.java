@@ -56,6 +56,7 @@ public class EventReplayingLoadGenerator {
 
     private final AtomicLong timeWorking = new AtomicLong();
     private final AtomicLong timeSleeping = new AtomicLong();
+    private final Replayer replayer = new Replayer(REPLAY_FILE_DIRECTORY);
 
     private Map<Integer, List<Integer>> simulatedHostIdsForRealHostId = new HashMap<Integer, List<Integer>>();
     private long cycleStartTime = 0;
@@ -80,7 +81,6 @@ public class EventReplayingLoadGenerator {
 
     public void generateEventStream()
     {
-        final Replayer replayer = new Replayer(REPLAY_FILE_DIRECTORY);
         resetSecondCounter();
         replayIterationStartTime = new DateTime();
         for (int i=0; i<REPLAY_REPEAT_COUNT; i++) {
@@ -94,6 +94,9 @@ public class EventReplayingLoadGenerator {
 
                         @Override
                         public Void apply(HostSamplesForTimestamp hostSamples) {
+                            if (shuttingDown.get()) {
+                                return null;
+                            }
                             processSamples(hostSamples);
                             return null;
                         }
@@ -110,11 +113,6 @@ public class EventReplayingLoadGenerator {
             latestHostTimes.clear();
             replayIterationStartTime = lastEndTime.plusSeconds(30);
         }
-    }
-
-    public void initiateShutdown()
-    {
-        shuttingDown.set(true);
     }
 
     private DateTime getAdjustedSampleTime(final DateTime timestamp)
@@ -219,4 +217,10 @@ public class EventReplayingLoadGenerator {
         return samplesAdded.get();
     }
 
+    @Managed
+    public void initiateShutdown()
+    {
+        shuttingDown.set(true);
+        replayer.initiateShutdown();
+    }
 }
