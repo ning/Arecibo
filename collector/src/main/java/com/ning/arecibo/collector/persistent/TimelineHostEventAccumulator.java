@@ -68,7 +68,7 @@ public class TimelineHostEventAccumulator
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
-    private static final Random rand = new Random(System.currentTimeMillis());
+    private static final Random rand = new Random(0);
 
     private final Map<Integer, SampleSequenceNumber> sampleKindIdCounters = new HashMap<Integer, SampleSequenceNumber>();
     private final List<PendingChunkMap> pendingChunkMaps = new ArrayList<PendingChunkMap>();
