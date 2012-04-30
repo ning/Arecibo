@@ -72,7 +72,7 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public int getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
         synchronized (hosts) {
             final Integer hostId = getHostId(host);
@@ -101,7 +101,7 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddEventCategory( String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+    public int getOrAddEventCategory( String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
         synchronized (eventCategories) {
             Integer eventCategoryId = getEventCategoryId(eventCategory);
             if (eventCategoryId == null) {
@@ -143,7 +143,7 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public int getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         synchronized (sampleKinds) {
             Integer sampleKindId = getSampleKindId(eventCategoryId, sampleKind);

@@ -52,7 +52,7 @@ public @interface TimelineChunkBinder
                         .bind("notValid", timelineChunk.getNotValid() ? 1 : 0)
                         .bind("dontAggregate", timelineChunk.getDontAggregate() ? 1 : 0);
                     final byte[] timesAndSamples = TimesAndSamplesCoder.combineTimesAndSamples(timelineChunk.getTimes(), timelineChunk.getSamples());
-                    if (timelineChunk.getObjectId() == 0) {
+                    if (timelineChunk.getChunkId() == 0) {
                         query.bindNull("chunkId", Types.BIGINT);
                     }
                     else {

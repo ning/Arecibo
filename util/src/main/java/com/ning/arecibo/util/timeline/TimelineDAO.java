@@ -36,7 +36,7 @@ public interface TimelineDAO
 
     BiMap<Integer, String> getHosts() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    Integer getOrAddHost(String host) throws UnableToObtainConnectionException, CallbackFailedException;
+    int getOrAddHost(String host) throws UnableToObtainConnectionException, CallbackFailedException;
 
     // Event categories table
 
@@ -46,7 +46,7 @@ public interface TimelineDAO
 
     BiMap<Integer, String> getEventCategories() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    Integer getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException;
+    int getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException;
 
     // Sample kinds table
 
@@ -56,7 +56,7 @@ public interface TimelineDAO
 
     BiMap<Integer, CategoryIdAndSampleKind> getSampleKinds() throws UnableToObtainConnectionException, CallbackFailedException;
 
-    Integer getOrAddSampleKind(Integer hostId, Integer eventCategoryId, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
+    int getOrAddSampleKind(Integer hostId, Integer eventCategoryId, String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException;
 
     Iterable<Integer> getSampleKindIdsByHostId(Integer hostId) throws UnableToObtainConnectionException, CallbackFailedException;
 

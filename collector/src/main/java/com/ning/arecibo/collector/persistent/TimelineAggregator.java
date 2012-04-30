@@ -148,7 +148,7 @@ public class TimelineAggregator
                 timeParts.add(timelineChunk.getTimes());
                 sampleParts.add(timelineChunk.getSamples());
                 sampleCount += timelineChunk.getSampleCount();
-                timelineChunkIds.add(timelineChunk.getObjectId());
+                timelineChunkIds.add(timelineChunk.getChunkId());
             }
             final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts, sampleCount);
             final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);

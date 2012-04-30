@@ -82,7 +82,7 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public synchronized int getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
         Integer hostId = hostsCache.inverse().get(host);
         if (hostId == null) {
@@ -112,7 +112,7 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+    public int getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
         Integer eventCategoryId = eventCategoriesCache.inverse().get(eventCategory);
         if (eventCategoryId == null) {
             eventCategoryId = delegate.getOrAddEventCategory(eventCategory);
@@ -140,7 +140,7 @@ public class CachingTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public synchronized int getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         final CategoryIdAndSampleKind categoryIdAndSampleKind = new CategoryIdAndSampleKind(eventCategoryId, sampleKind);
         Integer sampleKindId = sampleKindsCache.inverse().get(categoryIdAndSampleKind);

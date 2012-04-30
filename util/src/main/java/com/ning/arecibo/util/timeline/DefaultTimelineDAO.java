@@ -78,7 +78,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public synchronized int getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.begin();
         delegate.addHost(host);
@@ -108,7 +108,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+    public synchronized int getOrAddEventCategory(String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
         delegate.begin();
         delegate.addEventCategory(eventCategory);
         final Integer eventCategoryId = delegate.getEventCategoryId(eventCategory);
@@ -141,7 +141,7 @@ public class DefaultTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public synchronized Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public synchronized int getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         delegate.begin();
         delegate.addSampleKind(eventCategoryId, sampleKind);

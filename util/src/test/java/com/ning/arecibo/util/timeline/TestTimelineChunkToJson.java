@@ -69,7 +69,7 @@ public class TestTimelineChunkToJson
     {
         final String chunkToString = mapper.writerWithView(TimelineChunksViews.Compact.class).writeValueAsString(chunk);
         final Map chunkFromString = mapper.readValue(chunkToString, Map.class);
-        Assert.assertEquals(chunkFromString.keySet().size(), 10);
+        Assert.assertEquals(chunkFromString.keySet().size(), 11);
         Assert.assertEquals(chunkFromString.get("hostId"), HOST_ID);
         Assert.assertEquals(chunkFromString.get("sampleKindId"), SAMPLE_KIND_ID);
         Assert.assertEquals(new TextNode((String) chunkFromString.get("samples")).getBinaryValue(), samples);
@@ -85,7 +85,7 @@ public class TestTimelineChunkToJson
     {
         final String chunkToString = mapper.writerWithView(TimelineChunksViews.Loose.class).writeValueAsString(chunk);
         final Map chunkFromString = mapper.readValue(chunkToString, Map.class);
-        Assert.assertEquals(chunkFromString.keySet().size(), 3);
+        Assert.assertEquals(chunkFromString.keySet().size(), 4);
         Assert.assertEquals(chunkFromString.get("hostId"), HOST_ID);
         Assert.assertEquals(chunkFromString.get("sampleKindId"), SAMPLE_KIND_ID);
         Assert.assertNotNull(chunkFromString.get("samplesAsCSV"));

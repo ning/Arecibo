@@ -34,17 +34,20 @@ import com.ning.arecibo.util.Logger;
  * for a single host and single sample kind.  The samples are held in a byte
  * array.
  */
-public class TimelineChunk extends CachedObject
+public class TimelineChunk
 {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @JsonProperty
     @JsonView(TimelineChunksViews.Base.class)
-    private final Integer hostId;
+    private final long chunkId;
     @JsonProperty
     @JsonView(TimelineChunksViews.Base.class)
-    private final Integer sampleKindId;
+    private final int hostId;
+    @JsonProperty
+    @JsonView(TimelineChunksViews.Base.class)
+    private final int sampleKindId;
     @JsonProperty
     @JsonView(TimelineChunksViews.Compact.class)
     private final DateTime startTime;
@@ -72,7 +75,7 @@ public class TimelineChunk extends CachedObject
 
     public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
     {
-        super(chunkId);
+        this.chunkId = chunkId;
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
         this.startTime = startTime;
@@ -88,7 +91,7 @@ public class TimelineChunk extends CachedObject
     public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
             final byte[] times, final byte[] samples, final int sampleCount, final int aggregationLevel, final boolean notValid, final boolean dontAggregate)
     {
-        super(chunkId);
+        this.chunkId = chunkId;
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
         this.startTime = startTime;
@@ -103,7 +106,7 @@ public class TimelineChunk extends CachedObject
 
     public TimelineChunk(final long chunkId, final TimelineChunk other)
     {
-        super(chunkId);
+        this.chunkId = chunkId;
         this.hostId = other.hostId;
         this.sampleKindId = other.sampleKindId;
         this.startTime = other.startTime;
@@ -186,7 +189,7 @@ public class TimelineChunk extends CachedObject
 
     public long getChunkId()
     {
-        return getObjectId();
+        return chunkId;
     }
 
     public int getHostId()
