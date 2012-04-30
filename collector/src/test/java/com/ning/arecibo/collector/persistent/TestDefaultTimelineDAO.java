@@ -31,10 +31,10 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 
 public class TestDefaultTimelineDAO
 {

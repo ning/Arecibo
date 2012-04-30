@@ -39,12 +39,12 @@ import com.google.inject.Inject;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
-import com.ning.arecibo.util.timeline.SampleCoder;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-import com.ning.arecibo.util.timeline.TimelineChunkMapper;
-import com.ning.arecibo.util.timeline.TimelineCoder;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkMapper;
+import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
 /**
  * This class runs a thread that periodically looks for unaggregated timelines.

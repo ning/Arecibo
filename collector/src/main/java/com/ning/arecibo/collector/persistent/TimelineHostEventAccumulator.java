@@ -30,14 +30,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.NullSample;
-import com.ning.arecibo.util.timeline.RepeatSample;
-import com.ning.arecibo.util.timeline.SampleCoder;
-import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.TimelineCoder;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.NullSample;
+import com.ning.arecibo.util.timeline.samples.RepeatSample;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
 /**
  * This class represents a collection of timeline chunks, one for each sample

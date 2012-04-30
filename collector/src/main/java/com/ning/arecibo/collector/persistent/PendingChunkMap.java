@@ -18,7 +18,7 @@ package com.ning.arecibo.collector.persistent;
 
 import java.util.Map;
 
-import com.ning.arecibo.util.timeline.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 
 public class PendingChunkMap
 {

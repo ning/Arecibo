@@ -33,8 +33,8 @@ import org.weakref.jmx.Managed;
 import com.google.common.base.Function;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 
 public class EventReplayingLoadGenerator {
     private static final Logger log = Logger.getLogger(EventReplayingLoadGenerator.class);

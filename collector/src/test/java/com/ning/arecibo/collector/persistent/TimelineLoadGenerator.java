@@ -29,11 +29,11 @@ import org.skife.jdbi.v2.DBI;
 
 import com.google.common.collect.BiMap;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.CachingTimelineDAO;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineCoder;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.persistent.CachingTimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
 /**
  * This class simulates the database load due to insertions and deletions of

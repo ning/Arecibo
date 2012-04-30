@@ -23,9 +23,10 @@ import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.HostIdAndSampleKindId;
 import com.ning.arecibo.util.timeline.StartTimes;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;

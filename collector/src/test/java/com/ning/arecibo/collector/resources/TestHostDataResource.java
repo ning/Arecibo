@@ -26,8 +26,8 @@ import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.SampleOpcode;
-import com.ning.arecibo.util.timeline.ScalarSample;
+import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.jaxrs.DateTimeParameter;
 
 import com.google.common.collect.ImmutableList;

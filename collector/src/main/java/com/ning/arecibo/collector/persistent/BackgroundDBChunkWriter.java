@@ -34,8 +34,8 @@ import com.google.inject.Singleton;
 import com.mogwee.executors.Executors;
 import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 
 /**
  * This class runs a thread that batch-writes TimelineChunks to the db.

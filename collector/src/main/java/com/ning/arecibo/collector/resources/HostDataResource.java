@@ -24,11 +24,11 @@ import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-import com.ning.arecibo.util.timeline.TimelineChunkDecoded;
-import com.ning.arecibo.util.timeline.TimelineChunksViews;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkDecoded;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunksViews;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
 

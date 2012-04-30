@@ -18,8 +18,9 @@ package com.ning.arecibo.collector;
 
 import com.ning.arecibo.collector.guice.CollectorModule;
 import com.ning.arecibo.dao.MysqlTestingHelper;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.IDBI;
 

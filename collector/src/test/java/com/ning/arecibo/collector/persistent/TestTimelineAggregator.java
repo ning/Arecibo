@@ -38,11 +38,11 @@ import com.google.inject.Injector;
 import com.ning.arecibo.collector.TestModulesFactory;
 import com.ning.arecibo.dao.MysqlTestingHelper;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.SampleOpcode;
-import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
 
 @Guice(moduleFactory = TestModulesFactory.class)
 public class TestTimelineAggregator

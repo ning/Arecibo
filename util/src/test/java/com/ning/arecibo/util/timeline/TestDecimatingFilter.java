@@ -24,6 +24,9 @@ import org.skife.config.TimeSpan;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import com.ning.arecibo.util.timeline.samples.SampleConsumer;
+import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+
 public class TestDecimatingFilter {
 
     @Test(groups="fast")

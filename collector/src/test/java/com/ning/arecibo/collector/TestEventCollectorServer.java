@@ -52,9 +52,9 @@ import com.ning.arecibo.event.transport.EventServiceRESTClient;
 import com.ning.arecibo.event.transport.JsonEventSerializer;
 import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
-import com.ning.arecibo.util.timeline.TimeCursor;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.times.TimeCursor;
 import com.ning.http.client.AsyncHttpClient;
 
 @Guice(moduleFactory = TestModulesFactory.class)

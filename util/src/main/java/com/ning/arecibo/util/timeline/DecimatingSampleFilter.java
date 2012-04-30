@@ -19,6 +19,11 @@ package com.ning.arecibo.util.timeline;
 import org.joda.time.DateTime;
 import org.skife.config.TimeSpan;
 
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.samples.SampleConsumer;
+import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+import com.ning.arecibo.util.timeline.times.TimeRangeSampleProcessor;
+
 /**
  * This SampleProcessor interpolates a stream of sample values to such that the
  * number of outputs sent to the SampleConsumer is outputCount, which is less

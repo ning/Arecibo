@@ -17,9 +17,10 @@
 package com.ning.arecibo.collector.guice;
 
 import com.google.inject.Inject;
-import com.ning.arecibo.util.timeline.CachingTimelineDAO;
-import com.ning.arecibo.util.timeline.DefaultTimelineDAO;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.CachingTimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+
 import org.skife.jdbi.v2.DBI;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.ObjectNames;
