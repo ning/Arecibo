@@ -31,6 +31,7 @@ import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.IDBI;
 import org.skife.jdbi.v2.Query;
 import org.skife.jdbi.v2.ResultIterator;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.StringTemplate3StatementLocator;
 import org.skife.jdbi.v2.tweak.HandleCallback;
 import org.weakref.jmx.Managed;
 
@@ -53,7 +54,6 @@ import com.ning.arecibo.util.timeline.TimelineCoder;
 public class TimelineAggregator
 {
     private static final Logger log = Logger.getLogger(TimelineAggregator.class);
-    private static final String PACKAGE = TimelineAggregatorDAO.class.getPackage().getName();
     private static final TimelineChunkMapper timelineChunkMapper = new TimelineChunkMapper();
 
     private final IDBI dbi;
@@ -291,12 +291,10 @@ public class TimelineAggregator
                 @Override
                 public Void withHandle(Handle handle) throws Exception
                 {
-                    // TODO: Figure out how to reference the string template; this formulation doesn't work.
-                    // Query<Map<String, Object>> query = handle.createQuery(PACKAGE + ":getStreamingAggregationCandidates")
-                    final String sql = "select chunk_id , host_id , sample_kind_id , start_time , end_time , in_row_samples , blob_samples , sample_count , aggregation_level , not_valid , dont_aggregate from timeline_chunks where host_id != 0 and aggregation_level = :aggregationLevel and not_valid = 0 order by host_id, sample_kind_id, start_time";
-                    Query<Map<String, Object>> query = handle.createQuery(sql)
+                    Query<Map<String, Object>> query = handle.createQuery("getStreamingAggregationCandidates")
                         .setFetchSize(Integer.MIN_VALUE)
                         .bind("aggregationLevel", aggregationLevel);
+                    query.setStatementLocator(new StringTemplate3StatementLocator(TimelineAggregatorDAO.class));
                     ResultIterator<TimelineChunk> iterator = null;
                     try {
                         iterator = query
