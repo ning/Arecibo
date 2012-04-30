@@ -115,7 +115,7 @@ describe('The graph builder', function() {
 
     it('should be able to create the graph row', function() {
         var htmlBuilt = buildGraphRow(1, 'Pweet');
-        var htmlExpected = '<div class="row"><h5>Pweet</h5><div class="chart_container" id="chart_container_1"><div class="y_axis" id="y_axis_1"></div><div class="chart" id="chart_1"></div></div><div class="slider" id="slider_1"></div></div>';
+        var htmlExpected = '<div class="row"><h5>Pweet</h5><span id="title_from_date_1" class="graph_date"></span><span class="graph_date">-</span><span id="title_to_date_1" class="graph_date"></span><div class="chart_container" id="chart_container_1"><div class="y_axis" id="y_axis_1"></div><div class="chart" id="chart_1"></div></div><div class="slider" id="slider_1"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 

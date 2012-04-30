@@ -71,6 +71,11 @@
     margin-right: 8px;
 }
 
+.graph_date {
+    float: left;
+    margin-right: 5px;
+}
+
 /*
  * Main Arecibo page
  */

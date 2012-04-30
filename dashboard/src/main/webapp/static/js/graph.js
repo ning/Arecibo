@@ -76,14 +76,17 @@ function refreshGraph(payload) {
 
     for (var i in graphIds) {
         var graphId = graphIds[i];
-        var graph = window.arecibo.graphs[graphId].graph;
+        var metaObjectGraph = window.arecibo.graphs[graphId];
 
         // Rickshaw doesn't redraw the legend for us, we need to do it
         $('#legend_' + graphId).empty();
-        drawLegend(graph, graphId);
+        drawLegend(metaObjectGraph.graph, graphId);
+
+        // Update the start and end time
+        refreshStartAndEndTime(metaObjectGraph);
 
         // Render the new graph
-        graph.update();
+        metaObjectGraph.graph.update();
     }
 
     removeAttributesFromYAxis();
@@ -288,6 +291,8 @@ function drawGraph(item) {
     });
 
     updateGraphSettings(graph, window.arecibo.graph_settings);
+
+    refreshStartAndEndTime(item);
 }
 
 // Populate and configure the legend element
@@ -315,6 +320,23 @@ function drawLegend(graph, graphId) {
         graph: graph,
         legend: legend
     });
+}
+
+// Update the start and end time in the graph title
+function refreshStartAndEndTime(graph) {
+    if (!graph) {
+        return;
+    }
+
+    var fromDateString = '';
+    var toDateString = '';
+    if (graph) {
+        fromDateString = ISODateString(graph.startDate);
+        toDateString = ISODateString(graph.endDate);
+    }
+
+    $('#title_from_date_' + graph.graphId).html($('<h6></h6>').text(fromDateString));
+    $('#title_to_date_' + graph.graphId).html($('<h6></h6>').text(toDateString));
 }
 
 // Remove the hardcoded padding added by Rickshaw
@@ -495,6 +517,9 @@ function buildGraphRow(graphId, graphTitle) {
     return $('<div></div>')
                 .attr('class', 'row')
                 .append($('<h5></h5>').text(graphTitle))
+                .append($('<span></span>').attr('id', 'title_from_date_' + graphId).attr('class', 'graph_date'))
+                .append($('<span></span>').attr('class', 'graph_date').html('-'))
+                .append($('<span></span>').attr('id', 'title_to_date_' + graphId).attr('class', 'graph_date'))
                 .append($('<div></div>')
                             .attr('class', 'chart_container')
                             .attr('id', 'chart_container_' + graphId)
