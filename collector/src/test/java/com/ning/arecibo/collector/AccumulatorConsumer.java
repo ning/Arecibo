@@ -19,8 +19,8 @@ package com.ning.arecibo.collector;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
 
 public class AccumulatorConsumer implements TimelineChunkConsumer
 {

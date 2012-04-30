@@ -26,17 +26,12 @@ import org.skife.jdbi.v2.sqlobject.mixins.Transactional;
 import org.skife.jdbi.v2.sqlobject.stringtemplate.ExternalizedSqlViaStringTemplate3;
 import org.skife.jdbi.v2.unstable.BindIn;
 
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkMapper;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkMapper;
 
 @ExternalizedSqlViaStringTemplate3()
 @RegisterMapper({TimelineChunkMapper.class})
 public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorDAO>
 {
-    @SqlQuery
-    List<TimelineChunk> getTimelineAggregationCandidates(@Bind("aggregationLevel") final int aggregationLevel, @Bind("chunksNeeded") final int chunksNeeded,
-            @Bind("aggregationBatchSize") int aggregationBatchSize);
-
     @SqlQuery
     int getLastInsertedId();
 

@@ -39,9 +39,9 @@ import com.ning.arecibo.util.timeline.HostIdAndSampleKindIdMapper;
 import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.StartTimesBinder;
 import com.ning.arecibo.util.timeline.StartTimesMapper;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkBinder;
-import com.ning.arecibo.util.timeline.TimelineChunkMapper;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkBinder;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkMapper;
 
 @ExternalizedSqlViaStringTemplate3()
 @RegisterMapper({TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class, HostIdAndSampleKindIdMapper.class})

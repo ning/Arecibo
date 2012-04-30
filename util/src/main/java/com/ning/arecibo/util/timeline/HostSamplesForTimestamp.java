@@ -17,6 +17,8 @@
 package com.ning.arecibo.util.timeline;
 
 import com.google.common.collect.ImmutableMap;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
+
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.annotate.JsonValue;

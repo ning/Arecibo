@@ -23,9 +23,10 @@ import com.google.common.collect.Multimap;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.HostIdAndSampleKindId;
 import com.ning.arecibo.util.timeline.StartTimes;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkConsumer;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+
 import org.joda.time.DateTime;
 import org.skife.jdbi.v2.exceptions.CallbackFailedException;
 import org.skife.jdbi.v2.exceptions.UnableToObtainConnectionException;
@@ -72,7 +73,7 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
+    public int getOrAddHost(final String host) throws UnableToObtainConnectionException, CallbackFailedException
     {
         synchronized (hosts) {
             final Integer hostId = getHostId(host);
@@ -101,7 +102,7 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddEventCategory( String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
+    public int getOrAddEventCategory( String eventCategory) throws UnableToObtainConnectionException, CallbackFailedException {
         synchronized (eventCategories) {
             Integer eventCategoryId = getEventCategoryId(eventCategory);
             if (eventCategoryId == null) {
@@ -143,7 +144,7 @@ public final class MockTimelineDAO implements TimelineDAO
     }
 
     @Override
-    public Integer getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
+    public int getOrAddSampleKind(final Integer hostId, final Integer eventCategoryId, final String sampleKind) throws UnableToObtainConnectionException, CallbackFailedException
     {
         synchronized (sampleKinds) {
             Integer sampleKindId = getSampleKindId(eventCategoryId, sampleKind);

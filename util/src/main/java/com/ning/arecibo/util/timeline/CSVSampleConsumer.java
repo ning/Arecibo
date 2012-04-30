@@ -18,6 +18,9 @@ package com.ning.arecibo.util.timeline;
 
 import org.joda.time.DateTime;
 
+import com.ning.arecibo.util.timeline.samples.SampleConsumer;
+import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+
 public class CSVSampleConsumer implements SampleConsumer
 {
     private final StringBuilder builder = new StringBuilder();

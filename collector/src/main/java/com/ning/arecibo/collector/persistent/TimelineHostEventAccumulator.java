@@ -30,14 +30,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.NullSample;
-import com.ning.arecibo.util.timeline.RepeatSample;
-import com.ning.arecibo.util.timeline.SampleCoder;
-import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.TimelineCoder;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.NullSample;
+import com.ning.arecibo.util.timeline.samples.RepeatSample;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
 /**
  * This class represents a collection of timeline chunks, one for each sample
@@ -68,7 +68,7 @@ public class TimelineHostEventAccumulator
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
     private static final NullSample nullSample = new NullSample();
     private static final boolean checkEveryAccess = Boolean.parseBoolean(System.getProperty("xn.arecibo.checkEveryAccess"));
-    private static final Random rand = new Random(System.currentTimeMillis());
+    private static final Random rand = new Random(0);
 
     private final Map<Integer, SampleSequenceNumber> sampleKindIdCounters = new HashMap<Integer, SampleSequenceNumber>();
     private final List<PendingChunkMap> pendingChunkMaps = new ArrayList<PendingChunkMap>();

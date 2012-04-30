@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Replayer
 {
@@ -65,6 +66,7 @@ public class Replayer
     };
 
     private final String path;
+    private AtomicBoolean shuttingDown = new AtomicBoolean();
 
     public Replayer(final String path)
     {
@@ -76,7 +78,7 @@ public class Replayer
     {
         final List<HostSamplesForTimestamp> samples = new ArrayList<HostSamplesForTimestamp>();
 
-        readAll(true, new Function<HostSamplesForTimestamp, Void>()
+        readAll(true, null, new Function<HostSamplesForTimestamp, Void>()
         {
             @Override
             public Void apply(@Nullable final HostSamplesForTimestamp input)
@@ -91,13 +93,26 @@ public class Replayer
         return samples;
     }
 
-    public void readAll(final boolean deleteFiles, final Function<HostSamplesForTimestamp, Void> fn)
+    public void initiateShutdown()
+    {
+        shuttingDown.set(true);
+    }
+
+    public int readAll(final boolean deleteFiles, final @Nullable DateTime minStartTime, final Function<HostSamplesForTimestamp, Void> fn)
     {
         final Collection<File> files = FileUtils.listFiles(new File(path), new String[]{"bin"}, false);
-
+        int filesSkipped = 0;
         for (final File file : FILE_ORDERING.sortedCopy(files)) {
             try {
+                // Skip files whose last modification date is is earlier than the first start time.
+                if (minStartTime != null && file.lastModified() < minStartTime.getMillis()) {
+                    filesSkipped++;
+                    continue;
+                }
                 read(file, fn);
+                if (shuttingDown.get()) {
+                    break;
+                }
 
                 if (deleteFiles) {
                     if (!file.delete()) {
@@ -109,6 +124,7 @@ public class Replayer
                 log.warn("Exception replaying file: {}", file.getAbsolutePath(), e);
             }
         }
+        return filesSkipped;
     }
 
     @VisibleForTesting
@@ -119,7 +135,7 @@ public class Replayer
             return;
         }
 
-        while (smileParser.nextToken() != JsonToken.END_ARRAY) {
+        while (!shuttingDown.get() && smileParser.nextToken() != JsonToken.END_ARRAY) {
             final HostSamplesForTimestamp hostSamplesForTimestamp = smileParser.readValueAs(HostSamplesForTimestamp.class);
             fn.apply(hostSamplesForTimestamp);
         }

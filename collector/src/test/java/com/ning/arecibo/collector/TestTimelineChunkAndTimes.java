@@ -16,11 +16,11 @@
 
 package com.ning.arecibo.collector;
 
-import com.ning.arecibo.util.timeline.SampleCoder;
-import com.ning.arecibo.util.timeline.SampleOpcode;
-import com.ning.arecibo.util.timeline.ScalarSample;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineCoder;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;

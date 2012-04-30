@@ -28,15 +28,15 @@ import com.ning.arecibo.eventlogger.Event;
 import com.ning.arecibo.util.jmx.MonitorableManaged;
 import com.ning.arecibo.util.jmx.MonitoringType;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.ScalarSample;
 import com.ning.arecibo.util.timeline.ShutdownSaveMode;
 import com.ning.arecibo.util.timeline.StartTimes;
-import com.ning.arecibo.util.timeline.TimelineChunk;
-import com.ning.arecibo.util.timeline.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.TimelineCoder;
-import com.ning.arecibo.util.timeline.TimelineDAO;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -116,6 +116,7 @@ public class TimelineEventHandler implements EventHandler
 
     private final ShutdownSaveMode shutdownSaveMode;
     private final AtomicBoolean shuttingDown = new AtomicBoolean();
+    private final AtomicBoolean replaying = new AtomicBoolean();
 
     private final AtomicLong eventsDiscarded = new AtomicLong(0L);
     private final AtomicLong eventsReceivedAfterShuttingDown = new AtomicLong();
@@ -130,6 +131,8 @@ public class TimelineEventHandler implements EventHandler
     private final AtomicLong replaySamplesOutsideTimeRangeCount = new AtomicLong();
     private final AtomicLong replaySamplesProcessedCount = new AtomicLong();
     private final AtomicLong forceCommitCallCount = new AtomicLong();
+    private final AtomicLong purgedAccumsBecauseHostNotUpdated = new AtomicLong();
+    private final AtomicLong purgedAccumsBecauseCategoryNotUpdated = new AtomicLong();
 
 
     private EventReplayingLoadGenerator loadGenerator = null;
@@ -181,6 +184,7 @@ public class TimelineEventHandler implements EventHandler
             final DateTime lastUpdatedDate = accumulatorsAndDate.getLastUpdateDate();
             if (lastUpdatedDate.isBefore(purgeIfBeforeDate)) {
                 oldHostIds.add(hostId);
+                purgedAccumsBecauseHostNotUpdated.incrementAndGet();
                 for (TimelineHostEventAccumulator categoryAccumulator : accumulatorsAndDate.getCategoryAccumulators().values()) {
                     categoryAccumulator.extractAndQueueTimelineChunks();
                 }
@@ -193,6 +197,7 @@ public class TimelineEventHandler implements EventHandler
                     final TimelineHostEventAccumulator categoryAccumulator = eventEntry.getValue();
                     final DateTime latestTime = categoryAccumulator.getLatestSampleAddTime();
                     if (latestTime != null && latestTime.isBefore(purgeIfBeforeDate)) {
+                        purgedAccumsBecauseCategoryNotUpdated.incrementAndGet();
                         categoryAccumulator.extractAndQueueTimelineChunks();
                         categoryIdsToPurge.add(categoryId);
                     }
@@ -232,8 +237,10 @@ public class TimelineEventHandler implements EventHandler
             }
 
             final HostSamplesForTimestamp hostSamples = new HostSamplesForTimestamp(hostId, event.getEventType(), new DateTime(event.getTimestamp(), DateTimeZone.UTC), scalarSamples);
-            // Start by saving locally the samples
-            backingBuffer.append(hostSamples);
+            if (!replaying.get()) {
+                // Start by saving locally the samples
+                backingBuffer.append(hostSamples);
+            }
             // Then add them to the in-memory accumulator
             processSamples(hostSamples);
         }
@@ -372,6 +379,7 @@ public class TimelineEventHandler implements EventHandler
             }
         }
         final StartTimes startTimes = lastStartTimes;
+        final DateTime minStartTime = lastStartTimes == null ? null : startTimes.getMinStartTime();
         final long found = replaySamplesFoundCount.get();
         final long outsideTimeRange = replaySamplesOutsideTimeRangeCount.get();
         final long processed = replaySamplesProcessedCount.get();
@@ -379,7 +387,8 @@ public class TimelineEventHandler implements EventHandler
         try {
             // Read all files in the spool directory and delete them after process, if
             // startTimes  is null.
-            replayer.readAll(startTimes == null, new Function<HostSamplesForTimestamp, Void>()
+            replaying.set(true);
+            int filesSkipped = replayer.readAll(startTimes == null, minStartTime, new Function<HostSamplesForTimestamp, Void>()
             {
                 @Override
                 public Void apply(@Nullable final HostSamplesForTimestamp hostSamples)
@@ -420,12 +429,15 @@ public class TimelineEventHandler implements EventHandler
                 timelineDAO.deleteLastStartTimes();
                 log.info("Deleted old startTimes");
             }
-            log.info(String.format("Replay completed samples read %d, samples outside time range %d, samples used %d",
-                    replaySamplesFoundCount.get() - found, replaySamplesOutsideTimeRangeCount.get() - outsideTimeRange, replaySamplesProcessedCount.get() - processed));
+            log.info(String.format("Replay completed; %d files skipped, samples read %d, samples outside time range %d, samples used %d",
+                    filesSkipped, replaySamplesFoundCount.get() - found, replaySamplesOutsideTimeRangeCount.get() - outsideTimeRange, replaySamplesProcessedCount.get() - processed));
         }
         catch (RuntimeException e) {
             // Catch the exception to make the collector start properly
             log.error("Ignoring error when replaying the data", e);
+        }
+        finally {
+            replaying.set(false);
         }
     }
 
@@ -643,6 +655,18 @@ public class TimelineEventHandler implements EventHandler
     public long getForceCommitCallCount()
     {
         return forceCommitCallCount.get();
+    }
+
+    @Managed
+    public long getPurgedAccumsBecauseHostNotUpdated()
+    {
+        return purgedAccumsBecauseHostNotUpdated.get();
+    }
+
+    @Managed
+    public long getPurgedAccumsBecauseCategoryNotUpdated()
+    {
+        return purgedAccumsBecauseCategoryNotUpdated.get();
     }
 }
 

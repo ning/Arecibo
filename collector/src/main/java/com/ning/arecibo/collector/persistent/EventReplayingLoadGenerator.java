@@ -28,23 +28,23 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.FileUtils;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.weakref.jmx.Managed;
 
 import com.google.common.base.Function;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
-import com.ning.arecibo.util.timeline.TimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
+import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 
 public class EventReplayingLoadGenerator {
     private static final Logger log = Logger.getLogger(EventReplayingLoadGenerator.class);
-    private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime();
-    private static final String REPLAY_FILE_DIRECTORY = System.getProperty("arecibo.collector.timeline.replayFileDirectory");
-    private static final int REPLAY_REPEAT_COUNT = Integer.parseInt(System.getProperty("arecibo.collector.timeline.replayRepeatCount"));
-    private static final int EVENTS_PER_SECOND = Integer.parseInt(System.getProperty("arecibo.collector.timeline.eventsPerSecond", "100"));
-    private static final int SIMULATED_HOSTS_PER_REAL_HOST = Integer.parseInt(System.getProperty("arecibo.collector.timeline.simulatedHostsPerRealHost", "20"));
+    private static final String REPLAY_FILE_DIRECTORY = System.getProperty("arecibo.collector.timelines.replayFileDirectory");
+    private static final int REPLAY_REPEAT_COUNT = Integer.parseInt(System.getProperty("arecibo.collector.timelines.replayRepeatCount"));
+    private static final int EVENTS_PER_SECOND = Integer.parseInt(System.getProperty("arecibo.collector.timelines.eventsPerSecond", "100"));
+    private static final int SIMULATED_HOSTS_PER_REAL_HOST = Integer.parseInt(System.getProperty("arecibo.collector.timelines.simulatedHostsPerRealHost", "20"));
+    private static final int LOGGING_INTERVAL = Integer.parseInt(System.getProperty("arecibo.collector.timelines.loggingInterval", "10000"));
+    private static final boolean PROCESS_SAMPLES = Boolean.parseBoolean(System.getProperty("arecibo.collector.timelines.processSamples", "true"));
+
 
     private final TimelineEventHandler eventHandler;
     private final TimelineDAO timelineDAO;
@@ -54,16 +54,18 @@ public class EventReplayingLoadGenerator {
     private final AtomicLong lateEvents = new AtomicLong();
     private final AtomicLong samplesAdded = new AtomicLong();
 
+    private final AtomicLong timeWorking = new AtomicLong();
+    private final AtomicLong timeSleeping = new AtomicLong();
+    private final Replayer replayer = new Replayer(REPLAY_FILE_DIRECTORY);
+
     private Map<Integer, List<Integer>> simulatedHostIdsForRealHostId = new HashMap<Integer, List<Integer>>();
-    private long nextFlushTime = 0;
+    private long cycleStartTime = 0;
     private int eventsPerSecondCount = 0;
     // This is a timestamp read from the replayed event
     private DateTime firstReplayEventTimestamp;
     // This is the corresponding real time timestamp
     private DateTime replayIterationStartTime;
-    // This is the amount to add to a read timestamp to get
-    // the real time timestamp
-    private long millisecondsTimeShift;
+    private DateTime lastEndTime = null;
 
     public EventReplayingLoadGenerator(TimelineEventHandler eventHandler, TimelineDAO timelineDAO)
     {
@@ -73,18 +75,18 @@ public class EventReplayingLoadGenerator {
 
     private void resetSecondCounter()
     {
-        nextFlushTime = System.currentTimeMillis() + 1000;
+        cycleStartTime = System.currentTimeMillis();
         eventsPerSecondCount = 0;
     }
 
     public void generateEventStream()
     {
-        final Replayer replayer = new Replayer(REPLAY_FILE_DIRECTORY);
         resetSecondCounter();
+        replayIterationStartTime = new DateTime();
         for (int i=0; i<REPLAY_REPEAT_COUNT; i++) {
-            replayIterationStartTime = new DateTime();
             final Collection<File> files = FileUtils.listFiles(new File(REPLAY_FILE_DIRECTORY), new String[]{"bin"}, false);
             firstReplayEventTimestamp = null;
+            resetSecondCounter();
             for (final File file : Replayer.FILE_ORDERING.sortedCopy(files)) {
                 try {
                     log.info("About to read file %s", file.getAbsolutePath());
@@ -92,6 +94,9 @@ public class EventReplayingLoadGenerator {
 
                         @Override
                         public Void apply(HostSamplesForTimestamp hostSamples) {
+                            if (shuttingDown.get()) {
+                                return null;
+                            }
                             processSamples(hostSamples);
                             return null;
                         }
@@ -106,19 +111,14 @@ public class EventReplayingLoadGenerator {
                 }
             }
             latestHostTimes.clear();
+            replayIterationStartTime = lastEndTime.plusSeconds(30);
         }
-    }
-
-    public void initiateShutdown()
-    {
-        shuttingDown.set(true);
     }
 
     private DateTime getAdjustedSampleTime(final DateTime timestamp)
     {
         if (firstReplayEventTimestamp == null) {
             firstReplayEventTimestamp = timestamp;
-            millisecondsTimeShift = replayIterationStartTime.getMillis() - timestamp.getMillis();
         }
         final int addend = (int)(timestamp.getMillis() - firstReplayEventTimestamp.getMillis());
         //log.info("In processSamples(), timestamp %s, replayIterationStartTime %s, firstReplayEventTimestamp %s, addend %d",
@@ -130,6 +130,7 @@ public class EventReplayingLoadGenerator {
     {
         final DateTime timestamp = hostSamples.getTimestamp();
         final DateTime adjustedTime = getAdjustedSampleTime(timestamp);
+        lastEndTime = adjustedTime;
         final int hostId = hostSamples.getHostId();
         List<Integer> simulatedHostIds = simulatedHostIdsForRealHostId.get(hostId);
         if (simulatedHostIds == null) {
@@ -151,7 +152,9 @@ public class EventReplayingLoadGenerator {
                 final HostSamplesForTimestamp newSamples = new HostSamplesForTimestamp(simulatedHostId, hostSamples.getCategory(), adjustedTime, hostSamples.getSamples());
                 try {
                     samplesAdded.addAndGet(hostSamples.getSamples().size());
-                    eventHandler.processSamples(newSamples);
+                    if (PROCESS_SAMPLES) {
+                        eventHandler.processSamples(newSamples);
+                    }
                     eventsPerSecondCount++;
                     sendAndLog();
                 }
@@ -166,14 +169,18 @@ public class EventReplayingLoadGenerator {
     private void sendAndLog()
     {
         final long sentCount = eventsSent.incrementAndGet();
-        if (sentCount % 1000 == 0) {
-            log.info("%d events sent, %d late and ignored, %d samples added", sentCount, lateEvents.get(), samplesAdded.get());
+        if (sentCount % LOGGING_INTERVAL == 0) {
+            log.info("%d events sent, %d late and ignored, %d samples added, ms working %d, ms sleeping %d",
+                    sentCount, lateEvents.get(), samplesAdded.get(), timeWorking.get(), timeSleeping.get());
         }
         if (eventsPerSecondCount >= EVENTS_PER_SECOND) {
-            final long elapsed = System.currentTimeMillis() - nextFlushTime;
+            final long elapsed = System.currentTimeMillis() - cycleStartTime;
+            timeWorking.addAndGet(elapsed);
             if (elapsed < 1000) {
+                final long sleepTime = 1000 - elapsed;
+                timeSleeping.addAndGet(sleepTime);
                 try {
-                    Thread.sleep(1000 - elapsed);
+                    Thread.sleep(sleepTime);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -210,4 +217,10 @@ public class EventReplayingLoadGenerator {
         return samplesAdded.get();
     }
 
+    @Managed
+    public void initiateShutdown()
+    {
+        shuttingDown.set(true);
+        replayer.initiateShutdown();
+    }
 }
