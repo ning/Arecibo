@@ -571,7 +571,7 @@ function buildSmootherContainer(graphId) {
 function buildDisplayRow(graphId) {
     // Show/Hide the graph controls
     var toggleBtn = $('<a></a>')
-                        .attr('id', 'graph_control_toggle')
+                        .attr('id', 'graph_control_toggle_' + graphId)
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -584,7 +584,7 @@ function buildDisplayRow(graphId) {
 
     // Go back in time
     var shiftLeftBtn = $('<a></a>')
-                        .attr('id', 'graph_control_shift_left')
+                        .attr('id', 'graph_control_shift_left_' + graphId)
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -593,7 +593,7 @@ function buildDisplayRow(graphId) {
                         );
     // Go forward in time
     var shiftRightBtn = $('<a></a>')
-                        .attr('id', 'graph_control_shift_right')
+                        .attr('id', 'graph_control_shift_right_' + graphId)
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -603,7 +603,7 @@ function buildDisplayRow(graphId) {
 
     // Zoom in in time
     var zoomInBtn = $('<a></a>')
-                        .attr('id', 'graph_control_zoom_in')
+                        .attr('id', 'graph_control_zoom_in_' + graphId)
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -612,7 +612,7 @@ function buildDisplayRow(graphId) {
                         );
     // Zoom out in time
     var zoomOutBtn = $('<a></a>')
-                        .attr('id', 'graph_control_zoom_out')
+                        .attr('id', 'graph_control_zoom_out_' + graphId)
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')
@@ -622,7 +622,7 @@ function buildDisplayRow(graphId) {
 
     // Real-time mode
     var realtimeBtn = $('<a></a>')
-                        .attr('id', 'graph_control_realtime')
+                        .attr('id', 'graph_control_realtime_' + graphId)
                         .attr('style', 'cursor: pointer; cursor: hand;')
                         .append(
                             $('<i></i>')

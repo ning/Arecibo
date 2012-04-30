@@ -100,7 +100,7 @@ describe('The graph builder', function() {
 
     it('should be able to create the display controls row', function() {
         var htmlBuilt = buildDisplayRow(1);
-        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a id="graph_control_toggle" style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a id="graph_control_shift_left" style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a id="graph_control_shift_right" style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a id="graph_control_zoom_out" style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a id="graph_control_zoom_in" style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a><a id="graph_control_realtime" style="cursor: pointer; cursor: hand;"><i class="icon-time"></i></a></div>';
+        var htmlExpected = '<div class="display_controls" id="display_controls_1"><a id="graph_control_toggle_1" style="cursor: pointer; cursor: hand;"><i class="icon-plus-sign"></i></a><a id="graph_control_shift_left_1" style="cursor: pointer; cursor: hand;"><i class="icon-arrow-left"></i></a><a id="graph_control_shift_right_1" style="cursor: pointer; cursor: hand;"><i class="icon-arrow-right"></i></a><a id="graph_control_zoom_out_1" style="cursor: pointer; cursor: hand;"><i class="icon-minus"></i></a><a id="graph_control_zoom_in_1" style="cursor: pointer; cursor: hand;"><i class="icon-plus"></i></a><a id="graph_control_realtime_1" style="cursor: pointer; cursor: hand;"><i class="icon-time"></i></a></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
