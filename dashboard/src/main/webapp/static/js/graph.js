@@ -44,15 +44,6 @@ function renderGraph() {
 
 function createGraphs() {
     var url  = '/rest/1.0/host_samples' + window.location.search;
-
-    // Create a debug link
-    // TODO
-    $('<a>',{
-        text: 'See raw data',
-        title: 'Raw data',
-        href: url + '&pretty=true'
-    }).appendTo('#debug_container');
-
     callArecibo(url, "createGraph");
 }
 
@@ -502,14 +493,12 @@ function buildGraphContainer(graphId, graphTitle, alone) {
     var graphRow = buildGraphRow(graphId, graphTitle);
     var controlsAndLegendRow = buildControlsAndLegendRow(graphId);
     var displayRow = buildDisplayRow(graphId);
-    var debugRow = buildDebugRow(graphId);
 
     return $('<div></div>')
                 .attr('class', span)
                 .append(graphRow)
                 .append(displayRow)
-                .append(controlsAndLegendRow)
-                .append(debugRow);
+                .append(controlsAndLegendRow);
 }
 
 // Build the actual graph container
@@ -557,7 +546,8 @@ function buildLegendColumn(graphId) {
                 .append($('<div></div>')
                             .attr('id', 'legend_container_' + graphId)
                             .append($('<div></div>').attr('id', 'legend_' + graphId))
-                        );
+                        )
+                .append(buildDebugContainer(graphId));
 }
 
 // Build the smoother container
@@ -642,12 +632,18 @@ function buildDisplayRow(graphId) {
                 .append(realtimeBtn);
 }
 
-// Build the debug row for a graph: this is where we store extra metadata
+// Build the debug container for a graph: this is where we store extra metadata
 // information, such as the direct link to the raw data
-function buildDebugRow(graphId) {
+function buildDebugContainer(graphId) {
+    var url = buildHostSampleUrlFromGraphId(graphId) + '&pretty=true';
+
     return $('<div></div>')
-                .attr('class', 'row')
-                .append($('<div></div>').attr('id', 'debug_container_' + graphId));
+                .attr('id', 'debug_container_' + graphId)
+                .html($('<a></a>')
+                        .attr('tite', 'Raw data')
+                        .attr('href', url)
+                        .attr('target', '_blank')
+                        .text('See raw data'));
 }
 
 // Build the complete form for the controls

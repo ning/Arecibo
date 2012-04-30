@@ -15,9 +15,13 @@
  */
 
 function outerHTML(node) {
-    // Gross hack - remove </input> tag for the command line runner as they're
-    // not valid HTML anyways
-    return $('<div>').append(node.clone()).html().replace(/\<\/input>/gi, '');
+
+    return $('<div>').append(node.clone()).html()
+        // Gross hack - remove </input> tag for the command line runner as they're
+        // not valid HTML anyways
+        .replace(/\<\/input>/gi, '')
+        // This is to make the mvn jasmine:bdd and test goals consistent
+        .replace(/\&amp;/gi, '&');
 }
 
 function verify(actual, expected) {
@@ -91,10 +95,9 @@ describe('The graph builder', function() {
         spyOn(window, 'buildGraphRow').andReturn('<div id="A"></div>');
         spyOn(window, 'buildDisplayRow').andReturn('<div id="B"></div>');
         spyOn(window, 'buildControlsAndLegendRow').andReturn('<div id="C"></div>');
-        spyOn(window, 'buildDebugRow').andReturn('<div id="D"></div>');
 
         var htmlBuilt = buildGraphContainer(1, 'Pweet');
-        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div><div id="D"></div></div>';
+        var htmlExpected = '<div class="span6"><div id="A"></div><div id="B"></div><div id="C"></div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
@@ -134,14 +137,15 @@ describe('The graph builder', function() {
     });
 
     it('should be able to create the legend row', function() {
+        spyOn(window, 'buildDebugContainer').andReturn('<div>debug</div>');
         var htmlBuilt = buildLegendColumn(1);
-        var htmlExpected = '<div class="span3"><div id="legend_container_1"><div id="legend_1"></div></div></div>';
+        var htmlExpected = '<div class="span3"><div id="legend_container_1"><div id="legend_1"></div></div><div>debug</div></div>';
         verify(htmlBuilt, htmlExpected);
     });
 
-    it('should be able to create the debug row', function() {
-        var htmlBuilt = buildDebugRow(1);
-        var htmlExpected = '<div class="row"><div id="debug_container_1"></div></div>';
+    it('should be able to create the debug container', function() {
+        var htmlBuilt = buildDebugContainer(1);
+        var htmlExpected = '<div id="debug_container_1"><a tite="Raw data" href="/rest/1.0/host_samples?category_and_sample_kind=JVM,heapUsed&from=&to=&output_count=500&pretty=true" target="_blank">See raw data</a></div>';
         verify(htmlBuilt, htmlExpected);
     });
 

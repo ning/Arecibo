@@ -152,3 +152,9 @@ function buildHostSampleUrl(hosts, sampleCategory, sampleKind, fromDate, toDate,
 
     return url;
 }
+
+function buildHostSampleUrlFromGraphId(graphId) {
+    var graph = getGraphMetaObjectById(graphId);
+    var hosts = Set.elements(graph.hosts);
+    return buildHostSampleUrl(hosts, graph.sampleCategory, graph.sampleKind, graph.startDate, graph.endDate, getDefaultNbSamples());
+}
