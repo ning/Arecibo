@@ -104,7 +104,7 @@ public interface CollectorConfig
 
     @Config("arecibo.collector.timelines.aggregationInterval")
     @Description("How often to check to see if there are timelines ready to be aggregated")
-    @Default("10m")
+    @Default("2h")
     TimeSpan getAggregationInterval();
 
     @Config("arecibo.collector.timelines.aggregationBatchSize")
