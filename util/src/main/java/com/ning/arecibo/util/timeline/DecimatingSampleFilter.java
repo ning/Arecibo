@@ -63,6 +63,7 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
     private final int outputCount;
     private final SampleConsumer sampleConsumer;
     private final TimeSpan pollingInterval;
+    private final DecimationMode decimationMode;
     private double samplesPerOutput;
     private double outputsPerSample;
     private int ceilSamplesPerOutput;
@@ -79,9 +80,10 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
      * @param outputCount The number of samples to generate
      * @param sampleCount The number of samples to be scanned.  sampleCount must be >= outputCount
      * @param pollingInterval The polling interval, used to compute sample counts assuming no gaps
+     * @param decimationMode The decimation mode determines how samples will be combined to crate an output point.
      * @param sampleConsumer The implementor of the SampleConsumer interface
      */
-    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, int sampleCount, TimeSpan pollingInterval, SampleConsumer sampleConsumer)
+    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, int sampleCount, TimeSpan pollingInterval, DecimationMode decimationMode, SampleConsumer sampleConsumer)
     {
         super(startTime, endTime);
         if (outputCount <= 0 || sampleCount <= 0 || outputCount > sampleCount)  {
@@ -89,6 +91,7 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
         }
         this.outputCount = outputCount;
         this.pollingInterval = pollingInterval;
+        this.decimationMode = decimationMode;
         this.sampleConsumer = sampleConsumer;
         initializeFilterHistory(sampleCount);
     }
@@ -99,13 +102,15 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
      * @param endTime The end time we're considering values, or null, meaning all time
      * @param outputCount The number of samples to generate
      * @param pollingInterval The polling interval, used to compute sample counts assuming no gaps
+     * @param decimationMode The decimation mode determines how samples will be combined to crate an output point.
      * @param sampleConsumer The implementor of the SampleConsumer interface
      */
-    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, TimeSpan pollingInterval, SampleConsumer sampleConsumer)
+    public DecimatingSampleFilter(DateTime startTime, DateTime endTime, int outputCount, TimeSpan pollingInterval, DecimationMode decimationMode, SampleConsumer sampleConsumer)
     {
         super(startTime, endTime);
         this.outputCount = outputCount;
         this.pollingInterval = pollingInterval;
+        this.decimationMode = decimationMode;
         this.sampleConsumer = sampleConsumer;
     }
 
@@ -153,6 +158,7 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
                 int maxIndex = 0;
                 int minIndex = 0;
                 double min = Double.MAX_VALUE;
+                double sum = 0.0;
                 double firstSum = 0.0;
                 double lastSum = 0.0;
                 for (int i=0; i<ceilSamplesPerOutput; i++) {
@@ -160,6 +166,7 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
                     final SampleState sample = filterHistory[index];
                     if (sample != null) {
                         final double doubleValue = sample.getDoubleValue();
+                        sum += doubleValue;
                         if (doubleValue > max) {
                             max = doubleValue;
                             maxIndex = index;
@@ -179,17 +186,26 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
                 final SampleState firstSample = filterHistory[(sampleNumber + ceilSamplesPerOutput - (ceilSamplesPerOutput - 1)) % ceilSamplesPerOutput];
                 final SampleState lastSample =  filterHistory[sampleNumber % ceilSamplesPerOutput];
                 final DateTime centerTime = firstSample != null ? new DateTime((firstSample.getTime().getMillis() + lastSample.getTime().getMillis()) >> 1) : lastSample.getTime();
-                if (firstSum > lastSum) {
-                    // The sample window is generally down with time - - pick the minimum
-                    final SampleState minSample = filterHistory[minIndex];
-                    sampleConsumer.consumeSample(sampleNumber, minSample.getSampleOpcode(), minSample.getValue(), centerTime);
+                switch (decimationMode) {
+                case PEAK_PICK:
+                    if (firstSum > lastSum) {
+                        // The sample window is generally down with time - - pick the minimum
+                        final SampleState minSample = filterHistory[minIndex];
+                        sampleConsumer.consumeSample(sampleNumber, minSample.getSampleOpcode(), minSample.getValue(), centerTime);
+                    }
+                    else {
+                        // The sample window is generally up with time - - pick the maximum
+                        final SampleState maxSample = filterHistory[maxIndex];
+                        sampleConsumer.consumeSample(sampleNumber, maxSample.getSampleOpcode(), maxSample.getValue(), centerTime);
+                    }
+                    break;
+                case AVERAGE:
+                    final double average = sum / ceilSamplesPerOutput;
+                    sampleConsumer.consumeSample(minIndex, SampleOpcode.DOUBLE, average, centerTime);
+                    break;
+                default:
+                    throw new IllegalStateException(String.format("The decimation filter mode %s is not recognized", decimationMode));
                 }
-                else {
-                    // The sample window is generally up with time - - pick the maximum
-                    final SampleState maxSample = filterHistory[maxIndex];
-                    sampleConsumer.consumeSample(sampleNumber, maxSample.getSampleOpcode(), maxSample.getValue(), centerTime);
-                }
-
             }
         }
     }

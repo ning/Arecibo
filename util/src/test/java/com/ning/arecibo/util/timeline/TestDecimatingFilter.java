@@ -34,7 +34,7 @@ public class TestDecimatingFilter {
         final List<Double> outputs = new ArrayList<Double>();
         final long millisStart = System.currentTimeMillis() - 2000 * 100;
 
-        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 100), 25, 100, new TimeSpan("2s"),
+        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 100), 25, 100, new TimeSpan("2s"), DecimationMode.PEAK_PICK,
                 new SampleConsumer() {
 
                     @Override
@@ -77,7 +77,7 @@ public class TestDecimatingFilter {
         final List<Double> outputs = new ArrayList<Double>();
         final long millisStart = System.currentTimeMillis() - 2000 * 21;
 
-        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 21), 6, 21, new TimeSpan("2s"),
+        final DecimatingSampleFilter filter = new DecimatingSampleFilter(new DateTime(millisStart), new DateTime(millisStart + 2000 * 21), 6, 21, new TimeSpan("2s"), DecimationMode.PEAK_PICK,
                 new SampleConsumer() {
 
                     @Override

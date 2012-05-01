@@ -23,6 +23,7 @@ import com.ning.arecibo.util.timeline.CSVSampleConsumer;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
+import com.ning.arecibo.util.timeline.DecimationMode;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
@@ -31,6 +32,7 @@ import com.ning.arecibo.util.timeline.chunks.TimelineChunksViews;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
+import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -145,6 +147,7 @@ public class HostDataResource
                                                 @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                                 @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                 @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                @QueryParam("decimation_mode") @DefaultValue("peak_pick") final String decimationModeStringString,
                                                 @QueryParam("output_count") final Integer outputCount,
                                                 @PathParam("host") final String hostName) throws IOException
     {
@@ -152,7 +155,7 @@ public class HostDataResource
             final Integer hostId = dao.getHostId(hostName);
             final Iterable<Integer> sampleKindIdsIterable = dao.getSampleKindIdsByHostId(hostId);
 
-            return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, outputCount, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>copyOf(sampleKindIdsIterable));
+            return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, decimationModeStringString, outputCount, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>copyOf(sampleKindIdsIterable));
         }
         catch (CacheLoader.InvalidCacheLoadException e) {
             throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -172,6 +175,7 @@ public class HostDataResource
                                                              @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                                              @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                              @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                             @QueryParam("decimation_mode") @DefaultValue("peak_pick") final String decimationModeStringString,
                                                              @QueryParam("output_count") final Integer outputCount,
                                                              @PathParam("host") final String hostName,
                                                              @PathParam("category_and_sample_kind") final String categoryAndSampleKind) throws IOException
@@ -181,7 +185,7 @@ public class HostDataResource
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
         final Integer sampleKindId = getSampleKindIdFromQueryParameter(categoryAndSampleKind);
-        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, outputCount, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(sampleKindId));
+        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, decimationModeStringString, outputCount, ImmutableList.<Integer>of(hostId), ImmutableList.<Integer>of(sampleKindId));
     }
 
     /**
@@ -232,6 +236,7 @@ public class HostDataResource
                                           @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                           @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                           @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                          @QueryParam("decimation_mode") @DefaultValue("peak_pick") final String decimationModeString,
                                           @QueryParam("output_count") final Integer outputCount,
                                           @QueryParam("host") final List<String> hostNames,
                                           @QueryParam("category_and_sample_kind") final List<String> categoriesAndSampleKinds)
@@ -241,7 +246,7 @@ public class HostDataResource
         }
         final List<Integer> hostIds = translateHostNamesToHostIds(hostNames);
         final List<Integer> sampleKindIds = translateCategoriesAndSampleKindsToSampleKindIds(categoriesAndSampleKinds);
-        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, outputCount, hostIds, sampleKindIds);
+        return getHostSamplesUsingIds(startTimeParameter, endTimeParameter, pretty, decodeSamples, compact, decimationModeString, outputCount, hostIds, sampleKindIds);
     }
 
     @GET
@@ -253,14 +258,21 @@ public class HostDataResource
                                                   @QueryParam("pretty") @DefaultValue("false") final boolean pretty,
                                                   @QueryParam("decode_samples") @DefaultValue("false") final boolean decodeSamples,
                                                   @QueryParam("compact") @DefaultValue("false") final boolean compact,
+                                                  @QueryParam("decimation_mode") @DefaultValue("peak_pick") final String decimationModeString,
                                                   @QueryParam("output_count") final Integer outputCount,
                                                   @QueryParam("host_id") final List<Integer> hostIds,
                                                   @QueryParam("sample_kind_id") final List<Integer> sampleKindIds)
     {
         final DateTime startTime = startTimeParameter.getValue();
         final DateTime endTime = endTimeParameter.getValue();
+        final DecimationMode decimationMode = DecimationMode.fromString(decimationModeString);
+        if (decimationMode == null) {
+            final String s = String.format("In getHostSamplesUsingIds(), the decimation_mode %s is not recognized", decimationModeString);
+            log.warn(s);
+            throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).entity(s).build());
+        }
 
-        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = createDecimatingSampleFilters(hostIds, sampleKindIds, startTime, endTime, outputCount);
+        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = createDecimatingSampleFilters(hostIds, sampleKindIds, decimationMode, startTime, endTime, outputCount);
 
         return new StreamingOutput()
         {
@@ -304,27 +316,27 @@ public class HostDataResource
     }
 
     @VisibleForTesting
-    Map<Integer, Map<Integer, DecimatingSampleFilter>> createDecimatingSampleFilters(final List<Integer> hostIds, final List<Integer> sampleKindIds,
+    Map<Integer, Map<Integer, DecimatingSampleFilter>> createDecimatingSampleFilters(final List<Integer> hostIds, final List<Integer> sampleKindIds, final DecimationMode decimationMode,
                                                                                      final DateTime startTime, final DateTime endTime, final Integer outputCount)
     {
         final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = new HashMap<Integer, Map<Integer, DecimatingSampleFilter>>();
         for (final Integer hostId : hostIds) {
             filters.put(hostId, new HashMap<Integer, DecimatingSampleFilter>());
             for (final Integer sampleKindId : sampleKindIds) {
-                filters.get(hostId).put(sampleKindId, createDecimatingSampleFilter(outputCount, startTime, endTime));
+                filters.get(hostId).put(sampleKindId, createDecimatingSampleFilter(outputCount, decimationMode, startTime, endTime));
             }
         }
         return filters;
     }
 
-    private DecimatingSampleFilter createDecimatingSampleFilter(final Integer outputCount, final DateTime startTime, final DateTime endTime)
+    private DecimatingSampleFilter createDecimatingSampleFilter(final Integer outputCount, final DecimationMode decimationMode, final DateTime startTime, final DateTime endTime)
     {
         final DecimatingSampleFilter rangeSampleProcessor;
         if (outputCount == null) {
             rangeSampleProcessor = null;
         }
         else {
-            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, config.getPollingInterval(), new CSVSampleConsumer());
+            rangeSampleProcessor = new DecimatingSampleFilter(startTime, endTime, outputCount, config.getPollingInterval(), decimationMode, new CSVSampleConsumer());
         }
         return rangeSampleProcessor;
     }

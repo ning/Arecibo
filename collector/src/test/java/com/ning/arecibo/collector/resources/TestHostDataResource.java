@@ -25,6 +25,7 @@ import com.ning.arecibo.collector.persistent.TimelineHostEventAccumulator;
 import com.ning.arecibo.event.MapEvent;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
+import com.ning.arecibo.util.timeline.DecimationMode;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
@@ -121,7 +122,7 @@ public class TestHostDataResource
 
         // The test is fast enough, the event won't be committed
         handler.handle(new MapEvent(System.currentTimeMillis(), EVENT_TYPE, UUID.randomUUID(), ImmutableMap.<String, Object>of("hostName", HOST_NAME_3, SAMPLE_KIND_1, 12, SAMPLE_KIND_2, 42)));
-        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = resource.createDecimatingSampleFilters(ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, null);
+        final Map<Integer, Map<Integer, DecimatingSampleFilter>> filters = resource.createDecimatingSampleFilters(ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), DecimationMode.PEAK_PICK, startTime, null, null);
         resource.writeJsonForInMemoryChunks(generator, mapper.writer(), filters, ImmutableList.<Integer>of(hostId3), ImmutableList.<Integer>of(sampleKindId1, sampleKindId2), startTime, null, false);
         Assert.assertTrue(output.size() > 0);
 
@@ -260,6 +261,7 @@ public class TestHostDataResource
                 true,
                 false,
                 false,
+                DecimationMode.PEAK_PICK.name(),
                 null,
                 hosts,
                 categoriesAndSampleKinds
