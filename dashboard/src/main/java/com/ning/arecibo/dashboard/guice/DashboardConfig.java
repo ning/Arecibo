@@ -56,4 +56,14 @@ public interface DashboardConfig
     @Description("Path to the super groups file (optional)")
     @DefaultNull
     String getSuperGroupsFile();
+
+    @Config("arecibo.dashboard.legendGroupsFile")
+    @Description("Path to the legend configuration file (optional)")
+    @DefaultNull
+    String getLegendGroupsFile();
+
+    @Config("arecibo.dashboard.legendFixturesFile")
+    @Description("Path to the legend fixtures file (optional)")
+    @DefaultNull
+    String getLegendFixturesFile();
 }
