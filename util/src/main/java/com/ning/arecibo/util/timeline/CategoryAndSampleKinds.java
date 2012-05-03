@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class CategoryAndSampleKinds
+public class CategoryAndSampleKinds implements Comparable<CategoryAndSampleKinds>
 {
     @JsonProperty
     private final String eventCategory;
@@ -96,5 +96,25 @@ public class CategoryAndSampleKinds
         int result = eventCategory.hashCode();
         result = 31 * result + sampleKinds.hashCode();
         return result;
+    }
+
+    @Override
+    public int compareTo(final CategoryAndSampleKinds o)
+    {
+        final int categoryComparison = eventCategory.compareTo(o.getEventCategory());
+        if (categoryComparison != 0) {
+            return categoryComparison;
+        }
+        else {
+            if (sampleKinds.size() > o.getSampleKinds().size()) {
+                return 1;
+            }
+            else if (sampleKinds.size() < o.getSampleKinds().size()) {
+                return -1;
+            }
+            else {
+                return 0;
+            }
+        }
     }
 }

@@ -66,4 +66,9 @@ public interface DashboardConfig
     @Description("Path to the legend fixtures file (optional)")
     @DefaultNull
     String getLegendFixturesFile();
+
+    @Config("arecibo.dashboard.sampleKindsUpdaterDelay")
+    @Description("Delay between sample kinds updates to the collector")
+    @Default("30s")
+    TimeSpan getSampleKindsUpdaterDelay();
 }

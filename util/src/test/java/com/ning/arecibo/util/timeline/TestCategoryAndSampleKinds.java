@@ -36,4 +36,31 @@ public class TestCategoryAndSampleKinds
         final CategoryAndSampleKinds kindsFromJson = mapper.readValue(json, CategoryAndSampleKinds.class);
         Assert.assertEquals(kindsFromJson, kinds);
     }
+
+    @Test(groups = "fast")
+    public void testComparison() throws Exception
+    {
+        final CategoryAndSampleKinds aKinds = new CategoryAndSampleKinds("JVM");
+        aKinds.addSampleKind("GC");
+        aKinds.addSampleKind("CPU");
+        Assert.assertEquals(aKinds.compareTo(aKinds), 0);
+
+        final CategoryAndSampleKinds bKinds = new CategoryAndSampleKinds("JVM");
+        bKinds.addSampleKind("GC");
+        bKinds.addSampleKind("CPU");
+        Assert.assertEquals(aKinds.compareTo(bKinds), 0);
+        Assert.assertEquals(bKinds.compareTo(aKinds), 0);
+
+        final CategoryAndSampleKinds cKinds = new CategoryAndSampleKinds("JVM");
+        cKinds.addSampleKind("GC");
+        cKinds.addSampleKind("CPU");
+        cKinds.addSampleKind("Something else");
+        Assert.assertTrue(aKinds.compareTo(cKinds) < 0);
+        Assert.assertTrue(cKinds.compareTo(aKinds) > 0);
+
+        final CategoryAndSampleKinds dKinds = new CategoryAndSampleKinds("ZVM");
+        dKinds.addSampleKind("GC");
+        Assert.assertTrue(aKinds.compareTo(dKinds) < 0);
+        Assert.assertTrue(dKinds.compareTo(aKinds) > 0);
+    }
 }
