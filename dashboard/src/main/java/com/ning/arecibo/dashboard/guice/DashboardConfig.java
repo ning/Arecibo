@@ -52,10 +52,10 @@ public interface DashboardConfig
     @Default("false")
     boolean isAlertManagerEnabled();
 
-    @Config("arecibo.dashboard.superGroupsFile")
-    @Description("Path to the super groups file (optional)")
+    @Config("arecibo.dashboard.customGroupsFile")
+    @Description("Path to the custom super groups file (optional)")
     @DefaultNull
-    String getSuperGroupsFile();
+    String getCustomGroupsFile();
 
     @Config("arecibo.dashboard.legendGroupsFile")
     @Description("Path to the legend configuration file (optional)")

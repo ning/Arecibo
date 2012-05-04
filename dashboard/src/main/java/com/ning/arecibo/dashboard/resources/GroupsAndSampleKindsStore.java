@@ -17,7 +17,7 @@
 package com.ning.arecibo.dashboard.resources;
 
 import com.ning.arecibo.collector.CollectorClient;
-import com.ning.arecibo.dashboard.config.SuperGroupsManager;
+import com.ning.arecibo.dashboard.config.CustomGroupsManager;
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 
@@ -47,7 +47,7 @@ public class GroupsAndSampleKindsStore
     private final Object updateMonitor = new Object();
     private final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor("sampleKindsUpdater");
 
-    private final SuperGroupsManager groupsManager;
+    private final CustomGroupsManager groupsManager;
     private final CollectorClient client;
     private final DashboardConfig config;
 
@@ -56,7 +56,7 @@ public class GroupsAndSampleKindsStore
     private String json = null;
 
     @Inject
-    public GroupsAndSampleKindsStore(final SuperGroupsManager groupsManager, final CollectorClient client, final DashboardConfig config)
+    public GroupsAndSampleKindsStore(final CustomGroupsManager groupsManager, final CollectorClient client, final DashboardConfig config)
     {
         this.groupsManager = groupsManager;
         this.client = client;

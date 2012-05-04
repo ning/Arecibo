@@ -17,46 +17,37 @@
 package com.ning.arecibo.dashboard.config;
 
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
-import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
-public class SuperGroupsManager
+public class CustomGroupsManager
 {
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private final Iterable<CategoryAndSampleKinds> kinds;
+    private final List<CustomGroup> customGroups = new ArrayList<CustomGroup>();
 
     @Inject
-    public SuperGroupsManager(final DashboardConfig config) throws IOException
+    public CustomGroupsManager(final DashboardConfig config) throws IOException
     {
-        if (config.getSuperGroupsFile() == null) {
-            kinds = ImmutableList.<CategoryAndSampleKinds>of();
-            return;
+        // Add custom groups if specified
+        if (config.getCustomGroupsFile() != null) {
+            final File superGroupsFile = new File(config.getCustomGroupsFile());
+            final List<CustomGroup> customGroups = mapper.readValue(superGroupsFile, new TypeReference<List<CustomGroup>>()
+            {
+            });
+            this.customGroups.addAll(customGroups);
         }
-
-        final File superGroupsFile = new File(config.getSuperGroupsFile());
-        final List<SuperGroup> groups = mapper.readValue(superGroupsFile, new TypeReference<List<SuperGroup>>()
-        {
-        });
-
-        final ImmutableList.Builder<CategoryAndSampleKinds> kindsBuilder = ImmutableList.<CategoryAndSampleKinds>builder();
-        for (final SuperGroup group : groups) {
-            kindsBuilder.add(group.asMetaCategoryAndSampleKinds());
-        }
-
-        kinds = kindsBuilder.build();
     }
 
-    public Iterable<CategoryAndSampleKinds> getAllKinds()
+    public List<CustomGroup> getCustomGroups()
     {
-        return kinds;
+        return customGroups;
     }
 }

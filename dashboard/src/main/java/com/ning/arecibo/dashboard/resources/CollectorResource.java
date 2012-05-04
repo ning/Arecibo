@@ -17,9 +17,8 @@
 package com.ning.arecibo.dashboard.resources;
 
 import com.ning.arecibo.collector.CollectorClient;
-import com.ning.arecibo.dashboard.config.SuperGroupsManager;
+import com.ning.arecibo.dashboard.config.LegendConfigurationsManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
-import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
@@ -37,7 +36,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +48,19 @@ import java.util.Map;
 @Path("/rest/1.0")
 public class CollectorResource
 {
-    private final SuperGroupsManager groupsManager;
+    private final GroupsAndSampleKindsStore groupsAndSampleKindsStore;
+    private final LegendConfigurationsManager legendsManager;
     private final CollectorClient client;
     private final GalaxyStatusManager manager;
 
     @Inject
-    public CollectorResource(final SuperGroupsManager groupsManager, final CollectorClient client, final GalaxyStatusManager manager)
+    public CollectorResource(final GroupsAndSampleKindsStore groupsAndSampleKindsStore,
+                             final LegendConfigurationsManager legendsManager,
+                             final CollectorClient client,
+                             final GalaxyStatusManager manager)
     {
-        this.groupsManager = groupsManager;
+        this.groupsAndSampleKindsStore = groupsAndSampleKindsStore;
+        this.legendsManager = legendsManager;
         this.client = client;
         this.manager = manager;
     }
@@ -91,20 +98,18 @@ public class CollectorResource
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
     @TimedResource
-    public Response getSampleKinds(@QueryParam("host") final List<String> hostNames,
+    public Response getSampleKinds(@Context final Request request,
                                    @QueryParam("callback") @DefaultValue("callback") final String callback)
     {
-        try {
-            final Iterable<CategoryAndSampleKinds> collectorSampleKinds = client.getSampleKinds(hostNames);
-            // Find super groups, if they exist
-            final Iterable<CategoryAndSampleKinds> superGroups = groupsManager.getAllKinds();
+        final String etag = groupsAndSampleKindsStore.getEtag();
+        final Response.ResponseBuilder responseBuilder = request.evaluatePreconditions(new EntityTag(etag));
+        if (responseBuilder != null) {
+            return responseBuilder.build();
+        }
 
-            final Iterable<CategoryAndSampleKinds> sampleKinds = ImmutableList.<CategoryAndSampleKinds>builder()
-                    .addAll(collectorSampleKinds)
-                    .addAll(superGroups)
-                    .build();
-            final JSONPObject object = new JSONPObject(callback, sampleKinds);
-            return Response.ok(object).build();
+        try {
+            final JSONPObject object = new JSONPObject(callback, groupsAndSampleKindsStore);
+            return Response.ok(object).tag(etag).build();
         }
         catch (RuntimeException t) {
             // Likely UniformInterfaceException from the collector client library
@@ -132,6 +137,16 @@ public class CollectorResource
             // Likely UniformInterfaceException from the collector client library
             throw new WebApplicationException(t.getCause(), buildServiceUnavailableResponse());
         }
+    }
+
+    @GET
+    @Path("/config")
+    @Produces(MediaType.APPLICATION_JSON)
+    @TimedResource
+    public Response getDashboardConfig(@QueryParam("callback") @DefaultValue("callback") final String callback)
+    {
+        final JSONPObject object = new JSONPObject(callback, legendsManager.getConfiguration());
+        return Response.ok(object).build();
     }
 
     private Response buildServiceUnavailableResponse()

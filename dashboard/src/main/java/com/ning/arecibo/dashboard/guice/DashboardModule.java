@@ -26,9 +26,11 @@ import com.ning.arecibo.collector.rest.DefaultCollectorClient;
 import com.ning.arecibo.dashboard.alert.AlertRESTClient;
 import com.ning.arecibo.dashboard.alert.AlertStatusManager;
 import com.ning.arecibo.dashboard.alert.ClusterAwareAlertClient;
-import com.ning.arecibo.dashboard.config.SuperGroupsManager;
+import com.ning.arecibo.dashboard.config.LegendConfigurationsManager;
+import com.ning.arecibo.dashboard.config.CustomGroupsManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
+import com.ning.arecibo.dashboard.resources.GroupsAndSampleKindsStore;
 import com.ning.arecibo.event.publisher.HdfsEventPublisher;
 import com.ning.arecibo.event.publisher.RandomEventServiceChooser;
 import com.ning.arecibo.util.Logger;
@@ -53,7 +55,9 @@ public class DashboardModule extends AbstractModule
         final CollectorClientConfig collectorClientConfig = new ConfigurationObjectFactory(System.getProperties()).build(CollectorClientConfig.class);
         bind(CollectorClientConfig.class).toInstance(collectorClientConfig);
 
-        bind(SuperGroupsManager.class).asEagerSingleton();
+        bind(CustomGroupsManager.class).asEagerSingleton();
+        bind(LegendConfigurationsManager.class).asEagerSingleton();
+        bind(GroupsAndSampleKindsStore.class).asEagerSingleton();
 
         configureServiceLocator(dashboardConfig);
         configureCollectorFinder(collectorClientConfig);

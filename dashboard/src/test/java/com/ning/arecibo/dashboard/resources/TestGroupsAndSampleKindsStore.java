@@ -17,7 +17,7 @@
 package com.ning.arecibo.dashboard.resources;
 
 import com.ning.arecibo.collector.CollectorClient;
-import com.ning.arecibo.dashboard.config.SuperGroupsManager;
+import com.ning.arecibo.dashboard.config.CustomGroupsManager;
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 
@@ -39,7 +39,7 @@ public class TestGroupsAndSampleKindsStore
         final DashboardConfig config = Mockito.mock(DashboardConfig.class);
         Mockito.when(config.getSampleKindsUpdaterDelay()).thenReturn(new TimeSpan("1h"));
 
-        final SuperGroupsManager groupsManager = new SuperGroupsManager(config);
+        final CustomGroupsManager groupsManager = new CustomGroupsManager(config);
 
         final AtomicReference<Iterable<CategoryAndSampleKinds>> kinds = new AtomicReference<Iterable<CategoryAndSampleKinds>>();
         kinds.set(ImmutableList.<CategoryAndSampleKinds>of());
@@ -96,7 +96,7 @@ public class TestGroupsAndSampleKindsStore
     {
         final DashboardConfig config = Mockito.mock(DashboardConfig.class);
         Mockito.when(config.getSampleKindsUpdaterDelay()).thenReturn(new TimeSpan("1h"));
-        final SuperGroupsManager groupsManager = new SuperGroupsManager(config);
+        final CustomGroupsManager groupsManager = new CustomGroupsManager(config);
         final CollectorClient client = Mockito.mock(CollectorClient.class);
 
         final GroupsAndSampleKindsStore store = new GroupsAndSampleKindsStore(groupsManager, client, config);

@@ -18,7 +18,6 @@ package com.ning.arecibo.dashboard.config;
 
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
 
-import com.google.common.collect.ImmutableList;
 import org.codehaus.jackson.annotate.JsonAutoDetect;
 import org.codehaus.jackson.annotate.JsonCreator;
 import org.codehaus.jackson.annotate.JsonProperty;
@@ -26,13 +25,13 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import java.util.List;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class SuperGroup
+public class CustomGroup
 {
     private final String name;
     private final List<CategoryAndSampleKinds> kinds;
 
     @JsonCreator
-    public SuperGroup(@JsonProperty("name") final String name, @JsonProperty("kinds") final List<CategoryAndSampleKinds> kinds)
+    public CustomGroup(@JsonProperty("name") final String name, @JsonProperty("kinds") final List<CategoryAndSampleKinds> kinds)
     {
         this.name = name;
         this.kinds = kinds;
@@ -48,23 +47,11 @@ public class SuperGroup
         return kinds;
     }
 
-    public CategoryAndSampleKinds asMetaCategoryAndSampleKinds()
-    {
-        final ImmutableList.Builder<String> sampleKinds = ImmutableList.<String>builder();
-        for (final CategoryAndSampleKinds member : kinds) {
-            for (final String attribute : member.getSampleKinds()) {
-                sampleKinds.add(String.format("%s::%s", member.getEventCategory(), attribute));
-            }
-        }
-
-        return new CategoryAndSampleKinds(name, sampleKinds.build());
-    }
-
     @Override
     public String toString()
     {
         final StringBuilder sb = new StringBuilder();
-        sb.append("SuperGroup");
+        sb.append("CustomGroup");
         sb.append("{name='").append(name).append('\'');
         sb.append(", kinds=").append(kinds);
         sb.append('}');
@@ -81,7 +68,7 @@ public class SuperGroup
             return false;
         }
 
-        final SuperGroup that = (SuperGroup) o;
+        final CustomGroup that = (CustomGroup) o;
 
         if (kinds != null ? !kinds.equals(that.kinds) : that.kinds != null) {
             return false;

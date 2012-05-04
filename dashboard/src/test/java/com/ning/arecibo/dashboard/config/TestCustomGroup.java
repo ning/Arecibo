@@ -23,7 +23,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class TestSuperGroup
+public class TestCustomGroup
 {
     private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -33,34 +33,16 @@ public class TestSuperGroup
         final CategoryAndSampleKinds kind = new CategoryAndSampleKinds("JVMMemory", ImmutableList.<String>of("heapUsed", "nonHeapUsed"));
 
         final String groupName = "JVM";
-        final SuperGroup group = new SuperGroup(groupName, ImmutableList.<CategoryAndSampleKinds>of(kind));
+        final CustomGroup group = new CustomGroup(groupName, ImmutableList.<CategoryAndSampleKinds>of(kind));
         Assert.assertEquals(group.getName(), groupName);
         Assert.assertEquals(group.getKinds().size(), 1);
 
         final String json = mapper.writeValueAsString(group);
         Assert.assertEquals(json, "{\"name\":\"JVM\",\"kinds\":[{\"eventCategory\":\"JVMMemory\",\"sampleKinds\":[\"nonHeapUsed\",\"heapUsed\"]}]}");
 
-        final SuperGroup parsedGroup = mapper.readValue(json.getBytes(), SuperGroup.class);
+        final CustomGroup parsedGroup = mapper.readValue(json.getBytes(), CustomGroup.class);
         Assert.assertEquals(parsedGroup, group);
         Assert.assertEquals(parsedGroup.getName(), groupName);
         Assert.assertEquals(parsedGroup.getKinds().size(), 1);
-    }
-
-    @Test(groups = "fast")
-    public void testAsMetaCategoryAndSampleKinds() throws Exception
-    {
-        final CategoryAndSampleKinds jvmKinds = new CategoryAndSampleKinds("JVMMemory", ImmutableList.<String>of("heapUsed", "nonHeapUsed"));
-        final CategoryAndSampleKinds cmsKinds = new CategoryAndSampleKinds("CMSOldGen", ImmutableList.<String>of("memoryPoolUsed", "memoryPoolMax"));
-
-        final String groupName = "Memory";
-        final SuperGroup group = new SuperGroup(groupName, ImmutableList.<CategoryAndSampleKinds>of(jvmKinds, cmsKinds));
-        final CategoryAndSampleKinds meta = group.asMetaCategoryAndSampleKinds();
-
-        Assert.assertEquals(meta.getEventCategory(), groupName);
-        Assert.assertTrue(meta.getSampleKinds().contains("JVMMemory::heapUsed"));
-        Assert.assertTrue(meta.getSampleKinds().contains("JVMMemory::nonHeapUsed"));
-        Assert.assertTrue(meta.getSampleKinds().contains("CMSOldGen::memoryPoolUsed"));
-        Assert.assertTrue(meta.getSampleKinds().contains("CMSOldGen::memoryPoolMax"));
-        Assert.assertEquals(ImmutableList.<String>copyOf(meta.getSampleKinds()).size(), 4);
     }
 }
