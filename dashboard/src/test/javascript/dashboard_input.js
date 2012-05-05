@@ -18,39 +18,44 @@ describe('The dashboard input form validator', function() {
     var broken = 'BROKEN!';
 
     it('should accept valid entries', function() {
-        spyOn(window, 'validateHostsInput').andReturn(null);
-        spyOn(window, 'validateSampleKindsInput').andReturn(null);
-        spyOn(window, 'validateDatesInput').andReturn(null);
+        var validations = new Arecibo.InputForm.Validations();
+        spyOn(validations, 'validateHostsInput').andReturn(null);
+        spyOn(validations, 'validateSampleKindsInput').andReturn(null);
+        spyOn(validations, 'validateDatesInput').andReturn(null);
 
-        expect(validateInput()).toBeNull();
+        expect(validations.validateInput()).toBeNull();
     });
 
     it('should reject an invalid hosts selection', function() {
-        spyOn(window, 'validateHostsInput').andReturn(broken);
-        spyOn(window, 'validateSampleKindsInput').andReturn(null);
-        spyOn(window, 'validateDatesInput').andReturn(null);
+        var validations = new Arecibo.InputForm.Validations();
+        spyOn(validations, 'validateHostsInput').andReturn(broken);
+        spyOn(validations, 'validateSampleKindsInput').andReturn(null);
+        spyOn(validations, 'validateDatesInput').andReturn(null);
 
-        expect(validateInput()).toBe(broken);
+        expect(validations.validateInput()).toBe(broken);
     });
 
     it('should reject an invalid sample kinds selection', function() {
-        spyOn(window, 'validateHostsInput').andReturn(null);
-        spyOn(window, 'validateSampleKindsInput').andReturn(broken);
-        spyOn(window, 'validateDatesInput').andReturn(null);
+        var validations = new Arecibo.InputForm.Validations();
+        spyOn(validations, 'validateHostsInput').andReturn(null);
+        spyOn(validations, 'validateSampleKindsInput').andReturn(broken);
+        spyOn(validations, 'validateDatesInput').andReturn(null);
 
-        expect(validateInput()).toBe(broken);
+        expect(validations.validateInput()).toBe(broken);
     });
 
     it('should reject an invalid dates selection', function() {
-        spyOn(window, 'validateHostsInput').andReturn(null);
-        spyOn(window, 'validateSampleKindsInput').andReturn(null);
-        spyOn(window, 'validateDatesInput').andReturn(broken);
+        var validations = new Arecibo.InputForm.Validations();
+        spyOn(validations, 'validateHostsInput').andReturn(null);
+        spyOn(validations, 'validateSampleKindsInput').andReturn(null);
+        spyOn(validations, 'validateDatesInput').andReturn(broken);
 
-        expect(validateInput()).toBe(broken);
+        expect(validations.validateInput()).toBe(broken);
     });
 });
 
 describe('The dashboard input form host validator', function() {
+    var validations;
     var hosts;
 
     beforeEach(function() {
@@ -62,31 +67,34 @@ describe('The dashboard input form host validator', function() {
         };
 
         spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+
+        validations = new Arecibo.InputForm.Validations();
     });
 
     it('should accept a single host selection', function() {
         hosts = ['hostA.company.com'];
-        expect(validateHostsInput()).toBeNull;
+        expect(validations.validateHostsInput()).toBeNull;
     });
 
     it('should accept a multiple hosts selection', function() {
         hosts = ['hostA.company.com', 'hostB.company.com'];
-        expect(validateHostsInput()).toBeNull;
+        expect(validations.validateHostsInput()).toBeNull;
     });
 
     it('should complain and not make a collector query if no host is selected', function() {
         hosts = [];
-        expect(validateHostsInput()).toBe('No host selected');
+        expect(validations.validateHostsInput()).toBe('No host selected');
 
         hosts = null;
-        expect(validateHostsInput()).toBe('No host selected');
+        expect(validations.validateHostsInput()).toBe('No host selected');
 
         hosts = undefined;
-        expect(validateHostsInput()).toBe('No host selected');
+        expect(validations.validateHostsInput()).toBe('No host selected');
     });
 });
 
 describe('The dashboard input form sample kind validator', function() {
+    var validations;
     var sampleKinds;
 
     beforeEach(function() {
@@ -98,31 +106,33 @@ describe('The dashboard input form sample kind validator', function() {
         };
 
         spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+        validations = new Arecibo.InputForm.Validations();
     });
 
     it('should accept a single sample kind selection', function() {
         sampleKinds = ['heapMax'];
-        expect(validateSampleKindsInput()).toBeNull;
+        expect(validations.validateSampleKindsInput()).toBeNull;
     });
 
     it('should accept a multiple sample kinds selection', function() {
         sampleKinds = ['heapMax', 'heapUsed'];
-        expect(validateSampleKindsInput()).toBeNull;
+        expect(validations.validateSampleKindsInput()).toBeNull;
     });
 
     it('should complain and not make a collector query if no sample kind is selected', function() {
         sampleKinds = [];
-        expect(validateSampleKindsInput()).toBe('No sample kind selected');
+        expect(validations.validateSampleKindsInput()).toBe('No sample kind selected');
 
         sampleKinds = null;
-        expect(validateSampleKindsInput()).toBe('No sample kind selected');
+        expect(validations.validateSampleKindsInput()).toBe('No sample kind selected');
 
         sampleKinds = undefined;
-        expect(validateSampleKindsInput()).toBe('No sample kind selected');
+        expect(validations.validateSampleKindsInput()).toBe('No sample kind selected');
     });
 });
 
 describe('The dashboard input form datetime validator', function() {
+    var validations;
     var firstCall = true;
     var startTime;
     var endTime;
@@ -138,40 +148,42 @@ describe('The dashboard input form datetime validator', function() {
                 return endTime;
             }
         });
+
+        validations = new Arecibo.InputForm.Validations();
     });
 
     it('should accept valid input times', function() {
         startTime = 'Wed, 11 Apr 2012 12:20';
         endTime = 'Thu, 26 Apr 2012 20:44';
-        expect(validateDatesInput()).toBeNull();
+        expect(validations.validateDatesInput()).toBeNull();
     });
 
     it('should accept valid input dates', function() {
         startTime = 'Wed, 11 Apr 2012';
         endTime = 'Thu, 12 Apr 2012';
-        expect(validateDatesInput()).toBeNull();
+        expect(validations.validateDatesInput()).toBeNull();
     });
 
     it('should complain and not make a collector query if the start time is greater than or equal to the end time', function () {
         startTime = 'Tue, 24 Apr 2012 08:21';
         endTime = 'Tue, 24 Apr 2012 08:20';
 
-        expect(validateDatesInput()).toBe('The start time is greater than or equal to the end time');
-        expect(validateDatesInput()).toBe('The start time is greater than or equal to the end time');
+        expect(validations.validateDatesInput()).toBe('The start time is greater than or equal to the end time');
+        expect(validations.validateDatesInput()).toBe('The start time is greater than or equal to the end time');
     });
 
     it('should complain and not make a collector query if times are bogus', function() {
         startTime = 'salut';
         endTime = 'Sat, 5 May 2012 00:00';
-        expect(validateDatesInput()).toBe('Invalid start time');
+        expect(validations.validateDatesInput()).toBe('Invalid start time');
 
         startTime = 'Fri, 4 May 2012 00:00';
         endTime = 'kikoo';
-        expect(validateDatesInput()).toBe('Invalid end time');
+        expect(validations.validateDatesInput()).toBe('Invalid end time');
 
         startTime = 'salut';
         endTime = 'kikoo';
         // We fail fast hence the error message on start time only
-        expect(validateDatesInput()).toBe('Invalid start time');
+        expect(validations.validateDatesInput()).toBe('Invalid start time');
     });
 });

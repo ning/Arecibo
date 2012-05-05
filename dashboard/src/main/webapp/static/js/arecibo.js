@@ -14,6 +14,27 @@
  * under the License.
  */
 
+window.Arecibo = {
+   namespace: function(namespace, obj) {
+       var parts = namespace.split('.');
+       var parent = window.Arecibo;
+
+       for(var i = 1, length = parts.length; i < length; i++) {
+           currentPart = parts[i];
+           parent[currentPart] = parent[currentPart] || {};
+           parent = parent[currentPart];
+       }
+
+       return parent;
+   },
+
+   keys: function(objj) {
+       var keys = [];
+       for (var key in obj) keys.push(key);
+       return keys;
+   }
+};
+
 // Main routine executed at page load time
 function setupAreciboUI() {
     // UI setup (Ajax handlers, etc.)
@@ -38,7 +59,7 @@ function setupAreciboUI() {
             localStorage.setItem("arecibo_latest_samples_end_lookup", samples_end_lookup);
         } catch (e) { /* Ignore quota issues, non supported Browsers, etc. */ }
 
-        var errorMessage = validateInput();
+        var errorMessage = new Arecibo.InputForm.Validations().validateInput();
         if (errorMessage) {
             alert(errorMessage);
         } else {
@@ -67,71 +88,6 @@ function samplesStartSelector() {
 // Return the selector for the samples end input
 function samplesEndSelector() {
     return $('#samples_end');
-}
-
-// Return null if the selection is valid, an error message otherwise
-function validateInput() {
-    var errorMessage = validateHostsInput();
-    if (errorMessage) {
-        return errorMessage;
-    }
-
-    errorMessage = validateSampleKindsInput();
-    if (errorMessage) {
-        return errorMessage;
-    }
-
-    errorMessage = validateDatesInput();
-    if (errorMessage) {
-        return errorMessage;
-    }
-
-    return null;
-}
-
-// Return null if the hosts selection is valid, an error message otherwise
-function validateHostsInput() {
-    var hostsSelected = findSelectedHosts();
-    if (!hostsSelected || hostsSelected.length == 0) {
-        return 'No host selected';
-    } else {
-        return null;
-    }
-}
-
-// Return null if the sample kinds selection is valid, an error message otherwise
-function validateSampleKindsInput() {
-    var sampleKindsSelected = findSelectedSampleKinds();
-    if (!sampleKindsSelected || sampleKindsSelected.length == 0) {
-        return 'No sample kind selected';
-    } else {
-        return null;
-    }
-}
-
-// Return null if the dates are valid, an error message otherwise
-function validateDatesInput() {
-    var samplesStartDate = null;
-    var samplesEndDate = null;
-
-    try {
-        samplesStartDate = new Date(samplesStartSelector().val());
-        samplesEndDate = new Date(samplesEndSelector().val());
-    } catch (err) {
-        return 'Invalid start and/or end time';
-    }
-
-    if (isNaN(samplesStartDate.getTime())) {
-        return 'Invalid start time';
-    } else if (isNaN(samplesEndDate.getTime())) {
-        return 'Invalid end time';
-    } else if (samplesStartDate === null || samplesEndDate === null) {
-        return 'Please specify a time range';
-    } else if (samplesStartDate.getTime() >= samplesEndDate.getTime()) {
-        return 'The start time is greater than or equal to the end time';
-    } else {
-        return null;
-    }
 }
 
 function updateHostsTree() {

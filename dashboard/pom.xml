@@ -184,7 +184,12 @@
                         <include>vendor/js/d3.layout.rickshaw-c25f467.min.js</include>
                         <include>vendor/js/jquery.cookie-1.2.1_rc3.js</include>
                         <include>vendor/js/jquery.dynatree-1.2.1_rc3.min.js</include>
-                        <include>js/*.js</include>
+                        <include>js/arecibo.js</include>
+                        <include>js/utils.js</include>
+                        <include>js/Arecibo.InputForm.Validations.js</include>
+                        <include>js/arecibo.js</include>
+                        <include>js/graph_controls.js</include>
+                        <include>js/graph.js</include>
                     </sourceIncludes>
                 </configuration>
             </plugin>
