@@ -21,9 +21,11 @@ import com.ning.arecibo.collector.persistent.TimelineEventHandler;
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.CSVSampleConsumer;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKindsForHosts;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.DecimationMode;
+import com.ning.arecibo.util.timeline.HostIdAndSampleKindId;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
@@ -32,7 +34,6 @@ import com.ning.arecibo.util.timeline.chunks.TimelineChunksViews;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
-import com.sun.jersey.core.spi.factory.ResponseBuilderImpl;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -113,21 +114,34 @@ public class HostDataResource
     @Path("/sample_kinds")
     @Produces(MediaType.APPLICATION_JSON)
     @TimedResource
-    public StreamingOutput getSampleKinds(@QueryParam("host") final List<String> hostNames,
-                                          @QueryParam("pretty") @DefaultValue("false") final boolean pretty)
+    public StreamingOutput getSampleKinds(@QueryParam("pretty") @DefaultValue("false") final boolean pretty)
     {
         try {
-            if (hostNames == null || hostNames.isEmpty()) {
-                final BiMap<Integer, CategoryIdAndSampleKind> sampleKinds = dao.getSampleKinds();
-                final Collection<CategoryAndSampleKinds> sampleKindsCollection = buildCategoryAndSampleKinds(sampleKinds.values());
-                return streamResponse(sampleKindsCollection, pretty);
+            final Map<Integer, CategoryAndSampleKindsForHosts> sampleKindsPerCategory = new HashMap<Integer, CategoryAndSampleKindsForHosts>();
+            final Iterable<HostIdAndSampleKindId> sampleKindsPerHost = dao.getSampleKindIdsForAllHosts();
+            for (final HostIdAndSampleKindId hostIdAndSampleKindId : sampleKindsPerHost) {
+                // Get hostname
+                final int hostId = hostIdAndSampleKindId.getHostId();
+                final String host = dao.getHost(hostId);
+
+                // Get event category and sample kind names
+                final int sampleKindId = hostIdAndSampleKindId.getSampleKindId();
+                final CategoryIdAndSampleKind categoryIdAndSampleKind = dao.getCategoryIdAndSampleKind(sampleKindId);
+                if (categoryIdAndSampleKind == null) {
+                    continue;
+                }
+                final int eventCategoryId = categoryIdAndSampleKind.getEventCategoryId();
+                final String sampleKind = categoryIdAndSampleKind.getSampleKind();
+
+                if (!sampleKindsPerCategory.containsKey(eventCategoryId)) {
+                    final String eventCategory = dao.getEventCategory(eventCategoryId);
+                    final CategoryAndSampleKindsForHosts sampleKinds = new CategoryAndSampleKindsForHosts(eventCategory);
+                    sampleKindsPerCategory.put(eventCategoryId, sampleKinds);
+                }
+                sampleKindsPerCategory.get(eventCategoryId).add(sampleKind, host);
             }
-            else {
-                // Return the union of all sample kinds available for these hosts
-                final Set<CategoryIdAndSampleKind> kindsForHosts = findCategoryIdsAndSampleKindsForHosts(hostNames);
-                final Collection<CategoryAndSampleKinds> sampleKindsCollection = buildCategoryAndSampleKinds(kindsForHosts);
-                return streamResponse(sampleKindsCollection, pretty);
-            }
+
+            return streamResponse(sampleKindsPerCategory.values(), pretty);
         }
         catch (CacheLoader.InvalidCacheLoadException e) {
             throw new WebApplicationException(e, Response.Status.NOT_FOUND);
@@ -475,19 +489,6 @@ public class HostDataResource
         }
 
         return sampleKindIds;
-    }
-
-    private Collection<CategoryAndSampleKinds> buildCategoryAndSampleKinds(final Iterable<CategoryIdAndSampleKind> kindsForHosts)
-    {
-        final Map<Integer, CategoryAndSampleKinds> categoryAndSampleKinds = new HashMap<Integer, CategoryAndSampleKinds>();
-        for (final CategoryIdAndSampleKind kind : kindsForHosts) {
-            if (categoryAndSampleKinds.get(kind.getEventCategoryId()) == null) {
-                final String eventCategory = dao.getEventCategory(kind.getEventCategoryId());
-                categoryAndSampleKinds.put(kind.getEventCategoryId(), new CategoryAndSampleKinds(eventCategory));
-            }
-            categoryAndSampleKinds.get(kind.getEventCategoryId()).addSampleKind(kind.getSampleKind());
-        }
-        return categoryAndSampleKinds.values();
     }
 
     private StreamingOutput streamResponse(final Iterable iterable, final boolean pretty)

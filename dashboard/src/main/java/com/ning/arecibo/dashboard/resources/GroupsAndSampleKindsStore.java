@@ -19,7 +19,7 @@ package com.ning.arecibo.dashboard.resources;
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.dashboard.config.CustomGroupsManager;
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
-import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKindsForHosts;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -34,6 +34,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +55,7 @@ public class GroupsAndSampleKindsStore
     private final CollectorClient client;
     private final DashboardConfig config;
 
-    private Iterable<CategoryAndSampleKinds> collectorSampleKinds = null;
+    private Iterable<CategoryAndSampleKindsForHosts> collectorSampleKinds = null;
     private String etag = HASH.hashLong(System.currentTimeMillis()).toString();
     private String json = null;
 
@@ -72,7 +76,7 @@ public class GroupsAndSampleKindsStore
             @Override
             public void run()
             {
-                final Iterable<CategoryAndSampleKinds> sampleKinds = client.getSampleKinds();
+                final Iterable<CategoryAndSampleKindsForHosts> sampleKinds = client.getSampleKinds();
                 if (sampleKinds != null) {
                     updateCacheIfNeeded(sampleKinds);
                 }
@@ -89,7 +93,7 @@ public class GroupsAndSampleKindsStore
         });
     }
 
-    void updateCacheIfNeeded(final Iterable<CategoryAndSampleKinds> newSampleKinds)
+    void updateCacheIfNeeded(final Iterable<CategoryAndSampleKindsForHosts> newSampleKinds)
     {
         if (collectorSampleKinds == null || !Iterables.elementsEqual(newSampleKinds, collectorSampleKinds)) {
             log.info("Detected change in sample kinds - updating cache");
@@ -97,11 +101,12 @@ public class GroupsAndSampleKindsStore
         }
     }
 
-    void cacheGroupsAndSampleKinds(final Iterable<CategoryAndSampleKinds> newSampleKinds)
+    void cacheGroupsAndSampleKinds(final Iterable<CategoryAndSampleKindsForHosts> newSampleKinds)
     {
         final ImmutableMap.Builder builder = new ImmutableMap.Builder();
         builder.put("groups", groupsManager.getCustomGroups());
         builder.put("sampleKinds", newSampleKinds);
+
         final ImmutableMap immutableMap = builder.build();
 
         final String newBytes;
@@ -120,7 +125,7 @@ public class GroupsAndSampleKindsStore
         }
     }
 
-    Iterable<CategoryAndSampleKinds> getCollectorSampleKinds()
+    Iterable<CategoryAndSampleKindsForHosts> getCollectorSampleKinds()
     {
         return collectorSampleKinds;
     }
