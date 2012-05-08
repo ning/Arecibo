@@ -18,14 +18,10 @@ package com.ning.arecibo.dashboard.resources;
 
 import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.dashboard.config.LegendConfigurationsManager;
-import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.util.timeline.SamplesForSampleKindAndHost;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Singleton;
 import org.codehaus.jackson.map.util.JSONPObject;
 
@@ -42,51 +38,44 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import java.util.List;
-import java.util.Map;
 
 @Singleton
 @Path("/rest/1.0")
 public class CollectorResource
 {
+    private final HostsStore hostsStore;
     private final GroupsAndSampleKindsStore groupsAndSampleKindsStore;
     private final LegendConfigurationsManager legendsManager;
     private final CollectorClient client;
-    private final GalaxyStatusManager manager;
 
     @Inject
-    public CollectorResource(final GroupsAndSampleKindsStore groupsAndSampleKindsStore,
+    public CollectorResource(final HostsStore hostsStore,
+                             final GroupsAndSampleKindsStore groupsAndSampleKindsStore,
                              final LegendConfigurationsManager legendsManager,
-                             final CollectorClient client,
-                             final GalaxyStatusManager manager)
+                             final CollectorClient client)
     {
+        this.hostsStore = hostsStore;
         this.groupsAndSampleKindsStore = groupsAndSampleKindsStore;
         this.legendsManager = legendsManager;
         this.client = client;
-        this.manager = manager;
     }
 
     @GET
     @Path("/hosts")
     @Produces(MediaType.APPLICATION_JSON)
     @TimedResource
-    public Response getHosts(@QueryParam("callback") @DefaultValue("callback") final String callback)
+    public Response getHosts(@Context final Request request,
+                             @QueryParam("callback") @DefaultValue("callback") final String callback)
     {
         try {
-            final ImmutableList.Builder<Map<String, String>> builder = new ImmutableList.Builder<Map<String, String>>();
-            final Iterable<String> hosts = client.getHosts();
-
-            for (final String hostName : hosts) {
-                builder.add(ImmutableMap.<String, String>of(
-                        "hostName", hostName,
-                        "globalZone", Strings.nullToEmpty(manager.getGlobalZone(hostName)),
-                        "configPath", Strings.nullToEmpty(manager.getConfigPath(hostName)),
-                        "configSubPath", Strings.nullToEmpty(manager.getConfigSubPath(hostName)),
-                        "coreType", Strings.nullToEmpty(manager.getCoreType(hostName))
-                ));
+            final String etag = hostsStore.getEtag();
+            final Response.ResponseBuilder responseBuilder = request.evaluatePreconditions(new EntityTag(etag));
+            if (responseBuilder != null) {
+                return responseBuilder.tag(etag).build();
             }
 
-            final JSONPObject object = new JSONPObject(callback, builder.build());
-            return Response.ok(object).build();
+            final JSONPObject object = new JSONPObject(callback, hostsStore);
+            return Response.ok(object).tag(etag).build();
         }
         catch (RuntimeException e) {
             // Likely UniformInterfaceException from the collector client library
@@ -104,7 +93,7 @@ public class CollectorResource
         final String etag = groupsAndSampleKindsStore.getEtag();
         final Response.ResponseBuilder responseBuilder = request.evaluatePreconditions(new EntityTag(etag));
         if (responseBuilder != null) {
-            return responseBuilder.build();
+            return responseBuilder.tag(etag).build();
         }
 
         try {

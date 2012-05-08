@@ -18,9 +18,9 @@ describe('The hosts checkbox tree', function () {
     var hostCategories;
     var hosts;
     var sampleKindsTreeRefreshed;
+    var hostsTree;
 
     beforeEach(function() {
-        window.arecibo.hosts_selected = [];
         hostCategories = [];
         hosts = [];
         sampleKindsTreeRefreshed = false;
@@ -53,6 +53,8 @@ describe('The hosts checkbox tree', function () {
         spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
         // Don't trigger the sample kinds tree refresh for this test
         spyOn(window, 'hostsSelected');
+
+        hostsTree = new Arecibo.InputForm.HostsTree();
     });
 
     it('should sort hosts categories alphabetically', function() {
@@ -66,7 +68,7 @@ describe('The hosts checkbox tree', function () {
                 hostName: 'hostA.company.com'
             }
         ];
-        populateHostsTree(hostData);
+        hostsTree.populateHostsTree(hostData);
 
         expect(hostCategories[0].title).toEqual('proxy/a');
         expect(hostCategories[1].title).toEqual('proxy/b');
@@ -88,7 +90,7 @@ describe('The hosts checkbox tree', function () {
                 hostName: 'hostA.company.com'
             }
         ];
-        populateHostsTree(hostData);
+        hostsTree.populateHostsTree(hostData);
 
         expect(hostCategories[0].title).toEqual('proxy');
         expect(hostCategories.length).toEqual(1);
@@ -109,7 +111,7 @@ describe('The hosts checkbox tree', function () {
                 hostName: 'hostB.company.com'
             }
         ];
-        populateHostsTree(hostData);
+        hostsTree.populateHostsTree(hostData);
 
         expect(hostCategories[0].title).toEqual('proxy/a');
         expect(hostCategories[0].isFolder).toBeTruthy();
@@ -148,21 +150,21 @@ describe('The hosts checkbox tree', function () {
             }
         ];
 
-        expect(window.arecibo.hosts_selected.length).toEqual(0);
+        expect(Set.size(hostsTree.getSelectedHosts())).toEqual(0);
 
-        populateHostsTree(hostData);
-        expect(window.arecibo.hosts_selected.length).toEqual(0);
+        hostsTree.populateHostsTree(hostData);
+        expect(Set.size(hostsTree.getSelectedHosts())).toEqual(0);
         expect(hostCategories[0].select).toBeFalsy();
         expect(hosts[0].select).toBeFalsy();
         expect(hostCategories[1].select).toBeFalsy();
         expect(hosts[1].select).toBeFalsy();
 
         hosts = [];
-        window.arecibo.hosts_selected.push({hostName: 'hostA.company.com', category: 'dont care, assignments come and go, we look at hostname only'});
-        expect(window.arecibo.hosts_selected.length).toEqual(1);
+        hostsTree.addSelectedHost({hostName: 'hostA.company.com', category: 'dont care, assignments come and go, we look at hostname only'});
+        expect(Set.size(hostsTree.getSelectedHosts())).toEqual(1);
 
-        populateHostsTree(hostData);
-        expect(window.arecibo.hosts_selected.length).toEqual(1);
+        hostsTree.populateHostsTree(hostData);
+        expect(Set.size(hostsTree.getSelectedHosts())).toEqual(1);
         expect(hostCategories[0].select).toBeFalsy();
         expect(hosts[0].select).toBeTruthy();
         expect(hostCategories[1].select).toBeFalsy();

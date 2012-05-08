@@ -186,7 +186,10 @@
                         <include>vendor/js/jquery.dynatree-1.2.1_rc3.min.js</include>
                         <include>js/arecibo.js</include>
                         <include>js/utils.js</include>
+                        <include>js/Arecibo.InputForm.LocalStore.js</include>
                         <include>js/Arecibo.InputForm.Validations.js</include>
+                        <include>js/Arecibo.InputForm.SampleKindsTree.js</include>
+                        <include>js/Arecibo.InputForm.HostsTree.js</include>
                         <include>js/arecibo.js</include>
                         <include>js/graph_controls.js</include>
                         <include>js/graph.js</include>

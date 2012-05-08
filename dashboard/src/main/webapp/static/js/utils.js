@@ -218,6 +218,12 @@ var Set = new function() {
         }
     }
 
+    this.remove = function(s, item) {
+        if (item) {
+            delete(s[item]);
+        }
+    }
+
     this.contains = function(s, item) {
         return s != undefined && s[item] === true;
     }
@@ -261,6 +267,17 @@ var Set = new function() {
         return diff;
     }
 
+    this.inter = function(s1, s2) {
+        var i = {};
+        for (var item in s1) {
+            if (s1[item] === true && s2[item] === true) {
+                i[item] = true;
+            }
+        }
+
+        return i;
+    }
+
     this.symdiff = function(s1, s2) {
         var diff1 = this.diff(s1, s2);
         var diff2 = this.diff(s2, s1);
@@ -279,5 +296,17 @@ var Set = new function() {
         }
 
         return size;
+    }
+
+    this.fromKeys = function(o) {
+        var s = this.makeSet();
+        var keys = [];
+        for (var i in o) {
+            if (o.hasOwnProperty(i)) {
+                Set.add(s, i);
+            }
+        }
+
+        return s;
     }
 }

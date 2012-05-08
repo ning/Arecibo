@@ -15,51 +15,18 @@
  */
 
 describe('The hosts uri builder', function () {
-    var hosts;
+    var hostsTree;
 
     beforeEach(function() {
-        window.arecibo = {};
-        hosts = [];
-
-        // Mock the dynatree
-        var fakeDynatree = {
-            getSelectedNodes: function() {
-                return hosts;
-            }
-        };
-        spyOn($.fn, 'dynatree').andReturn(fakeDynatree);
+        hostsTree = new Arecibo.InputForm.HostsTree();
     });
 
     it('should set the global window.arecibo.hosts_selected variable', function() {
-        hosts.push(
-            {
-                parent: {
-                    data: {
-                        title: 'proxy/a'
-                    }
-                },
-                data: {
-                    title: 'hostA.company.com'
-                }
-            },
-            {
-                parent: {
-                    data: {
-                        title: 'proxy/b'
-                    }
-                },
-                data: {
-                    title: 'hostB.company.com'
-                }
-            }
-        );
-        var uri = buildHostsParamsFromTree();
+        hostsTree.addSelectedHost('hostA.company.com');
+        hostsTree.addSelectedHost('hostB.company.com');
 
+        var uri = hostsTree.toURI();
         expect(uri).toEqual('host=hostA.company.com&host=hostB.company.com');
-
-        expect(window.arecibo.hosts_selected[0]).toEqual({hostName: 'hostA.company.com', category: 'proxy/a'});
-        expect(window.arecibo.hosts_selected[1]).toEqual({hostName: 'hostB.company.com', category: 'proxy/b'});
-        expect(window.arecibo.hosts_selected.length).toEqual(2);
     });
 });
 
@@ -116,6 +83,7 @@ describe('The hostsSelected callback routine', function () {
     var items;
     var areciboUri = 'the-machine';
     var hostUri = 'host=A';
+    var hostsTree;
 
     beforeEach(function() {
         window.arecibo = {
@@ -142,6 +110,8 @@ describe('The hostsSelected callback routine', function () {
         spyOn($, 'ajax');
 
         $('html,body').append($('<ul></ul>').attr('id', 'hosts_summary_list'));
+
+        hostsTree = new Arecibo.InputForm.HostsTree();
     });
 
     it('should refresh the sample kinds tree when a new host is selected', function() {

@@ -31,6 +31,7 @@ import com.ning.arecibo.dashboard.config.CustomGroupsManager;
 import com.ning.arecibo.dashboard.format.DashboardFormatManager;
 import com.ning.arecibo.dashboard.galaxy.GalaxyStatusManager;
 import com.ning.arecibo.dashboard.resources.GroupsAndSampleKindsStore;
+import com.ning.arecibo.dashboard.resources.HostsStore;
 import com.ning.arecibo.event.publisher.HdfsEventPublisher;
 import com.ning.arecibo.event.publisher.RandomEventServiceChooser;
 import com.ning.arecibo.util.Logger;
@@ -58,6 +59,7 @@ public class DashboardModule extends AbstractModule
         bind(CustomGroupsManager.class).asEagerSingleton();
         bind(LegendConfigurationsManager.class).asEagerSingleton();
         bind(GroupsAndSampleKindsStore.class).asEagerSingleton();
+        bind(HostsStore.class).asEagerSingleton();
 
         configureServiceLocator(dashboardConfig);
         configureCollectorFinder(collectorClientConfig);

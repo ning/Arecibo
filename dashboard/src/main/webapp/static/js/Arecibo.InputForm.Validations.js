@@ -20,18 +20,18 @@ Arecibo.InputForm.Validations = function() {
     var that = this;
 
     // Return null if the selection is valid, an error message otherwise
-    this.validateInput = function() {
-        var errorMessage = that.validateHostsInput();
+    this.validateInput = function(hosts, kinds, samplesStartSelector, samplesEndSelector) {
+        var errorMessage = that.validateHostsInput(hosts);
         if (errorMessage) {
             return errorMessage;
         }
 
-        errorMessage = that.validateSampleKindsInput();
+        errorMessage = that.validateSampleKindsInput(kinds);
         if (errorMessage) {
             return errorMessage;
         }
 
-        errorMessage = that.validateDatesInput();
+        errorMessage = that.validateDatesInput(samplesStartSelector, samplesEndSelector);
         if (errorMessage) {
             return errorMessage;
         }
@@ -44,9 +44,8 @@ Arecibo.InputForm.Validations = function() {
      *
      * @visibleForTesting
      */
-    this.validateHostsInput = function() {
-        var hostsSelected = findSelectedHosts();
-        if (!hostsSelected || hostsSelected.length == 0) {
+    this.validateHostsInput = function(hosts) {
+        if (Set.elements(hosts).length == 0) {
             return 'No host selected';
         } else {
             return null;
@@ -58,9 +57,8 @@ Arecibo.InputForm.Validations = function() {
      *
      * @visibleForTesting
      */
-    this.validateSampleKindsInput = function() {
-        var sampleKindsSelected = findSelectedSampleKinds();
-        if (!sampleKindsSelected || sampleKindsSelected.length == 0) {
+    this.validateSampleKindsInput = function(kinds) {
+        if (Set.elements(kinds).length == 0) {
             return 'No sample kind selected';
         } else {
             return null;
@@ -72,13 +70,13 @@ Arecibo.InputForm.Validations = function() {
      *
      * @visibleForTesting
      */
-    this.validateDatesInput = function() {
+    this.validateDatesInput = function(samplesStartSelector, samplesEndSelector) {
         var samplesStartDate = null;
         var samplesEndDate = null;
 
         try {
-            samplesStartDate = new Date(samplesStartSelector().val());
-            samplesEndDate = new Date(samplesEndSelector().val());
+            samplesStartDate = new Date(samplesStartSelector.val());
+            samplesEndDate = new Date(samplesEndSelector.val());
         } catch (err) {
             return 'Invalid start and/or end time';
         }
