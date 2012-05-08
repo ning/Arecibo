@@ -49,13 +49,14 @@ function setupAreciboUI() {
         window.arecibo.sample_kinds_selected = JSON.parse(localStorage.getItem("arecibo_latest_sample_kinds"));
     } catch (e) { /* Ignore quota issues, non supported Browsers, etc. */ }
 
-    // Update the hosts tree (and the summary box for hosts if any is selected)
-    window.arecibo.hostsTree = new Arecibo.InputForm.HostsTree();
-    window.arecibo.hostsTree.fetchHostsAndPopulateTree();
+    window.arecibo.sampleKindsTree = new Arecibo.InputForm.SampleKindsTree();
+    window.arecibo.hostsTree = new Arecibo.InputForm.HostsTree(window.arecibo.sampleKindsTree);
 
+    // Update the hosts tree (and the summary box for hosts if any is selected)
+    window.arecibo.hostsTree.fetchHostsAndPopulateTree();
+    // Setup the sample kinds tree when loaded
     $(document).live('hostsTree:loaded', function() {
-        window.arecibo.sampleKindsTree = new Arecibo.InputForm.SampleKindsTree();
-        window.arecibo.sampleKindsTree.fetchHostsAndPopulateTree();
+        window.arecibo.sampleKindsTree.fetchSampleKindsAndInitTree();
     });
 
     // Setup the Graph button

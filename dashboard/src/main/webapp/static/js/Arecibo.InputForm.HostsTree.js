@@ -16,7 +16,7 @@
 
 Arecibo.namespace('Arecibo.InputForm.HostsTree');
 
-Arecibo.InputForm.HostsTree = function() {
+Arecibo.InputForm.HostsTree = function(sampleKindsTree) {
     // Reference to currently selected hosts (set of hostnames)
     var selectedHosts = Arecibo.InputForm.LocalStore.getLatestHostsSelected();
     // Reference to the tree root node
@@ -146,28 +146,10 @@ Arecibo.InputForm.HostsTree = function() {
             }
         }
 
-        return;
-        // Below - TODO
-
-        // Verify if we need to update the sample kinds tree or not
-        var categoriesSelected = Set.makeSet(window.arecibo.hosts_selected, 'category');
-        if (Set.equals(categoriesSelected, window.arecibo.categories_selected)) {
-            return false;
-        } else {
-            window.arecibo.categories_selected = categoriesSelected;
-        }
-
-        try {
-            $("#sample_kinds_tree").dynatree("getRoot").removeChildren();
-        } catch(e){
-            // Ignore if the tree was empty
-        }
-
-        if (!uri) {
-            return false;
-        } else {
-            callArecibo('/rest/1.0/sample_kinds', 'populateSampleKindsTree');
-            return false;
+        // Verify if we need to update the tree
+        // TODO
+        if (true) {
+            sampleKindsTree.populateSampleKindsTree(selected, hosts);
         }
     };
 

@@ -195,6 +195,14 @@ function sort(array, key) {
     });
 }
 
+function sort2(array, key1, key2) {
+    return array.sort(function(a, b) {
+        var x = a[key1][key2];
+        var y = b[key1][key2];
+        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+    });
+}
+
 /*
  * Simple Set implementation
  */

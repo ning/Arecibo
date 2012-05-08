@@ -17,8 +17,13 @@
 Arecibo.namespace('Arecibo.InputForm.SampleKindsTree');
 
 Arecibo.InputForm.SampleKindsTree = function() {
+    var allKinds;
     // Reference to currently selected sample kinds
     var selectedSampleKinds = Arecibo.InputForm.LocalStore.getLatestSampleKindsSelected();
+    // Current groups drawn
+    var groupsDrawn = Set.makeSet();
+    // Current beans drawn
+    var beansDrawn = Set.makeSet();
     // Reference to the tree root node
     var rootNode = null;
     // Reference to the jQuery selector for the sample kinds tree
@@ -35,7 +40,7 @@ Arecibo.InputForm.SampleKindsTree = function() {
     /**
      * Call the dashboard core to get the list of sample kinds and populate the tree
      */
-    this.fetchHostsAndPopulateTree = function() {
+    this.fetchSampleKindsAndInitTree = function() {
         callArecibo('/rest/1.0/sample_kinds', 'populateSampleKindsTree', {
             beforeSend: function(xhr) {
                 var etag = Arecibo.InputForm.LocalStore.getSampleKindsEtag();
@@ -45,43 +50,83 @@ Arecibo.InputForm.SampleKindsTree = function() {
             },
             success: function(data, textStatus, xhr) {
                 if (xhr.status == 304) {
-                    data = Arecibo.InputForm.LocalStore.getSampleKinds();
+                    allKinds = Arecibo.InputForm.LocalStore.getSampleKinds();
                 } else {
                     // The sample kinds have been updated
                     data = JSON.parse(data);
+
+                    // Store them sorted
+                    var groups = sort(data.groups, 'name');
+                    var sampleKinds = sort2(data.sampleKinds, 'categoryAndSampleKinds', 'eventCategory');
+                    allKinds = {groups: groups, sampleKinds: sampleKinds};
+                    Arecibo.InputForm.LocalStore.setSampleKinds(allKinds);
+
                     etag = xhr.getResponseHeader('Etag');
-                    Arecibo.InputForm.LocalStore.setSampleKinds(data);
                     Arecibo.InputForm.LocalStore.setSampleKindsEtag(etag);
                 }
-                that.populateSampleKindsTree(data);
+                createRootNode();
             }
         });
     };
 
+    function isSampleKindForHosts(kind, hosts) {
+        for (var i in hosts) {
+            if (kind.hosts.indexOf(hosts[i]) != -1) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    function shouldDrawGroup(groupKinds, kindsToDraw) {
+        for (var i in groupKinds) {
+            var eventCategory = groupKinds[i].eventCategory;
+            var sampleKinds = groupKinds[i].sampleKinds;
+            for (var j in sampleKinds) {
+                var sampleKind = sampleKinds[j];
+                for (var k in kindsToDraw) {
+                    if (kindsToDraw[k].eventCategory == eventCategory && (kindsToDraw[k].sampleKinds.indexOf(sampleKind) != -1)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    };
+
     /**
      * Given a list of sample kinds, create the associated treeview
-     *
-     * @visibleForTesting
      */
-    this.populateSampleKindsTree = function(allKinds) {
-        // Create the tree
-        createRootNode();
+    this.populateSampleKindsTree = function(hostsSelected, hosts) {
+        // First, find the individual sample kinds to draw
+        var categoryAndSampleKindsForHosts = [];
+        var sampleKinds = allKinds.sampleKinds;
+        for (var i in sampleKinds) {
+            if (!isSampleKindForHosts(sampleKinds[i], hosts)) {
+                continue;
+            }
+            categoryAndSampleKindsForHosts.push(sampleKinds[i].categoryAndSampleKinds);
+        }
 
-        // Add groups first
-        var groups = sort(allKinds.groups, 'name');
+        // But add the groups first
+        var groups = allKinds.groups;
         for (var i in groups) {
             var groupName = groups[i].name;
             var categoriesAndSampleKinds = groups[i].kinds;
-            addCustomGroup(groupName, categoriesAndSampleKinds);
+            if (shouldDrawGroup(categoriesAndSampleKinds, categoryAndSampleKindsForHosts) && !Set.contains(groupsDrawn, groupName)) {
+                Set.add(groupsDrawn, groupName);
+                addCustomGroup(groupName, categoriesAndSampleKinds);
+            }
         }
 
         // Then add individual beans
-        var sampleKinds = sort(allKinds.sampleKinds, 'eventCategory');
-        for (var i in sampleKinds) {
-            var eventCategory = sampleKinds[i].eventCategory;
-            var sampleKindsForCategory = sampleKinds[i].sampleKinds;
-            var selected = isSampleKindSelectedAmongBean(sampleKinds[i]);
-            addBean(rootNode, eventCategory, sampleKindsForCategory, selected);
+        for (var i in categoryAndSampleKindsForHosts) {
+            var eventCategory = categoryAndSampleKindsForHosts[i].eventCategory;
+            var sampleKindsForCategory = categoryAndSampleKindsForHosts[i].sampleKinds;
+            var selected = isSampleKindSelectedAmongBean(categoryAndSampleKindsForHosts[i]);
+            if (!Set.contains(beansDrawn, eventCategory)) {
+                Set.add(beansDrawn, eventCategory);
+                addBean(rootNode, eventCategory, sampleKindsForCategory, selected);
+            }
         }
 
         // Update the summary box for sample kinds

@@ -20,6 +20,7 @@ import com.ning.arecibo.collector.CollectorClient;
 import com.ning.arecibo.dashboard.config.CustomGroupsManager;
 import com.ning.arecibo.dashboard.guice.DashboardConfig;
 import com.ning.arecibo.util.timeline.CategoryAndSampleKinds;
+import com.ning.arecibo.util.timeline.CategoryAndSampleKindsForHosts;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.Mockito;
@@ -41,14 +42,14 @@ public class TestGroupsAndSampleKindsStore
 
         final CustomGroupsManager groupsManager = new CustomGroupsManager(config);
 
-        final AtomicReference<Iterable<CategoryAndSampleKinds>> kinds = new AtomicReference<Iterable<CategoryAndSampleKinds>>();
-        kinds.set(ImmutableList.<CategoryAndSampleKinds>of());
+        final AtomicReference<Iterable<CategoryAndSampleKindsForHosts>> kinds = new AtomicReference<Iterable<CategoryAndSampleKindsForHosts>>();
+        kinds.set(ImmutableList.<CategoryAndSampleKindsForHosts>of());
 
         final CollectorClient client = Mockito.mock(CollectorClient.class);
-        Mockito.when(client.getSampleKinds()).thenAnswer(new Answer<Iterable<CategoryAndSampleKinds>>()
+        Mockito.when(client.getSampleKinds()).thenAnswer(new Answer<Iterable<CategoryAndSampleKindsForHosts>>()
         {
             @Override
-            public Iterable<CategoryAndSampleKinds> answer(final InvocationOnMock invocation) throws Throwable
+            public Iterable<CategoryAndSampleKindsForHosts> answer(final InvocationOnMock invocation) throws Throwable
             {
                 return kinds.get();
             }
@@ -70,10 +71,10 @@ public class TestGroupsAndSampleKindsStore
         }
 
         // Test collection update
-        final CategoryAndSampleKinds aKinds = new CategoryAndSampleKinds("JVM");
-        aKinds.addSampleKind("GC");
-        aKinds.addSampleKind("CPU");
-        kinds.set(ImmutableList.<CategoryAndSampleKinds>of(aKinds));
+        final CategoryAndSampleKindsForHosts aKinds = new CategoryAndSampleKindsForHosts("JVM");
+        //aKinds.addSampleKind("GC");
+        //aKinds.addSampleKind("CPU");
+        kinds.set(ImmutableList.<CategoryAndSampleKindsForHosts>of(aKinds));
         store.updateCacheIfNeeded(kinds.get());
         Assert.assertEquals(store.getJsonString(), "{\"groups\":[],\"sampleKinds\":[{\"eventCategory\":\"JVM\",\"sampleKinds\":[\"GC\",\"CPU\"]}]}");
         Assert.assertNotEquals(store.getEtag(), etag);
@@ -84,7 +85,7 @@ public class TestGroupsAndSampleKindsStore
         }
 
         // Create a new list - containing the same objects
-        kinds.set(ImmutableList.<CategoryAndSampleKinds>of(aKinds));
+        kinds.set(ImmutableList.<CategoryAndSampleKindsForHosts>of(aKinds));
         for (int i = 0; i < 10; i++) {
             store.updateCacheIfNeeded(kinds.get());
             Assert.assertEquals(store.getEtag(), etag);
@@ -105,28 +106,28 @@ public class TestGroupsAndSampleKindsStore
         Assert.assertNotNull(etag);
         Assert.assertNull(store.getJsonString());
 
-        store.cacheGroupsAndSampleKinds(ImmutableList.<CategoryAndSampleKinds>of());
-        Assert.assertEquals(ImmutableList.<CategoryAndSampleKinds>copyOf(store.getCollectorSampleKinds()).size(), 0);
+        store.cacheGroupsAndSampleKinds(ImmutableList.<CategoryAndSampleKindsForHosts>of());
+        Assert.assertEquals(ImmutableList.<CategoryAndSampleKindsForHosts>copyOf(store.getCollectorSampleKinds()).size(), 0);
         Assert.assertNotEquals(etag, store.getEtag());
         etag = store.getEtag();
         Assert.assertEquals(store.getJsonString(), "{\"groups\":[],\"sampleKinds\":[]}");
 
-        final CategoryAndSampleKinds aKinds = new CategoryAndSampleKinds("JVM");
-        aKinds.addSampleKind("GC");
-        aKinds.addSampleKind("CPU");
-        final CategoryAndSampleKinds bKinds = new CategoryAndSampleKinds("ZJVM");
-        bKinds.addSampleKind("GC");
-        bKinds.addSampleKind("CPU");
-        bKinds.addSampleKind("Something else");
+        final CategoryAndSampleKindsForHosts aKinds = new CategoryAndSampleKindsForHosts("JVM");
+        //aKinds.addSampleKind("GC");
+        //aKinds.addSampleKind("CPU");
+        final CategoryAndSampleKindsForHosts bKinds = new CategoryAndSampleKindsForHosts("ZJVM");
+        //bKinds.addSampleKind("GC");
+        //bKinds.addSampleKind("CPU");
+        //bKinds.addSampleKind("Something else");
 
-        store.cacheGroupsAndSampleKinds(ImmutableList.<CategoryAndSampleKinds>of(aKinds));
-        Assert.assertEquals(ImmutableList.<CategoryAndSampleKinds>copyOf(store.getCollectorSampleKinds()).size(), 1);
+        store.cacheGroupsAndSampleKinds(ImmutableList.<CategoryAndSampleKindsForHosts>of(aKinds));
+        Assert.assertEquals(ImmutableList.<CategoryAndSampleKindsForHosts>copyOf(store.getCollectorSampleKinds()).size(), 1);
         Assert.assertNotEquals(etag, store.getEtag());
         etag = store.getEtag();
         Assert.assertEquals(store.getJsonString(), "{\"groups\":[],\"sampleKinds\":[{\"eventCategory\":\"JVM\",\"sampleKinds\":[\"GC\",\"CPU\"]}]}");
 
-        store.cacheGroupsAndSampleKinds(ImmutableList.<CategoryAndSampleKinds>of(aKinds, bKinds));
-        Assert.assertEquals(ImmutableList.<CategoryAndSampleKinds>copyOf(store.getCollectorSampleKinds()).size(), 2);
+        store.cacheGroupsAndSampleKinds(ImmutableList.<CategoryAndSampleKindsForHosts>of(aKinds, bKinds));
+        Assert.assertEquals(ImmutableList.<CategoryAndSampleKindsForHosts>copyOf(store.getCollectorSampleKinds()).size(), 2);
         Assert.assertNotEquals(etag, store.getEtag());
         Assert.assertEquals(store.getJsonString(), "{\"groups\":[],\"sampleKinds\":[{\"eventCategory\":\"JVM\",\"sampleKinds\":[\"GC\",\"CPU\"]},{\"eventCategory\":\"ZJVM\",\"sampleKinds\":[\"GC\",\"Something else\",\"CPU\"]}]}");
     }
