@@ -118,6 +118,11 @@ Arecibo.InputForm.SampleKindsTree = function() {
             if (shouldDrawGroup(categoriesAndSampleKinds, categoryAndSampleKindsForHosts) && !Set.contains(groupsDrawn, groupName)) {
                 Set.add(groupsDrawn, groupName);
                 addCustomGroup(groupName, categoriesAndSampleKinds);
+
+                // Note the beans that the group covers, so we won't draw the individual beans if they're already covered
+                for (var j in categoriesAndSampleKinds) {
+                    Set.add(beansDrawn, categoriesAndSampleKinds[j].eventCategory);
+                }
             }
         }
 
