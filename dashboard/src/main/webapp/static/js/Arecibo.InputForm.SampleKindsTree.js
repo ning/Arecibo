@@ -24,6 +24,8 @@ Arecibo.InputForm.SampleKindsTree = function() {
     var groupsDrawn = Set.makeSet();
     // Current beans drawn
     var beansDrawn = Set.makeSet();
+    // Current hosts selected
+    var selectedHosts = Set.makeSet();
     // Reference to the tree root node
     var rootNode = null;
     // Reference to the jQuery selector for the sample kinds tree
@@ -100,6 +102,44 @@ Arecibo.InputForm.SampleKindsTree = function() {
      * Given a list of sample kinds, create the associated treeview
      */
     this.populateSampleKindsTree = function(hostsSelected, hosts) {
+        try {
+            rootNode.removeChildren();
+        } catch(e){
+            // Ignore if the tree was empty
+        }
+        groupsDrawn = Set.makeSet();
+        beansDrawn = Set.makeSet();
+
+        // There is a subtlety here...
+        // We can't just past the hosts array, which are the hosts the user just
+        // (de-)selected, to the populateSampleKindsForHosts routine.
+        // Imagine a core type T and a set of hosts A, B and C. Say, B differs
+        // from A and C and exposes a different set of mbeans (e.g. dynamic mbeans).
+        // If the user clicks A then C, nothing happens. When he clicks B, the new
+        // mbeans specific to B should be exposed. But de-selecting A or C should
+        // not remove B specific mbeans. If B is de-selected however, they should
+        // be removed.
+        // The selectedHosts set takes care of this logic
+        for (var i in hosts) {
+            if (hostsSelected) {
+                Set.add(selectedHosts, hosts[i]);
+            } else {
+                Set.remove(selectedHosts, hosts[i]);
+            }
+        }
+
+        // (Re-)Add the nodes
+        populateSampleKindsForHosts(Set.elements(selectedHosts));
+
+        // Update the summary box for sample kinds
+        updateSampleKindsSelectedSummary();
+    };
+
+    /**
+     * Given a set of hosts, find the union of all groups and beans associated,
+     * and add the corresponding nodes to the tree
+     */
+    function populateSampleKindsForHosts(hosts) {
         // First, find the individual sample kinds to draw
         var categoryAndSampleKindsForHosts = [];
         var sampleKinds = allKinds.sampleKinds;
@@ -136,9 +176,6 @@ Arecibo.InputForm.SampleKindsTree = function() {
                 addBean(rootNode, eventCategory, sampleKindsForCategory, selected);
             }
         }
-
-        // Update the summary box for sample kinds
-        updateSampleKindsSelectedSummary();
     };
 
     /**

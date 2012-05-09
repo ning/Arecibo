@@ -153,6 +153,8 @@ Arecibo.InputForm.HostsTree = function(sampleKindsTree) {
         }
 
         // Verify if we need to update the tree
+        // This is potentially tricky as different hosts belonging to the
+        // same core type may expose different beans (e.g. collector queues)
         // TODO
         if (true) {
             sampleKindsTree.populateSampleKindsTree(selected, hosts);
