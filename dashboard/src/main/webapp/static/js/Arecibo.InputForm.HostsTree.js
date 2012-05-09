@@ -89,6 +89,12 @@ Arecibo.InputForm.HostsTree = function(sampleKindsTree) {
 
         // Signal that the sample kinds tree can be loaded
         $(document).trigger('hostsTree:loaded');
+
+        // When the sample kinds tree has been loaded, draw the sample kinds associated
+        // with the host(s) previously selected (if any)
+        $(document).live('sampleKindsTree:loaded', function() {
+            sampleKindsTree.populateSampleKindsTree(true, Set.elements(selectedHosts));
+        })
     };
 
     /**

@@ -65,6 +65,9 @@ Arecibo.InputForm.SampleKindsTree = function() {
                     Arecibo.InputForm.LocalStore.setSampleKindsEtag(etag);
                 }
                 createRootNode();
+
+                // Signal that the sample kinds tree has been loaded
+                $(document).trigger('sampleKindsTree:loaded');
             }
         });
     };
