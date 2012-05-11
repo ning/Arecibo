@@ -16,6 +16,31 @@
 
 package com.ning.arecibo.collector.persistent;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
+import javax.annotation.Nullable;
+
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.weakref.jmx.Managed;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -37,30 +62,6 @@ import com.ning.arecibo.util.timeline.persistent.Replayer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
-
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.weakref.jmx.Managed;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class TimelineEventHandler implements EventHandler
 {
@@ -111,6 +112,7 @@ public class TimelineEventHandler implements EventHandler
 
     private final CollectorConfig config;
     private final TimelineDAO timelineDAO;
+    private final TimelineCoder timelineCoder;
     private final BackgroundDBChunkWriter backgroundWriter;
     private final FileBackedBuffer backingBuffer;
 
@@ -138,10 +140,11 @@ public class TimelineEventHandler implements EventHandler
     private EventReplayingLoadGenerator loadGenerator = null;
 
     @Inject
-    public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final BackgroundDBChunkWriter backgroundWriter, final FileBackedBuffer fileBackedBuffer)
+    public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final TimelineCoder timelineCoder, final BackgroundDBChunkWriter backgroundWriter, final FileBackedBuffer fileBackedBuffer)
     {
         this.config = config;
         this.timelineDAO = timelineDAO;
+        this.timelineCoder = timelineCoder;
         this.backgroundWriter = backgroundWriter;
         this.backingBuffer = fileBackedBuffer;
         this.shutdownSaveMode = ShutdownSaveMode.fromString(config.getShutdownSaveMode());
@@ -267,7 +270,7 @@ public class TimelineEventHandler implements EventHandler
         TimelineHostEventAccumulator accumulator = hostCategoryAccumulators.get(categoryId);
         if (accumulator == null) {
             addedHostEventAccumulatorCount.incrementAndGet();
-            accumulator = new TimelineHostEventAccumulator(timelineDAO, backgroundWriter, hostId, categoryId, firstSampleTime, timelineLengthMillis);
+            accumulator = new TimelineHostEventAccumulator(timelineDAO, timelineCoder, backgroundWriter, hostId, categoryId, firstSampleTime, timelineLengthMillis);
             hostCategoryAccumulators.put(categoryId, accumulator);
             log.debug("Created new Timeline for hostId [{}] and category [{}]", hostId, categoryId);
         }
@@ -331,7 +334,7 @@ public class TimelineEventHandler implements EventHandler
             }
 
             // This accumulator is in the right time range, now return only the sample kinds specified
-            final byte[] timeBytes = TimelineCoder.compressDateTimes(accumulatorTimes);
+            final byte[] timeBytes = timelineCoder.compressDateTimes(accumulatorTimes);
             for (final TimelineChunkAccumulator chunkAccumulator : accumulator.getTimelines().values()) {
                 if (sampleKindIds.contains(chunkAccumulator.getSampleKindId())) {
                     // Extract the timeline for this chunk by copying it and reading encoded bytes

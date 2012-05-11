@@ -27,7 +27,7 @@ import java.util.List;
 
 import com.ning.arecibo.util.Logger;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
-import com.ning.arecibo.util.timeline.times.TimeCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursorImpl;
 
 /**
  * Instances of this class encode sample streams.  In addition, this class
@@ -72,7 +72,6 @@ public class SampleCoder {
         this.byteStream.write(bytes);
         this.lastSample = lastSample;
         this.sampleCount = sampleCount;
-
     }
 
     public void addSampleList(final List<ScalarSample> samples)
@@ -692,7 +691,7 @@ public class SampleCoder {
     {
         final ByteArrayInputStream byteStream = new ByteArrayInputStream(samples);
         final DataInputStream inputStream = new DataInputStream(byteStream);
-        final TimeCursor timeCursor = new TimeCursor(times, sampleCount);
+        final TimelineCursorImpl timeCursor = new TimelineCursorImpl(times, sampleCount);
         int sampleNumber = 0;
         while (true) {
             final int opcodeByte;

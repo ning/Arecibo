@@ -38,6 +38,7 @@ import com.ning.arecibo.util.timeline.samples.RepeatSample;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 /**
  * This class represents a collection of timeline chunks, one for each sample
@@ -75,6 +76,7 @@ public class TimelineHostEventAccumulator
     private long pendingChunkMapIdCounter = 1;
 
     private final BackgroundDBChunkWriter backgroundWriter;
+    private final TimelineCoder timelineCoder;
     private final Integer timelineLengthMillis;
     private final int hostId;
     private final int eventCategoryId;
@@ -98,11 +100,12 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final TimelineDAO dao, final BackgroundDBChunkWriter backgroundWriter,
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final TimelineCoder timelineCoder, final BackgroundDBChunkWriter backgroundWriter,
             final int hostId, final int eventCategoryId, final DateTime firstSampleTime, Integer timelineLengthMillis)
     {
         this.timelineLengthMillis = timelineLengthMillis;
         this.backgroundWriter = backgroundWriter;
+        this.timelineCoder = timelineCoder;
         this.hostId = hostId;
         this.eventCategoryId = eventCategoryId;
         // Set the end-of-chunk time by tossing a random number, to evenly distribute the db writeback load.
@@ -114,9 +117,9 @@ public class TimelineHostEventAccumulator
      * created, but because the chunkEndTime is way in the future, doesn't initiate
      * chunk writes.
      */
-    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, Integer hostId, int eventTypeId, DateTime firstSampleTime)
+    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, TimelineCoder timelineCoder, Integer hostId, int eventTypeId, DateTime firstSampleTime)
     {
-        this(timelineDAO, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, firstSampleTime, Integer.MAX_VALUE);
+        this(timelineDAO, timelineCoder, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, firstSampleTime, Integer.MAX_VALUE);
     }
 
     @SuppressWarnings("unchecked")
@@ -205,7 +208,7 @@ public class TimelineHostEventAccumulator
     {
         if (times.size() > 0) {
             final Map<Integer, TimelineChunk> chunkMap = new HashMap<Integer, TimelineChunk>();
-            final byte[] timeBytes = TimelineCoder.compressDateTimes(times);
+            final byte[] timeBytes = timelineCoder.compressDateTimes(times);
             for (final Map.Entry<Integer, TimelineChunkAccumulator> entry : timelines.entrySet()) {
                 final int sampleKindId = entry.getKey();
                 final TimelineChunkAccumulator accumulator = entry.getValue();

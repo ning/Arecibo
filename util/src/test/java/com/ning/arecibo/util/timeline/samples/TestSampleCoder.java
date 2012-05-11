@@ -23,13 +23,16 @@ import com.ning.arecibo.util.timeline.samples.RepeatSample;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
-import com.ning.arecibo.util.timeline.times.TimeCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursorImpl;
 import com.ning.arecibo.util.timeline.times.TimeRangeSampleProcessor;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 import org.apache.commons.codec.binary.Hex;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -42,13 +45,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestSampleCoder
 {
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
+
     @Test(groups = "fast")
     public void testScan() throws Exception
     {
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
         final DateTime endTime = startTime.plusSeconds(5);
         final List<DateTime> dateTimes = ImmutableList.<DateTime>of(startTime.plusSeconds(1), startTime.plusSeconds(2), startTime.plusSeconds(3), startTime.plusSeconds(4));
-        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
 
 
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -73,15 +79,15 @@ public class TestSampleCoder
     @Test(groups = "fast")
     public void testTimeRangeSampleProcessor() throws Exception
     {
-        final DateTime startTime = new DateTime("2012-03-23T17:35:11.707Z");
-        final DateTime endTime = new DateTime("2012-03-23T17:35:17.924Z");
+        final DateTime startTime = new DateTime(dateFormatter.parseDateTime("2012-03-23T17:35:11.000Z"));
+        final DateTime endTime = new DateTime(dateFormatter.parseDateTime("2012-03-23T17:35:17.000Z"));
         final int sampleCount = 2;
 
         final List<DateTime> dateTimes = ImmutableList.<DateTime>of(startTime, endTime);
-        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
-        final TimeCursor cursor = new TimeCursor(compressedTimes, sampleCount);
-        Assert.assertEquals(cursor.getNextTime(), DateTimeUtils.unixSeconds(startTime));
-        Assert.assertEquals(cursor.getNextTime(), DateTimeUtils.unixSeconds(endTime));
+        final byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
+        final TimelineCursorImpl cursor = new TimelineCursorImpl(compressedTimes, sampleCount);
+        Assert.assertEquals(cursor.getNextTime(), startTime);
+        Assert.assertEquals(cursor.getNextTime(), endTime);
 
         // 2 x the value 12: REPEAT_BYTE, SHORT, 2, SHORT, 12 (2 bytes)
         final byte[] samples = new byte[]{(byte)0xff, 2, 2, 0, 12};

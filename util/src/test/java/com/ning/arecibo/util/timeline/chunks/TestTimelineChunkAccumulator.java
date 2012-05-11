@@ -23,17 +23,17 @@ import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
-import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.chunks.TimelineChunkDecoded;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.SampleProcessor;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
-import com.ning.arecibo.util.timeline.times.TimeCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursor;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
-public class TestTimelineChunkAccumulator {
+public class TestTimelineChunkAccumulator
+{
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     @SuppressWarnings("unchecked")
     @Test(groups="fast")
@@ -60,7 +60,7 @@ public class TestTimelineChunkAccumulator {
         accum.addSample(new ScalarSample(SampleOpcode.STRING, new String("Hiya!")));
         dateTimes.add(startTime.plusSeconds(30 * timesCounter++));
 
-        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
         final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
         Assert.assertEquals(chunk.getSampleCount(), 9);
         // Now play them back
@@ -68,7 +68,7 @@ public class TestTimelineChunkAccumulator {
             private int sampleNumber = 0;
 
             @Override
-            public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+            public void processSamples(TimelineCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
                 if (sampleNumber == 0) {
                     Assert.assertEquals(opcode, SampleOpcode.INT);
                     Assert.assertEquals(value, new Integer(25));
@@ -110,7 +110,7 @@ public class TestTimelineChunkAccumulator {
             accum.addSample(SampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
         }
         final DateTime endTime = startTime.plusSeconds(5 * byteRepeaterCount);
-        byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
         final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
         final byte[] samples = chunk.getSamples();
         // Should be 0xFF 0xFF 0x12 0x02
@@ -123,7 +123,7 @@ public class TestTimelineChunkAccumulator {
         SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
 
             @Override
-            public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+            public void processSamples(TimelineCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
                 Assert.assertEquals(sampleCount, byteRepeaterCount);
                 Assert.assertEquals(value, 2.0);
             }
@@ -144,7 +144,7 @@ public class TestTimelineChunkAccumulator {
             accum.addSample(SampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
         }
         final DateTime endTime = startTime.plusSeconds(5 * shortRepeaterCount);
-        final byte[] compressedTimes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
         final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
         final byte[] samples = chunk.getSamples();
         Assert.assertEquals(samples.length, 5);
@@ -158,7 +158,7 @@ public class TestTimelineChunkAccumulator {
         SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
 
             @Override
-            public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+            public void processSamples(TimelineCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
                 Assert.assertEquals(sampleCount, shortRepeaterCount);
                 Assert.assertEquals(value, 2.0);
             }

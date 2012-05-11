@@ -41,6 +41,8 @@ import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 import com.ning.jersey.metrics.TimedResourceModule;
 import com.yammer.metrics.core.HealthCheck;
 import com.yammer.metrics.guice.InstrumentationModule;
@@ -68,6 +70,7 @@ public class CollectorModule extends AbstractModule
 
         configureFileBackedBuffer(config);
         configureDao();
+        configureTimelineObjects();
         configureTimelineAggregator();
         configureBackgroundDBChunkWriter();
         configureStats();
@@ -104,6 +107,11 @@ public class CollectorModule extends AbstractModule
         bind(DBI.class).toProvider(new DBIProvider(System.getProperties(), "arecibo.collector.db")).asEagerSingleton();
         bind(IDBI.class).to(Key.get(DBI.class)).asEagerSingleton();
         bind(TimelineDAO.class).toProvider(CachingDefaultTimelineDAOProvider.class).asEagerSingleton();
+    }
+
+    protected void configureTimelineObjects()
+    {
+        bind(TimelineCoder.class).to(TimelineCoderImpl.class).asEagerSingleton();
     }
 
     protected void configureTimelineAggregator()

@@ -29,7 +29,7 @@ import com.ning.arecibo.util.timeline.DateTimeUtils;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.SampleProcessor;
-import com.ning.arecibo.util.timeline.times.TimeCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursor;
 
 public class TimelineChunkDecoded {
     private static final Logger log = Logger.getLogger(TimelineChunkDecoded.class);
@@ -77,12 +77,11 @@ public class TimelineChunkDecoded {
         final StringBuilder builder = new StringBuilder();
 
         @Override
-        public void processSamples(TimeCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
+        public void processSamples(TimelineCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
             if (builder.length() > 0) {
                 builder.append(", ");
             }
-            final int nextTime = timeCursor.getNextTime();
-            final DateTime timestamp = DateTimeUtils.dateTimeFromUnixSeconds(nextTime);
+            final DateTime timestamp = timeCursor.getNextTime();
             builder.append("at ").append(timestamp.toString("yyyy-MM-dd HH:mm:ss")).append(" ");
             if (sampleCount > 1) {
                 builder.append(sampleCount).append(" of ");

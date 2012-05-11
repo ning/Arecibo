@@ -43,6 +43,8 @@ import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 @Guice(moduleFactory = TestModulesFactory.class)
 public class TestTimelineAggregator
@@ -54,6 +56,7 @@ public class TestTimelineAggregator
     private static final String MIN_HEAPUSED_KIND = "min_heapUsed";
     private static final String MAX_HEAPUSED_KIND = "max_heapUsed";
     private static final DateTime START_TIME = new DateTime(DateTimeZone.UTC);
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     @Inject
     MysqlTestingHelper helper;
@@ -155,7 +158,7 @@ public class TestTimelineAggregator
     private void createAOneHourTimelineChunk(final int startTimeMinutesAgo) throws IOException
     {
         final DateTime firstSampleTime = START_TIME.minusMinutes(startTimeMinutesAgo);
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, hostId, EVENT_TYPE_ID, firstSampleTime);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, timelineCoder, hostId, EVENT_TYPE_ID, firstSampleTime);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = firstSampleTime.plusSeconds(i * 30);

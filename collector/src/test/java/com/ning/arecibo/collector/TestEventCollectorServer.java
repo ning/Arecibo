@@ -54,7 +54,8 @@ import com.ning.arecibo.util.service.ServiceDescriptor;
 import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
-import com.ning.arecibo.util.timeline.times.TimeCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursorImpl;
 import com.ning.http.client.AsyncHttpClient;
 
 @Guice(moduleFactory = TestModulesFactory.class)
@@ -208,11 +209,11 @@ public class TestEventCollectorServer
         Assert.assertEquals(chunks.get(0).getSampleCount(), sampleCount);
         Assert.assertEquals(chunks.get(1).getSampleCount(), sampleCount);
         // Check all the timelines events
-        final TimeCursor timeCursor0 = new TimeCursor(chunks.get(0).getTimes(), chunks.get(0).getSampleCount());
-        final TimeCursor timeCursor1 = new TimeCursor(chunks.get(1).getTimes(), chunks.get(1).getSampleCount());
+        final TimelineCursor timeCursor0 = new TimelineCursorImpl(chunks.get(0).getTimes(), chunks.get(0).getSampleCount());
+        final TimelineCursor timeCursor1 = new TimelineCursorImpl(chunks.get(1).getTimes(), chunks.get(1).getSampleCount());
         for (int i = 0; i < sampleCount; i++) {
-            Assert.assertEquals(timeCursor0.getNextTime(), (int)(startTime.plusSeconds(i * 10).getMillis() / 1000));
-            Assert.assertEquals(timeCursor1.getNextTime(), startTime.plusSeconds(i * 10).getMillis() / 1000);
+            Assert.assertEquals(timeCursor0.getNextTime(), startTime.plusSeconds(i * 10));
+            Assert.assertEquals(timeCursor1.getNextTime(), startTime.plusSeconds(i * 10));
         }
     }
 

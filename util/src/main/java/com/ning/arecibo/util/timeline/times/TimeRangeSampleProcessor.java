@@ -18,7 +18,6 @@ package com.ning.arecibo.util.timeline.times;
 
 import org.joda.time.DateTime;
 
-import com.ning.arecibo.util.timeline.DateTimeUtils;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.SampleProcessor;
 
@@ -42,15 +41,13 @@ public abstract class TimeRangeSampleProcessor implements SampleProcessor {
      * @param value        the value of this kind of sample over the sampleCount samples
      */
     @Override
-    public void processSamples(final TimeCursor timeCursor, final int sampleCount, final SampleOpcode opcode, final Object value)
+    public void processSamples(final TimelineCursor timeCursor, final int sampleCount, final SampleOpcode opcode, final Object value)
     {
-        final int unixStartTime = startTime == null ? Integer.MIN_VALUE : DateTimeUtils.unixSeconds(startTime);
-        final int unixEndTime = endTime == null ? Integer.MAX_VALUE : DateTimeUtils.unixSeconds(endTime);
         for (int i = 0; i < sampleCount; i++) {
             // Check if the sample is in the right time range
-            final int unixSampleTime = timeCursor.getNextTime();
-            if (unixSampleTime >= unixStartTime && unixSampleTime <= unixEndTime) {
-                processOneSample(DateTimeUtils.dateTimeFromUnixSeconds(unixSampleTime), opcode, value);
+            final DateTime sampleTime = timeCursor.getNextTime();
+            if ((startTime == null || !sampleTime.isBefore(startTime)) && ((endTime == null || !sampleTime.isAfter(endTime)))) {
+                processOneSample(sampleTime, opcode, value);
             }
         }
     }

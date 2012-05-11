@@ -28,8 +28,11 @@ import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
-public class TestSampleCompression {
+public class TestSampleCompression
+{
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     @Test(groups="fast")
     public void testBasicDoubleCompression() throws Exception {
@@ -67,7 +70,7 @@ public class TestSampleCompression {
         final DateTime now = new DateTime();
         final List<DateTime> dateTimes = new ArrayList<DateTime>();
         dateTimes.add(now);
-        final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] timeBytes = timelineCoder.compressDateTimes(dateTimes);
         final byte[] encodedSampleBytes = accum.extractTimelineChunkAndReset(now, now, timeBytes).getSamples();
         Assert.assertEquals(encodedSampleBytes.length, expectedSize);
     }

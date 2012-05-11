@@ -30,6 +30,8 @@ import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -57,6 +59,7 @@ public class TestCollectorEventProcessor
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestCollectorEventProcessor-" + System.currentTimeMillis());
 
     private final TimelineDAO dao = new MockTimelineDAO();
+    private final TimelineCoder timelineCoder = new TimelineCoderImpl();
     private BackgroundDBChunkWriter backgroundWriter;
     private CollectorEventProcessor processor;
     private TimelineEventHandler timelineEventHandler;
@@ -70,7 +73,7 @@ public class TestCollectorEventProcessor
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
         backgroundWriter = new BackgroundDBChunkWriter(dao, config, config.getPerformForegroundWrites());
-        timelineEventHandler = new TimelineEventHandler(config, dao, backgroundWriter, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
+        timelineEventHandler = new TimelineEventHandler(config, dao, timelineCoder, backgroundWriter, new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
         eventCategoryId = dao.getOrAddEventCategory(EVENT_TYPE);
     }

@@ -25,6 +25,8 @@ import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -47,6 +49,7 @@ public class TestSamplesReplayer
     private static final int HOST_ID = 1;
     private static final int EVENT_CATEGORY_ID = 123;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestSamplesReplayer-" + System.currentTimeMillis());
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     @BeforeMethod(alwaysRun = true)
     public void setUp() throws Exception
@@ -88,7 +91,7 @@ public class TestSamplesReplayer
 
         // Try to encode them again
         final MockTimelineDAO dao = new MockTimelineDAO();
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, HOST_ID, EVENT_CATEGORY_ID, hostSamples.get(0).getTimestamp());
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, timelineCoder, HOST_ID, EVENT_CATEGORY_ID, hostSamples.get(0).getTimestamp());
         for (final HostSamplesForTimestamp samplesFound : hostSamples) {
             accumulator.addHostSamples(samplesFound);
         }

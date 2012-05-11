@@ -58,6 +58,7 @@ public class TimelineAggregator
 
     private final IDBI dbi;
     private final DefaultTimelineDAO timelineDao;
+    private final TimelineCoder timelineCoder;
     private final CollectorConfig config;
     private final TimelineAggregatorDAO aggregatorDao;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
@@ -85,10 +86,11 @@ public class TimelineAggregator
     private final List<Long> chunkIdsToInvalidateOrDelete = new ArrayList<Long>();
 
     @Inject
-    public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final CollectorConfig config)
+    public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final TimelineCoder timelineCoder, final CollectorConfig config)
     {
         this.dbi = dbi;
         this.timelineDao = timelineDao;
+        this.timelineCoder = timelineCoder;
         this.config = config;
         this.aggregatorDao = dbi.onDemand(TimelineAggregatorDAO.class);
     }
@@ -150,7 +152,7 @@ public class TimelineAggregator
                 sampleCount += timelineChunk.getSampleCount();
                 timelineChunkIds.add(timelineChunk.getChunkId());
             }
-            final byte[] combinedTimeBytes = TimelineCoder.combineTimelines(timeParts, sampleCount);
+            final byte[] combinedTimeBytes = timelineCoder.combineTimelines(timeParts, sampleCount);
             final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);
             final int timeBytesLength = combinedTimeBytes.length;
             final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;

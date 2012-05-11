@@ -20,9 +20,12 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 
-import com.ning.arecibo.util.Logger;
+import org.joda.time.DateTime;
 
-public class TimeCursor
+import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.timeline.DateTimeUtils;
+
+public class TimelineCursorImpl implements TimelineCursor
 {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
 
@@ -34,7 +37,7 @@ public class TimeCursor
     private int delta;
     private int repeatCount;
 
-    public TimeCursor(final byte[] times, final int sampleCount)
+    public TimelineCursorImpl(final byte[] times, final int sampleCount)
     {
         this.timelineDataStream = new DataInputStream(new ByteArrayInputStream(times));
         this.sampleCount = sampleCount;
@@ -93,6 +96,7 @@ public class TimeCursor
         }
     }
 
+    @Override
     public void skipToSampleNumber(final int finalSampleNumber)
     {
         if (finalSampleNumber > sampleCount) {
@@ -146,14 +150,15 @@ public class TimeCursor
         }
     }
 
-    public int getNextTime()
+    @Override
+    public DateTime getNextTime()
     {
         final int nextTime = getNextTimeInternal();
         if (nextTime == -1) {
-            throw new IllegalStateException(String.format("In DecodedSampleOutputProcessor.getNextTime(), got -1 from timeCursor.getNextTime()"));
+            throw new IllegalStateException(String.format("In DecodedSampleOutputProcessor.getNextTime(), got -1 from timeCursor.getNextTimeInternal()"));
         }
         else {
-            return nextTime;
+            return DateTimeUtils.dateTimeFromUnixSeconds(nextTime);
         }
     }
 }

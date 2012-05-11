@@ -23,46 +23,53 @@ import java.util.Random;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.log4j.Logger;
-import org.eclipse.jetty.util.log.Log;
 import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.ning.arecibo.util.timeline.DateTimeUtils;
-import com.ning.arecibo.util.timeline.times.TimeCursor;
-import com.ning.arecibo.util.timeline.times.TimelineCoder;
-import com.ning.arecibo.util.timeline.times.TimelineOpcode;
 
 public class TestTimelineCoder
 {
     private static final Logger log = Logger.getLogger(TestTimelineCoder.class);
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     @Test(groups = "fast")
     public void testBasicEncodeDecode() throws Exception
     {
-        final int firstTime = 1000000;
-        final int[] unencodedTimes = new int[]{firstTime, firstTime + 30, firstTime + 60, firstTime + 90, firstTime + 1000, firstTime + 2000, firstTime + 2030, firstTime + 2060};
+        final DateTime firstTime = DateTimeUtils.dateTimeFromUnixSeconds(1000000);
+        final List<DateTime> unencodedTimes = makeSomeTimes(firstTime);
 
-        final byte[] compressedTimes = TimelineCoder.compressTimes(unencodedTimes);
+        final byte[] compressedTimes = timelineCoder.compressDateTimes(unencodedTimes);
         //System.out.printf("Compressed times: %s\n", new String(Hex.encodeHex(compressedTimes)));
-        final int[] decompressedTimes = TimelineCoder.decompressTimes(compressedTimes);
-        Assert.assertEquals(decompressedTimes.length, unencodedTimes.length);
-        for (int i = 0; i < unencodedTimes.length; i++) {
-            Assert.assertEquals(decompressedTimes[i], unencodedTimes[i]);
+        final List<DateTime> decompressedTimes = timelineCoder.decompressDateTimes(compressedTimes);
+        Assert.assertEquals(decompressedTimes.size(), unencodedTimes.size());
+        for (int i = 0; i < unencodedTimes.size(); i++) {
+            Assert.assertEquals(decompressedTimes.get(i), unencodedTimes.get(i));
         }
+    }
+
+    private List<DateTime> makeSomeTimes(DateTime firstTime)
+    {
+        final List<DateTime> times = new ArrayList<DateTime>();
+        for (DateTime time : new DateTime[] { firstTime, firstTime.plusSeconds(5), firstTime.plusSeconds(5), firstTime.plusSeconds(5),
+                firstTime.plusSeconds(1000), firstTime.plusSeconds(1000), firstTime.plusSeconds(2030), firstTime.plusSeconds(2060) }) {
+            times.add(time);
+        }
+        return times;
     }
 
     @Test(groups = "fast")
     public void testRepeats() throws Exception
     {
-        final int firstTime = 1293846;
-        final int[] unencodedTimes = new int[]{firstTime, firstTime + 5, firstTime + 5, firstTime + 5, firstTime + 1000, firstTime + 1000, firstTime + 2030, firstTime + 2060};
+        final DateTime firstTime = DateTimeUtils.dateTimeFromUnixSeconds(1293846);
+        final List<DateTime> unencodedTimes = makeSomeTimes(firstTime);
 
-        final byte[] compressedTimes = TimelineCoder.compressTimes(unencodedTimes);
-        final int[] decompressedTimes = TimelineCoder.decompressTimes(compressedTimes);
-        Assert.assertEquals(decompressedTimes.length, unencodedTimes.length);
-        for (int i = 0; i < unencodedTimes.length; i++) {
-            Assert.assertEquals(decompressedTimes[i], unencodedTimes[i]);
+        final byte[] compressedTimes = timelineCoder.compressDateTimes(unencodedTimes);
+        final List<DateTime> decompressedTimes = timelineCoder.decompressDateTimes(compressedTimes);
+        Assert.assertEquals(decompressedTimes.size(), unencodedTimes.size());
+        for (int i = 0; i < unencodedTimes.size(); i++) {
+            Assert.assertEquals(decompressedTimes.get(i), unencodedTimes.get(i));
         }
     }
 
@@ -70,14 +77,16 @@ public class TestTimelineCoder
     public void testCombiningTimelinesByteRepeats() throws Exception
     {
         final int firstTime = 1293846;
-        final int[] unencodedTimes1 = new int[10];
-        final int[] unencodedTimes2 = new int[10];
-        for (int i=0; i<10; i++) {
-            unencodedTimes1[i] = firstTime + i * 100;
-            unencodedTimes2[i] = firstTime + 10 * 100 + i * 100;
+
+        final List<DateTime> unencodedTimes1 = new ArrayList<DateTime>();
+        final List<DateTime> unencodedTimes2 = new ArrayList<DateTime>();
+        final int sampleCount = 10;
+        for (int i=0; i<sampleCount; i++) {
+            unencodedTimes1.add(DateTimeUtils.dateTimeFromUnixSeconds(firstTime + i * 100));
+            unencodedTimes2.add(DateTimeUtils.dateTimeFromUnixSeconds(firstTime + sampleCount * 100 + i * 100));
         }
-        final byte[] compressedTimes1 = TimelineCoder.compressTimes(unencodedTimes1);
-        final byte[] compressedTimes2 = TimelineCoder.compressTimes(unencodedTimes2);
+        final byte[] compressedTimes1 = timelineCoder.compressDateTimes(unencodedTimes1);
+        final byte[] compressedTimes2 = timelineCoder.compressDateTimes(unencodedTimes2);
         Assert.assertEquals(compressedTimes1.length, 8);
         Assert.assertEquals(compressedTimes1[0] & 0xff, TimelineOpcode.FULL_TIME.getOpcodeIndex());
         Assert.assertEquals(compressedTimes1[5] & 0xff, TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex());
@@ -91,7 +100,7 @@ public class TestTimelineCoder
         final List<byte[]> timesList = new ArrayList<byte[]>();
         timesList.add(compressedTimes1);
         timesList.add(compressedTimes2);
-        final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
+        final byte[] combinedTimes = timelineCoder.combineTimelines(timesList, null);
         Assert.assertEquals(combinedTimes.length, 8);
         Assert.assertEquals(combinedTimes[0] & 0xff, TimelineOpcode.FULL_TIME.getOpcodeIndex());
         Assert.assertEquals(combinedTimes[5] & 0xff, TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex());
@@ -99,7 +108,7 @@ public class TestTimelineCoder
         Assert.assertEquals(combinedTimes[7] & 0xff, 100);
         // Check for 19, not 20, since the first full time took one
         Assert.assertEquals(combinedTimes[6], 19);
-        Assert.assertEquals(TimelineCoder.countTimeBytesSamples(combinedTimes), 20);
+        Assert.assertEquals(timelineCoder.countTimeBytesSamples(combinedTimes), 20);
     }
 
     @Test(groups = "fast")
@@ -107,14 +116,14 @@ public class TestTimelineCoder
     {
         final int sampleCount = 240;
         final int firstTime = 1293846;
-        final int[] unencodedTimes1 = new int[240];
-        final int[] unencodedTimes2 = new int[240];
+        final List<DateTime> unencodedTimes1 = new ArrayList<DateTime>();
+        final List<DateTime> unencodedTimes2 = new ArrayList<DateTime>();
         for (int i=0; i<sampleCount; i++) {
-            unencodedTimes1[i] = firstTime + i * 100;
-            unencodedTimes2[i] = firstTime + sampleCount * 100 + i * 100;
+            unencodedTimes1.add(DateTimeUtils.dateTimeFromUnixSeconds(firstTime + i * 100));
+            unencodedTimes2.add(DateTimeUtils.dateTimeFromUnixSeconds(firstTime + sampleCount * 100 + i * 100));
         }
-        final byte[] compressedTimes1 = TimelineCoder.compressTimes(unencodedTimes1);
-        final byte[] compressedTimes2 = TimelineCoder.compressTimes(unencodedTimes2);
+        final byte[] compressedTimes1 = timelineCoder.compressDateTimes(unencodedTimes1);
+        final byte[] compressedTimes2 = timelineCoder.compressDateTimes(unencodedTimes2);
         Assert.assertEquals(compressedTimes1.length, 8);
         Assert.assertEquals(compressedTimes1[0] & 0xff, TimelineOpcode.FULL_TIME.getOpcodeIndex());
         Assert.assertEquals(compressedTimes1[5] & 0xff, TimelineOpcode.REPEATED_DELTA_TIME_BYTE.getOpcodeIndex());
@@ -128,7 +137,7 @@ public class TestTimelineCoder
         final List<byte[]> timesList = new ArrayList<byte[]>();
         timesList.add(compressedTimes1);
         timesList.add(compressedTimes2);
-        final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
+        final byte[] combinedTimes = timelineCoder.combineTimelines(timesList, null);
         Assert.assertEquals(combinedTimes.length, 9);
         Assert.assertEquals(combinedTimes[0] & 0xff, TimelineOpcode.FULL_TIME.getOpcodeIndex());
         Assert.assertEquals(combinedTimes[5] & 0xff, TimelineOpcode.REPEATED_DELTA_TIME_SHORT.getOpcodeIndex());
@@ -145,22 +154,22 @@ public class TestTimelineCoder
         final byte[] fragment2 = new byte[] { (byte)-1, (byte)0, (byte)15, (byte)66, (byte)-62, (byte)30 };
         final byte[] fragment3 = new byte[] { (byte)-1, (byte)0, (byte)15, (byte)66, (byte)-2, (byte)30 };
         final byte[] [] fragmentArray = new byte[] [] { fragment0, fragment1, fragment2, fragment3};
-        final byte[] combined = TimelineCoder.combineTimelines(Arrays.asList(fragmentArray));
-        final int[] intTimes = TimelineCoder.decompressTimes(combined);
-        final List<int[]> fragmentIntTimes = new ArrayList<int[]>();
-        final List<Integer> allFragmentTimes = new ArrayList<Integer>();
+        final byte[] combined = timelineCoder.combineTimelines(Arrays.asList(fragmentArray), null);
+        final List<DateTime> restoredTimes = timelineCoder.decompressDateTimes(combined);
+        final List<List<DateTime>> fragmentIntTimes = new ArrayList<List<DateTime>>();
+        final List<DateTime> allFragmentTimes = new ArrayList<DateTime>();
         int totalLength = 0;
         for (int i=0; i<fragmentArray.length; i++) {
-            final int[] fragmentTimes = TimelineCoder.decompressTimes(fragmentArray[i]);
+            final List<DateTime> fragmentTimes = timelineCoder.decompressDateTimes(fragmentArray[i]);
             fragmentIntTimes.add(fragmentTimes);
-            totalLength += fragmentTimes.length;
-            for (int time : fragmentTimes) {
+            totalLength += fragmentTimes.size();
+            for (DateTime time : fragmentTimes) {
                 allFragmentTimes.add(time);
             }
         }
-        Assert.assertEquals(intTimes.length, totalLength);
+        Assert.assertEquals(restoredTimes.size(), totalLength);
         for (int i=0; i<totalLength; i++) {
-            Assert.assertEquals(intTimes[i], (int)allFragmentTimes.get(i));
+            Assert.assertEquals(restoredTimes.get(i), allFragmentTimes.get(i));
         }
     }
 
@@ -184,11 +193,11 @@ public class TestTimelineCoder
                 count++;
             }
         }
-        final byte[] allCompressedTime = TimelineCoder.compressDateTimes(dateTimes);
-        final int[] allIntTimes = TimelineCoder.decompressTimes(allCompressedTime);
-        Assert.assertEquals(allIntTimes.length, dateTimes.size());
+        final byte[] allCompressedTime = timelineCoder.compressDateTimes(dateTimes);
+        final List<DateTime> restoredTimes = timelineCoder.decompressDateTimes(allCompressedTime);
+        Assert.assertEquals(restoredTimes.size(), dateTimes.size());
         for (int i=0; i<count; i++) {
-            Assert.assertEquals(allIntTimes[i], DateTimeUtils.unixSeconds(dateTimes.get(i)));
+            Assert.assertEquals(restoredTimes.get(i), dateTimes.get(i));
         }
         for (int fragmentLength=2; fragmentLength<count/2; fragmentLength++) {
             final List<byte[]> fragments = new ArrayList<byte[]>();
@@ -196,13 +205,13 @@ public class TestTimelineCoder
             for (int fragCounter=0; fragCounter<fragmentCount; fragCounter++) {
                 final int fragIndex = fragCounter * fragmentLength;
                 final List<DateTime> fragment = dateTimes.subList(fragIndex, Math.min(count, fragIndex + fragmentLength));
-                fragments.add(TimelineCoder.compressDateTimes(fragment));
+                fragments.add(timelineCoder.compressDateTimes(fragment));
             }
-            final byte[] combined = TimelineCoder.combineTimelines(fragments);
-            final int[] intTimes = TimelineCoder.decompressTimes(combined);
+            final byte[] combined = timelineCoder.combineTimelines(fragments, null);
+            final List<DateTime> restoredDateTimes = timelineCoder.decompressDateTimes(combined);
             //Assert.assertEquals(intTimes.length, count);
             for (int i=0; i<count; i++) {
-                Assert.assertEquals(intTimes[i], DateTimeUtils.unixSeconds(dateTimes.get(i)));
+                Assert.assertEquals(restoredDateTimes.get(i), dateTimes.get(i));
             }
         }
     }
@@ -222,7 +231,7 @@ public class TestTimelineCoder
             time = time.plusSeconds(100);
             dateTimes.add(time);
         }
-        final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] timeBytes = timelineCoder.compressDateTimes(dateTimes);
         final String hex = new String(Hex.encodeHex(timeBytes));
         // Here are the compressed samples: ff000f4308fe13c8fdffff64fe6464
         // Translation:
@@ -231,10 +240,10 @@ public class TestTimelineCoder
         // [fd ff ff 64] means repeat 65525 times delta 100 seconds
         // [fe 64 64] means repeat 100 times delta 100 seconds
         Assert.assertEquals(timeBytes, Hex.decodeHex("ff000f4308fe13c8fdffff64fe6464".toCharArray()));
-        final int[] restoredSamples = TimelineCoder.decompressTimes(timeBytes);
-        Assert.assertEquals(restoredSamples.length, dateTimes.size());
+        final List<DateTime> restoredSamples = timelineCoder.decompressDateTimes(timeBytes);
+        Assert.assertEquals(restoredSamples.size(), dateTimes.size());
         for (int i=0; i<count; i++) {
-            Assert.assertEquals(restoredSamples[i], DateTimeUtils.unixSeconds(dateTimes.get(i)));
+            Assert.assertEquals(restoredSamples.get(i), DateTimeUtils.unixSeconds(dateTimes.get(i)));
         }
     }
 
@@ -246,7 +255,7 @@ public class TestTimelineCoder
         final List<byte[]> timesList = new ArrayList<byte[]>();
         timesList.add(times1);
         timesList.add(times2);
-        final byte[] combinedTimes = TimelineCoder.combineTimelines(timesList);
+        final byte[] combinedTimes = timelineCoder.combineTimelines(timesList, null);
         final String hexCombinedTimes = new String(Hex.encodeHex(combinedTimes));
         //System.out.printf("Combined times: %s\n", hexCombinedTimes);
         Assert.assertEquals(hexCombinedTimes, "ff10000001fe0310eafe031015");
@@ -266,15 +275,13 @@ public class TestTimelineCoder
         // Total samples: 6
         final int sampleCount = 7;
         final byte[] times = Hex.decodeHex("FF4F91D5BCFE021E00FE021EFF790B4422".toCharArray());
-        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        final TimelineCursorImpl cursor = new TimelineCursorImpl(times, sampleCount);
         for (int i=0; i<sampleCount; i++) {
-            final int nextTime = cursor.getNextTime();
-            if (nextTime == -1) {
-                Assert.assertTrue(false);
-            }
+            final DateTime nextTime = cursor.getNextTime();
+            Assert.assertNotNull(nextTime);
         }
         try {
-            final int lastTime = cursor.getNextTime();
+            final DateTime lastTime = cursor.getNextTime();
             Assert.assertTrue(false);
         }
         catch (Exception e) {
@@ -296,16 +303,14 @@ public class TestTimelineCoder
         // Total samples: 6
         final int sampleCount = 7;
         final byte[] times = Hex.decodeHex("FF4F91D5BCFE021E00FE021EFF790B4422".toCharArray());
-        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        final TimelineCursorImpl cursor = new TimelineCursorImpl(times, sampleCount);
         for (int i=0; i<sampleCount; i++) {
-            final int nextTime = cursor.getNextTime();
-            if (nextTime == -1) {
-                Assert.assertTrue(false);
-            }
+            final DateTime nextTime = cursor.getNextTime();
+            Assert.assertNotNull(nextTime);
             cursor.skipToSampleNumber(i + 1);
         }
         try {
-            final int lastTime = cursor.getNextTime();
+            final DateTime lastTime = cursor.getNextTime();
             Assert.assertTrue(false);
         }
         catch (Exception e) {
@@ -322,16 +327,14 @@ public class TestTimelineCoder
         //final byte[] times = Hex.decodeHex("ff4f90f67afd03ce1e1ffe1a1e1d01fe771e1d01fd01df1e1d1ffe761e1d01fe771e1d01fe571e".toCharArray());
         final byte[] times = Hex.decodeHex("00000018FF4F8FE521FD023D1E1FFEF01E1D01FE771E1D01FD03E21EFE07980F".toCharArray());
         Assert.assertEquals(times.length, 32);
-        final TimeCursor cursor = new TimeCursor(times, sampleCount);
+        final TimelineCursorImpl cursor = new TimelineCursorImpl(times, sampleCount);
         for (int i=0; i<sampleCount; i++) {
-            final int nextTime = cursor.getNextTime();
-            if (nextTime == -1) {
-                Assert.assertTrue(false);
-            }
+            final DateTime nextTime = cursor.getNextTime();
+            Assert.assertNotNull(nextTime);
             cursor.skipToSampleNumber(i + 1);
         }
         try {
-            final int lastTime = cursor.getNextTime();
+            final DateTime lastTime = cursor.getNextTime();
             Assert.assertTrue(false);
         }
         catch (Exception e) {
@@ -391,7 +394,7 @@ public class TestTimelineCoder
         int byteCount = 0;
         for (byte[] timePart : timeParts) {
             byteCount += timePart.length;
-            sampleCount += TimelineCoder.countTimeBytesSamples(timePart);
+            sampleCount += timelineCoder.countTimeBytesSamples(timePart);
         }
         final byte[] concatedTimes = new byte[byteCount];
         int offset = 0;
@@ -400,14 +403,14 @@ public class TestTimelineCoder
             System.arraycopy(timePart, 0, concatedTimes, offset, length);
             offset += length;
         }
-        final byte[] newCombined = TimelineCoder.combineTimelines(timeParts);
-        final int newCombinedLength = TimelineCoder.countTimeBytesSamples(newCombined);
-        final TimeCursor concatedCursor = new TimeCursor(concatedTimes, sampleCount);
-        final TimeCursor combinedCursor = new TimeCursor(newCombined, sampleCount);
+        final byte[] newCombined = timelineCoder.combineTimelines(timeParts, null);
+        final int newCombinedLength = timelineCoder.countTimeBytesSamples(newCombined);
+        final TimelineCursorImpl concatedCursor = new TimelineCursorImpl(concatedTimes, sampleCount);
+        final TimelineCursorImpl combinedCursor = new TimelineCursorImpl(newCombined, sampleCount);
         int counter = 0;
         for (int i=0; i<sampleCount; i++) {
-            final int concatedTime = concatedCursor.getNextTime();
-            final int combinedTime = combinedCursor.getNextTime();
+            final DateTime concatedTime = concatedCursor.getNextTime();
+            final DateTime combinedTime = combinedCursor.getNextTime();
             Assert.assertEquals(combinedTime, concatedTime);
             counter++;
         }

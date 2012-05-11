@@ -37,10 +37,12 @@ import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 public class TestTimelineChunkToJson
 {
     private static final ObjectMapper mapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     private static final long CHUNK_ID = 1242L;
     private static final int HOST_ID = 1422;
@@ -67,7 +69,7 @@ public class TestTimelineChunkToJson
         samples = out.toByteArray();
 
         final DateTime endTime = dateTimes.get(dateTimes.size() - 1);
-        final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
+        final byte[] timeBytes = timelineCoder.compressDateTimes(dateTimes);
         chunk = new TimelineChunk(CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, START_TIME, endTime, timeBytes, samples, SAMPLE_COUNT);
     }
 

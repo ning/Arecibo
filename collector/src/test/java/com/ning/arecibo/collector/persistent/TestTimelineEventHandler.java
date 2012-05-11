@@ -33,11 +33,14 @@ import com.ning.arecibo.collector.guice.CollectorConfig;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
+import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 public class TestTimelineEventHandler
 {
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestTimelineEventHandler-" + System.currentTimeMillis());
     private static final String EVENT_TYPE = "eventType";
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
 
     private final TimelineDAO dao = new MockTimelineDAO();
 
@@ -54,7 +57,7 @@ public class TestTimelineEventHandler
         final int int2intId = dao.getOrAddSampleKind(1, eventTypeId, "int2int");
         final int long2longId = dao.getOrAddSampleKind(1, eventTypeId, "long2long");
         final int hostId = 1;
-        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
+        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, timelineCoder, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
 
         // Test downsizing of values
         final Map<String, Object> event = ImmutableMap.<String, Object>of(
@@ -106,7 +109,7 @@ public class TestTimelineEventHandler
     {
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
+        final TimelineEventHandler handler = new TimelineEventHandler(config, dao, timelineCoder, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
         Assert.assertEquals(handler.getAccumulators().size(), 0);
         processOneEvent(handler, 1, "eventType1", "sampleKind1", new DateTime());
         sleep(20);

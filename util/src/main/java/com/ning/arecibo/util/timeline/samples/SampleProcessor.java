@@ -16,7 +16,7 @@
 
 package com.ning.arecibo.util.timeline.samples;
 
-import com.ning.arecibo.util.timeline.times.TimeCursor;
+import com.ning.arecibo.util.timeline.times.TimelineCursor;
 
 public interface SampleProcessor {
 
@@ -30,7 +30,7 @@ public interface SampleProcessor {
      * @param opcode the opcode of the sample value, which may not be a REPEAT opcode
      * @param value the value of this kind of sample over the count of samples
      */
-    public void processSamples(final TimeCursor timeCursor,
+    public void processSamples(final TimelineCursor timeCursor,
                                final int sampleCount,
                                final SampleOpcode opcode,
                                final Object value);

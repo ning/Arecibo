@@ -34,6 +34,7 @@ import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.persistent.CachingTimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
+import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
 /**
  * This class simulates the database load due to insertions and deletions of
@@ -66,6 +67,7 @@ public class TimelineLoadGenerator {
     private final DefaultTimelineDAO defaultTimelineDAO;
     private final CachingTimelineDAO timelineDAO;
     private final DBI dbi;
+    private final TimelineCoder timelineCoder;
 
     private final AtomicInteger timelineChunkIdCounter = new AtomicInteger(0);
 
@@ -75,6 +77,8 @@ public class TimelineLoadGenerator {
         this.defaultTimelineDAO = new DefaultTimelineDAO(dbi);
         this.timelineDAO = new CachingTimelineDAO(defaultTimelineDAO);
         log.info("DBI initialized");
+
+        this.timelineCoder = new TimelineCoderImpl();
 
         // Make some hosts
         final List<String> hostNames = new ArrayList<String>(HOST_ID_COUNT);
@@ -164,7 +168,7 @@ public class TimelineLoadGenerator {
                     for (int sc=0; sc<sampleCount; sc++) {
                         dateTimes.add(startTime.plusSeconds(sc * 30));
                     }
-                    final byte[] timeBytes = TimelineCoder.compressDateTimes(dateTimes);
+                    final byte[] timeBytes = timelineCoder.compressDateTimes(dateTimes);
                     for (int sampleKindId : categorySampleKindIds.get(categoryId)) {
                         final TimelineChunk timelineChunk = makeTimelineChunk(hostId, sampleKindId, startTime, endTime, timeBytes, sampleCount);
                         addChunkAndMaybeSave(timelineChunkList, timelineChunk);
