@@ -18,6 +18,8 @@ package com.ning.arecibo.collector;
 
 import com.ning.arecibo.collector.persistent.TimelineHostEventAccumulator;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
@@ -39,12 +41,13 @@ public class TestTimelineHostEventAccumulator
 
     private static final MockTimelineDAO dao = new MockTimelineDAO();
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     @Test(groups = "fast")
     public void testSimpleAggregate() throws IOException
     {
         final DateTime startTime = new DateTime(DateTimeZone.UTC);
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, timelineCoder, HOST_ID, EVENT_CATEGORY_ID, startTime);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(dao, timelineCoder, sampleCoder, HOST_ID, EVENT_CATEGORY_ID, startTime);
 
         // Send a first type of data
         final int sampleCount = 5;

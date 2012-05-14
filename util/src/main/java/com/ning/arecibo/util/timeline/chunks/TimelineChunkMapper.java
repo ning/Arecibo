@@ -25,10 +25,18 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
 import com.ning.arecibo.util.timeline.DateTimeUtils;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.times.TimesAndSamplesCoder;
 
 public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
 {
+    private final SampleCoder sampleCoder;
+
+    public TimelineChunkMapper(final SampleCoder sampleCoder)
+    {
+        this.sampleCoder = sampleCoder;
+    }
+
     @Override
     public TimelineChunk map(final int index, final ResultSet rs, final StatementContext ctx) throws SQLException
     {
@@ -52,7 +60,7 @@ public class TimelineChunkMapper implements ResultSetMapper<TimelineChunk>
             }
         }
         final TimeBytesAndSampleBytes bytesPair = TimesAndSamplesCoder.getTimesBytesAndSampleBytes(samplesAndTimes);
-        return new TimelineChunk(chunkId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(),
+        return new TimelineChunk(sampleCoder, chunkId, hostId, sampleKindId, startTime, endTime, bytesPair.getTimeBytes(), bytesPair.getSampleBytes(),
                 sampleCount, aggregationLevel, notValid, dontAggregate);
     }
 }

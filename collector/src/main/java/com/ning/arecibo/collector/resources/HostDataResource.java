@@ -32,6 +32,7 @@ import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkDecoded;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunksViews;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.jaxrs.DateTimeParameter;
 import com.ning.jersey.metrics.TimedResource;
 
@@ -80,13 +81,15 @@ public class HostDataResource
     private static final ObjectMapper objectMapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
 
     private final TimelineDAO dao;
+    private final SampleCoder sampleCoder;
     private final CollectorConfig config;
     private final TimelineEventHandler processor;
 
     @Inject
-    public HostDataResource(final TimelineDAO dao, final CollectorConfig config, final TimelineEventHandler processor)
+    public HostDataResource(final TimelineDAO dao, final SampleCoder sampleCoder, final CollectorConfig config, final TimelineEventHandler processor)
     {
         this.dao = dao;
+        this.sampleCoder = sampleCoder;
         this.config = config;
         this.processor = processor;
     }
@@ -429,7 +432,7 @@ public class HostDataResource
     {
         for (final TimelineChunk chunk : chunksForHostAndSampleKind) {
             if (decodeSamples) {
-                writer.writeValue(generator, new TimelineChunkDecoded(chunk));
+                writer.writeValue(generator, new TimelineChunkDecoded(chunk, sampleCoder));
             }
             else {
                 final String hostName = dao.getHost(chunk.getHostId());

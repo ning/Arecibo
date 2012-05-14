@@ -41,6 +41,8 @@ import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
@@ -57,6 +59,7 @@ public class TestTimelineAggregator
     private static final String MAX_HEAPUSED_KIND = "max_heapUsed";
     private static final DateTime START_TIME = new DateTime(DateTimeZone.UTC);
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     @Inject
     MysqlTestingHelper helper;
@@ -158,7 +161,7 @@ public class TestTimelineAggregator
     private void createAOneHourTimelineChunk(final int startTimeMinutesAgo) throws IOException
     {
         final DateTime firstSampleTime = START_TIME.minusMinutes(startTimeMinutesAgo);
-        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, timelineCoder, hostId, EVENT_TYPE_ID, firstSampleTime);
+        final TimelineHostEventAccumulator accumulator = new TimelineHostEventAccumulator(timelineDAO, timelineCoder, sampleCoder, hostId, EVENT_TYPE_ID, firstSampleTime);
         // 120 samples per hour
         for (int i = 0; i < 120; i++) {
             final DateTime eventDateTime = firstSampleTime.plusSeconds(i * 30);

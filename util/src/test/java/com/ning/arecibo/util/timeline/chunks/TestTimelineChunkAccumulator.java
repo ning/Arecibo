@@ -23,6 +23,7 @@ import org.joda.time.DateTime;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.SampleProcessor;
@@ -34,13 +35,14 @@ import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 public class TestTimelineChunkAccumulator
 {
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     @SuppressWarnings("unchecked")
     @Test(groups="fast")
     public void testBasicAccumulator() throws Exception {
         final int hostId = 123;
         final int sampleKindId = 456;
-        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId, sampleCoder);
         final List<DateTime> dateTimes = new ArrayList<DateTime>();
         final DateTime startTime = new DateTime();
         final DateTime endTime = startTime.plus(1000);
@@ -64,7 +66,7 @@ public class TestTimelineChunkAccumulator
         final TimelineChunk chunk = accum.extractTimelineChunkAndReset(startTime, endTime, compressedTimes);
         Assert.assertEquals(chunk.getSampleCount(), 9);
         // Now play them back
-        SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
+        sampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
             private int sampleNumber = 0;
 
             @Override
@@ -91,7 +93,7 @@ public class TestTimelineChunkAccumulator
                 sampleNumber += sampleCount;
             }
         });
-        final TimelineChunkDecoded chunkDecoded = new TimelineChunkDecoded(chunk);
+        final TimelineChunkDecoded chunkDecoded = new TimelineChunkDecoded(chunk, sampleCoder);
         System.out.printf("%s\n", chunkDecoded.toString());
     }
 
@@ -104,10 +106,10 @@ public class TestTimelineChunkAccumulator
         final DateTime startTime = new DateTime();
         final List<DateTime> dateTimes = new ArrayList<DateTime>();
         final int byteRepeaterCount = 255;
-        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId, sampleCoder);
         for (int i=0; i<byteRepeaterCount; i++) {
             dateTimes.add(startTime.plusSeconds(i * 5));
-            accum.addSample(SampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
+            accum.addSample(sampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
         }
         final DateTime endTime = startTime.plusSeconds(5 * byteRepeaterCount);
         byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
@@ -120,7 +122,7 @@ public class TestTimelineChunkAccumulator
         Assert.assertEquals(((int)samples[2]) & 0xff, SampleOpcode.BYTE_FOR_DOUBLE.getOpcodeIndex());
         Assert.assertEquals(((int)samples[3]) & 0xff, 0x02);
         Assert.assertEquals(chunk.getSampleCount(), byteRepeaterCount);
-        SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
+        sampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
 
             @Override
             public void processSamples(TimelineCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {
@@ -138,10 +140,10 @@ public class TestTimelineChunkAccumulator
         final DateTime startTime = new DateTime();
         final List<DateTime> dateTimes = new ArrayList<DateTime>();
         final int shortRepeaterCount = 256;
-        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId);
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(hostId, sampleKindId, sampleCoder);
         for (int i=0; i<shortRepeaterCount; i++) {
             dateTimes.add(startTime.plusSeconds(i * 5));
-            accum.addSample(SampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
+            accum.addSample(sampleCoder.compressSample(new ScalarSample<Double>(SampleOpcode.DOUBLE, 2.0)));
         }
         final DateTime endTime = startTime.plusSeconds(5 * shortRepeaterCount);
         final byte[] compressedTimes = timelineCoder.compressDateTimes(dateTimes);
@@ -155,7 +157,7 @@ public class TestTimelineChunkAccumulator
         Assert.assertEquals(((int)samples[4]) & 0xff, 0x02);
         Assert.assertEquals(chunk.getSampleCount(), shortRepeaterCount);
 
-        SampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
+        sampleCoder.scan(chunk.getSamples(), compressedTimes, dateTimes.size(), new SampleProcessor() {
 
             @Override
             public void processSamples(TimelineCursor timeCursor, int sampleCount, SampleOpcode opcode, Object value) {

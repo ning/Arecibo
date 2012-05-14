@@ -29,7 +29,6 @@ import org.skife.jdbi.v2.unstable.BindIn;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkMapper;
 
 @ExternalizedSqlViaStringTemplate3()
-@RegisterMapper({TimelineChunkMapper.class})
 public interface TimelineAggregatorDAO extends Transactional<TimelineAggregatorDAO>
 {
     @SqlQuery

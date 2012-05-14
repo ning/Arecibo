@@ -25,7 +25,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.joda.time.DateTime;
 
 import com.ning.arecibo.util.Logger;
-import com.ning.arecibo.util.timeline.DateTimeUtils;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.SampleProcessor;
@@ -36,9 +35,11 @@ public class TimelineChunkDecoded {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final TimelineChunk chunk;
+    private final SampleCoder sampleCoder;
 
-    public TimelineChunkDecoded(TimelineChunk chunk) {
+    public TimelineChunkDecoded(TimelineChunk chunk, SampleCoder sampleCoder) {
         this.chunk = chunk;
+        this.sampleCoder = sampleCoder;
     }
 
     @JsonValue
@@ -69,7 +70,7 @@ public class TimelineChunkDecoded {
 
     private String getDecodedSamples() throws IOException {
         final DecodedSampleOutputProcessor processor = new DecodedSampleOutputProcessor();
-        SampleCoder.scan(chunk, processor);
+        sampleCoder.scan(chunk, processor);
         return processor.getDecodedSamples();
     }
 

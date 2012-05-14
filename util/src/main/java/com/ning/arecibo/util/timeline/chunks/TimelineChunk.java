@@ -45,6 +45,8 @@ public class TimelineChunk
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final SampleCoder sampleCoder;
+
     @JsonProperty
     @JsonView(TimelineChunksViews.Base.class)
     private final long chunkId;
@@ -79,8 +81,9 @@ public class TimelineChunk
     @JsonView(TimelineChunksViews.Compact.class)
     private final boolean dontAggregate;
 
-    public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
+    public TimelineChunk(final SampleCoder sampleCoder, final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] times, final byte[] samples, final int sampleCount)
     {
+        this.sampleCoder = sampleCoder;
         this.chunkId = chunkId;
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
@@ -94,9 +97,10 @@ public class TimelineChunk
         dontAggregate = false;
     }
 
-    public TimelineChunk(final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
+    public TimelineChunk(final SampleCoder sampleCoder, final long chunkId, final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime,
             final byte[] times, final byte[] samples, final int sampleCount, final int aggregationLevel, final boolean notValid, final boolean dontAggregate)
     {
+        this.sampleCoder = sampleCoder;
         this.chunkId = chunkId;
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
@@ -110,8 +114,9 @@ public class TimelineChunk
         this.dontAggregate = dontAggregate;
     }
 
-    public TimelineChunk(final long chunkId, final TimelineChunk other)
+    public TimelineChunk(final SampleCoder sampleCoder, final long chunkId, final TimelineChunk other)
     {
+        this.sampleCoder = sampleCoder;
         this.chunkId = chunkId;
         this.hostId = other.hostId;
         this.sampleKindId = other.sampleKindId;
@@ -133,18 +138,17 @@ public class TimelineChunk
 
     public String getSamplesAsCSV(final DecimatingSampleFilter rangeSampleProcessor) throws IOException
     {
-        SampleCoder.scan(this, rangeSampleProcessor);
+        sampleCoder.scan(this, rangeSampleProcessor);
         return rangeSampleProcessor.getSampleConsumer().toString();
     }
 
     public String getSamplesAsCSV(@Nullable final DateTime startTime, @Nullable final DateTime endTime) throws IOException
     {
         final CSVOutputProcessor processor = new CSVOutputProcessor(startTime, endTime);
-        SampleCoder.scan(this, processor);
+        sampleCoder.scan(this, processor);
         return processor.toString();
     }
 
-    @Override
     public String toString()
     {
         try {

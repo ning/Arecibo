@@ -44,20 +44,22 @@ import com.ning.arecibo.util.timeline.StartTimes;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkConsumer;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkMapper;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 
 public class DefaultTimelineDAO implements TimelineDAO
 {
     private static final Logger log = LoggerFactory.getLogger(DefaultTimelineDAO.class);
     private static final Joiner JOINER = Joiner.on(",");
-    private static final TimelineChunkMapper timelineChunkMapper = new TimelineChunkMapper();
 
     private final IDBI dbi;
+    private final TimelineChunkMapper timelineChunkMapper;
     private final TimelineDAOQueries delegate;
 
     @Inject
-    public DefaultTimelineDAO(final IDBI dbi)
+    public DefaultTimelineDAO(final IDBI dbi, final SampleCoder sampleCoder)
     {
         this.dbi = dbi;
+        this.timelineChunkMapper = new TimelineChunkMapper(sampleCoder);
         this.delegate = dbi.onDemand(TimelineDAOQueries.class);
     }
 

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.ning.arecibo.util.timeline.DateTimeUtils;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
 import com.ning.arecibo.util.timeline.samples.RepeatSample;
-import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCursorImpl;
@@ -47,6 +46,7 @@ public class TestSampleCoder
 {
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
     private static final DateTimeFormatter dateFormatter = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     @Test(groups = "fast")
     public void testScan() throws Exception
@@ -60,11 +60,11 @@ public class TestSampleCoder
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         final DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
         final ScalarSample<Short> sample = new ScalarSample<Short>(SampleOpcode.SHORT, (short) 4);
-        SampleCoder.encodeSample(dataOutputStream, sample);
-        SampleCoder.encodeSample(dataOutputStream, new RepeatSample<Short>(3, sample));
+        sampleCoder.encodeSample(dataOutputStream, sample);
+        sampleCoder.encodeSample(dataOutputStream, new RepeatSample<Short>(3, sample));
         dataOutputStream.close();
 
-        SampleCoder.scan(outputStream.toByteArray(), compressedTimes, dateTimes.size(), new TimeRangeSampleProcessor(startTime, endTime)
+        sampleCoder.scan(outputStream.toByteArray(), compressedTimes, dateTimes.size(), new TimeRangeSampleProcessor(startTime, endTime)
         {
             @Override
             public void processOneSample(final DateTime time, final SampleOpcode opcode, final Object value)
@@ -93,7 +93,7 @@ public class TestSampleCoder
         final byte[] samples = new byte[]{(byte)0xff, 2, 2, 0, 12};
 
         final AtomicInteger samplesCount = new AtomicInteger(0);
-        SampleCoder.scan(samples, compressedTimes, sampleCount, new TimeRangeSampleProcessor(startTime, endTime)
+        sampleCoder.scan(samples, compressedTimes, sampleCount, new TimeRangeSampleProcessor(startTime, endTime)
         {
             @Override
             public void processOneSample(final DateTime time, final SampleOpcode opcode, final Object value)
@@ -120,7 +120,7 @@ public class TestSampleCoder
         final int[] repetitions = new int[] { 1, 2, 3, 4, 5, 240, 250, 300 };
         final Random rand = new Random(0);
         int count = 0;
-        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(0, 0);
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(0, 0, sampleCoder);
         final List<ScalarSample> samples = new ArrayList<ScalarSample>();
         for (int i=0; i<20; i++) {
             final ScalarSample sample = samplesToChoose[rand.nextInt(samplesToChoose.length)];
@@ -131,10 +131,10 @@ public class TestSampleCoder
                 count++;
             }
         }
-        final byte[] sampleBytes = SampleCoder.compressSamples(samples);
+        final byte[] sampleBytes = sampleCoder.compressSamples(samples);
         final byte[] accumBytes = accum.getEncodedSamples().getEncodedBytes();
         Assert.assertEquals(accumBytes, sampleBytes);
-        final List<ScalarSample> restoredSamples = SampleCoder.decompressSamples(sampleBytes);
+        final List<ScalarSample> restoredSamples = sampleCoder.decompressSamples(sampleBytes);
         Assert.assertEquals(restoredSamples.size(), samples.size());
         for (int i=0; i<count; i++) {
             Assert.assertEquals(restoredSamples.get(i), samples.get(i));
@@ -145,10 +145,10 @@ public class TestSampleCoder
             for (int fragCounter=0; fragCounter<fragmentCount; fragCounter++) {
                 final int fragIndex = fragCounter * fragmentLength;
                 final List<ScalarSample> fragment = samples.subList(fragIndex, Math.min(count, fragIndex + fragmentLength));
-                fragments.add(SampleCoder.compressSamples(fragment));
+                fragments.add(sampleCoder.compressSamples(fragment));
             }
-            final byte[] combined = SampleCoder.combineSampleBytes(fragments);
-            final List<ScalarSample> restored = SampleCoder.decompressSamples(combined);
+            final byte[] combined = sampleCoder.combineSampleBytes(fragments);
+            final List<ScalarSample> restored = sampleCoder.decompressSamples(combined);
             Assert.assertEquals(restored.size(), samples.size());
             for (int i=0; i<count; i++) {
                 Assert.assertEquals(restored.get(i), samples.get(i));
@@ -161,7 +161,7 @@ public class TestSampleCoder
     public void testCombineMoreThan65KSamples() throws Exception
     {
         int count = 0;
-        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(0, 0);
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(0, 0, sampleCoder);
         final List<ScalarSample> samples = new ArrayList<ScalarSample>();
         final ScalarSample sample1 = new ScalarSample(SampleOpcode.BYTE, (byte)1);
         final ScalarSample sample2 = new ScalarSample(SampleOpcode.BYTE, (byte)2);
@@ -173,7 +173,7 @@ public class TestSampleCoder
             samples.add(sample2);
             accum.addSample(sample2);
         }
-        final byte[] sampleBytes = SampleCoder.compressSamples(samples);
+        final byte[] sampleBytes = sampleCoder.compressSamples(samples);
         final String hex = new String(Hex.encodeHex(sampleBytes));
         // Here are the compressed samples: ff140101feffff0102ff640102
         // Translation:
@@ -181,7 +181,7 @@ public class TestSampleCoder
         // [fe ff ff 01 02] means repeat 65525 times BYTE value 2
         // [ff 64 01 02] means repeat 100 times BYTE value 2
         Assert.assertEquals(sampleBytes, Hex.decodeHex("ff140101feffff0102ff640102".toCharArray()));
-        final List<ScalarSample> restoredSamples = SampleCoder.decompressSamples(sampleBytes);
+        final List<ScalarSample> restoredSamples = sampleCoder.decompressSamples(sampleBytes);
         Assert.assertEquals(restoredSamples.size(), samples.size());
         for (int i=0; i<count; i++) {
             Assert.assertEquals(restoredSamples.get(i), samples.get(i));
@@ -214,8 +214,8 @@ public class TestSampleCoder
         parts.add(b2);
         parts.add(b3);
         parts.add(b4);
-        final byte[] combinedBytes = SampleCoder.combineSampleBytes(parts);
-        final List<ScalarSample> samples = SampleCoder.decompressSamples(combinedBytes);
+        final byte[] combinedBytes = sampleCoder.combineSampleBytes(parts);
+        final List<ScalarSample> samples = sampleCoder.decompressSamples(combinedBytes);
         Assert.assertEquals(samples.size(), 25);
     }
 }

@@ -54,13 +54,14 @@ import com.ning.arecibo.util.timeline.times.TimelineCoder;
 public class TimelineAggregator
 {
     private static final Logger log = Logger.getLogger(TimelineAggregator.class);
-    private static final TimelineChunkMapper timelineChunkMapper = new TimelineChunkMapper();
 
     private final IDBI dbi;
     private final DefaultTimelineDAO timelineDao;
     private final TimelineCoder timelineCoder;
+    private final SampleCoder sampleCoder;
     private final CollectorConfig config;
     private final TimelineAggregatorDAO aggregatorDao;
+    private final TimelineChunkMapper timelineChunkMapper;
     private final ScheduledExecutorService aggregatorThread = Executors.newSingleThreadScheduledExecutor("TimelineAggregator");
 
     private Map<String, AtomicLong> aggregatorCounters = new LinkedHashMap<String, AtomicLong>();
@@ -86,13 +87,15 @@ public class TimelineAggregator
     private final List<Long> chunkIdsToInvalidateOrDelete = new ArrayList<Long>();
 
     @Inject
-    public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final TimelineCoder timelineCoder, final CollectorConfig config)
+    public TimelineAggregator(final IDBI dbi, final DefaultTimelineDAO timelineDao, final TimelineCoder timelineCoder, final SampleCoder sampleCoder, final CollectorConfig config)
     {
         this.dbi = dbi;
         this.timelineDao = timelineDao;
         this.timelineCoder = timelineCoder;
+        this.sampleCoder = sampleCoder;
         this.config = config;
         this.aggregatorDao = dbi.onDemand(TimelineAggregatorDAO.class);
+        this.timelineChunkMapper = new TimelineChunkMapper(sampleCoder);
     }
 
     private int aggregateTimelineCandidates(final List<TimelineChunk> timelineChunkCandidates, final int aggregationLevel, final int chunksToAggregate)
@@ -153,14 +156,14 @@ public class TimelineAggregator
                 timelineChunkIds.add(timelineChunk.getChunkId());
             }
             final byte[] combinedTimeBytes = timelineCoder.combineTimelines(timeParts, sampleCount);
-            final byte[] combinedSampleBytes = SampleCoder.combineSampleBytes(sampleParts);
+            final byte[] combinedSampleBytes = sampleCoder.combineSampleBytes(sampleParts);
             final int timeBytesLength = combinedTimeBytes.length;
             final int totalSize = 4 + timeBytesLength + combinedSampleBytes.length;
             log.debug("For hostId {}, aggregationLevel {}, aggregating {} timelines ({} bytes, {} samples): {}",
                 new Object[]{firstTimesChunk.getHostId(), firstTimesChunk.getAggregationLevel(), timelineChunks.size(), totalSize, sampleCount});
             timelineChunksBytesCreated.addAndGet(totalSize);
             final int totalSampleCount = sampleCount;
-            final TimelineChunk chunk = new TimelineChunk(0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
+            final TimelineChunk chunk = new TimelineChunk(sampleCoder, 0, hostId, firstTimesChunk.getSampleKindId(), startTime, endTime,
                     combinedTimeBytes, combinedSampleBytes, totalSampleCount, aggregationLevel + 1, false, false);
             chunksToWrite.add(chunk);
             chunkIdsToInvalidateOrDelete.addAll(timelineChunkIds);

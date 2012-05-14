@@ -17,6 +17,7 @@
 package com.ning.arecibo.collector;
 
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
@@ -39,6 +40,7 @@ public class TestTimelineChunkAndTimes
     private static final int SAMPLE_KIND_ID = 12;
     private static final int CHUNK_ID = 30;
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     @Test(groups = "fast")
     public void testToString() throws Exception
@@ -51,13 +53,13 @@ public class TestTimelineChunkAndTimes
         final DataOutputStream stream = new DataOutputStream(out);
 
         for (int i = 0; i < sampleCount; i++) {
-            SampleCoder.encodeSample(stream, new ScalarSample<Long>(SampleOpcode.LONG, 12345L + i));
+            sampleCoder.encodeSample(stream, new ScalarSample<Long>(SampleOpcode.LONG, 12345L + i));
             dateTimes.add(startTime.plusSeconds(1 + i));
         }
 
         final DateTime endTime = dateTimes.get(dateTimes.size() - 1);
         final byte[] times = timelineCoder.compressDateTimes(dateTimes);
-        final TimelineChunk timelineChunk = new TimelineChunk(CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, startTime, endTime, times, out.toByteArray(), sampleCount);
+        final TimelineChunk timelineChunk = new TimelineChunk(sampleCoder, CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, startTime, endTime, times, out.toByteArray(), sampleCount);
         // Test CSV filtering
         Assert.assertEquals(timelineChunk.getSamplesAsCSV(), "1326749039,12345,1326749040,12346,1326749041,12347");
         Assert.assertEquals(timelineChunk.getSamplesAsCSV(null, null), "1326749039,12345,1326749040,12346,1326749041,12347");

@@ -41,10 +41,9 @@ import com.ning.arecibo.util.timeline.StartTimesBinder;
 import com.ning.arecibo.util.timeline.StartTimesMapper;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkBinder;
-import com.ning.arecibo.util.timeline.chunks.TimelineChunkMapper;
 
 @ExternalizedSqlViaStringTemplate3()
-@RegisterMapper({TimelineChunkMapper.class, CategoryIdAndSampleKindMapper.class, StartTimesMapper.class, HostIdAndSampleKindIdMapper.class})
+@RegisterMapper({CategoryIdAndSampleKindMapper.class, StartTimesMapper.class, HostIdAndSampleKindIdMapper.class})
 public interface TimelineDAOQueries extends Transactional<TimelineDAOQueries>
 {
     @SqlQuery

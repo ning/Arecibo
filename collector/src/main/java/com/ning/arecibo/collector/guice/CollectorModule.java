@@ -41,6 +41,8 @@ import com.ning.arecibo.util.service.DummyServiceLocator;
 import com.ning.arecibo.util.service.ServiceLocator;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
 import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 import com.ning.jersey.metrics.TimedResourceModule;
@@ -112,6 +114,7 @@ public class CollectorModule extends AbstractModule
     protected void configureTimelineObjects()
     {
         bind(TimelineCoder.class).to(TimelineCoderImpl.class).asEagerSingleton();
+        bind(SampleCoder.class).to(SampleCoderImpl.class).asEagerSingleton();
     }
 
     protected void configureTimelineAggregator()

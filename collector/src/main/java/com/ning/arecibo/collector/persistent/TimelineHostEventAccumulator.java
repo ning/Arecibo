@@ -77,6 +77,7 @@ public class TimelineHostEventAccumulator
 
     private final BackgroundDBChunkWriter backgroundWriter;
     private final TimelineCoder timelineCoder;
+    private final SampleCoder sampleCoder;
     private final Integer timelineLengthMillis;
     private final int hostId;
     private final int eventCategoryId;
@@ -100,12 +101,13 @@ public class TimelineHostEventAccumulator
      */
     private final List<DateTime> times = new ArrayList<DateTime>();
 
-    public TimelineHostEventAccumulator(final TimelineDAO dao, final TimelineCoder timelineCoder, final BackgroundDBChunkWriter backgroundWriter,
-            final int hostId, final int eventCategoryId, final DateTime firstSampleTime, Integer timelineLengthMillis)
+    public TimelineHostEventAccumulator(final TimelineDAO dao, final TimelineCoder timelineCoder, final SampleCoder sampleCoder,
+            final BackgroundDBChunkWriter backgroundWriter, final int hostId, final int eventCategoryId, final DateTime firstSampleTime, Integer timelineLengthMillis)
     {
         this.timelineLengthMillis = timelineLengthMillis;
         this.backgroundWriter = backgroundWriter;
         this.timelineCoder = timelineCoder;
+        this.sampleCoder = sampleCoder;
         this.hostId = hostId;
         this.eventCategoryId = eventCategoryId;
         // Set the end-of-chunk time by tossing a random number, to evenly distribute the db writeback load.
@@ -117,9 +119,9 @@ public class TimelineHostEventAccumulator
      * created, but because the chunkEndTime is way in the future, doesn't initiate
      * chunk writes.
      */
-    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, TimelineCoder timelineCoder, Integer hostId, int eventTypeId, DateTime firstSampleTime)
+    public TimelineHostEventAccumulator(TimelineDAO timelineDAO, TimelineCoder timelineCoder, SampleCoder sampleCoder, Integer hostId, int eventTypeId, DateTime firstSampleTime)
     {
-        this(timelineDAO, timelineCoder, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, firstSampleTime, Integer.MAX_VALUE);
+        this(timelineDAO, timelineCoder, sampleCoder, new BackgroundDBChunkWriter(timelineDAO, null, true), hostId, eventTypeId, firstSampleTime, Integer.MAX_VALUE);
     }
 
     @SuppressWarnings("unchecked")
@@ -159,13 +161,13 @@ public class TimelineHostEventAccumulator
             final ScalarSample sample = entry.getValue();
             TimelineChunkAccumulator timeline = timelines.get(sampleKindId);
             if (timeline == null) {
-                timeline = new TimelineChunkAccumulator(hostId, sampleKindId);
+                timeline = new TimelineChunkAccumulator(hostId, sampleKindId, sampleCoder);
                 if (sampleCount > 0) {
                     addPlaceholders(timeline, sampleCount);
                 }
                 timelines.put(sampleKindId, timeline);
             }
-            final ScalarSample compressedSample = SampleCoder.compressSample(sample);
+            final ScalarSample compressedSample = sampleCoder.compressSample(sample);
             timeline.addSample(compressedSample);
         }
         for (Map.Entry<Integer, SampleSequenceNumber> entry : sampleKindIdCounters.entrySet()) {

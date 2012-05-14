@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.joda.time.DateTime;
 
 import com.ning.arecibo.util.Logger;
+import com.ning.arecibo.util.timeline.samples.SampleAccumulator;
 import com.ning.arecibo.util.timeline.samples.SampleBase;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 
@@ -35,29 +36,29 @@ import com.ning.arecibo.util.timeline.samples.SampleCoder;
  * It accumulates samples in a byte array object. Readers can call
  * getEncodedSamples() at any time to get the latest data.
  */
-public class TimelineChunkAccumulator extends SampleCoder
+public class TimelineChunkAccumulator extends SampleAccumulator
 {
     private static final Logger log = Logger.getCallersLoggerViaExpensiveMagic();
     private final int hostId;
     private final int sampleKindId;
 
-    public TimelineChunkAccumulator(final int hostId, final int sampleKindId)
+    public TimelineChunkAccumulator(final int hostId, final int sampleKindId, final SampleCoder sampleCoder)
     {
-        super();
+        super(sampleCoder);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
     }
 
-    private TimelineChunkAccumulator(final int hostId, final int sampleKindId, final byte[] bytes, final SampleBase lastSample, final int sampleCount) throws IOException
+    private TimelineChunkAccumulator(final int hostId, final int sampleKindId, final byte[] bytes, final SampleBase lastSample, final int sampleCount, final SampleCoder sampleCoder) throws IOException
     {
-        super(bytes, lastSample, sampleCount);
+        super(bytes, lastSample, sampleCount, sampleCoder);
         this.hostId = hostId;
         this.sampleKindId = sampleKindId;
     }
 
     public TimelineChunkAccumulator deepCopy() throws IOException
     {
-        return new TimelineChunkAccumulator(hostId, sampleKindId, getByteStream().toByteArray(), getLastSample(), getSampleCount());
+        return new TimelineChunkAccumulator(hostId, sampleKindId, getByteStream().toByteArray(), getLastSample(), getSampleCount(), sampleCoder);
     }
 
     /**
@@ -68,7 +69,7 @@ public class TimelineChunkAccumulator extends SampleCoder
         // Extract the chunk
         final byte[] sampleBytes = getEncodedSamples().getEncodedBytes();
         log.debug("Creating TimelineChunk for sampleKindId %d, sampleCount %d", sampleKindId, getSampleCount());
-        final TimelineChunk chunk = new TimelineChunk(0, hostId, sampleKindId, startTime, endTime, timeBytes, sampleBytes, getSampleCount());
+        final TimelineChunk chunk = new TimelineChunk(sampleCoder, 0, hostId, sampleKindId, startTime, endTime, timeBytes, sampleBytes, getSampleCount());
 
         // Reset this current accumulator
         reset();

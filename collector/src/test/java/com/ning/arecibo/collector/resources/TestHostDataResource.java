@@ -27,6 +27,8 @@ import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.DecimatingSampleFilter;
 import com.ning.arecibo.util.timeline.DecimationMode;
 import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
@@ -69,6 +71,7 @@ public class TestHostDataResource
     private static final String CATEGORY_AND_SAMPLE_KIND_2 = EVENT_TYPE + "," + SAMPLE_KIND_2;
 
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     private MockTimelineDAO dao = null;
     private TimelineEventHandler handler;
@@ -86,8 +89,8 @@ public class TestHostDataResource
     {
         dao = new MockTimelineDAO();
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        handler = new TimelineEventHandler(config, dao, timelineCoder, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
-        resource = new HostDataResource(dao, config, handler);
+        handler = new TimelineEventHandler(config, dao, timelineCoder, sampleCoder, new BackgroundDBChunkWriter(dao, config, true), new MockFileBackedBuffer());
+        resource = new HostDataResource(dao, sampleCoder, config, handler);
 
         // Create the hosts. host1 and host2 are used in testGetHostSamplesParsing, host3 in testWriteJsonForInMemoryChunks
         hostId1 = dao.getOrAddHost(HOST_NAME_1);

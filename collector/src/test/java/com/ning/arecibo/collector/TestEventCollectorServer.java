@@ -144,7 +144,8 @@ public class TestEventCollectorServer
         final Integer maxHeapUserKindId = timelineDAO.getOrAddSampleKind(hostId, eventTypeId, MAX_HEAPUSED_KIND);
         Assert.assertNotNull(maxHeapUserKindId);
 
-        final DateTime startTime = new DateTime(DateTimeZone.UTC);
+        final long now = System.currentTimeMillis();
+        final DateTime startTime = new DateTime(now - (now % 1000), DateTimeZone.UTC);
         DateTime endTime = startTime;
         final int sampleCount = 10;
         for (int i = 0; i < sampleCount; i++) {

@@ -29,6 +29,8 @@ import com.ning.arecibo.util.timeline.HostSamplesForTimestamp;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
 import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
@@ -60,9 +62,10 @@ public class TestFileBackedBuffer
     // 50 bytes per event, 10 1MB buffers -> need at least 210,000 events to spill over
     private static final int NB_EVENTS = 234567;
     private static final File basePath = new File(System.getProperty("java.io.tmpdir"), "TestFileBackedBuffer-" + System.currentTimeMillis());
+    private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     private final TimelineDAO dao = new MockTimelineDAO();
-    private final TimelineCoder timelineCoder = new TimelineCoderImpl();
     private CollectorEventProcessor processor;
     private TimelineEventHandler timelineEventHandler;
 
@@ -73,7 +76,7 @@ public class TestFileBackedBuffer
         System.setProperty("arecibo.collector.timelines.spoolDir", basePath.getAbsolutePath());
         System.setProperty("arecibo.collector.timelines.length", "60s");
         final CollectorConfig config = new ConfigurationObjectFactory(System.getProperties()).build(CollectorConfig.class);
-        timelineEventHandler = new TimelineEventHandler(config, dao, timelineCoder, new BackgroundDBChunkWriter(dao, config, true), new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
+        timelineEventHandler = new TimelineEventHandler(config, dao, timelineCoder, sampleCoder, new BackgroundDBChunkWriter(dao, config, true), new FileBackedBuffer(config.getSpoolDir(), "TimelineEventHandler", 1024 * 1024, 10));
         processor = new CollectorEventProcessor(ImmutableList.<EventHandler>of(timelineEventHandler), Functions.<Event>identity());
 
         dao.getOrAddHost(HOST_UUID.toString());

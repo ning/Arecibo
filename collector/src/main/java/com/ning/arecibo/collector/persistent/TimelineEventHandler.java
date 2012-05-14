@@ -60,6 +60,7 @@ import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
 import com.ning.arecibo.util.timeline.persistent.FileBackedBuffer;
 import com.ning.arecibo.util.timeline.persistent.Replayer;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
 
@@ -113,6 +114,7 @@ public class TimelineEventHandler implements EventHandler
     private final CollectorConfig config;
     private final TimelineDAO timelineDAO;
     private final TimelineCoder timelineCoder;
+    private final SampleCoder sampleCoder;
     private final BackgroundDBChunkWriter backgroundWriter;
     private final FileBackedBuffer backingBuffer;
 
@@ -140,11 +142,12 @@ public class TimelineEventHandler implements EventHandler
     private EventReplayingLoadGenerator loadGenerator = null;
 
     @Inject
-    public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final TimelineCoder timelineCoder, final BackgroundDBChunkWriter backgroundWriter, final FileBackedBuffer fileBackedBuffer)
+    public TimelineEventHandler(final CollectorConfig config, final TimelineDAO timelineDAO, final TimelineCoder timelineCoder, final SampleCoder sampleCoder, final BackgroundDBChunkWriter backgroundWriter, final FileBackedBuffer fileBackedBuffer)
     {
         this.config = config;
         this.timelineDAO = timelineDAO;
         this.timelineCoder = timelineCoder;
+        this.sampleCoder = sampleCoder;
         this.backgroundWriter = backgroundWriter;
         this.backingBuffer = fileBackedBuffer;
         this.shutdownSaveMode = ShutdownSaveMode.fromString(config.getShutdownSaveMode());
@@ -270,7 +273,7 @@ public class TimelineEventHandler implements EventHandler
         TimelineHostEventAccumulator accumulator = hostCategoryAccumulators.get(categoryId);
         if (accumulator == null) {
             addedHostEventAccumulatorCount.incrementAndGet();
-            accumulator = new TimelineHostEventAccumulator(timelineDAO, timelineCoder, backgroundWriter, hostId, categoryId, firstSampleTime, timelineLengthMillis);
+            accumulator = new TimelineHostEventAccumulator(timelineDAO, timelineCoder, sampleCoder, backgroundWriter, hostId, categoryId, firstSampleTime, timelineLengthMillis);
             hostCategoryAccumulators.put(categoryId, accumulator);
             log.debug("Created new Timeline for hostId [{}] and category [{}]", hostId, categoryId);
         }

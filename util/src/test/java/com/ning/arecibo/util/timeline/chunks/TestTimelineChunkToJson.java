@@ -33,6 +33,7 @@ import org.testng.annotations.Test;
 
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunksViews;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
 import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
@@ -43,6 +44,7 @@ public class TestTimelineChunkToJson
 {
     private static final ObjectMapper mapper = new ObjectMapper().configure(SerializationConfig.Feature.DEFAULT_VIEW_INCLUSION, false);
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     private static final long CHUNK_ID = 1242L;
     private static final int HOST_ID = 1422;
@@ -61,7 +63,7 @@ public class TestTimelineChunkToJson
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final DataOutputStream output = new DataOutputStream(out);
         for (int i = 0; i < SAMPLE_COUNT; i++) {
-            SampleCoder.encodeSample(output, new ScalarSample<Long>(SampleOpcode.LONG, 10L));
+            sampleCoder.encodeSample(output, new ScalarSample<Long>(SampleOpcode.LONG, 10L));
             dateTimes.add(START_TIME.plusMinutes(i));
         }
         output.flush();
@@ -70,7 +72,7 @@ public class TestTimelineChunkToJson
 
         final DateTime endTime = dateTimes.get(dateTimes.size() - 1);
         final byte[] timeBytes = timelineCoder.compressDateTimes(dateTimes);
-        chunk = new TimelineChunk(CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, START_TIME, endTime, timeBytes, samples, SAMPLE_COUNT);
+        chunk = new TimelineChunk(sampleCoder, CHUNK_ID, HOST_ID, SAMPLE_KIND_ID, START_TIME, endTime, timeBytes, samples, SAMPLE_COUNT);
     }
 
     @Test(groups = "fast")

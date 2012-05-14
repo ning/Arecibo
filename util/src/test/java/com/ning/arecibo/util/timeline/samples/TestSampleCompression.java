@@ -24,7 +24,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.ning.arecibo.util.timeline.chunks.TimelineChunkAccumulator;
-import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
 import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
@@ -33,6 +32,7 @@ import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 public class TestSampleCompression
 {
     private static final TimelineCoder timelineCoder = new TimelineCoderImpl();
+    private static final SampleCoder sampleCoder = new SampleCoderImpl();
 
     @Test(groups="fast")
     public void testBasicDoubleCompression() throws Exception {
@@ -61,11 +61,11 @@ public class TestSampleCompression
 
     @SuppressWarnings("unchecked")
     private void checkDoubleCodedResult(final double value, final SampleOpcode expectedOpcode, final int expectedSize) {
-        final ScalarSample codedSample = SampleCoder.compressSample(new ScalarSample(SampleOpcode.DOUBLE, value));
+        final ScalarSample codedSample = sampleCoder.compressSample(new ScalarSample(SampleOpcode.DOUBLE, value));
         Assert.assertEquals(codedSample.getOpcode(), expectedOpcode);
-        final double error = value == 0.0 ? 0.0 : Math.abs((value - SampleCoder.getDoubleValue(codedSample)) / value);
-        Assert.assertTrue(error <= SampleCoder.MAX_FRACTION_ERROR);
-        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(123, 456);
+        final double error = value == 0.0 ? 0.0 : Math.abs((value - codedSample.getDoubleValue()) / value);
+        Assert.assertTrue(error <= sampleCoder.getMaxFractionError());
+        final TimelineChunkAccumulator accum = new TimelineChunkAccumulator(123, 456, sampleCoder);
         accum.addSample(codedSample);
         final DateTime now = new DateTime();
         final List<DateTime> dateTimes = new ArrayList<DateTime>();

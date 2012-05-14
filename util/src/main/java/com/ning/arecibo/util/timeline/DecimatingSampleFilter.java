@@ -19,9 +19,9 @@ package com.ning.arecibo.util.timeline;
 import org.joda.time.DateTime;
 import org.skife.config.TimeSpan;
 
-import com.ning.arecibo.util.timeline.samples.SampleCoder;
 import com.ning.arecibo.util.timeline.samples.SampleConsumer;
 import com.ning.arecibo.util.timeline.samples.SampleOpcode;
+import com.ning.arecibo.util.timeline.samples.ScalarSample;
 import com.ning.arecibo.util.timeline.times.TimeRangeSampleProcessor;
 
 /**
@@ -136,7 +136,7 @@ public class DecimatingSampleFilter extends TimeRangeSampleProcessor {
             initializeFilterHistory(sampleCount);
         }
         sampleNumber++;
-        final SampleState sampleState = new SampleState(opcode, value, SampleCoder.getDoubleValue(opcode, value), time);
+        final SampleState sampleState = new SampleState(opcode, value, ScalarSample.getDoubleValue(opcode, value), time);
         final int historyIndex = sampleNumber % filterHistory.length;
         filterHistory[historyIndex] = sampleState;
         runningSum += outputsPerSample;

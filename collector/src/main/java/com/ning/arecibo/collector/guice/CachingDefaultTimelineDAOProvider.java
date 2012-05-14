@@ -20,6 +20,7 @@ import com.google.inject.Inject;
 import com.ning.arecibo.util.timeline.persistent.CachingTimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.TimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
 
 import org.skife.jdbi.v2.DBI;
 import org.weakref.jmx.MBeanExporter;
@@ -32,20 +33,22 @@ public class CachingDefaultTimelineDAOProvider implements Provider<TimelineDAO>
 {
     private final CollectorConfig config;
     private final DBI dbi;
+    private final SampleCoder sampleCoder;
     private final MBeanServer mBeanServer;
 
     @Inject
-    public CachingDefaultTimelineDAOProvider(final CollectorConfig config, final DBI dbi, final MBeanServer mBeanServer)
+    public CachingDefaultTimelineDAOProvider(final CollectorConfig config, final DBI dbi, final SampleCoder sampleCoder, final MBeanServer mBeanServer)
     {
         this.config = config;
         this.dbi = dbi;
+        this.sampleCoder = sampleCoder;
         this.mBeanServer = mBeanServer;
     }
 
     @Override
     public TimelineDAO get()
     {
-        final TimelineDAO delegate = new DefaultTimelineDAO(dbi);
+        final TimelineDAO delegate = new DefaultTimelineDAO(dbi, sampleCoder);
         final CachingTimelineDAO cachingTimelineDAO = new CachingTimelineDAO(delegate);
 
         final MBeanExporter exporter = new MBeanExporter(mBeanServer);

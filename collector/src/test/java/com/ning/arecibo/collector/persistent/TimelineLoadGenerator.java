@@ -33,6 +33,8 @@ import com.ning.arecibo.util.timeline.CategoryIdAndSampleKind;
 import com.ning.arecibo.util.timeline.chunks.TimelineChunk;
 import com.ning.arecibo.util.timeline.persistent.CachingTimelineDAO;
 import com.ning.arecibo.util.timeline.persistent.DefaultTimelineDAO;
+import com.ning.arecibo.util.timeline.samples.SampleCoder;
+import com.ning.arecibo.util.timeline.samples.SampleCoderImpl;
 import com.ning.arecibo.util.timeline.times.TimelineCoder;
 import com.ning.arecibo.util.timeline.times.TimelineCoderImpl;
 
@@ -68,17 +70,19 @@ public class TimelineLoadGenerator {
     private final CachingTimelineDAO timelineDAO;
     private final DBI dbi;
     private final TimelineCoder timelineCoder;
+    private final SampleCoder sampleCoder;
 
     private final AtomicInteger timelineChunkIdCounter = new AtomicInteger(0);
 
     public TimelineLoadGenerator()
     {
+        this.timelineCoder = new TimelineCoderImpl();
+        this.sampleCoder = new SampleCoderImpl();
+
         this.dbi = new DBI(DBI_URL, DBI_USER, DBI_PASSWORD);
-        this.defaultTimelineDAO = new DefaultTimelineDAO(dbi);
+        this.defaultTimelineDAO = new DefaultTimelineDAO(dbi, sampleCoder);
         this.timelineDAO = new CachingTimelineDAO(defaultTimelineDAO);
         log.info("DBI initialized");
-
-        this.timelineCoder = new TimelineCoderImpl();
 
         // Make some hosts
         final List<String> hostNames = new ArrayList<String>(HOST_ID_COUNT);
@@ -188,7 +192,7 @@ public class TimelineLoadGenerator {
     private TimelineChunk makeTimelineChunk(final int hostId, final int sampleKindId, final DateTime startTime, final DateTime endTime, final byte[] timeBytes, final int sampleCount)
     {
         final byte[] samples = new byte[3 + rand.nextInt(sampleCount) * 2];
-        return new TimelineChunk(timelineChunkIdCounter.incrementAndGet(), hostId, sampleKindId, startTime, endTime, timeBytes, samples, sampleCount);
+        return new TimelineChunk(sampleCoder, timelineChunkIdCounter.incrementAndGet(), hostId, sampleKindId, startTime, endTime, timeBytes, samples, sampleCount);
     }
 
     public static void main(String[] args) throws Exception

@@ -25,6 +25,7 @@ import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.annotate.JsonValue;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigInteger;
 import java.util.Map;
 
 /**
@@ -99,6 +100,42 @@ public class ScalarSample<T> extends SampleBase
         this.sampleValue = sampleValue;
     }
 
+    public double getDoubleValue() {
+        final Object sampleValue = getSampleValue();
+        return getDoubleValue(getOpcode(), sampleValue);
+    }
+
+    public static double getDoubleValue(final SampleOpcode opcode, final Object sampleValue) {
+        switch (opcode) {
+        case NULL:
+        case DOUBLE_ZERO:
+        case INT_ZERO:
+            return 0.0;
+        case BYTE:
+        case BYTE_FOR_DOUBLE:
+            return (double)((Byte)sampleValue);
+        case SHORT:
+        case SHORT_FOR_DOUBLE:
+            return (double)((Short)sampleValue);
+        case INT:
+            return (double)((Integer)sampleValue);
+        case LONG:
+            return (double)((Long)sampleValue);
+        case FLOAT:
+        case FLOAT_FOR_DOUBLE:
+            return (double)((Float)sampleValue);
+        case HALF_FLOAT_FOR_DOUBLE:
+            return (double)HalfFloat.toFloat((short)((Short)sampleValue));
+        case DOUBLE:
+            return (double)((Double)sampleValue);
+        case BIGINT:
+            return ((BigInteger)sampleValue).doubleValue();
+        default:
+            throw new IllegalArgumentException(String.format("In getDoubleValue(), sample opcode is %s, sample value is %s",
+                    opcode.name(), String.valueOf(sampleValue)));
+        }
+    }
+
     @JsonCreator
     public ScalarSample(@JsonProperty(KEY_OPCODE) final byte opcodeIdx,
                         @JsonProperty(KEY_SAMPLE_CLASS) final Class klass,
@@ -114,6 +151,19 @@ public class ScalarSample<T> extends SampleBase
         return sampleValue;
     }
 
+    public static boolean sameSampleValues(final Object o1, final Object o2)
+    {
+        if (o1 == o2) {
+            return true;
+        }
+        else if (o1.getClass() == o2.getClass()) {
+            return o1.equals(o2);
+        }
+        else {
+            return false;
+        }
+    }
+
     @Override
     public boolean equals(final Object other)
     {
@@ -125,7 +175,7 @@ public class ScalarSample<T> extends SampleBase
         if (getOpcode() != otherSample.getOpcode()) {
             return false;
         }
-        else if (!opcode.getNoArgs() && !(SampleCoder.sameSampleValues(sampleValue, otherValue))) {
+        else if (!opcode.getNoArgs() && !(sameSampleValues(sampleValue, otherValue))) {
             return false;
         }
         return true;
